@@ -1,0 +1,55 @@
+name: Build VRAMpage MD website bundle
+
+# Builds only in the VRAMpage repository. NEVER publishes to McRetro.net.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build-site:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake python3 git make
+      - name: Install Emscripten
+        shell: bash
+        run: |
+          git clone https://github.com/emscripten-core/emsdk.git "$RUNNER_TEMP/emsdk"
+          "$RUNNER_TEMP/emsdk/emsdk" install latest
+          "$RUNNER_TEMP/emsdk/emsdk" activate latest
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          emcc --version
+      - name: Run source checks and build browser core
+        shell: bash
+        run: |
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          test -f scripts/build-core.sh || { echo "Import v0.1 source first"; exit 1; }
+          bash scripts/test.sh
+          bash scripts/build-core.sh
+          test -s site/core/genplus.js
+          test -s site/core/genplus.wasm
+          test -f site/source/README.txt
+      - name: Package static website with corresponding emulator source
+        shell: bash
+        run: |
+          mkdir -p release
+          cp -R site release/vrampage
+          # Avoid extraneous Python or local build junk inside public artifact.
+          find release/vrampage -type d -name '__pycache__' -prune -exec rm -rf '{}' +
+          tar -czf release/VRAMpage-MD-static-site.tar.gz -C release vrampage
+      - name: Upload release bundle for manual McRetro staging
+        uses: actions/upload-artifact@v4
+        with:
+          name: VRAMpage-MD-static-site
+          retention-days: 30
+          path: release/VRAMpage-MD-static-site.tar.gz
+          if-no-files-found: error
