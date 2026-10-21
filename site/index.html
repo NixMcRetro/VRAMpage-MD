@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b1016">
-  <title>VRAMpage MD v0.1 | NTSC Mega Drive Hardware Mode</title>
+  <meta name="theme-color" content="#dedbd2">
+  <title>VRAMpage MD v0.1.1 | Mega Drive circuit bending</title>
   <link rel="stylesheet" href="style.css">
   <script src="core/genplus.js" defer onerror="window.__coreMissing = true"></script>
   <script src="app.js" defer></script>
@@ -12,60 +12,73 @@
 <body>
   <main class="shell">
     <header class="masthead">
-      <div class="brand"><div class="brand-icon" aria-hidden="true">16<span>BIT</span></div>
-        <div><h1>VRAMpage <em>MD</em> <span class="version">v0.1</span></h1>
-        <p class="subtitle">VRAM circuit bending · Genesis / Mega Drive Model 1 · NTSC-U</p></div>
+      <div>
+        <div class="brand"><h1>VRAMpage <span>MD</span></h1><span class="version">v0.1.1</span></div>
+        <p class="subtitle">An experimental Sega Mega Drive circuit-bending workbench.</p>
       </div>
-      <div class="lights"><span class="led" id="powerLed"></span><span id="powerLabel">CORE NOT READY</span></div>
+      <div class="machine-status"><span class="led" id="powerLed"></span><span id="powerLabel">CORE NOT READY</span></div>
     </header>
 
     <div class="main-grid">
       <section class="screen-section" aria-label="Mega Drive emulator">
-        <div class="console-top"><span>SEGA MEGA DRIVE</span><span class="console-label">MODEL 1 // NTSC</span></div>
-        <div class="screen-frame"><canvas id="screen" width="320" height="224" aria-label="Mega Drive emulator video"></canvas>
-          <div id="screenPlaceholder" class="screen-placeholder"><div class="screen-mark">MD</div>
-            <strong id="placeholderTitle">LOAD THE EMULATOR CORE</strong>
-            <p id="placeholderMessage">See the setup instructions to build the modified WebAssembly core. Then select a locally owned Mega Drive ROM.</p>
+        <div class="section-heading"><h2>01 <span>/</span> Game</h2><span>MODEL 1 &nbsp;·&nbsp; NTSC-U &nbsp;·&nbsp; 59.92 Hz</span></div>
+        <div class="screen-well">
+          <div class="screen-frame" id="displayViewport">
+            <canvas id="screen" width="320" height="224" aria-label="Mega Drive video output"></canvas>
+            <div id="screenPlaceholder" class="screen-placeholder">
+              <strong id="placeholderTitle">NO CARTRIDGE</strong>
+              <p id="placeholderMessage">Load a local game ROM to begin. The emulator runs entirely in your browser.</p>
+            </div>
           </div>
         </div>
+        <div class="screen-info"><span id="romName">NO CARTRIDGE INSERTED</span><span id="fpsIndicator">— FPS</span></div>
         <div class="toolbar">
-          <label class="load-btn" for="romFile"><span>▣</span> Load ROM</label>
-          <input id="romFile" type="file" accept=".bin,.md,.gen,application/octet-stream">
+          <label class="load-btn" for="romFile">Load ROM</label>
+          <input id="romFile" type="file" accept=".bin,.md,.gen,application/octet-stream" aria-label="Load Mega Drive ROM">
           <button id="resetBtn" type="button" disabled>Reset</button>
           <button id="pauseBtn" type="button" disabled>Pause</button>
           <button id="soundBtn" type="button" disabled aria-pressed="false">Enable Sound</button>
-          <button id="fullscreenBtn" type="button">Fullscreen</button>
+          <button id="fullscreenBtn" type="button" aria-pressed="false">Fullscreen</button>
         </div>
-        <div class="screen-info"><span id="romName">NO CARTRIDGE INSERTED</span><span id="fpsIndicator">— FPS</span></div>
-        <div class="instructions"><p><strong>SONIC CONTROLS</strong> Arrow keys = move · Z / X / C = jump · Enter = Start</p>
-          <p><strong>CIRCUIT CONTROLS</strong> 1–8 = toggle preset · Shift + 1–8 = temporary contact · 0 = disconnect · P = pause</p>
-          <p><strong>AUDIO</strong> Click Enable Sound after loading your ROM. Sound-chip circuit bends are planned, not active yet.</p></div>
+        <div class="instructions">
+          <p><strong>CONTROLLER</strong> Arrows: move &nbsp;·&nbsp; Z, X, C: buttons &nbsp;·&nbsp; Enter: Start</p>
+          <p><strong>BENDING</strong> 1–8: connect &nbsp;·&nbsp; Shift + 1–8: hold &nbsp;·&nbsp; 0: disconnect &nbsp;·&nbsp; P: pause</p>
+        </div>
       </section>
 
-      <aside class="bender-panel" aria-label="Circuit bending patchbay">
-        <div class="panel-head"><div><p class="eyebrow">VRAM PATCHBAY</p><h2>Cross the wires.</h2></div><div class="panel-tag">HARDWARE TEST</div></div>
-        <p class="explain">Select two <strong>AD</strong> nets to join them. These VDP lines carry row and column addresses at different moments. The initial model uses a low-dominant digital short.</p>
+      <aside class="bender-panel" aria-label="VRAM patchbay">
+        <div class="section-heading"><h2>02 <span>/</span> VRAM patchbay</h2><span>AD0–AD7</span></div>
+        <p class="explain">Choose two address nets to connect. Click two pins, or use the numbered presets.</p>
         <div class="chip-box">
-          <p class="board-label">315-5313 VDP — EXTERNAL VRAM NETS</p>
+          <p class="board-label">315-5313 &nbsp; / &nbsp; VDP ADDRESS BUS</p>
           <div class="pin-grid" id="pinGrid"></div>
-          <div class="chip-middle"><div>SEGA</div><span>VRAM INTERFACE</span><small>AD0–AD7 · multiplexed address</small></div>
-          <div class="chip-foot"><div class="pin-marker"></div>Choose the first pin, then the second.</div>
+          <div class="chip-middle"><strong>VRAM</strong><span>MULTIPLEXED ADDRESS LINES</span></div>
+          <div class="chip-foot">Select one pin, then another. One connection at a time.</div>
         </div>
-        <div class="patch-status"><span>CONNECTION</span><strong id="connectionLabel">NONE — OPEN CIRCUIT</strong></div>
-        <div class="presets-head"><h3>Keyboard patch presets</h3><button id="disconnectBtn" type="button">Disconnect all [0]</button></div>
+        <div class="patch-status"><span>ACTIVE CONNECTION</span><strong id="connectionLabel">NONE — OPEN CIRCUIT</strong></div>
+        <div class="presets-head"><h3>Presets</h3><button id="disconnectBtn" type="button">Disconnect [0]</button></div>
         <div id="presetGrid" class="preset-grid"></div>
-        <div class="metrics"><div><span>Projected differences</span><strong id="readCount">0</strong></div>
-          <div><span>Detected changed bytes</span><strong id="writeCount">0</strong></div></div>
-        <div class="notice"><strong>First-stage hardware approximation.</strong> The address mapping is derived from the 64 KB Mode 5 row/column wiring. The fault is currently applied around each emulated frame, rather than at individual VRAM signal transitions. This is not yet electrical or cycle-accurate.</div>
+        <div class="metrics">
+          <div><span>Projected differences</span><strong id="readCount">0</strong></div>
+          <div><span>Changed bytes</span><strong id="writeCount">0</strong></div>
+        </div>
+        <p class="notice"><strong>Experimental model.</strong> Shorts are applied around each emulated frame, not at every real VRAM bus transition. This is not yet a cycle-accurate electrical simulation.</p>
       </aside>
     </div>
+
     <section class="bottom-grid">
-      <div class="log-block"><div class="log-top"><h3>Experiment log</h3><button id="clearLogBtn">Clear</button></div><ol id="experimentLog" aria-live="polite"></ol></div>
-      <div class="notes-block"><h3>Running locally</h3><p>No games are bundled. Select a Sonic 1 <code>.bin</code> or <code>.md</code> ROM that you may lawfully use. ROM data stays in your browser.</p>
-        <p>To build the modified emulator, follow <a href="README.md">README.md</a> in the source archive. After building, the entire <code>site/</code> directory can be hosted statically.</p>
-        <p class="small-note">Emulator base: <a href="https://github.com/h1romas4/wasm-genplus" target="_blank" rel="noreferrer">wasm-genplus</a> / <a href="https://github.com/ekeeke/Genesis-Plus-GX" target="_blank" rel="noreferrer">Genesis Plus GX</a>. Modified emulator redistribution is subject to their source and non-commercial conditions.</p></div>
+      <div class="log-block">
+        <div class="section-heading"><h2>03 <span>/</span> Event log</h2><button id="clearLogBtn" type="button">Clear</button></div>
+        <ol id="experimentLog" aria-live="polite"></ol>
+      </div>
+      <div class="notes-block">
+        <div class="section-heading"><h2>04 <span>/</span> About this build</h2></div>
+        <p>Works offline once hosted locally. No ROM is included; choose a game you may lawfully use. The cartridge file stays on your device.</p>
+        <p>Clean stereo sound is available using <strong>Enable Sound</strong>. Audio and 68000 logic bending are planned for later builds.</p>
+        <p class="small-note">Emulator: <a href="https://github.com/h1romas4/wasm-genplus" target="_blank" rel="noreferrer">wasm-genplus</a> / <a href="https://github.com/ekeeke/Genesis-Plus-GX" target="_blank" rel="noreferrer">Genesis Plus GX</a>. Corresponding source and licence notices accompany any public build.</p>
+      </div>
     </section>
-    <footer><span>VRAMpage MD v0.1 · NTSC HARDWARE MODE</span><span>NO ROM INCLUDED · NO VIDEO FILTERS</span></footer>
+    <footer><span>VRAMpage MD &nbsp;·&nbsp; v0.1.1</span><span>NTSC HARDWARE MODE &nbsp; / &nbsp; NO VIDEO FILTERS</span></footer>
   </main>
 </body>
 </html>

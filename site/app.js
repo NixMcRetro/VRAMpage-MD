@@ -12,7 +12,9 @@
   const AUDIO_RATE = 44100;
   const PRESETS = [[0,1], [0,2], [1,3], [2,4], [3,5], [4,6], [5,7], [6,7]];
   const canvas = $('screen');
+  const displayViewport = $('displayViewport');
   const ctx = canvas.getContext('2d', {alpha: false});
+  ctx.imageSmoothingEnabled = false;
   const imageData = ctx.createImageData(GAME_WIDTH, GAME_HEIGHT);
   const pressed = new Set();
   const pinButtons = [];
@@ -24,6 +26,7 @@
   let lastFrame = 0, accumulated = 0, frames = 0, measuredAt = 0;
   let focusReleased = false;
   let lastContact = '';
+  let displayRefreshQueued = false;
 
   function stamp(message) {
     const li = document.createElement('li');
@@ -167,10 +170,9 @@
 
   function resetStats() { frames = 0; measuredAt = performance.now(); }
 
-  function renderFrame() {
-    ensureWasmViews();
-    pollControls();
-    emulator._tick();
+  function drawActiveVideo() {
+    if (!frameView) return;
+    // Fixed 320 x 224 canvas: never resize the drawing buffer to the fullscreen window.
     // Copy 320 active pixels per row; the source framebuffer pitch is 640.
     const srcPitchBytes = SCREEN_WIDTH * 4;
     const rowBytes = GAME_WIDTH * 4;
@@ -179,6 +181,13 @@
       imageData.data.set(frameView.subarray(start, start + rowBytes), y * rowBytes);
     }
     ctx.putImageData(imageData,0,0);
+  }
+
+  function renderFrame() {
+    ensureWasmViews();
+    pollControls();
+    emulator._tick();
+    drawActiveVideo();
     audioFrame();
     frames++;
     // Statistics describe byte differences under the projection model.
@@ -333,13 +342,58 @@
     }
   }
 
+  function updateFullscreenDisplay() {
+    const active = document.fullscreenElement === displayViewport;
+    $('fullscreenBtn').textContent = active ? 'Exit fullscreen' : 'Fullscreen';
+    $('fullscreenBtn').setAttribute('aria-pressed', String(active));
+    // Firefox can retain a stale canvas backing/compositor surface after a
+    // fullscreen transition. Reset only the fixed-size canvas and repaint
+    // the last emulated frame; emulator state and ROM remain untouched.
+    canvas.width = GAME_WIDTH;
+    canvas.height = GAME_HEIGHT;
+    ctx.imageSmoothingEnabled = false;
+    if (started) {
+      ensureWasmViews();
+      drawActiveVideo();
+    }
+  }
+
+  function scheduleDisplayRefresh() {
+    // Also handles Firefox's browser-level fullscreen (F11) and window resize,
+    // neither of which necessarily fires document.fullscreenchange.
+    if (displayRefreshQueued) return;
+    displayRefreshQueued = true;
+    requestAnimationFrame(() => {
+      displayRefreshQueued = false;
+      updateFullscreenDisplay();
+    });
+  }
+
+  async function toggleFullscreen() {
+    try {
+      if (document.fullscreenElement === displayViewport) {
+        await document.exitFullscreen();
+      } else if (!document.fullscreenElement) {
+        await displayViewport.requestFullscreen();
+      }
+    } catch (error) {
+      stamp(`Fullscreen unavailable: ${error.message}`);
+    }
+  }
+
   function setup() {
     setupPatchbay();installKeyboard();
     $('romFile').addEventListener('change',event=>{loadLocalRom(event.target.files?.[0]);event.target.value='';});
     $('resetBtn').addEventListener('click',async()=>{if(romBytes) await startCartridge(romBytes,loadedName);});
     $('pauseBtn').addEventListener('click',pauseToggle);
     $('soundBtn').addEventListener('click',()=>soundToggle().catch(e=>stamp(`Audio error: ${e.message}`)));
-    $('fullscreenBtn').addEventListener('click',()=>{if(!document.fullscreenElement)canvas.requestFullscreen?.();else document.exitFullscreen?.();});
+    $('fullscreenBtn').addEventListener('click', toggleFullscreen);
+    document.addEventListener('fullscreenchange', scheduleDisplayRefresh);
+    window.addEventListener('resize', scheduleDisplayRefresh);
+    if (typeof ResizeObserver !== 'undefined') {
+      const displayObserver = new ResizeObserver(scheduleDisplayRefresh);
+      displayObserver.observe(displayViewport);
+    }
     setRunning(false);
     resetStats();
     requestAnimationFrame(animationFrame);
