@@ -46,7 +46,15 @@ for rel in "${FILES[@]}"; do
   fi
 done
 if ! grep -qi 'VRAMpage' "$SOURCE/site/index.html"; then
-  echo "Expected VRAMpage MD v0.1 HTML; refusing to import a different site." >&2
+  if grep -q 'Mega Drive VRAM Circuit Bender' "$SOURCE/site/index.html"; then
+    echo "The working prototype still has its original title; apply the v0.1 frontend update first." >&2
+    echo "Starting directory: anywhere." >&2
+    echo "  cd \"$SOURCE\"" >&2
+    echo "  python3 /Users/nix/Downloads/apply-vrampage-md-v0.1.py" >&2
+    echo "Then rerun this importer from the VRAMpage-MD repository." >&2
+  else
+    echo "This does not look like the expected VRAMpage MD frontend; no files were imported." >&2
+  fi
   exit 1
 fi
 
