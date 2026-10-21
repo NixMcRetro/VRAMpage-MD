@@ -1,0 +1,52 @@
+# Generated or vendored emulator content, reproduced by scripts/build-core.sh
+/vendor/
+/site/core/genplus.js
+/site/core/genplus.wasm
+/site/source/
+/build/
+/dist/
+*.o
+*.a
+*.wasm.map
+*.dbg
+*.dSYM/
+
+# Python / JS / editor cache
+__pycache__/
+*.py[cod]
+node_modules/
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Local cartridge ROMs: never commit game content
+*.bin
+*.gen
+*.smd
+*.rom
+*.sms
+*.gg
+*.32x
+*.iso
+*.cue
+*.chd
+*.mdx
+*.zip
+*.7z
+
+# .md is also our Markdown documentation extension!
+# Explicitly forbid the known Sonic ROM basename, and always stage
+# source files by allowlist rather than using 'git add -A'.
+sonic.md
+Sonic.md
+SONIC.MD
+/roms/
+/site/roms/
+/cartridges/
+/site/cartridges/
+
+# User backups or local debug outputs
+*.before-vrampage-v0.1
+*.log
+.DS_Store
