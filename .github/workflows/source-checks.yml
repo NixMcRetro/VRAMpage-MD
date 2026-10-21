@@ -1,0 +1,35 @@
+name: VRAMpage MD source checks
+
+on:
+  push:
+    branches: [main, 'import/**', 'feature/**', 'release/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify checked-in project source
+        shell: bash
+        run: |
+          test -f scripts/test.sh || { echo "Source import not complete yet"; exit 0; }
+          bash scripts/test.sh
+      - name: Never commit commercial ROM or generated emulator
+        shell: bash
+        run: |
+          if git ls-files -z | xargs -0 -r file | grep -Ei 'Sega Mega Drive ROM|Sega Genesis ROM'; then
+            echo 'Potential ROM file found in tracked content'
+            exit 1
+          fi
+          if git ls-files | grep -E '^vendor/|^site/source/|^site/core/genplus\.(js|wasm)$'; then
+            echo 'Generated emulator/vendor output committed unexpectedly'
+            exit 1
+          fi
