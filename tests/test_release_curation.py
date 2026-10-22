@@ -31,6 +31,15 @@ class ReleaseCurationTests(unittest.TestCase):
                     self.assertIn("SOURCE HISTORY ONLY", note)
                     self.assertIn("NO READY-TO-RUN", note)
 
+    def test_original_public_descriptions_are_archived(self):
+        archive = ROOT / "docs/archive/original-release-notes"
+        for entry in DATA["releases"]:
+            with self.subTest(tag=entry["tag"]):
+                original = (archive / f"{entry['tag']}.md").read_text()
+                self.assertIn("Original title:", original)
+                self.assertIn("Original release URL:", original)
+                self.assertIn("Archive only.", original)
+
     def test_homepage_has_clear_route_to_latest(self):
         readme = (ROOT / "README.md").read_text()
         self.assertIn("VRAMpage-MD-v0.2.6-macos.zip", readme)

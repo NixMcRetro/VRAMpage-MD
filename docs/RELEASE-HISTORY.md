@@ -35,3 +35,6 @@ These releases were created retrospectively from their **actual development comm
 The misnumbered v2.4.0 **release entry was removed previously**. Its original source-history Git tag remains, and the canonical runnable release is [v0.2.4](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.4). Earlier provisional references to v2.1–v2.4 correspond to canonical v0.2.1–v0.2.4; historical commits and experiment records are not rewritten.
 
 For the technical detail behind each step, see the [changelog](../CHANGELOG.md), [versioning policy](VERSIONING.md) and [testing record](TESTING.md).
+
+For an audit trail of the public release descriptions **before** they were simplified,
+see the [original-release-note archive](archive/original-release-notes/README.md).

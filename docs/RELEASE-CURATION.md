@@ -12,6 +12,13 @@ This repository has both complete Mac downloads and historical source-only miles
 - Never promise that native macOS Firefox, audible playback, hardware fidelity or commercial games were tested when only cloud/core checks were available.
 - Never automatically publish to McRetro.net.
 
+## Original notes are archived
+
+The 12 original published release descriptions and titles were captured verbatim
+before curation under [original release notes](archive/original-release-notes/).
+The copies preserve detailed technical commentary and old historical pointers.
+Do not change or delete those archival snapshots when rewriting public-facing notes.
+
 ## Where to edit
 
 - `release-notes/v*.md`: complete human-readable release text.
