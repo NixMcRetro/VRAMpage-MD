@@ -1,0 +1,56 @@
+name: Publish complete v2.4.0 local download
+
+# Explicitly dispatched after main passes review. Only this repository is used.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-website.yml
+
+  publish:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: VRAMpage-MD-local-review
+          path: download
+      - name: Check packaged commit and produce checksum
+        run: |
+          cd download
+          python3 - <<'PY'
+          import json, os, zipfile
+          with zipfile.ZipFile('VRAMpage-MD-v2.4.0-macos.zip') as bundle:
+              info = json.loads(bundle.read('VRAMpage-MD/BUILD-INFO.json'))
+              assert info['source_commit'] == os.environ['GITHUB_SHA'], info
+          PY
+          sha256sum VRAMpage-MD-v2.4.0-macos.zip > SHA256SUMS.txt
+      - name: Attach the complete ZIP and publish the release
+        run: |
+          if ! gh release view v2.4.0 >/dev/null 2>&1; then
+            gh release create v2.4.0 --draft --target "$GITHUB_SHA" --title 'VRAMpage MD v2.4.0 — ready-to-run Mac download' --notes 'Download the complete Mac ZIP below, extract it and open START.command. Python 3 is required. Load your own legally usable cartridge. See the included README and third-party non-commercial terms.'
+          fi
+          gh release view v2.4.0 --json body --jq .body > /tmp/release-notes.md
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          p = Path('/tmp/release-notes.md')
+          lines = [line for line in p.read_text().splitlines()
+                   if not line.startswith(('Source commit:', 'Release validation:'))]
+          lines.extend(['', 'Source commit: `' + os.environ['GITHUB_SHA'] + '`.',
+                        'Release validation: https://github.com/' + os.environ['GITHUB_REPOSITORY'] + '/actions/runs/' + os.environ['GITHUB_RUN_ID']])
+          p.write_text('\n'.join(lines) + '\n')
+          PY
+          gh release edit v2.4.0 --target "$GITHUB_SHA" --notes-file /tmp/release-notes.md
+          gh release upload v2.4.0 download/VRAMpage-MD-v2.4.0-macos.zip download/SHA256SUMS.txt --clobber
+          gh release edit v2.4.0 --draft=false --latest
