@@ -6,6 +6,7 @@
 - Add native and actual-WASM regression coverage and a bounded traced/untraced experiment runner.
 - Record user-reported Mac Firefox sound, USB keyboard, resize, fullscreen and restart behaviour; physical gamepad remains untested.
 - Preserve existing releases, pinned observer profiles and experiment records.
+- Read clean-restart browser-test counters atomically so animation ticks cannot split the exact reset assertion; application behaviour is unchanged.
 
 ## Post-v0.2.6 experiment tooling
 
