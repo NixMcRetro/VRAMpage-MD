@@ -7,7 +7,8 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const {execFileSync} = require('node:child_process');
 
-const TOOL_VERSION = 1;
+const TOOL_VERSION = 2;
+const PROTOCOL_VERSION = 2;
 const APP_PROFILE = Object.freeze({
   application: 'VRAMpage MD', applicationVersion: '0.2.6', packageFormat: 1,
   packageSourceCommit: '6d18f8e80191f1d60e5aa7b5899d3524c6dcbc07',
@@ -30,6 +31,28 @@ const SONIC1_LAYOUT = Object.freeze({
   demoCountdown: 0xf792,
   demoFlag: 0xfff0,
   demoLevelNumber: 0xfff2
+});
+// s1disasm AS @ 15dfa3a6ee4c53aeb482233e493755c84b4f3479:
+// _Variables.asm allocates v_objspace after byte regions totaling
+// $A400+$400+$200+$200+$400+$1800+$2E0+$20+$100+$380+$80 = $D100;
+// v_player is object slot 0. _Constants.asm defines object_size=$40 and the
+// player fields below. obX/obY are 16.16 fixed-point longs; obVelX/obVelY
+// are signed 16-bit words. LSB_FIRST byte lanes are resolved by the readers.
+const PLAYER_LAYOUT = Object.freeze({
+  objectBase: 0xd100,
+  objectId: 0x00,
+  worldXFixed: 0x08,
+  worldYFixed: 0x0c,
+  velocityX: 0x10,
+  velocityY: 0x12
+});
+const PHASE_WINDOW = Object.freeze({
+  candidateTickStart: 1803,
+  candidateTickEnd: 2398,
+  candidateTickCount: 596,
+  lagMin: -2,
+  lagMax: 2,
+  offsetConvention: 'compare candidate tick t with baseline tick t + lag'
 });
 const TRIAL = Object.freeze({
   maxTicks: 2400,
@@ -124,7 +147,21 @@ function readLogicalWord(heap, ramPointer, logicalAddress) {
     readLogicalByte(heap, ramPointer, logicalAddress + 1);
 }
 
+function readLogicalLong(heap, ramPointer, logicalAddress) {
+  if (!Number.isInteger(logicalAddress) || logicalAddress < 0 || logicalAddress > 0xfffc) {
+    fail('Invalid logical work-RAM long range.');
+  }
+  return (readLogicalWord(heap, ramPointer, logicalAddress) * 0x10000 +
+    readLogicalWord(heap, ramPointer, logicalAddress + 2)) >>> 0;
+}
+
+function readLogicalSignedWord(heap, ramPointer, logicalAddress) {
+  const value = readLogicalWord(heap, ramPointer, logicalAddress);
+  return value >= 0x8000 ? value - 0x10000 : value;
+}
+
 function readAttractFields(heap, ramPointer) {
+  const player = PLAYER_LAYOUT.objectBase;
   return {
     gameMode: readLogicalByte(heap, ramPointer, SONIC1_LAYOUT.gameMode),
     demoFlag: readLogicalWord(heap, ramPointer, SONIC1_LAYOUT.demoFlag),
@@ -132,7 +169,12 @@ function readAttractFields(heap, ramPointer) {
     demoCursor: readLogicalWord(heap, ramPointer, SONIC1_LAYOUT.demoCursor),
     demoCountdown: readLogicalByte(heap, ramPointer, SONIC1_LAYOUT.demoCountdown),
     heldPad: readLogicalByte(heap, ramPointer, SONIC1_LAYOUT.heldPad),
-    pressedPad: readLogicalByte(heap, ramPointer, SONIC1_LAYOUT.pressedPad)
+    pressedPad: readLogicalByte(heap, ramPointer, SONIC1_LAYOUT.pressedPad),
+    playerObjectId: readLogicalByte(heap, ramPointer, player + PLAYER_LAYOUT.objectId),
+    worldXFixed: readLogicalLong(heap, ramPointer, player + PLAYER_LAYOUT.worldXFixed),
+    worldYFixed: readLogicalLong(heap, ramPointer, player + PLAYER_LAYOUT.worldYFixed),
+    velocityX: readLogicalSignedWord(heap, ramPointer, player + PLAYER_LAYOUT.velocityX),
+    velocityY: readLogicalSignedWord(heap, ramPointer, player + PLAYER_LAYOUT.velocityY)
   };
 }
 
@@ -154,7 +196,7 @@ function updateAggregate(hash, fields) {
   hash.update(row);
 }
 
-function hashVisibleFrame(core) {
+function hashRawActiveFrame(core) {
   const heap = core.HEAPU8;
   const pointer = core._get_frame_buffer_ref();
   const lastByte = pointer + ((224 - 1) * 640 + 320) * 4;
@@ -165,6 +207,41 @@ function hashVisibleFrame(core) {
     hash.update(heap.subarray(row, row + 320 * 4));
   }
   return hash.digest('hex');
+}
+
+function demoTuple(fields) {
+  return [fields.gameMode, fields.demoFlag, fields.demoLevelNumber, fields.demoCursor,
+    fields.demoCountdown, fields.heldPad, fields.pressedPad];
+}
+
+function playerTuple(fields) {
+  return [fields.playerObjectId, fields.worldXFixed, fields.worldYFixed,
+    fields.velocityX, fields.velocityY];
+}
+
+function comparePhases(baselineTimeline, candidateTimeline) {
+  const baselineByTick = new Map(baselineTimeline.map(row => [row.tick, row]));
+  const candidateByTick = new Map(candidateTimeline.map(row => [row.tick, row]));
+  const results = [];
+  for (let lag = PHASE_WINDOW.lagMin; lag <= PHASE_WINDOW.lagMax; lag++) {
+    const counts = {candidateTicks: PHASE_WINDOW.candidateTickCount, comparedPairs: 0, missingPairs: 0,
+      rawActiveFrameMatches: 0, demoStateMatches: 0, playerStateMatches: 0, allMatches: 0};
+    for (let tick = PHASE_WINDOW.candidateTickStart; tick <= PHASE_WINDOW.candidateTickEnd; tick++) {
+      const candidate = candidateByTick.get(tick);
+      const baseline = baselineByTick.get(tick + lag);
+      if (!candidate || !baseline) { counts.missingPairs++; continue; }
+      counts.comparedPairs++;
+      const frameMatch = candidate.rawActiveFrameSHA256 === baseline.rawActiveFrameSHA256;
+      const demoMatch = JSON.stringify(demoTuple(candidate)) === JSON.stringify(demoTuple(baseline));
+      const playerMatch = JSON.stringify(playerTuple(candidate)) === JSON.stringify(playerTuple(baseline));
+      if (frameMatch) counts.rawActiveFrameMatches++;
+      if (demoMatch) counts.demoStateMatches++;
+      if (playerMatch) counts.playerStateMatches++;
+      if (frameMatch && demoMatch && playerMatch) counts.allMatches++;
+    }
+    results.push({lag, ...counts});
+  }
+  return results;
 }
 
 function requireCoreAPI(core, scenario) {
@@ -178,7 +255,7 @@ function requireCoreAPI(core, scenario) {
   if (!(core.HEAPU8 instanceof Uint8Array)) fail('Core API missing HEAPU8.');
 }
 
-async function runTrial(coreFactory, rom, scenario) {
+async function runTrial(coreFactory, rom, scenario, {onTimelineSample} = {}) {
   if (!Object.hasOwn(TRIAL.scenarios, scenario)) fail(`Unknown trial scenario: ${scenario}`);
   const faultConfig = TRIAL.scenarios[scenario];
   const core = await coreFactory();
@@ -197,6 +274,8 @@ async function runTrial(coreFactory, rom, scenario) {
   const streamHash = crypto.createHash('sha256');
   const preFaultHash = crypto.createHash('sha256');
   const samples = [];
+  const timeline = [];
+  const timelineHash = crypto.createHash('sha256');
   let externalInputZeroTicks = 0;
   let cursorValueChanges = 0;
   let heldPadValueChanges = 0;
@@ -244,15 +323,26 @@ async function runTrial(coreFactory, rom, scenario) {
         affectedWritesAtRelease = core._get_logic_writes();
       }
     }
-    if (TRIAL.sampleTicks.includes(tick)) {
-      samples.push({
-        tick, coreFrame,
-        visibleFrameSHA256: hashVisibleFrame(core),
-        faultReads: core._get_logic_reads(), faultWrites: core._get_logic_writes(),
-        cpuFlags: core._get_logic_cpu_flags(), corePulseState,
-        externalInputZeroThisTick: externalZeroThisTick,
-        ...fields
-      });
+    const inTimeline = tick >= 1799 && tick <= 2400;
+    if (TRIAL.sampleTicks.includes(tick) || inTimeline) {
+      const rawActiveFrameSHA256 = hashRawActiveFrame(core);
+      if (inTimeline) {
+        const row = Object.freeze({tick, rawActiveFrameSHA256, ...fields});
+        timeline.push(row);
+        timelineHash.update(JSON.stringify(row));
+        timelineHash.update('\n');
+        if (onTimelineSample) onTimelineSample(row);
+      }
+      if (TRIAL.sampleTicks.includes(tick)) {
+        samples.push({
+          tick, coreFrame,
+          rawActiveFrameSHA256,
+          faultReads: core._get_logic_reads(), faultWrites: core._get_logic_writes(),
+          cpuFlags: core._get_logic_cpu_flags(), corePulseState,
+          externalInputZeroThisTick: externalZeroThisTick,
+          ...fields
+        });
+      }
     }
   }
   return {
@@ -261,18 +351,25 @@ async function runTrial(coreFactory, rom, scenario) {
     externalInputZeroTicks, cursorValueChanges, heldPadValueChanges,
     streamSHA256: streamHash.digest('hex'),
     preFaultStreamSHA256: preFaultHash.digest('hex'),
+    timelineSHA256: timelineHash.digest('hex'),
     pulse: scenario === 'A10A11-one-write' ? {
       requestedAffectedWrites: 1, finalCoreState: pulseStateAtEnd, releaseTick: pulseReleaseTick,
       affectedWritesAtRelease,
       releaseReason: pulseStateAtEnd === 2 ? 'affected-write-limit' :
         pulseStateAtEnd === 3 ? 'frame-limit' : 'still-active-or-unknown'
     } : null,
-    samples
+    samples,
+    timeline
   };
 }
 
 function sameTrials(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function serializeTrial(trial) {
+  const {timeline, ...summary} = trial;
+  return summary;
 }
 
 function prefaultMatches(baseline, candidate) {
@@ -342,10 +439,21 @@ async function main(argv) {
         prefaultMatches(runs.baseline.first, first) && prefaultMatches(runs.baseline.first, repeat)
     };
   }
+  const serializedRuns = Object.fromEntries(Object.entries(runs).map(([scenario, run]) => [scenario, {
+    first: serializeTrial(run.first), repeat: serializeTrial(run.repeat),
+    repeatIdentical: run.repeatIdentical,
+    prefaultMatchesBaseline: run.prefaultMatchesBaseline
+  }]));
+  const phaseComparisons = Object.fromEntries(Object.keys(TRIAL.scenarios)
+    .filter(scenario => scenario !== 'baseline')
+    .map(scenario => [scenario, {
+      first: comparePhases(runs.baseline.first.timeline, runs[scenario].first.timeline),
+      repeat: comparePhases(runs.baseline.first.timeline, runs[scenario].repeat.timeline)
+    }]));
   const tool = toolIdentity();
   const output = {
-    schemaVersion: 1,
-    protocolVersion: 1,
+    schemaVersion: 2,
+    protocolVersion: PROTOCOL_VERSION,
     modelVersion: '0.2.6-experimental',
     tool,
     runtime: {node: process.versions.node, platform: process.platform, arch: process.arch},
@@ -354,13 +462,27 @@ async function main(argv) {
       sourceCommit: verified.app.manifest.source_commit,
       corePin: APP_PROFILE.corePin,
       javascriptSHA256: verified.app.javascriptSHA256,
-      wasmSHA256: verified.app.wasmSHA256
+      wasmSHA256: verified.app.wasmSHA256,
+      playerProfile: {
+        sourceProject: 'sonicretro/s1disasm',
+        sourceCommit: '15dfa3a6ee4c53aeb482233e493755c84b4f3479',
+        sourceFiles: ['_Variables.asm', '_Constants.asm'],
+        playerObjectBase: PLAYER_LAYOUT.objectBase,
+        positionEncoding: 'unsigned 16.16 fixed-point',
+        velocityEncoding: 'signed 16-bit 68K word'
+      }
     },
     cartridge: verified.romIdentity,
     settings: {
       externalInputBufferLength: 32,
       tickLimit: TRIAL.maxTicks,
       sampleTicks: TRIAL.sampleTicks,
+      timeline: {
+        tickStart: 1799, tickEnd: 2400, tickCount: 602,
+        includes: ['rawActiveFrameSHA256', 'demoFields', 'playerFields'],
+        serialized: false
+      },
+      phaseComparison: PHASE_WINDOW,
       faults: {
         'D0D1-read': {setterFrame: 1800, effectiveTick: 1801, kind: 'data', access: 'read', lines: ['D0', 'D1']},
         'A10A11-one-write': {setterFrame: 1800, effectiveTick: 1801, kind: 'address', lines: ['A10', 'A11'], requestedAffectedWrites: 1}
@@ -368,7 +490,8 @@ async function main(argv) {
       cpuRecovery: 'none'
     },
     freshCoreTrials: factories.length,
-    runs
+    runs: serializedRuns,
+    phaseComparisons
   };
   process.stdout.write(JSON.stringify(output, null, 2) + '\n');
 }
@@ -381,7 +504,8 @@ if (require.main === module) {
 }
 
 module.exports = {
-  APP_PROFILE, SONIC1_LAYOUT, TRIAL,
-  inputBufferIsZero, readAttractFields, readLogicalByte, readLogicalWord,
-  prefaultMatches, runTrial, sameTrials, validateAppDirectory, validateManifest, validateRomBuffer, loadVerified
+  TOOL_VERSION, PROTOCOL_VERSION, APP_PROFILE, SONIC1_LAYOUT, PLAYER_LAYOUT, PHASE_WINDOW, TRIAL,
+  inputBufferIsZero, readAttractFields, readLogicalByte, readLogicalWord, readLogicalLong, readLogicalSignedWord,
+  comparePhases, serializeTrial, prefaultMatches, runTrial, sameTrials,
+  validateAppDirectory, validateManifest, validateRomBuffer, loadVerified
 };

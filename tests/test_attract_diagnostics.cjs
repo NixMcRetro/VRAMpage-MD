@@ -6,9 +6,11 @@ const os = require('node:os');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const {
-  readLogicalByte, readLogicalWord, readAttractFields, inputBufferIsZero,
+  readLogicalByte, readLogicalWord, readLogicalLong, readLogicalSignedWord,
+  readAttractFields, inputBufferIsZero,
   validateRomBuffer, validateManifest, validateAppDirectory, loadVerified,
-  runTrial, prefaultMatches, sameTrials, APP_PROFILE, SONIC1_LAYOUT, TRIAL
+  runTrial, prefaultMatches, sameTrials, comparePhases, serializeTrial,
+  TOOL_VERSION, PROTOCOL_VERSION, APP_PROFILE, SONIC1_LAYOUT, PLAYER_LAYOUT, PHASE_WINDOW, TRIAL
 } = require('../scripts/observe-attract-demo.cjs');
 
 const sha256 = b => crypto.createHash('sha256').update(b).digest('hex');
@@ -16,6 +18,10 @@ const setLogicalByte = (heap, base, address, value) => { heap[base + (address ^ 
 const setLogicalWord = (heap, base, address, value) => {
   setLogicalByte(heap, base, address, (value >>> 8) & 0xff);
   setLogicalByte(heap, base, address + 1, value & 0xff);
+};
+const setLogicalLong = (heap, base, address, value) => {
+  setLogicalWord(heap, base, address, Math.floor(value / 0x10000));
+  setLogicalWord(heap, base, address + 2, value & 0xffff);
 };
 
 function makeFixturePackage(root) {
@@ -51,6 +57,11 @@ function putFields(heap, base, fields) {
   setLogicalByte(heap, base, SONIC1_LAYOUT.demoCountdown, fields.demoCountdown);
   setLogicalWord(heap, base, SONIC1_LAYOUT.demoFlag, fields.demoFlag);
   setLogicalWord(heap, base, SONIC1_LAYOUT.demoLevelNumber, fields.demoLevelNumber);
+  setLogicalByte(heap, base, PLAYER_LAYOUT.objectBase + PLAYER_LAYOUT.objectId, fields.playerObjectId);
+  setLogicalLong(heap, base, PLAYER_LAYOUT.objectBase + PLAYER_LAYOUT.worldXFixed, fields.worldXFixed);
+  setLogicalLong(heap, base, PLAYER_LAYOUT.objectBase + PLAYER_LAYOUT.worldYFixed, fields.worldYFixed);
+  setLogicalWord(heap, base, PLAYER_LAYOUT.objectBase + PLAYER_LAYOUT.velocityX, fields.velocityX & 0xffff);
+  setLogicalWord(heap, base, PLAYER_LAYOUT.objectBase + PLAYER_LAYOUT.velocityY, fields.velocityY & 0xffff);
 }
 
 function fakeCore({events, pulseWrite=true}={}) {
@@ -95,7 +106,10 @@ function fakeCore({events, pulseWrite=true}={}) {
         gameMode: 8, heldPad: frame % 4 === 0 ? 8 : 0,
         pressedPad: frame % 16 === 0 ? 8 : 0,
         demoCursor: frame, demoCountdown: frame % 255,
-        demoFlag: 1, demoLevelNumber: 1
+        demoFlag: 1, demoLevelNumber: 1,
+        playerObjectId: 1, worldXFixed: 0x10000 + frame,
+        worldYFixed: 0x20000 + frame, velocityX: frame & 0x7fff,
+        velocityY: -(frame & 0x7fff)
       };
       putFields(heap, ram, fields);
       if (active && frame === 1801 && pulseState === 1) {
@@ -121,9 +135,12 @@ function fakeCore({events, pulseWrite=true}={}) {
   assert.equal(readLogicalByte(heap, base, 0x100), 0x12);
   assert.equal(readLogicalWord(heap, base, 0x100), 0x1234);
   assert.equal(readLogicalByte(heap, base, 0x102), 0xa5);
+  assert.equal(readLogicalLong(heap, base, 0x100), 0x1234a500);
+  assert.equal(readLogicalSignedWord(heap, base, 0x100), 0x1234);
   heap[base + (0xffff ^ 1)] = 0x7b;
   assert.equal(readLogicalByte(heap, base, 0xffff), 0x7b);
   assert.throws(() => readLogicalWord(heap, base, 0xffff), /word range/);
+  assert.throws(() => readLogicalLong(heap, base, 0xfffd), /long range/);
   assert.throws(() => readLogicalByte(heap, base, -1), /byte range/);
   assert.throws(() => readLogicalByte(heap, heap.length - 10, 0), /byte range/);
   tests++;
@@ -144,13 +161,34 @@ function fakeCore({events, pulseWrite=true}={}) {
   stateHeap[stateBase + (0xfff1 ^ 1)] = 0x01;
   stateHeap[stateBase + (0xfff2 ^ 1)] = 0x00;
   stateHeap[stateBase + (0xfff3 ^ 1)] = 0x02;
+  stateHeap[stateBase + (0xd100 ^ 1)] = 0x01;
+  stateHeap[stateBase + (0xd108 ^ 1)] = 0x12;
+  stateHeap[stateBase + (0xd109 ^ 1)] = 0x34;
+  stateHeap[stateBase + (0xd10a ^ 1)] = 0x56;
+  stateHeap[stateBase + (0xd10b ^ 1)] = 0x78;
+  stateHeap[stateBase + (0xd10c ^ 1)] = 0x89;
+  stateHeap[stateBase + (0xd10d ^ 1)] = 0xab;
+  stateHeap[stateBase + (0xd10e ^ 1)] = 0xcd;
+  stateHeap[stateBase + (0xd10f ^ 1)] = 0xef;
+  stateHeap[stateBase + (0xd110 ^ 1)] = 0xff;
+  stateHeap[stateBase + (0xd111 ^ 1)] = 0xfe;
+  stateHeap[stateBase + (0xd112 ^ 1)] = 0x12;
+  stateHeap[stateBase + (0xd113 ^ 1)] = 0x34;
   const before = Buffer.from(stateHeap.subarray(stateBase, stateBase + 0x10000));
   assert.deepEqual(readAttractFields(stateHeap, stateBase), {
     gameMode: 8, demoFlag: 1, demoLevelNumber: 2, demoCursor: 0x1234,
-    demoCountdown: 0x56, heldPad: 0x08, pressedPad: 0x10
+    demoCountdown: 0x56, heldPad: 0x08, pressedPad: 0x10,
+    playerObjectId: 1, worldXFixed: 0x12345678, worldYFixed: 0x89abcdef,
+    velocityX: -2, velocityY: 0x1234
   });
   assert.deepEqual(Buffer.from(stateHeap.subarray(stateBase, stateBase + 0x10000)), before,
     'diagnostic readers do not change work RAM');
+  tests++;
+
+  assert.equal(PLAYER_LAYOUT.objectBase, 0xd100);
+  assert.equal(PHASE_WINDOW.candidateTickCount, 596);
+  assert.equal(TOOL_VERSION, 2);
+  assert.equal(PROTOCOL_VERSION, 2);
   tests++;
 
   assert.equal(inputBufferIsZero(new Float32Array(32)), true);
@@ -202,7 +240,13 @@ function fakeCore({events, pulseWrite=true}={}) {
 
   const eventLog = [];
   let factoryCount = 0;
-  const baseline = await runTrial(async () => { factoryCount++; return fakeCore({events:eventLog}); }, Buffer.from([1]), 'baseline');
+  const timelineCallbacks = [];
+  const baseline = await runTrial(async () => { factoryCount++; return fakeCore({events:eventLog}); },
+    Buffer.from([1]), 'baseline', {onTimelineSample: row => {
+      assert.equal(Object.isFrozen(row), true);
+      assert.equal('HEAPU8' in row, false);
+      timelineCallbacks.push(row.tick);
+    }});
   assert.equal(factoryCount, 1);
   assert.deepEqual(baseline.samples.map(sample => sample.tick), [...TRIAL.sampleTicks]);
   assert.equal(baseline.externalInputZeroTicks, TRIAL.maxTicks);
@@ -210,9 +254,66 @@ function fakeCore({events, pulseWrite=true}={}) {
   assert.equal(baseline.samples[1].tick, 1800);
   assert.equal(baseline.samples[1].heldPad, 8);
   assert.equal(baseline.samples[1].pressedPad, 0);
+  assert.equal(baseline.timeline.length, 602);
+  assert.equal(timelineCallbacks.length, 602);
+  assert.equal(baseline.timeline[0].tick, 1799);
+  assert.equal(baseline.timeline.at(-1).tick, 2400);
+  assert.equal(baseline.timelineSHA256.length, 64);
+  assert.equal(JSON.stringify(serializeTrial(baseline)).includes('"timeline"'), false,
+    'serialized trial summaries exclude internal timelines');
   assert.equal(JSON.stringify(baseline).includes('HEAPU8'), false);
   assert.equal(JSON.stringify(baseline).includes('romBytes'), false);
   assert.equal(JSON.stringify(baseline).includes('ramBytes'), false);
+  tests++;
+
+  const phaseBase = [];
+  const phaseFields = tick => ({
+    gameMode: 8, demoFlag: 1, demoLevelNumber: 1, demoCursor: tick,
+    demoCountdown: tick % 256, heldPad: tick % 16, pressedPad: tick % 8,
+    playerObjectId: 1, worldXFixed: tick * 0x10001, worldYFixed: tick * 0x10003,
+    velocityX: tick - 2000, velocityY: 2000 - tick
+  });
+  for (let tick = 1799; tick <= 2400; tick++) {
+    phaseBase.push({tick, rawActiveFrameSHA256: `frame-${tick}`, ...phaseFields(tick)});
+  }
+  for (let intendedLag = -2; intendedLag <= 2; intendedLag++) {
+    const shifted = phaseBase.map(row => ({
+      tick: row.tick, rawActiveFrameSHA256: `frame-${row.tick + intendedLag}`,
+      ...phaseFields(row.tick + intendedLag)
+    }));
+    const comparisons = comparePhases(phaseBase, shifted);
+    assert.equal(comparisons.length, 5);
+    const exact = comparisons.find(result => result.lag === intendedLag);
+    assert.equal(exact.comparedPairs, 596);
+    assert.equal(exact.missingPairs, 0);
+    assert.equal(exact.rawActiveFrameMatches, 596);
+    assert.equal(exact.demoStateMatches, 596);
+    assert.equal(exact.playerStateMatches, 596);
+    assert.equal(exact.allMatches, 596);
+    assert(comparisons.filter(result => result.lag !== intendedLag)
+      .every(result => result.allMatches < 596));
+  }
+  const playerChanged = phaseBase.map(row => ({...row, worldXFixed: row.worldXFixed + 1}));
+  const playerComparison = comparePhases(phaseBase, playerChanged).find(result => result.lag === 0);
+  assert.equal(playerComparison.rawActiveFrameMatches, 596);
+  assert.equal(playerComparison.demoStateMatches, 596);
+  assert.equal(playerComparison.playerStateMatches, 0);
+  assert.equal(playerComparison.allMatches, 0);
+  const demoChanged = phaseBase.map(row => ({...row, demoCountdown: row.demoCountdown ^ 1}));
+  const demoComparison = comparePhases(phaseBase, demoChanged).find(result => result.lag === 0);
+  assert.equal(demoComparison.playerStateMatches, 596);
+  assert.equal(demoComparison.demoStateMatches, 0);
+  assert.equal(demoComparison.allMatches, 0);
+  const shiftedMinusTwo = phaseBase.map(row => ({
+    tick: row.tick, rawActiveFrameSHA256: `frame-${row.tick - 2}`,
+    ...phaseFields(row.tick - 2)
+  }));
+  const missingBoundary = comparePhases(phaseBase.filter(row => row.tick !== 1801), shiftedMinusTwo)
+    .find(result => result.lag === -2);
+  assert.equal(missingBoundary.comparedPairs, 595);
+  assert.equal(missingBoundary.missingPairs, 1);
+  const missingCandidate = comparePhases(phaseBase, shiftedMinusTwo.filter(row => row.tick !== 1803));
+  assert(missingCandidate.every(result => result.missingPairs === 1));
   tests++;
 
   const ordinaryEvents = [];
