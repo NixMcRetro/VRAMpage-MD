@@ -583,3 +583,21 @@ separate reads, reproducing `0 != 1`; the synchronous snapshot still matched
 exactly. Chromium passed the affected case 20 consecutive times and all 28 logic
 cases. Firefox and WebKit validation remain part of the CI checks for this test-only
 correction; these local runs do not claim those engines passed.
+
+## Bounded RAM alias/audio phase observer
+
+`bash scripts/test.sh` includes syntax and focused Node tests for the new
+observer: logical byte lanes and source allocation,
+Float32 buffer bounds/alignment, known-byte hashes, empty-output semantics,
+five offsets and missing endpoints, plus bounded serialization guards.
+
+Eight actual-cartridge fresh-core trials used the unchanged public v0.2.7
+package. Repeats, prefault observations, instrumented/plain equivalence and the
+one-write pulse checks passed. See [protocol and results](RAM-ALIAS-AUDIO-PHASE.md)
+for immutable scalar/hash evidence. This is Linux Node actual-WASM testing,
+not audible acceptance, native Mac Firefox testing or physical-hardware proof.
+
+Local full-suite result: 73 Python tests passed, including strict native and
+sanitizer coverage; framebuffer tests, pulse protocol (9 groups), demo observer
+(9 groups), write-trace runner (5 groups), alias/audio observer (2 groups), and
+both native C smoke programs passed. PR CI supplies fresh browser/build checks.

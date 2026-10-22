@@ -52,8 +52,11 @@ research context.
 The default-disabled metadata-only diagnostic identifies the first affected bus
 write in the one-write phase-delay experiment. Traced/untraced equivalence, exact write
 budgets, strict/sanitizer tests, actual-WASM coverage and independent specialist
-review passed. Next, explain the identified sprite-buffer to sound-track alias
-with bounded passive observations. The attract-mode divergence gate remains open.
+review passed. The bounded [audio/state follow-up](docs/RAM-ALIAS-AUDIO-PHASE.md)
+reproduces the one-tick player/demo delay without audio hash alignment at five
+tested offsets. Corrected source allocation identifies the VBlank flag. Next,
+distinguish its set/clear candidates with generic metadata if needed. The
+attract-mode divergence gate remains open.
 
 ## v0.2.0 | Logic-bending experiments
 

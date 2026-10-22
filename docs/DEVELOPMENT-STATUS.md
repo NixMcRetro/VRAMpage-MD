@@ -141,9 +141,10 @@ and test review approved the implementation. The review ZIP from f0cc664 has
 exclusion, eight served assets and browser startup without errors.
 
 Independent specialist review reran all six trials and obtained byte-identical
-output. Source layout identifies the original address inside the sprite-table
-buffer and the alias as the `AMSFMSPan` field of the first sound-effects FM track.
-This does not prove an audible effect or explain the gameplay delay.
+output. The previous sprite-table label was incorrect. Corrected source allocation
+identifies `$F62A` as `v_vblank_routine`; `$F22A` remains the `AMSFMSPan`
+field of the first sound-effects FM track. The VBlank flag set/clear and wait
+paths provide a timing hypothesis, not an exact-PC or audible-effect observation.
 
 The six-trial [trace record](RAM-WRITE-TRACE.md#recorded-first-write-result)
 identified a byte write at `$FFF62A` mapped to logical `$F22A` during tick 1801.
@@ -169,10 +170,10 @@ whole-game equivalence, native Mac/Firefox, audible output, other revisions and
 physical hardware are not validated. The RAM-stage acceptance remains open.
 
 The first affected generic write is now identified; its causal effect remains
-unknown. Next assignment: Luna High should locate that sprite-entry write and
-compare the named alias-target state and generated sound under the same pulse,
-with phase-aligned player/demo checks. Inspect existing hooks and reuse diagnostics where
-possible. If additional passive address/width/frame tracing is needed, define a
+unknown. The named-state/audio comparison is now recorded below. Next assignment:
+Luna High should distinguish the VBlank flag set/clear candidates. Inspect existing
+hooks and reuse diagnostics where possible. If additional passive instruction/
+write-value metadata is needed, define a
 bounded implementation in the generic RAM access layer, with no game-specific
 writes, no silent recovery and no ROM/RAM byte output. Require independent
 specialist review and strict native/sanitizer, actual-WASM, no-fault and exact
@@ -190,3 +191,15 @@ Fetch main and open PRs/releases/CI. Read AGENTS.md and the queue, preserve loca
 changes and existing artifacts, finish pending release checks, then continue the
 first unblocked RAM-stage item. Use pinned tools and existing scripts. No work is
 authorised in McRetro.net. There is no unattended background-execution promise.
+
+## Bounded audio/state follow-up
+
+The [RAM alias/audio phase protocol](RAM-ALIAS-AUDIO-PHASE.md) records eight
+fresh-core trials against the unchanged public v0.2.7 package. Repeats,
+prefault and observational noninterference passed. Demo/player observations
+match lag -1 for 596/596 pairs; audio hashes match none of five tested lags.
+The corrected source mapping identifies the VBlank routine flag, not a sprite
+buffer. Exact instruction, intermediate write value, audible effect and genuine
+sustained trajectory divergence remain unproven. Next: a bounded generic
+instruction/write-value investigation with specialist implementation and review.
+No runtime version or published package changes are required for this tooling.

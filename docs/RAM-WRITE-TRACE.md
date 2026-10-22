@@ -89,39 +89,43 @@ and RAM-stage acceptance limits remain unchanged.
 
 Independent Luna High review reran all six trials and produced a byte-identical
 record (SHA-256 `4789fc74fb3cfda95aa67d08f4b4ae413b65e97df4cbe9110f6b5459b0ff1f6c`).
-At the observer's pinned public
-[s1disasm source](https://github.com/sonicretro/s1disasm/tree/15dfa3a6ee4c53aeb482233e493755c84b4f3479),
-`_Variables.asm` and `_Constants.asm` map `$F62A` to
-`v_spritetablebuffer + $4A`. The allocation in `s1.sounddriver.ram.asm`
-maps `$F22A` to `v_sfx_fm3_track + $A`, its `AMSFMSPan` field. The original
-address is inside the sprite-table buffer; the alias target is in sound-effects
-track RAM. This is a source-layout interpretation, not an observation of an
-audible change or a causal explanation of the one-tick gameplay delay.
+## Corrected source interpretation
 
-The next bounded investigation should locate the sprite-entry write and compare
-its target state and generated sound under the same one-write pulse. Preserve
-zero-input/reset equivalence and phase-aligned player/demo checks. Do not begin
-audio-bending features or infer gameplay divergence from this address alias.
+The original generic trace and six-trial JSON remain valid and unchanged. The
+previous living-document claim that `$F62A` was `v_spritetablebuffer + $4A` was
+wrong. Do not use that annotation as experimental evidence.
 
+At pinned public [s1disasm source](https://github.com/sonicretro/s1disasm/tree/15dfa3a6ee4c53aeb482233e493755c84b4f3479),
+`_Variables.asm` places `v_gamemode` at `$F600` and `v_vblank_routine` at
+`$F600 + $2A = $F62A`. The sprite-table buffer is `$F800`, not `$F5E0`.
+The sound-driver allocation must include the `$220`-byte `v_1up_ram_copy`;
+`SMPS_RAM` totals `$5C0`, followed by `$40` unused bytes before game mode.
+The separate target calculation remains `$F000 + $40 + 10 * $30 + $A = $F22A`,
+the `AMSFMSPan` byte of the first FM3 sound-effects track. New literal fixtures
+must distinguish `$F62A` from sprite-entry `$F84A` and verify the full allocation.
 
-## Next bounded developer protocol
+In `sonic.asm`, `Level_MainLoop` sets the VBlank routine flag to 8 and calls
+`WaitForVBlank`, which loops until the flag is zero. The VBlank handler copies
+the flag, clears it, dispatches work and updates music. Both setting and clearing
+the flag are candidate writes to the observed address. Redirecting a clear could
+leave the wait condition set for an additional frame. The address trace does not
+record the CPU PC or written value, so it does not establish the exact executed
+instruction or prove that mechanism.
 
-In the pinned s1disasm source linked above, `BuildSprites` uses eight-byte
-sprite pieces. Offset `$4A` is the dimension byte of the tenth rendered piece
-(`9 * 8 + 2`). The flipped and unflipped build paths contain candidate `move.b`
-writes, and the level/demo source calls sprite building after `ExecuteObjects`.
-This identifies a candidate source path, not the exact instruction executed in
-the recorded trial or a proved cause of the delay.
+## Bounded developer protocol
 
-Reuse the existing one-write scenario and phase-aligned player/demo/raw-frame
-observations. Add developer-only per-tick audio sample counts and left/right
-sample hashes, with repeated baseline and fault runs, equivalent reset/zero-input
-schedules and matching pre-fault observations. Compare audio at the same tick
-and offsets of minus/plus one tick, reporting sample counts and complete pair
-counts. Keep raw samples and game data out of the report.
+Use the same one-write scenario with repeated fresh-core baseline/fault trials,
+zero host input and no CPU recovery. Retain phase-aligned player/demo/raw-frame
+observations. Add per-tick audio sample counts and left/right hashes plus
+source-verified named VBlank and target state, without serializing raw samples,
+RAM dumps, protected captures, local paths or full timelines.
 
-Audio that aligns with the same phase shift is evidence consistent with delay.
-Residual hash differences motivate a bounded follow-up; they do not establish
-causality or an audible effect. This protocol must not reuse the older sweep's
-post-contact force-resume behaviour. Add no app feature, audio fault model or CPU
-rescue, and keep the published v0.2.6 observer and historical records unchanged.
+Compare complete fixed windows at same tick and nearby lags, report missing and
+zero-sample pairs explicitly, and require matching pre-fault observations and
+repeats. Audio can retain its timing while game logic is delayed: the source
+updates music even along its lag-frame path. Residual hashes or named state alone
+do not prove an audible effect or causality. Do not reuse the older sweep's
+post-contact force-resume behaviour, add an audio fault model or change game code.
+
+Keep the immutable v0.2.6 observer, published v0.2.7 binary and all earlier records
+unchanged. Developer observation tools use separate tool/protocol provenance.

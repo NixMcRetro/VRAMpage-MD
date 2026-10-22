@@ -60,3 +60,5 @@ VRAMpage-MD development does not automatically publish to `mcretro.net`. Deploy 
 - [First affected RAM write trace](RAM-WRITE-TRACE.md): optional generic diagnostic and bounded private comparison.
 
 v0.2.7 includes an optional, default-disabled metadata-only RAM write trace for developer experiments. See [trace documentation](RAM-WRITE-TRACE.md).
+
+- [VBlank/RAM alias and audio phase protocol](RAM-ALIAS-AUDIO-PHASE.md): read-only developer experiment with corrected source interpretation.

@@ -1,5 +1,12 @@
 # Changelog
 
+## Post-v0.2.7 RAM alias investigation
+
+- Correct the living source annotation: `$F62A` is the VBlank routine flag, not a sprite-buffer entry. Preserve the original generic trace and all historical JSON.
+- Add a separate read-only developer protocol comparing generated audio and named state against phase-aligned demo/player observations. The application and published v0.2.7 core remain unchanged.
+
+- Record eight repeatable actual-core trials: one-tick demo/player shift persists, with no audio hash alignment at the five tested offsets. Exact causality and audibility remain unproven.
+
 ## v0.2.7 - optional first affected RAM write trace
 
 - Publish and freshly verify the complete Mac ZIP, and advance the release catalog/download links while preserving previous binaries, tags and original-description archives.
