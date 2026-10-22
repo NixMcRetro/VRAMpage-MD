@@ -24,7 +24,18 @@ The goal is reproducible digital fault models with precise documentation of wher
 - `h1romas4/wasm-genplus` pinned at `6090aff9e9b2f578cd28882bd4571d2e35b1d674`, built from modified Genesis Plus GX into WebAssembly.
 - User-supplied local game ROM only. No embedded games, hosted ROM download, tracking or required backend.
 
-## Local build after source import
+## Run a ready-built review bundle
+
+Unzip the review bundle supplied with the development report and double-click
+`START.command` on macOS. It opens the app in your browser; choose your cartridge
+using **Load ROM**. Python 3 is required, but Emscripten is not. See the short
+[local running guide](docs/RUNNING-LOCALLY.md), including the Terminal fallback.
+GitHub's source ZIP lacks the generated emulator and needs the build below.
+
+The first v0.2 work-RAM model is independently tested C groundwork; it is not yet
+wired into gameplay. See [Logic bending](docs/LOGIC-BENDING.md).
+
+## Contributor build
 
 Install Git, CMake, Python 3 and the [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html). From the repository root:
 

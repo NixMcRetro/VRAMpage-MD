@@ -9,6 +9,9 @@
 - Document the pinned emulator's RAM map, direct access paths, integration gaps
   and planned acceptance in [Logic bending](docs/LOGIC-BENDING.md).
 
+- Add `START.command` and a Python local launcher for ready-built review bundles;
+  no Emscripten installation is needed to play the bundled app.
+
 ## v0.1.4 — review candidate, 22 October 2026
 
 - Fit the normal-window picture to the measured space below the header and above

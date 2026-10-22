@@ -7,6 +7,7 @@ VRAMpage MD is a browser-based NTSC Mega Drive/Genesis experiment. It runs a loc
 | Document | Purpose |
 | --- | --- |
 | [Changelog](../CHANGELOG.md) | Versioned changes and verification limits |
+| [Run locally](RUNNING-LOCALLY.md) | Start a ready-built review bundle without building WebAssembly |
 | [Project overview](../README.md) | Current features, limitations, building and repository policy |
 | [Product roadmap](../ROADMAP.md) | Versions and video, logic and sound milestones |
 | [Documentation roadmap](DOCUMENTATION-ROADMAP.md) | Which Markdown documents to write, in what order, and acceptance criteria |

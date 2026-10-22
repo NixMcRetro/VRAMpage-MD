@@ -172,3 +172,28 @@ location if it differs from Playwright's default. No cartridge is used by that s
    momentary contact and 0 disconnect. Check fault effects, then Clean restart:
    no active short, fresh cartridge boot and normal controls/audio. Record actual
    results, browser/OS versions and failures before marking a release accepted.
+
+
+## v0.2 word-transaction foundation and local launcher
+
+`bash scripts/test.sh` now includes `tests/work_ram_fault_smoke.c` and five
+independent Python/ctypes reference-model tests in
+`tests/test_work_ram_properties.py`. They compile the standalone C model and
+cover all 105 word-address line pairs, all 120 data-line pairs, big-endian storage,
+read/write/both directions, no-fault identity, deterministic aliasing, fault
+removal, persistent stored writes, invalid configurations, alignment, bounds and
+unused memory tails. The C checks enumerate every word address for each address
+pair and every 16-bit value for each data pair. They do not run emulated 68000
+instructions or prove physical pin behavior. Runtime integration remains planned
+in [Logic bending](LOGIC-BENDING.md).
+
+Three subprocess tests in `tests/test_local_launcher.py` exercise the standalone
+launcher: missing-build diagnostics, ephemeral loopback port with an actual HTTP
+request and clean shutdown, and an occupied-port error. Run the real review
+bundle without opening a browser using `python3 scripts/serve.py --no-browser --port 0`. Native Finder launch and browser-opening behavior on macOS still need
+a manual check; Linux subprocess validation does not establish those behaviors.
+
+Local validation: the full suite passed **40 Python tests**, both Node framebuffer
+suites and both C smoke programs. The work-RAM C suite also passed with AddressSanitizer
+and UndefinedBehaviorSanitizer. No new core build is required because this model
+is not linked into the emulator. Browser regression checks remain in CI.
