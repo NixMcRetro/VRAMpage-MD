@@ -1,13 +1,15 @@
 # VRAMpage MD roadmap
 
-## Current delivery: v0.2.5 VRAM leg-switch improvement
+## Current delivery: v0.2.6 experiment build identification
 
 The source import, display fixes and work-RAM development through v0.2.4 are
 consolidated into one runnable application. v0.2.5 adds independent VRAM leg
-switches while retaining that foundation. The complete versioned Mac ZIP
+switches while retaining that foundation. v0.2.6 adds source-commit identification
+to experiment exports without changing the fault models. The complete versioned Mac ZIP
 includes the compiled core, source/notices and launcher; see
 [Run locally](docs/RUNNING-LOCALLY.md). The immediate goal is reliable launching
-and acceptance on the user's Mac. Per-access VRAM and audio bending remain
+and acceptance on the user's Mac. The user reports that v0.2.5 appears to work
+on their Mac, as far as they can tell; this is not a complete acceptance test. Per-access VRAM and audio bending remain
 separate future milestones. Historical milestones below retain their original
 research context.
 
