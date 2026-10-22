@@ -587,7 +587,7 @@ correction; these local runs do not claim those engines passed.
 ## Bounded RAM alias/audio phase observer
 
 `bash scripts/test.sh` includes syntax and focused Node tests for the new
-observer: pinned package/ROM rejection, logical byte lanes and source allocation,
+observer: logical byte lanes and source allocation,
 Float32 buffer bounds/alignment, known-byte hashes, empty-output semantics,
 five offsets and missing endpoints, plus bounded serialization guards.
 
