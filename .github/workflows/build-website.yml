@@ -2,6 +2,7 @@ name: Build VRAMpage MD website bundle
 
 # Builds only in the VRAMpage repository. NEVER publishes to McRetro.net.
 on:
+  workflow_call:
   workflow_dispatch:
   push:
     tags:
@@ -24,8 +25,8 @@ jobs:
         shell: bash
         run: |
           git clone https://github.com/emscripten-core/emsdk.git "$RUNNER_TEMP/emsdk"
-          "$RUNNER_TEMP/emsdk/emsdk" install latest
-          "$RUNNER_TEMP/emsdk/emsdk" activate latest
+          "$RUNNER_TEMP/emsdk/emsdk" install 4.0.23
+          "$RUNNER_TEMP/emsdk/emsdk" activate 4.0.23
           source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
           emcc --version
       - name: Run source checks and build browser core
@@ -38,6 +39,16 @@ jobs:
           test -s site/core/genplus.js
           test -s site/core/genplus.wasm
           test -f site/source/README.txt
+          node tests/test_wasm_logic.cjs site/core/genplus.js
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install actual-core browser test tools
+        run: |
+          python3 -m pip install -r tests/requirements-browser.txt
+          python3 -m playwright install --with-deps chromium
+      - name: Verify actual-core video, audio and controls
+        run: python3 tests/browser_core.py --browser chromium
       - name: Package static website with corresponding emulator source
         shell: bash
         run: |
@@ -46,6 +57,15 @@ jobs:
           # Avoid extraneous Python or local build junk inside public artifact.
           find release/vrampage -type d -name '__pycache__' -prune -exec rm -rf '{}' +
           tar -czf release/VRAMpage-MD-static-site.tar.gz -C release vrampage
+      - name: Package local review app with launcher
+        run: python3 scripts/package-review.py --output release/VRAMpage-MD-v2.4.0-macos.zip
+      - name: Upload ready-to-run local review app
+        uses: actions/upload-artifact@v4
+        with:
+          name: VRAMpage-MD-local-review
+          retention-days: 30
+          path: release/VRAMpage-MD-v2.4.0-macos.zip
+          if-no-files-found: error
       - name: Upload release bundle for manual McRetro staging
         uses: actions/upload-artifact@v4
         with:

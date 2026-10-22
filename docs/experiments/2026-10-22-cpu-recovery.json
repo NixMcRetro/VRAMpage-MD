@@ -1,0 +1,44 @@
+[
+  {
+    "mode": 1,
+    "status": 0,
+    "before": {
+      "frame": 2000,
+      "flags": 2,
+      "reads": 327,
+      "ramHash": "bdd71f04bf531725902ca6f33faa09a25b9c01e83f302b09e2b9a2891b359d4b"
+    },
+    "immediate": {
+      "frame": 2000,
+      "flags": 0,
+      "reads": 327,
+      "ramHash": "bdd71f04bf531725902ca6f33faa09a25b9c01e83f302b09e2b9a2891b359d4b"
+    },
+    "after120": {
+      "flags": 2,
+      "reads": 327,
+      "ramHash": "bdd71f04bf531725902ca6f33faa09a25b9c01e83f302b09e2b9a2891b359d4b"
+    }
+  },
+  {
+    "mode": 2,
+    "status": 0,
+    "before": {
+      "frame": 2000,
+      "flags": 2,
+      "reads": 327,
+      "ramHash": "bdd71f04bf531725902ca6f33faa09a25b9c01e83f302b09e2b9a2891b359d4b"
+    },
+    "immediate": {
+      "frame": 2000,
+      "flags": 0,
+      "reads": 327,
+      "ramHash": "bdd71f04bf531725902ca6f33faa09a25b9c01e83f302b09e2b9a2891b359d4b"
+    },
+    "after120": {
+      "flags": 0,
+      "reads": 327,
+      "ramHash": "23512ac711dfdda4c261a3c2128a9147abc1bfab9f907f5aaacd7eee8a1f63f1"
+    }
+  }
+]

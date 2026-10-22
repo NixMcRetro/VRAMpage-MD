@@ -1,4 +1,42 @@
-# Publishing VRAMpage MD on McRetro.net
+# Releases and deployment
+
+## Complete local application release
+
+The normal user download is the single versioned ZIP attached to the
+[VRAMpage-MD v2.4.0 release](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v2.4.0),
+not GitHub's source archive. It includes START.command, the site, compiled
+JS/WASM, complete modified core source, licence notices and launch instructions.
+It requires Python 3 on the user's Mac but no build tools or Git authentication.
+
+Maintainers build from the exact tested release commit, run the source/browser
+regressions and actual-WASM tests, then package from a clean tracked checkout:
+
+```sh
+bash scripts/test.sh
+bash scripts/build-core.sh
+node tests/test_wasm_logic.cjs site/core/genplus.js
+python3 scripts/package-review.py --output /tmp/VRAMpage-MD-v2.4.0-macos.zip
+```
+
+Extract and launch the package before attaching it to a GitHub release. Preserve
+Mac executable permissions, corresponding source and all upstream notices.
+Do not include ROMs, credentials, caches or private game captures. Review the
+non-commercial restrictions in [third-party notices](../THIRD-PARTY-NOTICES.md).
+The release tag must name the merged main commit that was tested; a feature-tip
+artifact is not evidence for a different commit. Keep a SHA-256 checksum beside
+the downloadable ZIP. GitHub Actions artifacts remain useful for CI/review, but
+release assets provide a persistent direct download without nested archives.
+
+The consolidation integrates PRs #4–#14 without cherry-picking or replacing
+features. Close redundant draft PRs only after checking their tips are ancestors
+of main and link the integration merge. Retain branches and original attribution.
+
+## Website deployment is separate
+
+This release does not authorise changes, merges or publication to McRetro.net.
+The historical deployment procedure below requires separate explicit approval.
+
+### Historical McRetro.net deployment procedure
 
 Canonical public URL: **https://mcretro.net/homepages/vrampage/**
 
@@ -51,3 +89,14 @@ Avoid embedding commercial Sonic ROMs or distributing copied game data. The brow
 ## Rollback
 
 A published release can be rolled back with a revert to the last known-good commit in McRetro's repository. A rollback also rebuilds the whole website, so maintain each version as a focused, reviewable deployment commit.
+
+
+## Local review download
+
+Manually run **VRAMpage MD source checks** on the review branch with **Build a
+ready-to-run local review download** enabled. It calls the reusable website
+build workflow and creates a
+`VRAMpage-MD-local-review` artifact with the built core, corresponding source and
+local launcher. This uses the tested Emscripten 4.0.23 toolchain and does not
+deploy or modify McRetro.net. See [Run locally](RUNNING-LOCALLY.md) for download
+and launch steps. GitHub Actions retains this review artifact for 30 days.

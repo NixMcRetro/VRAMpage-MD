@@ -1,0 +1,2 @@
+# Optional development/CI dependency; the static site has no runtime dependency.
+playwright==1.62.0
