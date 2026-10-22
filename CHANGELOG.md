@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.2 — work RAM model foundation (in progress)
+
+- Add a standalone 64 KiB big-endian, aligned-word transaction model for one
+  low-dominant address-line or data-line pair, with read/write direction choices.
+- This is model groundwork only: no 68000 runtime or browser integration, byte
+  lanes, Sonic-specific behavior or gameplay result is included.
+- Document the pinned emulator's RAM map, direct access paths, integration gaps
+  and planned acceptance in [Logic bending](docs/LOGIC-BENDING.md).
+
 ## v0.1.4 — review candidate, 22 October 2026
 
 - Fit the normal-window picture to the measured space below the header and above

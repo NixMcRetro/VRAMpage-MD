@@ -12,6 +12,7 @@ VRAMpage MD is a browser-based NTSC Mega Drive/Genesis experiment. It runs a loc
 | [Documentation roadmap](DOCUMENTATION-ROADMAP.md) | Which Markdown documents to write, in what order, and acceptance criteria |
 | [Testing guide](TESTING.md) | Automated and manual test matrix, commands and release gates |
 | [Video output](VIDEO-OUTPUT.md) | 640-pixel source stride, native pixels, missing-line recovery and raw output |
+| [Logic bending](LOGIC-BENDING.md) | v0.2 work-RAM model foundation, emulator map and integration limits |
 | [Build and deployment](DEPLOYMENT.md) | Manual publishing to McRetro.net, never direct from feature work |
 | [Source import](IMPORTING.md) | How the original v0.1 working prototype entered GitHub |
 | [Prototype notes](PROTOTYPE-V0.1-NOTES.md) | Historical first-stage implementation and technical assumptions |

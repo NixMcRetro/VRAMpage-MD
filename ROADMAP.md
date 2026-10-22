@@ -26,11 +26,16 @@
 - Verified in CI: all source tests and Chromium/Firefox/WebKit synthetic suites.
 - Pending: native macOS/Firefox gameplay, fullscreen and audible playback acceptance;
   see [testing evidence](docs/TESTING.md) and [changelog](CHANGELOG.md).
-- Complete display acceptance before implementing v0.2 hardware changes.
+- Carry the open display acceptance checks forward while v0.2 work begins; they
+  remain separate from browser-independent model work.
 
 ## v0.2 | Logic-bending experiments
 
 Goal: an **unscripted attract-mode desynchronisation** where Sonic's demo controller playback continues, but faulty RAM or cartridge transactions change the game state. Sonic could collide with scenery, get stuck or crash depending on the hardware fault.
+
+**Current status:** standalone work-RAM transaction foundation only. The C model
+is not integrated into the emulator or UI, and no Sonic behavior is verified;
+see [the logic-bending foundation](docs/LOGIC-BENDING.md).
 
 - Start with 68000 work-RAM address/data short model, focusing on bus read/write integration rather than arbitrary random values.
 - Distinguish read fault, write fault and latched physical RAM damage.
