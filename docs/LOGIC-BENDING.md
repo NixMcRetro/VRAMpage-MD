@@ -74,7 +74,7 @@ alongside the frame-scoped VRAM approximation. The collapsible RAM panel selects
 an address or data pair and read, write, or both directions; selecting a pair
 does not apply it until **Apply RAM fault** is pressed. The monitor shows
 affected read/write counts, the model frame and activation frame, plus the
-emulated CPU STOP/HALT flags. It never automatically rescues a stopped game. Explicit v2.1
+emulated CPU STOP/HALT flags. It never automatically rescues a stopped game. Explicit v0.2.1
 [CPU recovery](CPU-RECOVERY.md) can attempt resume/reset while preserving RAM. The
 JSON export records model version, pinned core revision, ROM filename and
 SHA-256, fault setup, activation/current frame, reset state, counters and CPU
@@ -109,7 +109,7 @@ checking. Active word projections assume aligned accesses; behavior after a faul
 creates an odd instruction PC is not a validated hardware outcome. STOP/HALT flags
 do not detect every exception, hang or invalid game state.
 
-## v2.3 transaction cutoff and longword correction
+## v0.2.3 transaction cutoff and longword correction
 
 [Affected-write pulses](ACCESS-LIMITED-PULSES.md) release the RAM fault after a
 selected number of changed write transactions or at the next frame boundary.
@@ -120,7 +120,7 @@ original-cartridge checks assert both halves and a cutoff between them.
 
 ## Independent address-line omission
 
-v2.4 adds an [address-line chip view](ADDRESS-LINE-CHIP.md). Its multiple-line
+v0.2.4 adds an [address-line chip view](ADDRESS-LINE-CHIP.md). Its multiple-line
 mask forces selected address bits low, separately from bridging a pair. A0 is
 preserved for byte lanes, reads do not mutate storage, and aliased writes
 persist. This is a deterministic stuck-low approximation of omitted inputs,

@@ -1,8 +1,8 @@
 # Changelog
 
-## v2.4.0 — consolidated runnable release
+## v0.2.4 — consolidated runnable release
 
-- Consolidate the linear source-import, display and v2.4 development history.
+- Consolidate the linear source-import, display and v0.2.4 development history.
 - Provide a versioned complete Mac ZIP containing the compiled emulator,
   corresponding source, licence notices and double-click launcher.
 - Put download and launch instructions first; retain technical/history records.
@@ -14,7 +14,7 @@
   short external legs. Preserve work-RAM disabled-line crosses and all bridge,
   keyboard, recovery and export controls.
 
-## v2.4 — chip-style address-line switches, 22 October 2026
+## v0.2.4 — chip-style address-line switches, 22 October 2026
 
 - Add keyboard/mouse wire buttons on a conceptual work-RAM chip. Crosses mark
   independently forced-low A1–A15 signals; multiple lines may be disabled.
@@ -24,7 +24,7 @@
 - Document the stuck-low assumption and unverified physical pin arrangement in
   [Address-line chip](docs/ADDRESS-LINE-CHIP.md).
 
-## v2.3 — affected-write pulse limits, 22 October 2026
+## v0.2.3 — affected-write pulse limits, 22 October 2026
 
 - Add core-enforced 1/2/4/8 affected-write limits with a one-frame cutoff and
   release-reason exports. Preserve existing frame controls on older cores.
@@ -35,7 +35,7 @@
 - See [Affected-write pulses](docs/ACCESS-LIMITED-PULSES.md) for semantics,
   test evidence and the historical-survey caveat.
 
-## v2.2 — experimental RAM pulses, 22 October 2026
+## v0.2.2 — experimental RAM pulses, 22 October 2026
 
 - Add a deterministic 14-pair pulse survey, independent protocol tests and
   repeated actual-cartridge scalar/hash results. Record smaller-change and
@@ -49,7 +49,7 @@
 - Document that a frame may corrupt many accesses; small or recoverable
   corruption is not guaranteed. See [RAM pulses](docs/RAM-PULSES.md).
 
-## v2.1 — experimental CPU recovery, 22 October 2026
+## v0.2.1 — experimental CPU recovery, 22 October 2026
 
 - Add explicit disconnect-and-force-resume and CPU-only reset actions. Preserve
   RAM and fault counters; neither action guarantees recovered gameplay.
@@ -58,7 +58,7 @@
 - Add actual-WASM STOP/HALT/reset checks and browser recovery/metadata regressions.
   See [CPU recovery](docs/CPU-RECOVERY.md) for semantics and acceptance limits.
 
-## v0.2 — work RAM integration (in progress)
+## v0.2.0 — work RAM integration (in progress)
 
 - Extend the 64 KiB big-endian work-RAM model to byte and word transactions with
   byte-lane constraints and a low-dominant digital fault rule.

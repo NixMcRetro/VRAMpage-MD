@@ -2,13 +2,13 @@
 
 VRAMpage MD is a browser-based NTSC Sega Mega Drive / Genesis Model 1 emulator
 experiment. Play your own locally supplied cartridge while exploring deterministic,
-hardware-informed VRAM and 68000 work-RAM faults. **v2.4 is experimental:** the
+hardware-informed VRAM and 68000 work-RAM faults. **v0.2.4 is experimental:** the
 chip diagrams are conceptual and the models are not electrically accurate.
 
 ## Download and run on a Mac
 
-**[Download the complete v2.4.0 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v2.4.0/VRAMpage-MD-v2.4.0-macos.zip)**
-([release notes](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v2.4.0)).
+**[Download the complete v0.2.4 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.4/VRAMpage-MD-v0.2.4-macos.zip)**
+([release notes](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.4)).
 
 1. Download that ZIP and extract it in Finder.
 2. Open the extracted **VRAMpage-MD** folder and double-click **START.command**.
@@ -79,7 +79,7 @@ source and upstream notices. See [third-party notices](THIRD-PARTY-NOTICES.md).
 No Sega games, logos or commercial ROMs are included.
 
 The integrated history preserves development from the source import through
-v2.4. Historical prototype and experiment records remain in the
-[documentation index](docs/README.md). See [changelog](CHANGELOG.md) and
+v0.2.4. Historical prototype and experiment records remain in the
+[documentation index](docs/README.md). See [changelog](CHANGELOG.md), [versioning policy](docs/VERSIONING.md) and
 [roadmap](ROADMAP.md). Releases belong to this independent repository;
 **McRetro.net is not modified or deployed by this workflow**.

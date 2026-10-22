@@ -1,4 +1,4 @@
-# v2.3 affected-write pulses
+# v0.2.3 affected-write pulses
 
 Select **1 affected write (≤1 frame)** in Pulse length, then press a quick address
 pair. Limits of 2, 4 and 8 affected writes are also available. For a custom address
@@ -33,7 +33,7 @@ One altered stack/data write can cause many subsequent changes or a crash.
 
 ## Recording and API
 
-v2.3 exports retain the earlier fields and add these pulse fields:
+v0.2.3 exports retain the earlier fields and add these pulse fields:
 
 - `mode: "affected-writes"`, `requestedWrites`, `requestedFrames: 1`.
 - `releaseReason`: `affected-write-limit` or `frame-limit`.
@@ -62,9 +62,9 @@ The new actual-WASM regression exposed a pre-existing omission: the first
 16-bit half of a 32-bit RAM write still used the original direct-memory path.
 The second half was hooked. The patcher now hooks both halves independently,
 retaining original branches with faults off. This changes ordinary **faulted**
-longword behavior too; previous v2.2 surveys are historical evidence for their
+longword behavior too; previous v0.2.2 surveys are historical evidence for their
 recorded binary, not current-core predictions. No-fault scalar, RAM, picture
-and sampled stereo-audio records matched the v2.2 baseline exactly.
+and sampled stereo-audio records matched the v0.2.2 baseline exactly.
 
 ## Actual-cartridge comparison
 

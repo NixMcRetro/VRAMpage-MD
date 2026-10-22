@@ -17,6 +17,7 @@ BLITTER_MARKER = b"VRAMpage MD: native RGBA output blitter"
 def make_checkout(root, *, wasm=True, include_rom=False):
     files = {
         "README.md": b"Review bundle README",
+        "VERSION": b"0.2.4\n",
         "START.command": b"#!/bin/bash\n",
         "docs/RUNNING-LOCALLY.md": b"Run guide",
         "scripts/serve.py": b"print('serve')\n",
@@ -47,7 +48,7 @@ def make_checkout(root, *, wasm=True, include_rom=False):
     shutil_copy.write_bytes(PACKAGER.read_bytes())
     subprocess.run(["git", "init", "-q", str(root)], check=True)
     subprocess.run(["git", "-C", str(root), "add", "README.md", "START.command",
-                    "docs", "scripts/serve.py", "scripts/package-review.py", "site"], check=True)
+                    "docs", "scripts/serve.py", "scripts/package-review.py", "site", "VERSION"], check=True)
     subprocess.run(["git", "-C", str(root), "-c", "user.name=Bundle test",
                     "-c", "user.email=bundle-test@example.invalid", "commit", "-qm", "Fixture"], check=True)
     return shutil_copy
@@ -75,6 +76,7 @@ class ReviewBundleTests(unittest.TestCase):
                 names = {name.removeprefix("VRAMpage-MD/") for name in archive.namelist()}
                 self.assertIn("START.command", names)
                 metadata = json.loads(archive.read("VRAMpage-MD/BUILD-INFO.json"))
+                self.assertEqual(metadata["application_version"], "0.2.4")
                 self.assertEqual(metadata["source_commit"], subprocess.check_output(
                     ["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip())
                 mode = archive.getinfo("VRAMpage-MD/START.command").external_attr >> 16

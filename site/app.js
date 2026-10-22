@@ -421,7 +421,7 @@
     const reads=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.readCount : coreReads;
     const writes=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.writeCount : coreWrites;
     const data={
-      modelVersion:'2.4-experimental',
+      modelVersion:'0.2.4-experimental',
       corePin:CORE_PIN,
       addressLineChanges:addressLineChanges.map(entry=>({...entry})),
       faultPulses:faultPulses.map(entry=>({...entry})),

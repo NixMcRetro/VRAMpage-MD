@@ -152,8 +152,9 @@ def _build_info():
         raise BundleError("Package source must have a readable Git commit.") from error
     if dirty:
         raise BundleError("Commit tracked source changes before packaging so BUILD-INFO.json identifies the exact source.")
-    return json.dumps({"application": "VRAMpage MD", "source_commit": commit,
-                       "package_format": 1}, indent=2).encode() + b"\n"
+    version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+    return json.dumps({"application": "VRAMpage MD", "application_version": version,
+                       "source_commit": commit, "package_format": 1}, indent=2).encode() + b"\n"
 
 
 def create_package(output_path):

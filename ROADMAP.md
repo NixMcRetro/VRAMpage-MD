@@ -1,8 +1,8 @@
 # VRAMpage MD roadmap
 
-## Current delivery: v2.4.0 consolidated application
+## Current delivery: v0.2.4 consolidated application
 
-The source import, display fixes and work-RAM development through v2.4 are
+The source import, display fixes and work-RAM development through v0.2.4 are
 consolidated into one runnable application. The complete versioned Mac ZIP
 includes the compiled core, source/notices and launcher; see
 [Run locally](docs/RUNNING-LOCALLY.md). The immediate goal is reliable launching
@@ -23,7 +23,7 @@ consolidation. Historical milestones below retain their original research contex
 
 **Acceptance gates:** local clean boot, stereo sound without fault, keyboard input, repeatable active short, restored video after disconnection (except persistence caused by genuine writes), no ROM included, no external runtime dependencies.
 
-## v0.1.4 | Display foundation (included in v2.4.0)
+## v0.1.4 | Display foundation (included in v0.2.4)
 
 - Implemented: measured window sizing, unchanged native framebuffer recovery,
   focused-control keyboard activation and synthetic browser regressions.
@@ -39,7 +39,7 @@ consolidation. Historical milestones below retain their original research contex
 - Carry the open display acceptance checks forward while v0.2 work begins; they
   remain separate from browser-independent model work.
 
-## v0.2 | Logic-bending experiments
+## v0.2.0 | Logic-bending experiments
 
 Goal: an **unscripted attract-mode desynchronisation** where Sonic's demo controller playback continues, but faulty RAM or cartridge transactions change the game state. Sonic could collide with scenery, get stuck or crash depending on the hardware fault.
 
@@ -63,7 +63,7 @@ attract replay and at least one recorded faulted replay while preserving
 unmodified game code. Follow [the experiment procedure](docs/EXPERIMENTS.md).
 No guaranteed target effect for arbitrary modeled shorts.
 
-## v2.1 | Explicit CPU recovery (experimental)
+## v0.2.1 | Explicit CPU recovery (experimental)
 
 - Force resume or CPU-only reset after disconnecting faults, preserving RAM.
 - Record every intervention; do not count forced execution as hardware fidelity
@@ -71,7 +71,7 @@ No guaranteed target effect for arbitrary modeled shorts.
 - See [CPU recovery](docs/CPU-RECOVERY.md). This review label does not complete
   the v0.2 attract-mode milestone or change the planned video/audio work below.
 
-## v2.2 | Short fault contacts (experimental)
+## v0.2.2 | Short fault contacts (experimental)
 
 - Frame-counted RAM pulses followed by explicit force resume; adjacent-address
   write-pulse buttons and exported intervention timing.
@@ -81,7 +81,7 @@ No guaranteed target effect for arbitrary modeled shorts.
 - Smaller corruption and continued attract-mode gameplay remain experiments,
   not acceptance claims. See [RAM pulses](docs/RAM-PULSES.md).
 
-## v2.3 | Affected-write limits (experimental)
+## v0.2.3 | Affected-write limits (experimental)
 
 - Core-enforced transaction budgets and a one-frame maximum, with release reasons.
 - Correct both halves of faulted longword writes; preserve old survey results
@@ -90,7 +90,7 @@ No guaranteed target effect for arbitrary modeled shorts.
   but continued demo input and healthy gameplay remain unverified.
 - See [Affected-write pulses](docs/ACCESS-LIMITED-PULSES.md).
 
-## v2.4 | Chip-style address controls (experimental)
+## v0.2.4 | Chip-style address controls (experimental)
 
 - Independent A1–A15 stuck-low switches with crossed wires on a logical chip view.
 - Deterministic multi-line aliasing and exported configuration transitions.

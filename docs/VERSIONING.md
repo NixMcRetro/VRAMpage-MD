@@ -1,0 +1,53 @@
+# Versioning policy
+
+Current development/release version: **v0.2.4** (`VERSION` stores `0.2.4`).
+
+VRAMpage MD is experimental, **not version 2.x**. Use semantic-looking
+`MAJOR.MINOR.PATCH` identifiers with leading `0` until a deliberately
+approved stable release. Future feature groups planned by the roadmap are
+`v0.3.0` (per-access VRAM) and `v0.4.0` (hardware-informed audio faults).
+Do not declare `v1.0.0` solely because a new patchbay control was added.
+
+## Corrected feature history
+
+| Feature | Canonical version | Earlier provisional wording |
+|---|---|---|
+| Initial working emulator, UI and video recovery | v0.1.0–v0.1.3 | unchanged |
+| Native blitter repair and browser-window sizing | v0.1.4 | unchanged |
+| 68000 work-RAM fault model and integration | v0.2.0 | v0.2 (experimental) |
+| Explicit CPU recovery | v0.2.1 | v2.1 |
+| Short fault pulses | v0.2.2 | v2.2 |
+| Write-limited pulse and 32-bit write repair | v0.2.3 | v2.3 |
+| Chip-style address-line controls and consolidated Mac download | **v0.2.4** | v2.4 / v2.4.0 |
+
+The `v0.2.4` release includes all preceding milestones; it does **not**
+imply the attract-mode desynchronisation acceptance criterion is complete.
+
+## What changes and what remains historical
+
+- New app titles, export `modelVersion`, generated protocols, release assets,
+  download URLs, GitHub release titles/tags and living documentation use the
+  canonical `0.2.x` identifiers.
+- Past commits, pull request numbers/titles, closed branches, already recorded
+  experimental JSON files, original tool outputs and old review artifacts
+  are immutable historical evidence. Their old `2.1-experimental`,
+  `2.2`, `2.3-experimental`, etc. labels mean the corresponding
+  **v0.2.x** development stage; do not rewrite or regenerate those files.
+- The older `v2.4.0` GitHub release was published before this correction.
+  It remains available with its original tag, commit and artifact for provenance.
+  The corrected `v0.2.4` release is rebuilt from the current tested `main`.
+  The publishing workflow will mark the old release as superseded after
+  publishing the replacement. Never silently retag a public historical release.
+- Version labels alone cannot prove two experiment reports have equivalent
+  emulator behaviour. Always retain and compare source commit, core revision,
+  protocol version, ROM hash and experimental settings.
+
+## Required checks for a release
+
+1. Update `VERSION`, the app/version export, documentation and release workflows
+   together, and test the published package's source-commit metadata.
+2. Run `bash scripts/test.sh`, then full native WASM and synthetic browser
+   checks using the appropriate workflow.
+3. Publish only the exact built/tested `main` commit; use a ROM-free archive,
+   corresponding modified emulator source, a SHA-256 file and a matching tag.
+4. Keep VRAMpage-MD `main` independent from `mcretro.net/main`.

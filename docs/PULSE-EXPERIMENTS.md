@@ -1,12 +1,12 @@
 # One-frame address-pulse survey — 22 October 2026
 
-This survey tests the v2.2 quick-pair behavior without changing the fault model
+This survey tests the v0.2.2 quick-pair behavior without changing the fault model
 or choosing game-specific RAM locations. It identifies configurations worth
 investigating; it does not establish safe settings or physical electrical behavior.
 
-**Historical binary:** v2.3 regression work found that the first half of a
-32-bit write bypassed the fault hook in v2.2. This report preserves the recorded
-v2.2 outcomes. Reproducing it requires the source/runtime from commit
+**Historical binary:** v0.2.3 regression work found that the first half of a
+32-bit write bypassed the fault hook in v0.2.2. This report preserves the recorded
+v0.2.2 outcomes. Reproducing it requires the source/runtime from commit
 `f26501f` and its corresponding core, not a newly patched core. See
 [corrected-core comparisons](ACCESS-LIMITED-PULSES.md#actual-cartridge-comparison)
 for current results. No-fault baseline samples still matched exactly.

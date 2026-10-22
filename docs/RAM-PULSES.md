@@ -16,7 +16,7 @@ modify source RAM directly, but erroneous reads can cause the CPU to write bad
 state. The ordinary selectors still permit read/write/both and same-lane data
 pairs for the main pulse button.
 
-## Affected-write limits (v2.3)
+## Affected-write limits (v0.2.3)
 
 Pulse length also offers 1/2/4/8 affected writes, each with a one-frame maximum.
 These options require a rebuilt core and Access: Write; they use the same quick
@@ -27,7 +27,7 @@ export reasons and the longword-hook correction. The frame options below remain.
 
 The frontend checks completion immediately after each emulator tick, before the
 next tick can run, including when animation catch-up executes multiple ticks.
-Completion disconnects and uses the same explicit force-resume API as v2.1.
+Completion disconnects and uses the same explicit force-resume API as v0.2.1.
 The CPU can halt again; no repeated automatic recovery is scheduled. Selecting
 another quick pair replaces the pulse rather than stacking faults.
 
@@ -39,7 +39,7 @@ Clean restart clears pulse/intervention history and cannot trigger stale recover
 A stopped CPU does not stop the emulator's frame counter, so the scheduled
 contact still ends. Recovery leaves the app's pause state unchanged.
 
-Current experiment exports use `2.3-experimental` and include `faultPulses`, ordered
+Current experiment exports use `0.2.4-experimental` and include `faultPulses`, ordered
 records of kind/access/zero-based line indices, requested frame count, start/end
 frame, active/completed/cancelled status and cancellation reason. For address
 pairs, indices 0–14 correspond to A1–A15. A completed pulse also records affected reads/writes and the CPU flags at the
@@ -64,12 +64,12 @@ See [CPU recovery](CPU-RECOVERY.md) for the intervention's limitations.
 
 ## Measured candidates
 
-**Historical v2.2 evidence:** a repeated actual-core [one-frame survey](PULSE-EXPERIMENTS.md) at tick 1800
+**Historical v0.2.2 evidence:** a repeated actual-core [one-frame survey](PULSE-EXPERIMENTS.md) at tick 1800
 found A14/A15 left 28 RAM bytes different at the contact boundary with later
 sampled output matching baseline. A10/A11 produced different, changing output.
 These are activation-specific observations, not safe presets or proof that demo
 input continues. Most other pairs gave static output despite clear CPU flags.
 
-The v2.3 longword correction changes ordinary faulted writes. Use the
+The v0.2.3 longword correction changes ordinary faulted writes. Use the
 [corrected-core comparisons](ACCESS-LIMITED-PULSES.md#actual-cartridge-comparison)
 for current observations rather than treating the earlier survey as universal.
