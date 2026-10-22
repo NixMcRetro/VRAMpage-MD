@@ -4,7 +4,7 @@ VRAMpage MD is a browser-based NTSC Mega Drive/Genesis experiment. It runs a loc
 
 ## Start here
 
-**[Download the complete v2.4.0 Mac app](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v2.4.0/VRAMpage-MD-v2.4.0-macos.zip)**,
+**[Download the complete v0.2.4 Mac app](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.4/VRAMpage-MD-v0.2.4-macos.zip)**,
 extract it and open START.command. See [Run locally](RUNNING-LOCALLY.md) for Python
 and macOS launch help. The work-RAM controls are implemented and experimental;
 older standalone-model descriptions are historical development records.
@@ -13,6 +13,7 @@ older standalone-model descriptions are historical development records.
 | Document | Purpose |
 | --- | --- |
 | [Changelog](../CHANGELOG.md) | Versioned changes and verification limits |
+| [Versioning](VERSIONING.md) | Canonical 0.2.x release labels and historical identifier mapping |
 | [Run locally](RUNNING-LOCALLY.md) | Start a ready-built review bundle without building WebAssembly |
 | [Project overview](../README.md) | Current features, limitations, building and repository policy |
 | [Product roadmap](../ROADMAP.md) | Versions and video, logic and sound milestones |
@@ -21,11 +22,11 @@ older standalone-model descriptions are historical development records.
 | [Video output](VIDEO-OUTPUT.md) | 640-pixel source stride, native pixels, missing-line recovery and raw output |
 | [Logic bending](LOGIC-BENDING.md) | v0.2 work-RAM model, runtime scope and known limits |
 | [Byte transactions](WORK-RAM-BYTES.md) | Standalone byte-lane rules and regression coverage |
-| [Address-line chip](ADDRESS-LINE-CHIP.md) | v2.4 crossed-wire controls, stuck-low assumptions and logical bus mapping |
-| [Affected-write pulses](ACCESS-LIMITED-PULSES.md) | v2.3 transaction cutoffs, longword fix and corrected-core comparisons |
+| [Address-line chip](ADDRESS-LINE-CHIP.md) | v0.2.4 crossed-wire controls, stuck-low assumptions and logical bus mapping |
+| [Affected-write pulses](ACCESS-LIMITED-PULSES.md) | v0.2.3 transaction cutoffs, longword fix and corrected-core comparisons |
 | [Pulse survey](PULSE-EXPERIMENTS.md) | Repeated actual-core survey of all adjacent address write pairs |
 | [RAM pulses](RAM-PULSES.md) | Short contacts, quick address write pairs, frame timing and cancellation |
-| [CPU recovery](CPU-RECOVERY.md) | v2.1 force-resume/reset semantics, metadata and limits |
+| [CPU recovery](CPU-RECOVERY.md) | v0.2.1 force-resume/reset semantics, metadata and limits |
 | [Experiments](EXPERIMENTS.md) | Repeatable zero-fault and RAM-fault attract-mode procedure |
 | [Build and deployment](DEPLOYMENT.md) | Versioned local downloads and separately authorised website deployment |
 | [Source import](IMPORTING.md) | How the original v0.1 working prototype entered GitHub |

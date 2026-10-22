@@ -1,4 +1,4 @@
-# v2.1 experimental CPU recovery
+# v0.2.1 experimental CPU recovery
 
 The work-RAM panel offers two explicit interventions after a fault. They are
 emulator debugging actions, not additional simulated hardware shorts. Neither
@@ -21,7 +21,7 @@ recovery never changes pause state, so press Resume if the application is paused
 
 ## Recording and compatibility
 
-Experiment JSON uses model version `2.1-experimental` and adds `cpuInterventions`:
+The original v0.2.1 experimental exports used `2.1-experimental` and remain unchanged as historical evidence. New exports from the current release use `0.2.4-experimental` and retain `cpuInterventions`:
 an ordered list of action, current frame, flags before and immediately after.
 The after-value precedes execution of the next frame; zero does not prove a
 healthy CPU/game. Fault access counters and activation/current frame survive

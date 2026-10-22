@@ -1,4 +1,4 @@
-# v2.4 work-RAM address-line switches
+# v0.2.4 work-RAM address-line switches
 
 The work-RAM panel includes a chip-shaped address-bus diagram. Each A1–A15 wire
 is a button: click it to show a **×** and force that modeled address input low;
@@ -67,7 +67,7 @@ fault counters and set the activation frame; normal fault setters clear masks.
 `get_logic_address_mask()` returns the active mask. Both use the same runtime
 adapter as CPU, DMA-read and Z80-bank hooks; actual Z80 execution is not covered.
 
-v2.4 JSON labels the fault `address-stuck-low`, lists its lines and `addressMask`,
+v0.2.4 JSON labels the fault `address-stuck-low`, lists its lines and `addressMask`,
 and records `addressLineChanges`: frame, previous/new mask, access, reason and
 read/write counts before each transition. Reconnection, paired replacement,
 recovery and VRAM takeover record mask removal. Each nonzero change starts new

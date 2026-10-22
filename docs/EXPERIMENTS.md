@@ -55,7 +55,7 @@ cartridge's result to other games or board revisions.
 
 ## Explicit recovery trials
 
-For v2.1, treat force resume and CPU-only reset as separate interventions,
+For v0.2.1, treat force resume and CPU-only reset as separate interventions,
 not part of the uninterrupted fault baseline. Exported `cpuInterventions` records
 the action/frame and before/after flags. Download records before clean restart.
 See [CPU recovery](CPU-RECOVERY.md); record failures as well as apparent recovery.
@@ -117,6 +117,6 @@ not exhaustive equivalence or audible-playback verification.
 ## One-frame follow-up
 
 The [pulse survey](PULSE-EXPERIMENTS.md) compares all 14 adjacent address write
-pairs against a repeated baseline using the v2.2 one-frame protocol. It records
+pairs against a repeated baseline using the v0.2.2 one-frame protocol. It records
 small-change and divergent-output candidates without claiming continued internal
 demo input. Use the linked runner/results to reproduce the exact activation.

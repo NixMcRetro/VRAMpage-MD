@@ -1,4 +1,4 @@
-# v2.4.0 consolidated application verification
+# v0.2.4 consolidated application verification
 
 ## Current release checks
 
@@ -298,7 +298,7 @@ restart without page errors. No game screenshots or ROM bytes were committed.
 Native macOS window/fullscreen and audible audio acceptance still require the
 manual procedure above. See [Experiments](EXPERIMENTS.md) for deterministic runs.
 
-## v2.1 CPU recovery verification (22 October 2026)
+## v0.2.1 CPU recovery verification (22 October 2026)
 
 Emscripten 4.0.23 rebuild passed. The full source suite passed **50 Python tests**,
 both Node framebuffer suites and both C smokes. The native runtime test now checks
@@ -328,7 +328,7 @@ Neither action changed the RAM digest synchronously. This is one trial per actio
 and does not prove healthy gameplay; results and a reproducible runner are linked
 from [CPU recovery](CPU-RECOVERY.md#observed-halted-cartridge-trial).
 
-## v2.2 pulse verification (22 October 2026)
+## v0.2.2 pulse verification (22 October 2026)
 
 Local Chromium passed **12 logic UI tests** (four new pulse cases) plus the six
 existing display tests. Tests check exact 1/2/4/8-tick contacts, pause suspension,
@@ -347,7 +347,7 @@ checks remain required. Native macOS acceptance and physical fidelity remain ope
 See [RAM pulses](RAM-PULSES.md) for manual reproduction and limitations.
 
 
-## v2.2 pulse survey research
+## v0.2.2 pulse survey research
 
 `bash scripts/test.sh` adds `tests/test_pulse_sweep.cjs`: eight protocol test groups
 cover exact activation/contact/recovery order, zero external inputs, independent
@@ -365,7 +365,7 @@ Cartridge visuals used for diagnostic inspection remain private. This does not
 verify physical shorts, audible playback, native macOS behavior or continued
 internal demo-controller playback.
 
-## v2.3 affected-write limits (22 October 2026)
+## v0.2.3 affected-write limits (22 October 2026)
 
 Emscripten 4.0.23 rebuild passed. **18 actual-WASM original-cartridge checks**
 passed, including six added cases: both ordinary faulted longword halves,
@@ -395,12 +395,12 @@ no page errors. It did not establish recovered gameplay.
 Two corrected-core 30-trial surveys exercised ordinary one-frame contacts and
 one-write contacts across all 14 pairs, repeating each pair and baseline. Every
 pair repeated identically; both sampled no-fault RAM/picture/stereo-audio records
-matched the historical v2.2 baseline. The ordinary faulted results change with
+matched the historical v0.2.2 baseline. The ordinary faulted results change with
 the longword correction. See [Affected-write pulses](ACCESS-LIMITED-PULSES.md)
 for records and exact commands. Continued demo-controller playback, physical
 behavior, audible playback and native macOS acceptance remain unverified.
 
-## v2.4 address-line chip verification (22 October 2026)
+## v0.2.4 address-line chip verification (22 October 2026)
 
 Emscripten 4.0.23 rebuild passed. All **21 actual-WASM original-cartridge checks**
 passed, including three new mask cases: read aliasing/source integrity,
