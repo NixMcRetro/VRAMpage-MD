@@ -13,14 +13,16 @@ VRAMpage MD is a browser-based NTSC Mega Drive/Genesis experiment. It runs a loc
 | [Documentation roadmap](DOCUMENTATION-ROADMAP.md) | Which Markdown documents to write, in what order, and acceptance criteria |
 | [Testing guide](TESTING.md) | Automated and manual test matrix, commands and release gates |
 | [Video output](VIDEO-OUTPUT.md) | 640-pixel source stride, native pixels, missing-line recovery and raw output |
-| [Logic bending](LOGIC-BENDING.md) | v0.2 work-RAM model foundation, emulator map and integration limits |
+| [Logic bending](LOGIC-BENDING.md) | v0.2 work-RAM model, runtime scope and known limits |
+| [Byte transactions](WORK-RAM-BYTES.md) | Standalone byte-lane rules and regression coverage |
+| [Experiments](EXPERIMENTS.md) | Repeatable zero-fault and RAM-fault attract-mode procedure |
 | [Build and deployment](DEPLOYMENT.md) | Manual publishing to McRetro.net, never direct from feature work |
 | [Source import](IMPORTING.md) | How the original v0.1 working prototype entered GitHub |
 | [Prototype notes](PROTOTYPE-V0.1-NOTES.md) | Historical first-stage implementation and technical assumptions |
 
 ## Documentation conventions
 
-- **Describe what works today separately from what is planned.** Mark features as Implemented, Experimental, Planned or Unverified. Do not imply v0.2 logic bending or sound bending exists yet.
+- **Describe what works today separately from what is planned.** Mark features as Implemented, Experimental, Planned or Unverified. Label the v0.2 work-RAM model Experimental until genuine-game checks are recorded; do not imply a verified Sonic outcome or sound bending.
 - Record the tested build/ref, hardware revision, game region and display mode where relevant. An NTSC target does not make every game or clone board identical.
 - Separate physical facts (with a source), emulator behaviour (with a code location), and digital approximations (with an explicit assumption).
 - Keep instructions executable from the **repository root**; where a user must start elsewhere, give the full `cd` command.

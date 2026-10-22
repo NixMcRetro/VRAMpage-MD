@@ -1,0 +1,66 @@
+#include <assert.h>
+#include <stdint.h>
+#include <string.h>
+
+#include "work_ram_runtime.h"
+
+uint8_t work_ram[WORK_RAM_FAULT_MEMORY_BYTES];
+
+static void put_native_word(uint32_t offset, uint16_t value)
+{
+    *(uint16_t *)(work_ram + offset) = value;
+}
+
+int main(void)
+{
+    memset(work_ram, 0, sizeof(work_ram));
+    work_ram_logic_start();
+    assert(get_logic_ram_ref() == (uintptr_t)work_ram);
+    assert(get_logic_frame() == 0 && get_logic_reads() == 0 && get_logic_writes() == 0);
+    work_ram_logic_tick();
+    work_ram_logic_tick();
+    assert(get_logic_frame() == 2);
+
+    /* A1/A2 tied low alias word address 3 to word address 0 on reads. */
+    put_native_word(0x0000, 0x1234);
+    put_native_word(0x0004, 0xabcd);
+    assert(set_logic_fault(WORK_RAM_FAULT_ADDRESS, WORK_RAM_FAULT_APPLY_READ,
+                           0, 1) == WORK_RAM_FAULT_OK);
+    assert(get_logic_activation_frame() == 2);
+    assert(work_ram_logic_read16(0xe00004u) == 0x1234);
+    assert(get_logic_reads() == 1);
+    assert(work_ram_logic_read16(0xe00000u) == 0x1234);
+    assert(get_logic_reads() == 1); /* selected, but no visible alias/value change */
+
+    /* Write-side aliases persist after removing the fault. */
+    assert(set_logic_fault(WORK_RAM_FAULT_ADDRESS, WORK_RAM_FAULT_APPLY_WRITE,
+                           0, 1) == WORK_RAM_FAULT_OK);
+    work_ram_logic_write16(0xe00004u, 0x5678);
+    assert(*(uint16_t *)(work_ram + 0x0000) == 0x5678);
+    assert(*(uint16_t *)(work_ram + 0x0004) == 0xabcd);
+    assert(get_logic_writes() == 1);
+    assert(set_logic_fault(WORK_RAM_FAULT_NONE, 0, 0, 0) == WORK_RAM_FAULT_OK);
+    assert(*(uint16_t *)(work_ram + 0x0000) == 0x5678);
+    assert(get_logic_writes() == 1 && get_logic_activation_frame() == 2);
+
+    /* D0/D1 affect odd byte addresses (lower lane) only. */
+    put_native_word(0x0020, 0x0000);
+    assert(set_logic_fault(WORK_RAM_FAULT_DATA, WORK_RAM_FAULT_APPLY_BOTH,
+                           0, 1) == WORK_RAM_FAULT_OK);
+    assert(set_logic_fault(WORK_RAM_FAULT_DATA, WORK_RAM_FAULT_APPLY_BOTH,
+                           0, 8) == WORK_RAM_FAULT_UNSUPPORTED_LANE);
+    work_ram_logic_write8(0xe00020u, 0xff); /* even / upper lane, unaffected */
+    assert(work_ram_logic_read8(0xe00020u) == 0xff);
+    assert(get_logic_writes() == 0 && get_logic_reads() == 0);
+    work_ram_logic_write8(0xe00021u, 0x01); /* odd / lower lane: both bits forced low */
+    put_native_word(0x0020, 0x0001); /* present a read with D0 high and D1 low */
+    assert(work_ram_logic_read8(0xe00021u) == 0x00);
+    assert(get_logic_writes() == 1 && get_logic_reads() == 1);
+
+    assert(!work_ram_logic_address(0xdfffff));
+    assert(work_ram_logic_address(0xe00000));
+    assert(work_ram_logic_address(0xffffff));
+    assert(!work_ram_logic_address(0x1000000));
+
+    return 0;
+}

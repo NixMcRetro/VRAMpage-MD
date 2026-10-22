@@ -31,6 +31,14 @@
   let lastContact = '';
   let possibleVramResidue = false;
   let displayRefreshQueued = false;
+  let logicApiAvailable = false, logicActive = false, logicStatsRetained = false;
+  let logicStatusMessage = 'Checking core support…';
+  let lastLogicExperiment = null;
+  let logicResetState = 'No cartridge loaded';
+  let romHashPromise = Promise.resolve(null);
+  const CORE_PIN = '6090aff9e9b2f578cd28882bd4571d2e35b1d674';
+  const LOGIC_API = ['_set_logic_fault','_get_logic_reads','_get_logic_writes',
+    '_get_logic_frame','_get_logic_activation_frame','_get_logic_cpu_flags'];
 
   function stamp(message) {
     const li = document.createElement('li');
@@ -51,12 +59,204 @@
     $('resetBtn').disabled = !running;
     $('pauseBtn').disabled = !running;
     $('soundBtn').disabled = !running;
+    updateLogicControls();
   }
 
   function samePair(a,b) { return !!(a && b) && a[0] === b[0] && a[1] === b[1]; }
   function canonical(pair) { return pair ? [...pair].sort((a,b) => a-b) : null; }
   function actualPair() { return momentary || latched; }
   function describe(pair) { return pair ? `AD${pair[0]} ↔ AD${pair[1]}` : 'NONE — OPEN CIRCUIT'; }
+
+  function logicApiReady(core=emulator) {
+    return !!core && LOGIC_API.every(name => typeof core[name] === 'function');
+  }
+
+  function updateLogicControls() {
+    logicApiAvailable = logicApiReady();
+    const canUse = started && logicApiAvailable;
+    for (const id of ['logicKind','logicAccess','logicLineA','logicLineB','logicApplyBtn'])
+      $(id).disabled = !canUse;
+    $('logicDisconnectBtn').disabled = !canUse;
+    $('logicExperimentBtn').disabled = !started || !romBytes;
+    if (!logicApiAvailable) logicStatusMessage = 'Rebuild core for logic faults';
+    else if (!started && ['Checking core support…','Rebuild core for logic faults'].includes(logicStatusMessage))
+      logicStatusMessage = 'Load a ROM to enable logic faults.';
+    $('logicStatus').textContent = logicStatusMessage;
+    refreshLogicMetrics();
+  }
+
+  function refreshLogicMetrics() {
+    const core=emulator;
+    if (logicApiReady(core)) {
+      const reads=Number(core._get_logic_reads()) || 0;
+      const writes=Number(core._get_logic_writes()) || 0;
+      const frame=Number(core._get_logic_frame()) || 0;
+      const activation=Number(core._get_logic_activation_frame());
+      const flags=Number(core._get_logic_cpu_flags()) || 0;
+      const shownReads=!logicActive && logicStatsRetained && lastLogicExperiment
+        ? lastLogicExperiment.readCount : reads;
+      const shownWrites=!logicActive && logicStatsRetained && lastLogicExperiment
+        ? lastLogicExperiment.writeCount : writes;
+      $('logicReadCount').textContent=shownReads.toLocaleString();
+      $('logicWriteCount').textContent=shownWrites.toLocaleString();
+      $('logicFrame').textContent=frame.toLocaleString();
+      const shownActivation=logicActive && Number.isFinite(activation) && activation>=0
+        ? activation : lastLogicExperiment?.activationFrame;
+      $('logicActivationFrame').textContent=shownActivation===undefined ? '—' : Number(shownActivation).toLocaleString();
+      const cpu=[];
+      if (flags & 1) cpu.push('STOP');
+      if (flags & 2) cpu.push('HALT');
+      $('logicCpuStatus').textContent=cpu.length ? cpu.join(' + ') : 'No STOP/HALT flag';
+      if (lastLogicExperiment && logicActive) {
+        lastLogicExperiment.currentFrame=frame;
+        lastLogicExperiment.readCount=reads;
+        lastLogicExperiment.writeCount=writes;
+        lastLogicExperiment.cpuFlags=flags;
+      }
+    }
+    $('logicStatus').textContent=logicStatusMessage;
+  }
+
+  function configureLogicLines() {
+    const kind=Number($('logicKind').value);
+    const priorA=$('logicLineA').value, priorB=$('logicLineB').value;
+    const indexA=priorA==='' ? 0 : Number(priorA);
+    const indexB=priorB==='' ? 1 : Number(priorB);
+    const count=kind===1 ? 15 : 16;
+    const label=kind===1 ? index => `A${index+1}` : index => `D${index}`;
+    for (const [select,prior] of [[$('logicLineA'),indexA],[$('logicLineB'),indexB]]) {
+      select.replaceChildren();
+      for (let i=0;i<count;i++) {
+        const option=document.createElement('option');
+        option.value=String(i); option.textContent=label(i); select.append(option);
+      }
+      select.value=prior<count ? String(prior) : '0';
+    }
+  }
+
+  function setLogicStatus(message) {
+    logicStatusMessage=message;
+    updateLogicControls();
+  }
+
+  function logicConfigFromControls() {
+    return {
+      kind:Number($('logicKind').value),
+      access:Number($('logicAccess').value),
+      a:Number($('logicLineA').value),
+      b:Number($('logicLineB').value)
+    };
+  }
+
+  function logicLineName(kind,line) { return kind===1 ? `A${line+1}` : `D${line}`; }
+
+  function applyLogicFault() {
+    if (!started || !logicApiReady()) return;
+    const config=logicConfigFromControls();
+    if (config.a===config.b) {
+      setLogicStatus('Choose two different lines. No fault was applied.');
+      return;
+    }
+    if (config.kind===2 && Math.floor(config.a/8)!==Math.floor(config.b/8)) {
+      setLogicStatus('Data pairs must stay within D0–D7 or D8–D15. No fault was applied.');
+      return;
+    }
+    if (actualPair()) disconnect();
+    const status=emulator._set_logic_fault(config.kind,config.access,config.a,config.b);
+    if (status!==0) {
+      setLogicStatus(`Core rejected this logic fault (status ${status}).`);
+      stamp(`Logic fault rejected: core status ${status}`);
+      return;
+    }
+    logicActive=true;
+    logicStatsRetained=false;
+    const activation=Number(emulator._get_logic_activation_frame());
+    const kindLabel=config.kind===1 ? 'address' : 'data';
+    const accessLabel=['','read','write','read + write'][config.access] || 'unknown access';
+    const lineA=logicLineName(config.kind,config.a), lineB=logicLineName(config.kind,config.b);
+    lastLogicExperiment={
+      kind:kindLabel, access:accessLabel, lines:[lineA,lineB],
+      activationFrame:Number.isFinite(activation) && activation>=0 ? activation : Number(emulator._get_logic_frame()) || 0,
+      resetState:logicResetState,
+      currentFrame:Number(emulator._get_logic_frame()) || 0,
+      readCount:Number(emulator._get_logic_reads()) || 0,
+      writeCount:Number(emulator._get_logic_writes()) || 0,
+      cpuFlags:Number(emulator._get_logic_cpu_flags()) || 0
+    };
+    setLogicStatus(`Applied ${kindLabel} ${lineA} ↔ ${lineB} on ${accessLabel}.`);
+    stamp(`LOGIC / WORK RAM FAULT: ${kindLabel} ${lineA} ↔ ${lineB}, ${accessLabel}`);
+  }
+
+  function disconnectLogic({silent=false}={}) {
+    if (!logicActive) {
+      if (!silent) setLogicStatus('No logic fault is active.');
+      return true;
+    }
+    if (!logicApiReady()) return false;
+    const finalReads=Number(emulator._get_logic_reads()) || 0;
+    const finalWrites=Number(emulator._get_logic_writes()) || 0;
+    const finalFrame=Number(emulator._get_logic_frame()) || 0;
+    const finalFlags=Number(emulator._get_logic_cpu_flags()) || 0;
+    const status=emulator._set_logic_fault(0,0,-1,-1);
+    if (status!==0) {
+      if (!silent) setLogicStatus(`Core could not disconnect the logic fault (status ${status}).`);
+      return false;
+    }
+    logicActive=false;
+    logicStatsRetained=true;
+    if (lastLogicExperiment) {
+      lastLogicExperiment.disconnectedAtFrame=finalFrame;
+      lastLogicExperiment.readCount=finalReads;
+      lastLogicExperiment.writeCount=finalWrites;
+      lastLogicExperiment.cpuFlags=finalFlags;
+    }
+    if (!silent) {
+      logicResetState='Logic fault disconnected; RAM writes persist';
+      setLogicStatus('Logic fault disconnected. Any projected writes remain in RAM until a clean restart.');
+      stamp('Logic/work RAM fault disconnected; projected RAM writes persist');
+    }
+    updateLogicControls();
+    return true;
+  }
+
+  function resetLogicSelection() {
+    $('logicKind').value='1'; $('logicAccess').value='1';
+    configureLogicLines();
+  }
+
+  async function sha256Hex(bytes) {
+    if (!window.crypto?.subtle) return null;
+    const digest=await window.crypto.subtle.digest('SHA-256',bytes);
+    return [...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('');
+  }
+
+  async function downloadExperimentJSON() {
+    let romSha256=null;
+    try { romSha256=await romHashPromise; } catch (_) { /* Hashing failure never blocks emulation. */ }
+    const currentFrame=logicApiReady() ? Number(emulator._get_logic_frame()) || 0 : 0;
+    const coreReads=logicApiReady() ? Number(emulator._get_logic_reads()) || 0 : 0;
+    const coreWrites=logicApiReady() ? Number(emulator._get_logic_writes()) || 0 : 0;
+    const reads=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.readCount : coreReads;
+    const writes=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.writeCount : coreWrites;
+    const data={
+      modelVersion:'0.2-experimental',
+      corePin:CORE_PIN,
+      rom:{name:loadedName || null,sha256:romSha256},
+      logicFault:lastLogicExperiment ? {...lastLogicExperiment} : null,
+      faultActive:logicActive,
+      resetState:logicResetState,
+      currentFrame,readCount:reads,writeCount:writes,
+      cpuFlags:logicApiReady() ? Number(emulator._get_logic_cpu_flags()) || 0 : null,
+      exportedAt:new Date().toISOString()
+    };
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement('a');
+    link.href=url; link.download='vram-page-md-experiment.json';
+    document.body.append(link); link.click(); link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    stamp('Experiment metadata downloaded locally (ROM bytes were not included)');
+  }
 
   function updateFaultUI() {
     const pair = actualPair();
@@ -76,8 +276,22 @@
     const faultHint = $('faultHint');
     if (faultHint) faultHint.hidden = !(!pair && possibleVramResidue && started);
     if (next !== lastContact) {
+      const removedLogic=!!(pair && started && logicActive);
+      if (removedLogic && !disconnectLogic({silent:true})) {
+        // Keep the domains exclusive if the core refuses to clear work RAM.
+        latched=null; momentary=null; selectedPin=null;
+        updateFaultUI();
+        setLogicStatus('Could not disconnect the logic fault; VRAM fault was not applied.');
+        return;
+      }
       if (emulator && typeof emulator._set_vram_short === 'function')
         emulator._set_vram_short(pair ? pair[0] : -1, pair ? pair[1] : -1);
+      if (removedLogic) {
+        logicResetState='Logic fault disconnected because VRAM fault was activated';
+        logicStatusMessage='VRAM patch active; logic/work RAM fault disconnected.';
+        $('logicStatus').textContent=logicStatusMessage;
+        stamp('Logic/work RAM fault disconnected because the VRAM patch was activated');
+      }
       if (lastContact) stamp(pair ? `SHORT CONNECTED: ${next}` : 'All shorts removed');
       lastContact = next;
     }
@@ -206,6 +420,7 @@
       $('readCount').textContent = emulator._get_vram_changed_reads().toLocaleString();
     if (typeof emulator._get_vram_changed_writes === 'function')
       $('writeCount').textContent = emulator._get_vram_changed_writes().toLocaleString();
+    refreshLogicMetrics();
   }
 
   function animationFrame(time) {
@@ -252,7 +467,7 @@
     stamp(audioOn?'Audio enabled (FM + PSG; no sound-chip faults yet)':'Audio muted');
   }
 
-  async function startCartridge(bytes, name) {
+  async function startCartridge(bytes, name, {cleanRestart=false}={}) {
     if (!emulator) throw new Error('Emulator not ready. Build the modified core first.');
     if (bytes.length<0x200 || bytes.length>4*1024*1024)
       throw new Error('Expected a 512-byte to 4-MB uncompressed Mega Drive ROM.');
@@ -265,11 +480,17 @@
     if (!ptr) {started=wasStarted;throw new Error('Emulator refused ROM buffer allocation.');}
     ensureWasmViews();
     new Uint8Array(emulator.HEAPU8.buffer,ptr,bytes.length).set(bytes);
+    if (logicActive) disconnectLogic({silent:true});
     emulator._start();
     if (typeof emulator._set_vram_short !== 'function')
       throw new Error('Core missing _set_vram_short. You must build the patched core (not the upstream prebuilt WASM).');
     frameView=null;
     started=true;
+    logicActive=false; // runtime_start clears the work RAM fault and counters.
+    logicStatsRetained=false;
+    logicResetState=cleanRestart ? 'Clean restart; work RAM fault and counters reset' : 'Cartridge loaded; work RAM fault and counters reset';
+    resetLogicSelection();
+    logicStatusMessage=logicApiReady() ? 'Load or apply a logic fault when ready.' : 'Rebuild core for logic faults';
     ensureWasmViews();
     emulator._set_vram_short(...(actualPair() || [-1,-1]));
     updateFaultUI();
@@ -280,6 +501,7 @@
     paused=false;
     $('pauseBtn').textContent='Pause';
     accumulated=0;lastFrame=0;resetStats();nextAudioTime=0;
+    updateLogicControls();
     stamp(`Cartridge inserted: ${name} (forced NTSC-U)`);
     // Browser audio is unlocked by a separate Sound button after user gesture.
   }
@@ -289,6 +511,10 @@
     try {
       stamp(`Loading local cartridge: ${file.name}`);
       romBytes=new Uint8Array(await file.arrayBuffer());
+      romHashPromise=sha256Hex(romBytes).catch(error=>{
+        stamp(`ROM SHA-256 unavailable: ${error.message}`);
+        return null;
+      });
       await startCartridge(romBytes,file.name);
     } catch(e) {
       stamp(`ERROR: ${e.message}`);
@@ -298,7 +524,10 @@
 
   function installKeyboard() {
     document.addEventListener('keydown', event => {
-      if (event.target instanceof HTMLInputElement) return;
+      if (event.target instanceof HTMLInputElement ||
+          event.target instanceof HTMLSelectElement ||
+          event.target instanceof HTMLTextAreaElement ||
+          event.target.isContentEditable) return;
       const code=event.code;
       // Let focused UI controls activate normally rather than swallowing their
       // Enter/Space as controller inputs (notably the keyboard patchbay).
@@ -346,8 +575,11 @@
       emulator._init();
       if(typeof emulator._set_vram_short!=='function')
         throw new Error('Unmodified core detected. Run scripts/build-core.sh for VRAM fault support.');
+      logicApiAvailable=logicApiReady();
       updateFaultUI();
       setRunning(false);
+      if (!logicApiAvailable) logicStatusMessage='Rebuild core for logic faults';
+      updateLogicControls();
       message('INSERT YOUR CARTRIDGE','Choose a Sonic the Hedgehog ROM stored on your computer. The file is loaded only in this browser.');
       stamp('NTSC-U core loaded; ready for local ROM.');
     } catch(e) {
@@ -409,6 +641,19 @@
 
   function setup() {
     setupPatchbay();installKeyboard();
+    configureLogicLines();
+    $('logicKind').addEventListener('change',()=>{
+      configureLogicLines();
+      setLogicStatus('Configuration changed; apply it to activate a fault.');
+    });
+    for (const id of ['logicAccess','logicLineA','logicLineB'])
+      $(id).addEventListener('change',()=>setLogicStatus('Configuration changed; apply it to activate a fault.'));
+    $('logicApplyBtn').addEventListener('click',applyLogicFault);
+    $('logicDisconnectBtn').addEventListener('click',()=>disconnectLogic());
+    $('logicExperimentBtn').addEventListener('click',()=>downloadExperimentJSON().catch(error=>{
+      setLogicStatus(`Could not create experiment metadata: ${error.message}`);
+      stamp(`Metadata export failed: ${error.message}`);
+    }));
     $('rawVideoToggle').addEventListener('change', () => {
       previousVideoStatus = "";
       drawActiveVideo();
@@ -419,11 +664,13 @@
       // Reset the VDP and reload the original cartridge without any bridged pins.
       // VRAM content altered by earlier simulated shorts cannot be undone by disconnecting alone.
       disconnect();
+      disconnectLogic({silent:true});
       try {
-        await startCartridge(romBytes,loadedName);
+        await startCartridge(romBytes,loadedName,{cleanRestart:true});
         possibleVramResidue = false;
         updateFaultUI();
-        stamp('Clean restart: VRAM reset, all shorts disconnected');
+        setLogicStatus(logicApiAvailable ? 'Clean restart: VRAM/work RAM faults cleared; counters reset.' : 'Rebuild core for logic faults');
+        stamp('Clean restart: VRAM/work RAM reset; all fault domains disconnected');
       } catch (error) { stamp(`Restart failed: ${error.message}`); }
     });
     $('pauseBtn').addEventListener('click',pauseToggle);
@@ -438,6 +685,7 @@
       displayObserver.observe(document.querySelector('.masthead'));
     }
     setRunning(false);
+    updateLogicControls();
     resetStats();
     requestAnimationFrame(animationFrame);
     initialiseCore();

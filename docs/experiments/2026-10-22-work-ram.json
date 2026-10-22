@@ -1,0 +1,146 @@
+{
+  "romSHA256": "46160baa06362c711c9f1a5017cb7371026444936c8af5e93a78996cf32ff2a6",
+  "core": "6090aff9e9b2f578cd28882bd4571d2e35b1d674",
+  "externalInput": "all zero",
+  "results": [
+    {
+      "config": null,
+      "activation": null,
+      "repeatIdentical": true,
+      "samples": [
+        {
+          "frame": 1800,
+          "video": "4ec95887c0e680cc63480e097b064f72e26a78b99e247b428e60efb1ef3cb662",
+          "ram": "4bb1df9e3b46a13a28cee238112240966fed1ace732d4e5f0d92794892d16504",
+          "reads": 0,
+          "writes": 0,
+          "flags": 0
+        },
+        {
+          "frame": 2400,
+          "video": "5706e28e0545d59273bfcedad051b04c303d0c76346dae408ef633eaec0c377e",
+          "ram": "87521d0901a9fc20761b4a8869e9e1ed40d226f36ab6509346f791e448d61bc3",
+          "reads": 0,
+          "writes": 0,
+          "flags": 0
+        },
+        {
+          "frame": 3000,
+          "video": "d101e4078d5c59fc3553fcb0971fbccf91580d3da617acd3aca3640888c1e448",
+          "ram": "0452cb3e287047844ad8234fd2c77b3921a06ec969940c01145abfba8a5dac54",
+          "reads": 0,
+          "writes": 0,
+          "flags": 0
+        }
+      ]
+    },
+    {
+      "config": [
+        1,
+        1,
+        0,
+        1
+      ],
+      "activation": 1800,
+      "repeatIdentical": true,
+      "samples": [
+        {
+          "frame": 1800,
+          "video": "4ec95887c0e680cc63480e097b064f72e26a78b99e247b428e60efb1ef3cb662",
+          "ram": "4bb1df9e3b46a13a28cee238112240966fed1ace732d4e5f0d92794892d16504",
+          "reads": 0,
+          "writes": 0,
+          "flags": 0
+        },
+        {
+          "frame": 2400,
+          "video": "3f7a9061624b17705641dbd0edb8495f1430813e498c22608d88b0bd452f9256",
+          "ram": "bdd71f04bf531725902ca6f33faa09a25b9c01e83f302b09e2b9a2891b359d4b",
+          "reads": 327,
+          "writes": 0,
+          "flags": 2
+        },
+        {
+          "frame": 3000,
+          "video": "3f7a9061624b17705641dbd0edb8495f1430813e498c22608d88b0bd452f9256",
+          "ram": "bdd71f04bf531725902ca6f33faa09a25b9c01e83f302b09e2b9a2891b359d4b",
+          "reads": 327,
+          "writes": 0,
+          "flags": 2
+        }
+      ]
+    },
+    {
+      "config": [
+        2,
+        1,
+        0,
+        1
+      ],
+      "activation": 1800,
+      "repeatIdentical": true,
+      "samples": [
+        {
+          "frame": 1800,
+          "video": "4ec95887c0e680cc63480e097b064f72e26a78b99e247b428e60efb1ef3cb662",
+          "ram": "4bb1df9e3b46a13a28cee238112240966fed1ace732d4e5f0d92794892d16504",
+          "reads": 0,
+          "writes": 0,
+          "flags": 0
+        },
+        {
+          "frame": 2400,
+          "video": "fcefe83a027e779addf77dcb96a55cebc45af15f1564570f8643eef80c4e836a",
+          "ram": "33acb1102ae0f61e3b6c329b9bc0ff0a89728ca80cd20a6b2ee3ef36953ef419",
+          "reads": 463547,
+          "writes": 0,
+          "flags": 0
+        },
+        {
+          "frame": 3000,
+          "video": "fcefe83a027e779addf77dcb96a55cebc45af15f1564570f8643eef80c4e836a",
+          "ram": "33acb1102ae0f61e3b6c329b9bc0ff0a89728ca80cd20a6b2ee3ef36953ef419",
+          "reads": 955877,
+          "writes": 0,
+          "flags": 0
+        }
+      ]
+    },
+    {
+      "config": [
+        2,
+        2,
+        0,
+        1
+      ],
+      "activation": 1800,
+      "repeatIdentical": true,
+      "samples": [
+        {
+          "frame": 1800,
+          "video": "4ec95887c0e680cc63480e097b064f72e26a78b99e247b428e60efb1ef3cb662",
+          "ram": "4bb1df9e3b46a13a28cee238112240966fed1ace732d4e5f0d92794892d16504",
+          "reads": 0,
+          "writes": 0,
+          "flags": 0
+        },
+        {
+          "frame": 2400,
+          "video": "b459a071f1e6cfd972a018d1a85cb5d7e29ff24a15496244d9c9227857461c4e",
+          "ram": "5f2745f6638e0c490a238e12e9710adae3938a8e2746342177e4991ed02cdb9e",
+          "reads": 0,
+          "writes": 464263,
+          "flags": 0
+        },
+        {
+          "frame": 3000,
+          "video": "b459a071f1e6cfd972a018d1a85cb5d7e29ff24a15496244d9c9227857461c4e",
+          "ram": "5f2745f6638e0c490a238e12e9710adae3938a8e2746342177e4991ed02cdb9e",
+          "reads": 0,
+          "writes": 956592,
+          "flags": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+// Private cartridge path is a command-line argument; output contains hashes only.
+'use strict';
+const fs=require('node:fs'),crypto=require('node:crypto'),path=require('node:path');
+if(!process.argv[2]) throw Error('Usage: node scripts/run-ram-experiment.cjs /private/cartridge.md [core.js]');
+const coreFile=path.resolve(process.argv[3]||'site/core/genplus.js');
+const rom=fs.readFileSync(process.argv[2]);const factory=require(coreFile);const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
+async function run(config){const c=await factory({locateFile:n=>path.join(path.dirname(coreFile),n)});c._init();c.HEAPU8.set(rom,c._get_rom_buffer_ref(rom.length));c._start();const out=[];for(let f=0;f<3000;f++){if(f===1800&&config){if(c._set_logic_fault(...config)!==0)throw Error('setter');}new Float32Array(c.HEAPU8.buffer,c._get_input_buffer_ref(),32).fill(0);c._wasm_input_update();c._tick();c._sound();if([1800,2400,3000].includes(f+1))out.push({frame:f+1,video:hash(Buffer.from(c.HEAPU8.subarray(c._get_frame_buffer_ref(),c._get_frame_buffer_ref()+640*480*4))),ram:hash(Buffer.from(c.HEAPU8.subarray(c._get_logic_ram_ref(),c._get_logic_ram_ref()+65536))),reads:c._get_logic_reads(),writes:c._get_logic_writes(),flags:c._get_logic_cpu_flags()});}return out;}
+(async()=>{const cases=[null,[1,1,0,1],[2,1,0,1],[2,2,0,1]];const results=[];for(const config of cases){const first=await run(config),repeat=await run(config);results.push({config,activation:config?1800:null,repeatIdentical:JSON.stringify(first)===JSON.stringify(repeat),samples:first});}console.log(JSON.stringify({romSHA256:hash(rom),core:'6090aff9e9b2f578cd28882bd4571d2e35b1d674',externalInput:'all zero',results},null,2));})().catch(e=>{console.error(e.message);process.exitCode=1});

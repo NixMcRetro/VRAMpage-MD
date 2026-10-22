@@ -197,3 +197,39 @@ Local validation: the full suite passed **40 Python tests**, both Node framebuff
 suites and both C smoke programs. The work-RAM C suite also passed with AddressSanitizer
 and UndefinedBehaviorSanitizer. No new core build is required because this model
 is not linked into the emulator. Browser regression checks remain in CI.
+
+
+## v0.2 runtime integration verification (22 October 2026)
+
+Run `bash scripts/test.sh`: **50 Python tests passed**, both Node framebuffer
+suites passed, and VRAM/work-RAM C smoke programs passed. Ten independent ctypes
+properties cover byte and word faults. The integration tests compile and exercise
+the native storage adapter and check patch idempotence/fail-closed behavior.
+The reset source assertion now includes RAM disconnect and the clean-restart
+option; its prior exact source pattern described the old behavior.
+
+After `bash scripts/build-core.sh`, run:
+
+```sh
+node tests/test_wasm_logic.cjs site/core/genplus.js
+python3 tests/browser_logic.py --browser chromium --artifacts artifacts/logic
+```
+
+The Emscripten 4.0.23 build succeeded. All **nine actual WASM checks** passed using
+original 68000 cartridges generated in memory: CPU byte/word/long transfers,
+address read/write faults, same-lane byte data faults, RAM instruction fetch,
+PC-relative RAM reads, normal/faulted VDP DMA, disconnect persistence and restart.
+They contain no commercial game data. Z80 instruction execution is not covered.
+
+All **six logic UI Chromium tests** passed with the synthetic core: legacy-core
+fallback, validation, keyboard controls, direction metrics, domain exclusivity,
+restart and JSON export. Existing six display Chromium checks also passed during
+this change. CI runs both suites on Chromium, Firefox and WebKit. Local Firefox
+could not start in the sandbox; local WebKit lacks host libraries. Do not infer
+those engines passed from Chromium results.
+
+A private actual-core Chromium smoke at **1366×768** loaded the supplied cartridge,
+applied/disconnected a RAM fault, checked the exported ROM SHA-256 and clean
+restart without page errors. No game screenshots or ROM bytes were committed.
+Native macOS window/fullscreen and audible audio acceptance still require the
+manual procedure above. See [Experiments](EXPERIMENTS.md) for deterministic runs.

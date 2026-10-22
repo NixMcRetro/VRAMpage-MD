@@ -25,7 +25,7 @@ class CompactWorkbenchTests(unittest.TestCase):
     def test_clean_restart_is_a_real_reset(self):
         self.assertIn('id="resetBtn"',HTML)
         self.assertIn('Clean restart', HTML)
-        self.assertRegex(JS, r"\$\('resetBtn'\)\.addEventListener\('click'[\s\S]*?disconnect\(\);[\s\S]*?startCartridge\(romBytes,loadedName\)")
+        self.assertRegex(JS, r"\$\('resetBtn'\)\.addEventListener\('click'[\s\S]*?disconnect\(\);[\s\S]*?disconnectLogic\(\{silent:true\}\);[\s\S]*?startCartridge\(romBytes,loadedName,\{cleanRestart:true\}\)")
         self.assertIn('possibleVramResidue = false;', JS)
         self.assertIn('id="faultHint"',HTML)
     def test_compact_diagnostics_retain_log(self):

@@ -33,19 +33,25 @@
 
 Goal: an **unscripted attract-mode desynchronisation** where Sonic's demo controller playback continues, but faulty RAM or cartridge transactions change the game state. Sonic could collide with scenery, get stuck or crash depending on the hardware fault.
 
-**Current status:** standalone work-RAM transaction foundation only. The C model
-is not integrated into the emulator or UI, and no Sonic behavior is verified;
-see [the logic-bending foundation](docs/LOGIC-BENDING.md).
+**Current status:** experimental work-RAM integration and UI are implemented.
+Actual-WASM and Chromium checks pass; repeated cartridge trials produce HALT
+or static output. Continued internal demo playback remains unverified, so the
+attract-mode goal is not complete. See [the logic-bending
+model](docs/LOGIC-BENDING.md) and [experiment procedure](docs/EXPERIMENTS.md).
 
 - Start with 68000 work-RAM address/data short model, focusing on bus read/write integration rather than arbitrary random values.
-- Distinguish read fault, write fault and latched physical RAM damage.
-- Preserve one-fault-at-a-time operation initially, with switch for momentary or latched contact.
-- Provide fault statistics and a CPU exception/halt monitor; do not silently rescue crashes.
+- Distinguish read and write faults and persistent emulator-RAM changes; do not
+  describe stored changes as permanent physical chip damage.
+- Keep RAM and VRAM fault domains separate during experiments.
+- Provide fault statistics and CPU STOP/HALT monitoring; do not silently rescue crashes.
 - Add deterministic reproduction metadata (model version, short pins, ROM fingerprint, activation frame and reset state).
 - Document precise RAM chips and pin mappings for a chosen NTSC Model 1 board revision before claiming physical pin fidelity.
 - A Sonic 1 RAM map/disassembly may be used diagnostically but **must not** hard-code specific Sonic variable edits as simulated hardware behaviour.
 
-**Acceptance:** Demonstrate normal attract replay and at least one reproducible altered replay while preserving unmodified game code. No guaranteed target effect for arbitrary electrical shorts.
+**Acceptance:** Test the integrated access paths, then demonstrate a normal
+attract replay and at least one recorded faulted replay while preserving
+unmodified game code. Follow [the experiment procedure](docs/EXPERIMENTS.md).
+No guaranteed target effect for arbitrary modeled shorts.
 
 ## v0.3 | More accurate VRAM reads and writes
 

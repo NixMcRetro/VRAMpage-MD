@@ -1,13 +1,17 @@
 # Changelog
 
-## v0.2 — work RAM model foundation (in progress)
+## v0.2 — work RAM integration (in progress)
 
-- Add a standalone 64 KiB big-endian, aligned-word transaction model for one
-  low-dominant address-line or data-line pair, with read/write direction choices.
-- This is model groundwork only: no 68000 runtime or browser integration, byte
-  lanes, Sonic-specific behavior or gameplay result is included.
-- Document the pinned emulator's RAM map, direct access paths, integration gaps
-  and planned acceptance in [Logic bending](docs/LOGIC-BENDING.md).
+- Extend the 64 KiB big-endian work-RAM model to byte and word transactions with
+  byte-lane constraints and a low-dominant digital fault rule.
+- Integrate CPU data/fetch, VDP DMA and Z80 bank access paths; add a separate RAM
+  fault panel, CPU STOP/HALT monitor and experiment metadata export.
+- Verify 50 Python tests, nine actual-WASM original-cartridge checks and six
+  synthetic logic UI checks on Chromium. Record repeated actual-cartridge faults,
+  including HALT/static-output outcomes; continued demo input remains unverified.
+- No physical
+  pin map or Sonic-specific outcome is claimed; see [Logic bending](docs/LOGIC-BENDING.md)
+  and the [experiment procedure](docs/EXPERIMENTS.md).
 
 - Provide a ready-built local review ZIP through the manual GitHub Actions build,
   with pinned Emscripten 4.0.23, so downloads work independently of cloud workspace connectivity.

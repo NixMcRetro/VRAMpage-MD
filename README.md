@@ -1,6 +1,6 @@
 # VRAMpage MD
 
-**VRAMpage MD v0.1.x** is an experimental, browser-based NTSC Sega Mega Drive / Genesis Model 1 circuit-bending project. The aim is to play a locally supplied game, such as *Sonic the Hedgehog* (1991), while changing emulated **hardware signals**, not merely filtering the finished picture or audio.
+**VRAMpage MD v0.2 experimental** is an experimental, browser-based NTSC Sega Mega Drive / Genesis Model 1 circuit-bending project. The aim is to play a locally supplied game, such as *Sonic the Hedgehog* (1991), while changing emulated **hardware signals**, not merely filtering the finished picture or audio.
 
 **Project status:** v0.1.x is experimental. Historical Mac testing confirmed gameplay, controls, sound and VRAM-short behavior on the prior core. The v0.1.3 display recovery remains as a legacy-core fallback. A pinned WebAssembly blitter defect causing doubled-row output and out-of-bounds writes has been identified and a native-output source correction is under review; the corrected core has built and passed a local Chromium cartridge smoke test. The old generated core must be rebuilt to receive the correction. No ROM or commercial game files belong in this repository.
 
@@ -12,7 +12,7 @@ playback acceptance remain outstanding.
 ## Three planned fault domains
 
 - **VRAM / VDP:** AD0–AD7 physical address-net bridges. Currently a deterministic, frame-scoped approximation; not cycle-accurate and not validated against physical bus contention.
-- **68000 game logic:** planned faults affecting work RAM and cartridge address/data accesses. One experiment will be desynchronising Sonic 1's prerecorded attract-mode controls from the actual level state, potentially leaving Sonic stuck against obstacles.
+- **68000 game logic:** experimental transaction-level work-RAM faults; cartridge bus faults remain planned. One experiment will be desynchronising Sonic 1's prerecorded attract-mode controls from the actual level state, potentially leaving Sonic stuck against obstacles.
 - **Audio:** clean YM2612 FM and PSG playback works in v0.1. Hardware-level faults affecting sound-register and Z80 interfaces are planned, but no audio bending is currently implemented.
 
 The goal is reproducible digital fault models with precise documentation of where the model approximates the original hardware. This is not a promise that a selected short will cause any specific gameplay effect.
@@ -32,8 +32,10 @@ using **Load ROM**. Python 3 is required, but Emscripten is not. See the short
 [local running guide](docs/RUNNING-LOCALLY.md), including the Terminal fallback.
 GitHub's source ZIP lacks the generated emulator and needs the build below.
 
-The first v0.2 work-RAM model is independently tested C groundwork; it is not yet
-wired into gameplay. See [Logic bending](docs/LOGIC-BENDING.md).
+The v0.2 experimental RAM panel applies deterministic address/data faults to
+CPU accesses and VDP DMA. It includes read/write direction, affected-access
+counters, STOP/HALT flags and metadata export. Only one fault domain is active
+at a time. See [Logic bending](docs/LOGIC-BENDING.md) for restrictions and evidence.
 
 ## Contributor build
 

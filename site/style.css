@@ -18,7 +18,7 @@ button { cursor:pointer; border:1px solid #888e89; border-radius:2px; background
 button:hover:not(:disabled) { background:#ebe6da; border-color:#434a47; }
 button:active:not(:disabled) { background:#d4d0c7; }
 button:disabled { opacity:.45; cursor:not-allowed; }
-button:focus-visible, label:focus-visible, input:focus-visible, a:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+button:focus-visible, label:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 a { color:#9c402b; }
 p { margin:0; }
 .shell { width:min(1420px, calc(100% - 44px)); margin:auto; padding:22px 0 30px; }
@@ -82,6 +82,25 @@ h3 { font-size:13px; margin:0; }
 .notice { margin:14px 16px 16px; padding:10px 12px; border-left:3px solid #a3a29a; background:var(--surface-2); color:#555953; font-size:11px; line-height:1.55; }
 .notice strong { color:var(--ink); }
 .bottom-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:18px; }
+.logic-panel { margin-top:11px; background:var(--surface); border:1px solid var(--rule); min-width:0; }
+.logic-panel summary { cursor:pointer; list-style:none; user-select:none; }
+.logic-panel summary::-webkit-details-marker { display:none; }
+.logic-panel summary::after { content:'+'; color:var(--muted); font:20px/1 ui-monospace,monospace; margin-left:7px; }
+.logic-panel[open] summary::after { content:'−'; }
+.logic-intro { padding:10px 12px 0; color:#535954; font-size:12px; }
+.logic-controls { display:grid; grid-template-columns:repeat(4,minmax(100px,1fr)); gap:8px; padding:11px 12px 8px; }
+.logic-controls label { display:flex; flex-direction:column; gap:4px; color:var(--muted); font-size:11px; }
+.logic-controls select { min-width:0; width:100%; padding:7px 8px; border:1px solid #888e89; border-radius:2px; background:var(--surface); color:var(--ink); font:12px ui-monospace,SFMono-Regular,Consolas,monospace; }
+.logic-actions { display:flex; flex-wrap:wrap; gap:7px; padding:0 12px 9px; }
+.logic-actions button { font-size:11px; padding:7px 9px; }
+.logic-status { margin:0 12px 9px; color:var(--muted); font:11px ui-monospace,SFMono-Regular,Consolas,monospace; }
+.logic-metrics { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); border-block:1px solid var(--rule); background:var(--surface-2); }
+.logic-metrics > div { min-width:0; padding:8px 10px; border-right:1px solid var(--rule); }
+.logic-metrics > div:last-child { border-right:0; }
+.logic-metrics span { display:block; color:var(--muted); font-size:10px; }
+.logic-metrics strong { display:block; padding-top:2px; overflow-wrap:anywhere; font:700 13px ui-monospace,SFMono-Regular,Consolas,monospace; }
+.logic-note { margin:9px 12px 12px; padding:8px 10px; border-left:3px solid #a3a29a; background:var(--surface-2); color:#555953; font-size:10px; line-height:1.55; }
+.logic-note strong { color:var(--ink); }
 #experimentLog { margin:13px 16px 16px; padding:0 0 0 19px; min-height:90px; max-height:170px; overflow:auto; color:#50564f; font:11px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace; }
 #experimentLog li { padding:2px 0; }
 .notes-block > p { padding:11px 16px 0; color:#535954; font-size:12px; }
@@ -111,6 +130,10 @@ footer { display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; 
   .instructions { padding:10px 12px; }
   .instructions p { font-size:11px; }
   .bottom-grid { grid-template-columns:1fr; gap:12px; margin-top:12px; }
+  .logic-controls { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .logic-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .logic-metrics > div { border-bottom:1px solid var(--rule); }
+  .logic-metrics > .cpu-state { grid-column:1/-1; border-bottom:0; }
   .chip-box { margin-inline:10px; padding:9px; }
   .bender-panel .explain { padding-inline:12px; }
   .presets-head { padding-inline:12px; }
@@ -188,6 +211,10 @@ footer { padding-top:9px; font-size:10px; }
   .screen-frame { --display-border:3px; }
   .toolbar button,.load-btn { flex:1 1 27%; }
   .bottom-grid { grid-template-columns:1fr; }
+  .logic-controls { padding-inline:10px; }
+  .logic-actions { padding-inline:10px; }
+  .logic-actions button { flex:1 1 45%; }
+  .logic-intro,.logic-status,.logic-note { margin-inline:10px; }
   .machine-status { font-size:9px; }
   .chip-box { margin-inline:10px; }
 }
@@ -225,6 +252,7 @@ footer { padding-top:9px; font-size:10px; }
   .screen-well { background:#1b2226; }
   .screen-info, .instructions p, .bender-panel .explain,
   .notice, .notes-block > p { color:#c1c9c8; }
+  .logic-intro, .logic-note { color:#c1c9c8; }
   .load-btn { background:#b9583d; color:#fff; border-color:#e28970; }
   .load-btn:hover { background:#a34731; }
   .patch-status strong { color:#f2aa8e; }

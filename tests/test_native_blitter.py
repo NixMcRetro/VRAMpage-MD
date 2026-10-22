@@ -126,20 +126,60 @@ class NativeBlitterPatchTests(unittest.TestCase):
             wasm = root / 'src/main/c/wasm/wasm.c'
             config = root / 'src/main/c/wasm/config.c'
             render = root / 'src/main/c/core/vdp_render.h'
+            m68k = root / 'src/main/c/core/m68k/m68kcpu.h'
+            z80 = root / 'src/main/c/core/memz80.c'
+            dma = root / 'src/main/c/core/vdp_ctrl.c'
             wasm.parent.mkdir(parents=True)
-            render.parent.mkdir(parents=True)
-            wasm.write_text('#define SOUND_FREQUENCY 44100\n'
+            m68k.parent.mkdir(parents=True)
+            render.parent.mkdir(parents=True, exist_ok=True)
+            wasm.write_text('#include "sms_ntsc.h"\n'
+                            '#define SOUND_FREQUENCY 44100\n'
+                            'void start(void) {\n    system_reset();\n}\n'
                             'void EMSCRIPTEN_KEEPALIVE tick(void) {\n'
                             '    system_frame_gen(0);\n}\n')
             config.write_text('config.region_detect  = 3;\n'
                               'config.vdp_mode       = 1;\n'
                               'config.master_clock   = 1;\n')
             render.write_text(FIXTURE.read_text())
+            m68k.write_text('''#include "m68k.h"
+#define m68k_read_immediate_16(address) *(uint16 *)(m68ki_cpu.memory_map[((address)>>16)&0xff].base + ((address) & 0xffff))
+#define m68k_read_pcrelative_8(address)  READ_BYTE(m68ki_cpu.memory_map[((address)>>16)&0xff].base, (address) & 0xffff)
+  if (temp->read8) val = (*temp->read8)(ADDRESS_68K(address));
+  else val = READ_BYTE(temp->base, (address) & 0xffff);
+  if (temp->read16) val = (*temp->read16)(ADDRESS_68K(address));
+  else val = *(uint16 *)(temp->base + ((address) & 0xffff));
+  if (temp->write8) (*temp->write8)(ADDRESS_68K(address),value);
+  else WRITE_BYTE(temp->base, (address) & 0xffff, value);
+  if (temp->write16) (*temp->write16)(ADDRESS_68K(address),value);
+  else *(uint16 *)(temp->base + ((address) & 0xffff)) = value;
+  if (temp->write16) (*temp->write16)(ADDRESS_68K(address+2),value&0xffff);
+  else *(uint16 *)(temp->base + ((address + 2) & 0xffff)) = value;
+''')
+            z80.write_text('''#include "shared.h"
+      address = zbank | (address & 0x7FFF);
+      if (zbank_memory_map[address >> 16].read)
+      {
+        return (*zbank_memory_map[address >> 16].read)(address);
+      }
+      return READ_BYTE(m68k.memory_map[address >> 16].base, address & 0xFFFF);
+      address = zbank | (address & 0x7FFF);
+      if (zbank_memory_map[address >> 16].write)
+''')
+            dma.write_text('''#include "shared.h"
+    /* access Work-RAM by default  */
+    data = *(uint16 *)(work_ram + (source & 0xFFFF));
+      data = ((zstate ^ 3) ? *(uint16 *)(work_ram + (source & 0xFFFF)) : 0xFFFF);
+    else
+    {
+      data = *(uint16 *)(work_ram + (source & 0xFFFF));
+''')
 
             self.assertTrue(patch_core.patch_core(root))
-            first_outputs = (wasm.read_text(), config.read_text(), render.read_text())
+            first_outputs = (wasm.read_text(), config.read_text(), render.read_text(),
+                             m68k.read_text(), z80.read_text(), dma.read_text())
             self.assertFalse(patch_core.patch_core(root))
-            self.assertEqual(first_outputs, (wasm.read_text(), config.read_text(), render.read_text()))
+            self.assertEqual(first_outputs, (wasm.read_text(), config.read_text(), render.read_text(),
+                                             m68k.read_text(), z80.read_text(), dma.read_text()))
             self.assertEqual(render.read_text().count(patch_core.NATIVE_BLITTER_MARKER), 1)
             self.assertNotIn('line * 2 * bitmap.pitch', render.read_text())
             self.assertNotIn('w * bitmap.pitch', render.read_text())

@@ -39,6 +39,7 @@ jobs:
           test -s site/core/genplus.js
           test -s site/core/genplus.wasm
           test -f site/source/README.txt
+          node tests/test_wasm_logic.cjs site/core/genplus.js
       - name: Package static website with corresponding emulator source
         shell: bash
         run: |

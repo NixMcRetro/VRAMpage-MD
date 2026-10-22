@@ -63,11 +63,15 @@ jobs:
         run: python -m playwright install --with-deps ${{ matrix.browser }}
       - name: Run ${{ matrix.browser }} layout and input tests
         run: python tests/browser_display.py --browser ${{ matrix.browser }} --artifacts artifacts/browser
+      - name: Run ${{ matrix.browser }} logic interface tests
+        run: python tests/browser_logic.py --browser ${{ matrix.browser }} --artifacts artifacts/browser-logic
       - name: Upload browser screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: browser-display-${{ matrix.browser }}-screenshots
-          path: artifacts/browser/
+          path: |
+            artifacts/browser/
+            artifacts/browser-logic/
           if-no-files-found: warn
           retention-days: 14
