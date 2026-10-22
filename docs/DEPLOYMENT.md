@@ -55,7 +55,9 @@ A published release can be rolled back with a revert to the last known-good comm
 
 ## Local review download
 
-The manual **Build VRAMpage MD website bundle** workflow also creates a
+Manually run **VRAMpage MD source checks** on the review branch with **Build a
+ready-to-run local review download** enabled. It calls the reusable website
+build workflow and creates a
 `VRAMpage-MD-local-review` artifact with the built core, corresponding source and
 local launcher. This uses the tested Emscripten 4.0.23 toolchain and does not
 deploy or modify McRetro.net. See [Run locally](RUNNING-LOCALLY.md) for download

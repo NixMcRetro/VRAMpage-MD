@@ -24,5 +24,6 @@ tested C foundation; it does not add game-logic fault controls yet.
 
 Review artifacts are kept on GitHub for 30 days and require a GitHub sign-in.
 They do not depend on the Codex cloud environment remaining connected. To refresh
-one, run the **Build VRAMpage MD website bundle** workflow on the review branch;
-it builds artifacts and does not deploy the website.
+one, run **VRAMpage MD source checks** on the review branch with **Build a
+ready-to-run local review download** enabled. It builds artifacts and does not
+deploy the website.

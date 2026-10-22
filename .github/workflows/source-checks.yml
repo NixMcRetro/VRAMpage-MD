@@ -5,11 +5,20 @@ on:
     branches: [main, 'import/**', 'feature/**', 'release/**']
   pull_request:
   workflow_dispatch:
+    inputs:
+      review_bundle:
+        description: Build a ready-to-run local review download
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
+  review-bundle:
+    if: github.event_name == 'workflow_dispatch' && inputs.review_bundle
+    uses: ./.github/workflows/build-website.yml
+
   source-tests:
     runs-on: ubuntu-24.04
     steps:

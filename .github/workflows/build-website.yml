@@ -2,6 +2,7 @@ name: Build VRAMpage MD website bundle
 
 # Builds only in the VRAMpage repository. NEVER publishes to McRetro.net.
 on:
+  workflow_call:
   workflow_dispatch:
   push:
     tags:
