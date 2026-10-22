@@ -12,6 +12,7 @@ older standalone-model descriptions are historical development records.
 
 | Document | Purpose |
 | --- | --- |
+| [Release history](RELEASE-HISTORY.md) | Canonical historical versions and current runnable downloads |
 | [Changelog](../CHANGELOG.md) | Versioned changes and verification limits |
 | [Versioning](VERSIONING.md) | Canonical 0.2.x release labels and historical identifier mapping |
 | [Run locally](RUNNING-LOCALLY.md) | Start a ready-built review bundle without building WebAssembly |
@@ -22,7 +23,7 @@ older standalone-model descriptions are historical development records.
 | [Video output](VIDEO-OUTPUT.md) | 640-pixel source stride, native pixels, missing-line recovery and raw output |
 | [Logic bending](LOGIC-BENDING.md) | v0.2 work-RAM model, runtime scope and known limits |
 | [Byte transactions](WORK-RAM-BYTES.md) | Standalone byte-lane rules and regression coverage |
-| [VRAM leg switches](VRAM-LEG-SWITCHES.md) | v0.2.5 AD0–AD7 toggles, crosses and bridge selection |
+| [VRAM leg switches](VRAM-LEG-SWITCHES.md) | v0.2.5 AD0-AD7 toggles, crosses and bridge selection |
 | [Address-line chip](ADDRESS-LINE-CHIP.md) | v0.2.5 crossed-wire controls, stuck-low assumptions and logical bus mapping |
 | [Affected-write pulses](ACCESS-LIMITED-PULSES.md) | v0.2.3 transaction cutoffs, longword fix and corrected-core comparisons |
 | [Pulse survey](PULSE-EXPERIMENTS.md) | Repeated actual-core survey of all adjacent address write pairs |

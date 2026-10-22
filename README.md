@@ -10,7 +10,8 @@ chip diagrams are conceptual and the models are not electrically accurate.
 **[Download the complete v0.2.5 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.5/VRAMpage-MD-v0.2.5-macos.zip)**
 ([release notes](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.5)).
 The [corrected v0.2.4 release](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.4)
-remains available; the earlier misnumbered v2.4.0 is marked superseded.
+remains available. The misnumbered v2.4.0 release entry has been removed; its Git
+tag remains in the source history. See the [complete release history](docs/RELEASE-HISTORY.md).
 
 1. Download that ZIP and extract it in Finder.
 2. Open the extracted **VRAMpage-MD** folder and double-click **START.command**.
@@ -32,12 +33,12 @@ default browser or open the address printed by the launcher in Firefox.
   fullscreen and clean restart. ROM data stays on your computer.
 - Native framebuffer correction, responsive window sizing and automatic system
   Light/Dark appearance; legacy-core row recovery and raw-output option remain.
-- VRAM AD0–AD7 leg switches: click to show a × and force an address net low;
+- VRAM AD0-AD7 leg switches: click to show a × and force an address net low;
   click again to reconnect. Bridge mode, presets and momentary/latched shorts remain.
 - Experimental work-RAM address/data faults with read/write direction, affected
   access counters and CPU STOP/HALT monitoring.
 - Explicit CPU resume/reset, short frame pulses and affected-write limits.
-- Compact chips with internal labels, short legs and crosses; independent A1–A15 stuck-low
+- Compact chips with internal labels, short legs and crosses; independent A1-A15 stuck-low
   switches show crosses on disabled lines.
 - Local experiment logging and JSON metadata export, without ROM or RAM bytes.
 
