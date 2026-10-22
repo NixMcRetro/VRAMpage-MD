@@ -23,6 +23,7 @@ static uint8 bend_snapshot[0x10000];
 static uint8 bend_projection[0x10000];
 static int bend_a = -1;
 static int bend_b = -1;
+static unsigned int bend_address_mask = 0;
 static int bend_restore_cache = 0;
 static unsigned int bend_changed_reads = 0;
 static unsigned int bend_changed_writes = 0;
@@ -36,6 +37,14 @@ static inline uint16_t bend_pair(uint16_t address, int x, int y) {
 }
 
 static inline uint16_t bend_map(uint16_t logical) {
+    if (bend_address_mask) {
+        /* Each physical AD input appears in both multiplexed address phases.
+         * Open/disconnected inputs are approximated as deterministic zero. */
+        unsigned int mask = bend_address_mask;
+        uint16_t logical_mask = (uint16_t)((mask << 2) | (mask & 3u) |
+                                                   ((mask & 0xfcu) << 8));
+        return logical & (uint16_t)~logical_mask;
+    }
     if (bend_a < 0 || bend_b < 0) return logical;
     /* Row phase: 8 consecutive logical bits, A2..A9 */
     uint16_t result = bend_pair(logical, bend_a + 2, bend_b + 2);
@@ -56,7 +65,32 @@ static void bend_force_pattern_decode(void) {
     bg_list_index = 0x800;
 }
 
+static int bend_active(void) {
+    return bend_a >= 0 || bend_address_mask != 0;
+}
+
+/* start() calls this after the system reset. No fault state crosses cartridges. */
+static void bend_reset(void) {
+    bend_a = bend_b = -1;
+    bend_address_mask = 0;
+    bend_changed_reads = bend_changed_writes = 0;
+    bend_restore_cache = 1;
+}
+
+int EMSCRIPTEN_KEEPALIVE set_vram_address_mask(int mask) {
+    if (mask < 0 || mask > 255) return 1;
+    bend_a = bend_b = -1;
+    bend_address_mask = (unsigned int)mask;
+    bend_restore_cache = 1;
+    return 0;
+}
+
+unsigned int EMSCRIPTEN_KEEPALIVE get_vram_address_mask(void) {
+    return bend_address_mask;
+}
+
 void EMSCRIPTEN_KEEPALIVE set_vram_short(int a, int b) {
+    bend_address_mask = 0;
     if (a == b || a < 0 || b < 0 || a > 7 || b > 7) {
         bend_a = bend_b = -1;
     } else {
@@ -74,7 +108,7 @@ unsigned int EMSCRIPTEN_KEEPALIVE get_vram_changed_writes(void) { return bend_ch
 static void bend_before_frame(void) {
     bend_changed_reads = 0;
     bend_changed_writes = 0;
-    if (bend_a < 0) {
+    if (!bend_active()) {
         if (bend_restore_cache) {
             bend_force_pattern_decode();
             bend_restore_cache = 0;
@@ -93,7 +127,7 @@ static void bend_before_frame(void) {
 }
 
 static void bend_after_frame(void) {
-    if (bend_a < 0) return;
+    if (!bend_active()) return;
     /* Reconcile changed logical bytes into the physical VRAM snapshot.
        This detects net changes, not exact individual write transactions.
        Collision resolution follows ascending logical address order. */

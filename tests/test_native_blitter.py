@@ -180,6 +180,8 @@ class NativeBlitterPatchTests(unittest.TestCase):
             first_outputs = (wasm.read_text(), config.read_text(), render.read_text(),
                              m68k.read_text(), z80.read_text(), dma.read_text())
             self.assertFalse(patch_core.patch_core(root))
+            self.assertIn('set_vram_address_mask', wasm.read_text())
+            self.assertIn('    bend_reset();', wasm.read_text())
             self.assertEqual(first_outputs, (wasm.read_text(), config.read_text(), render.read_text(),
                                              m68k.read_text(), z80.read_text(), dma.read_text()))
             self.assertEqual(render.read_text().count(patch_core.NATIVE_BLITTER_MARKER), 1)
@@ -200,3 +202,31 @@ class NativeBlitterPatchTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class VramPatchMigrationTests(unittest.TestCase):
+    def test_old_embedded_block_is_refreshed_and_idempotent(self):
+        patch = (ROOT / 'scripts/vram_fault_patch.c').read_text()
+        old = ('prefix\n/*\n * ' + patch_core.FAULT_MARKER + ' address-net fault experiment.\n */\n'
+               'static int old_vram_implementation;\n'
+               'void EMSCRIPTEN_KEEPALIVE tick(void) {\n'
+               '    bend_before_frame();\n    system_frame_gen(0);\n'
+               '    work_ram_logic_tick();\n    bend_after_frame();\n}\nsuffix')
+        upgraded = patch_core.patch_vram_fault(old, patch)
+        self.assertNotIn('old_vram_implementation', upgraded)
+        self.assertIn('set_vram_address_mask', upgraded)
+        self.assertEqual(upgraded.count('work_ram_logic_tick();'), 1)
+        self.assertEqual(upgraded, patch_core.patch_vram_fault(upgraded, patch))
+        self.assertTrue(upgraded.startswith('prefix\n'))
+        self.assertTrue(upgraded.endswith('\nsuffix'))
+
+    def test_ambiguous_or_incomplete_embedded_block_is_rejected(self):
+        patch = (ROOT / 'scripts/vram_fault_patch.c').read_text()
+        good = (patch + '\nvoid EMSCRIPTEN_KEEPALIVE tick(void) {\n'
+                '    bend_before_frame();\n    system_frame_gen(0);\n'
+                '    bend_after_frame();\n}')
+        for broken in (good + good, good.replace('bend_after_frame();', ''),
+                       good.replace('/*\n * ', '/* ', 1),
+                       good.replace('void EMSCRIPTEN_KEEPALIVE tick(void)', 'void lost_tick(void)')):
+            with self.subTest(source=broken[:80]), self.assertRaises(SystemExit):
+                patch_core.patch_vram_fault(broken, patch)
