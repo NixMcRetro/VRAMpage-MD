@@ -80,6 +80,13 @@ No guaranteed target effect for arbitrary modeled shorts.
   but continued demo input and healthy gameplay remain unverified.
 - See [Affected-write pulses](docs/ACCESS-LIMITED-PULSES.md).
 
+## v2.4 | Chip-style address controls (experimental)
+
+- Independent A1–A15 stuck-low switches with crossed wires on a logical chip view.
+- Deterministic multi-line aliasing and exported configuration transitions.
+- Physical SRAM packages/pin mapping and floating-input behavior remain unverified;
+  see [Address-line chip](docs/ADDRESS-LINE-CHIP.md).
+
 ## v0.3 | More accurate VRAM reads and writes
 
 - Move from frame-level projection to fault handling at VDP VRAM access paths.

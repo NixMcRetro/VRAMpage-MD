@@ -52,7 +52,7 @@ class BrowserLogicTests(unittest.TestCase):
             context.close()
         self.assertEqual(self.errors, [], "Uncaught application errors")
 
-    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False):
+    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False):
         context = self.browser.new_context(
             viewport={"width": 1366, "height": 768},
             color_scheme="light",
@@ -61,6 +61,8 @@ class BrowserLogicTests(unittest.TestCase):
         self.contexts.append(context)
         page = context.new_page()
         page.on("pageerror", lambda error: self.errors.append(str(error)))
+        if legacy_chip:
+            page.add_init_script("window.__legacyChipCore = true;")
         if legacy_write_pulse:
             page.add_init_script("window.__legacyWritePulseCore = true;")
         if legacy_recovery:
@@ -360,6 +362,63 @@ class BrowserLogicTests(unittest.TestCase):
         page.wait_for_function("window.mockCore.logic.recoveries.length === 1")
         expect(page.locator("#logicStatus")).to_contain_text("Forced resume attempted")
 
+    def test_chip_multiple_lines_keyboard_restore_and_export(self):
+        self.load_rom()
+        pins = self.page.locator("[data-chip-line]")
+        self.assertEqual(pins.count(), 15)
+        pins.nth(0).click()
+        pins.nth(14).focus()
+        self.page.keyboard.press("Space")
+        expect(pins.nth(0)).to_have_attribute("aria-pressed", "true")
+        expect(pins.nth(14).locator(".chip-cut")).to_have_css("visibility", "visible")
+        self.assertEqual(self.page.evaluate("window.mockCore.logic.addressMask"), 0x4001)
+        if OPTIONS.artifacts:
+            OPTIONS.artifacts.mkdir(parents=True, exist_ok=True)
+            self.page.locator("#ramChip").screenshot(path=str(OPTIONS.artifacts / f"{OPTIONS.browser}-chip-crosses.png"))
+        self.page.locator("#logicLineB").select_option("0")
+        self.page.locator("#logicApplyBtn").click()
+        expect(pins.nth(0)).to_have_attribute("aria-pressed", "true")
+        data = self.export_payload()
+        self.assertEqual(data["logicFault"]["kind"], "address-stuck-low")
+        self.assertEqual(data["logicFault"]["lines"], ["A1", "A15"])
+        self.assertEqual([e["mask"] for e in data["addressLineChanges"]], [1,0x4001])
+        pins.nth(0).click()
+        expect(pins.nth(0).locator(".chip-cut")).to_have_css("visibility", "hidden")
+        self.page.locator("#chipRestoreBtn").click()
+        self.assertEqual(self.page.evaluate("window.mockCore.logic.addressMask"), 0)
+        self.assertFalse(self.export_payload()["faultActive"])
+
+    def test_chip_replacement_restart_and_mobile_layout(self):
+        self.load_rom()
+        self.page.locator("#pauseBtn").click()
+        self.page.locator("#logicPulseBtn").click()
+        self.page.locator("[data-chip-line]").nth(1).click()
+        self.assertEqual(self.export_payload()["faultPulses"][0]["status"], "cancelled")
+        self.page.locator("#logicApplyBtn").click()
+        expect(self.page.locator("[data-chip-line]").nth(1)).to_have_attribute("aria-pressed", "false")
+        self.page.locator("[data-chip-line]").nth(2).click()
+        self.page.locator("#logicResumeBtn").click()
+        self.assertEqual(self.page.evaluate("window.mockCore.logic.addressMask"), 0)
+        self.page.locator("[data-chip-line]").nth(3).click()
+        light=self.page.locator(".ram-chip-body").evaluate("e=>getComputedStyle(e).backgroundColor")
+        self.page.emulate_media(color_scheme="dark")
+        dark=self.page.locator(".ram-chip-body").evaluate("e=>getComputedStyle(e).backgroundColor")
+        self.assertNotEqual(light,dark)
+        self.page.emulate_media(color_scheme="light")
+        for width,height in [(1366,768),(390,844),(844,390)]:
+            self.page.set_viewport_size({"width":width,"height":height})
+            self.assertLessEqual(self.page.evaluate("document.documentElement.scrollWidth"), width)
+        self.page.locator("#resetBtn").click()
+        self.assertEqual(self.export_payload()["addressLineChanges"], [])
+        expect(self.page.locator("[data-chip-line]").nth(3)).to_have_attribute("aria-pressed", "false")
+
+    def test_older_core_disables_chip_only(self):
+        page=self.new_page(legacy_chip=True)
+        self.load_rom(page)
+        expect(page.locator("[data-chip-line]").first).to_be_disabled()
+        expect(page.locator("#logicApplyBtn")).to_be_enabled()
+        expect(page.locator("#logicPulseBtn")).to_be_enabled()
+
     def test_older_logic_core_disables_only_recovery(self):
         page = self.new_page(legacy_recovery=True)
         self.load_rom(page)
@@ -409,7 +468,7 @@ class BrowserLogicTests(unittest.TestCase):
             self.page.locator("#logicExperimentBtn").click()
         download = download_info.value
         payload = json.loads(Path(download.path()).read_text())
-        self.assertEqual(payload["modelVersion"], "2.3-experimental")
+        self.assertEqual(payload["modelVersion"], "2.4-experimental")
         self.assertEqual(payload["rom"]["name"], "synthetic-test.bin")
         self.assertEqual(payload["rom"]["sha256"], hashlib.sha256(rom).hexdigest())
         self.assertNotIn("bytes", payload["rom"])

@@ -1,5 +1,15 @@
 # Changelog
 
+## v2.4 — chip-style address-line switches, 22 October 2026
+
+- Add keyboard/mouse wire buttons on a conceptual work-RAM chip. Crosses mark
+  independently forced-low A1–A15 signals; multiple lines may be disabled.
+- Add deterministic address masks with read/write direction, persistent aliasing
+  writes, transition metadata and reset/recovery/domain exclusivity.
+- Preserve paired faults and pulses; older cores disable only the new switches.
+- Document the stuck-low assumption and unverified physical pin arrangement in
+  [Address-line chip](docs/ADDRESS-LINE-CHIP.md).
+
 ## v2.3 — affected-write pulse limits, 22 October 2026
 
 - Add core-enforced 1/2/4/8 affected-write limits with a one-frame cutoff and

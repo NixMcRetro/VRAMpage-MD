@@ -15,6 +15,7 @@ VRAMpage MD is a browser-based NTSC Mega Drive/Genesis experiment. It runs a loc
 | [Video output](VIDEO-OUTPUT.md) | 640-pixel source stride, native pixels, missing-line recovery and raw output |
 | [Logic bending](LOGIC-BENDING.md) | v0.2 work-RAM model, runtime scope and known limits |
 | [Byte transactions](WORK-RAM-BYTES.md) | Standalone byte-lane rules and regression coverage |
+| [Address-line chip](ADDRESS-LINE-CHIP.md) | v2.4 crossed-wire controls, stuck-low assumptions and logical bus mapping |
 | [Affected-write pulses](ACCESS-LIMITED-PULSES.md) | v2.3 transaction cutoffs, longword fix and corrected-core comparisons |
 | [Pulse survey](PULSE-EXPERIMENTS.md) | Repeated actual-core survey of all adjacent address write pairs |
 | [RAM pulses](RAM-PULSES.md) | Short contacts, quick address write pairs, frame timing and cancellation |

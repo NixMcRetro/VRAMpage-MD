@@ -269,3 +269,17 @@ footer { padding-top:9px; font-size:10px; }
 .pulse-settings { align-items:center; }
 .pulse-settings label { font-size:11px; color:var(--muted); }
 .pulse-settings select { max-width:100%; padding:6px; background:var(--surface); color:var(--ink); }
+
+/* Conceptual IC silhouette: positions are not physical package pin numbers. */
+.ram-chip { display:grid; grid-template-columns:minmax(64px,1fr) minmax(110px,1.5fr) minmax(64px,1fr); gap:4px 0; max-width:520px; margin:16px auto; padding:0 12px; }
+.ram-chip-body { grid-column:2; grid-row:1 / span 8; position:relative; border:2px solid var(--ink); border-radius:5px; background:var(--surface-2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; color:var(--ink); text-align:center; }
+.ram-chip-body::before { content:''; position:absolute; top:-2px; width:24px; height:12px; border:2px solid var(--ink); border-top:0; border-radius:0 0 14px 14px; background:var(--surface); }
+.ram-chip-body strong { font:700 13px ui-monospace,SFMono-Regular,Consolas,monospace; }
+.ram-chip-body small { font-size:10px; line-height:1.5; color:var(--muted); }
+.chip-pin { display:flex; align-items:center; justify-content:space-between; gap:4px; min-height:32px; padding:4px; border:1px solid transparent; background:transparent; color:var(--ink); font:12px ui-monospace,SFMono-Regular,Consolas,monospace; }
+.chip-pin:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+.chip-pin[aria-pressed="true"] { color:var(--accent); background:var(--surface); border-color:var(--rule); }
+.chip-wire { position:relative; flex:1; min-width:18px; height:2px; background:currentColor; }
+.chip-cut { visibility:hidden; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:20px; line-height:18px; background:var(--surface); }
+.chip-pin[aria-pressed="true"] .chip-cut { visibility:visible; }
+.chip-pin:disabled { opacity:0.45; }

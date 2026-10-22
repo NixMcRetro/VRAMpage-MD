@@ -117,3 +117,11 @@ The related regression uncovered/fixed a missing first-half longword write hook.
 Earlier claims of complete longword fault coverage were too broad: the original
 WASM checks exercised no-fault longwords, not both faulted halves. Current
 original-cartridge checks assert both halves and a cutoff between them.
+
+## Independent address-line omission
+
+v2.4 adds an [address-line chip view](ADDRESS-LINE-CHIP.md). Its multiple-line
+mask forces selected address bits low, separately from bridging a pair. A0 is
+preserved for byte lanes, reads do not mutate storage, and aliased writes
+persist. This is a deterministic stuck-low approximation of omitted inputs,
+not a model of floating disconnected wires or a verified physical pinout.

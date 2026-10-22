@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#dedbd2" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#171c20" media="(prefers-color-scheme: dark)">
-  <title>VRAMpage MD v2.3 experimental | Mega Drive circuit bending</title>
+  <title>VRAMpage MD v2.4 experimental | Mega Drive circuit bending</title>
   <link rel="stylesheet" href="style.css">
   <script src="core/genplus.js" defer onerror="window.__coreMissing = true"></script>
   <script src="framebuffer.js" defer></script>
@@ -16,7 +16,7 @@
   <main class="shell">
     <header class="masthead">
       <div>
-        <div class="brand"><h1>VRAMpage <span>MD</span></h1><span class="version">v2.3 experimental</span></div>
+        <div class="brand"><h1>VRAMpage <span>MD</span></h1><span class="version">v2.4 experimental</span></div>
         <p class="subtitle">Mega Drive memory experiments. NTSC / Model 1.</p>
       </div>
       <div class="machine-status"><span class="led" id="powerLed"></span><span id="powerLabel">CORE NOT READY</span></div>
@@ -87,6 +87,11 @@
           <select id="logicLineB"></select>
         </label>
       </div>
+      <p class="logic-note" id="chipExplanation"><strong>Address-line switches.</strong> Click a wire to toggle its × and force that signal low, using Access above. This applies immediately and stays active until reconnected or replaced by another fault. The chip is a conceptual address-bus diagram, not a physical pinout. “Disabled” uses a stuck-low model; a real open wire can float.</p>
+      <div id="ramChip" class="ram-chip" role="group" aria-label="Conceptual work RAM address lines" aria-describedby="chipExplanation">
+        <div class="ram-chip-body"><strong>WORK RAM</strong><span>64 KiB</span><small>Logical address inputs<br>A1–A15</small></div>
+      </div>
+      <div class="logic-actions"><button id="chipRestoreBtn" type="button" disabled>Reconnect all address lines</button></div>
       <div class="logic-actions">
         <button id="logicApplyBtn" type="button" disabled>Apply RAM fault</button>
         <button id="logicDisconnectBtn" type="button" disabled>Disconnect RAM</button>
@@ -136,7 +141,7 @@
         <p class="small-note">Emulator: <a href="https://github.com/h1romas4/wasm-genplus" target="_blank" rel="noreferrer">wasm-genplus</a> / <a href="https://github.com/ekeeke/Genesis-Plus-GX" target="_blank" rel="noreferrer">Genesis Plus GX</a>. Redistributing a modified core requires its corresponding source and applicable licence notices.</p>
       </details>
     </section>
-    <footer><span>VRAMpage MD &nbsp;·&nbsp; v2.3 experimental (review candidate)</span><span>NTSC HARDWARE MODE &nbsp; / &nbsp; AUTOMATIC MISSING-LINE RECOVERY</span></footer>
+    <footer><span>VRAMpage MD &nbsp;·&nbsp; v2.4 experimental (review candidate)</span><span>NTSC HARDWARE MODE &nbsp; / &nbsp; AUTOMATIC MISSING-LINE RECOVERY</span></footer>
   </main>
 </body>
 </html>

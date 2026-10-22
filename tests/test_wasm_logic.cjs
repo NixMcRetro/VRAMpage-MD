@@ -190,5 +190,27 @@ async function create(words, config, init) {
   c._start();assert.equal(c._get_logic_pulse_state(),0);
   c._tick();c._sound();assert.equal(getWord(c,4),0x1234);
   assert.equal(c._get_logic_writes(),0);tests++;
+  // One line stuck low aliases reads, preserves source RAM and both byte lanes.
+  c=await create([
+    0x3039,0x00ff,0x1002,0x33c0,0x00ff,0x1010,...stop
+  ],null,c=>{putWord(c,0x1000,0x1234);putWord(c,0x1002,0xabcd);
+    assert.equal(c._set_logic_address_mask(1,1),0);});
+  assert.equal(getWord(c,0x1010),0x1234);assert.equal(getWord(c,0x1002),0xabcd);
+  assert.equal(c._get_logic_address_mask(),1);tests++;
+  // Multiple disabled lines redirect a real longword write; disconnect preserves it.
+  c=await create([...longWrite(0xff0004,0x11223344),...stop],null,c=>{
+    assert.equal(c._set_logic_address_mask(6,2),0);
+  });
+  assert.equal(getWord(c,0),0x1122);assert.equal(getWord(c,2),0x3344);
+  assert.equal(getWord(c,4),0);assert.equal(c._get_logic_writes(),2);
+  assert.equal(c._set_logic_address_mask(0x8000,3),5);
+  assert.equal(c._get_logic_address_mask(),6);
+  assert.equal(c._recover_logic_cpu(1),0);assert.equal(c._get_logic_address_mask(),0);
+  assert.equal(getWord(c,0),0x1122);tests++;
+  c=await create([
+    ...byteWrite(0xff0002,0x56),...byteWrite(0xff0003,0x78),...stop
+  ],null,c=>assert.equal(c._set_logic_address_mask(1,2),0));
+  assert.equal(getWord(c,0),0x5678);assert.equal(getWord(c,2),0);
+  c._start();assert.equal(c._get_logic_address_mask(),0);tests++;
   console.log(`Actual WASM logic integration: ${tests} original 68000 cartridge checks passed.`);
 })().catch(error=>{console.error(error);process.exitCode=1;});

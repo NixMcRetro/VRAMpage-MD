@@ -335,3 +335,29 @@ matched the historical v2.2 baseline. The ordinary faulted results change with
 the longword correction. See [Affected-write pulses](ACCESS-LIMITED-PULSES.md)
 for records and exact commands. Continued demo-controller playback, physical
 behavior, audible playback and native macOS acceptance remain unverified.
+
+## v2.4 address-line chip verification (22 October 2026)
+
+Emscripten 4.0.23 rebuild passed. All **21 actual-WASM original-cartridge checks**
+passed, including three new mask cases: read aliasing/source integrity,
+multi-line longword writes with recovery clearing, and byte-lane/restart behavior.
+Native runtime tests enumerate 32768 word addresses for each individual line
+and alternating multi-line masks, then cover all-lines-low, byte lanes,
+direction, persistence, invalid masks/access, pair/budget replacement, recovery
+and reset. The existing standalone pair model is unchanged.
+
+Local Chromium passed **18 logic cases** and the six existing display cases.
+Three chip cases cover multiple lines, mouse/Space, cross visibility, export,
+invalid pair preservation, pair/pulse replacement, recovery/reset and older-core
+fallback. Expanded chip layout was checked at 1366×768, 390×844 and 844×390;
+the display suite keeps its nine existing viewport cases. Synthetic screenshots
+include a chip-only view with active crosses and remain outside the repository.
+CI runs both suites in Chromium, Firefox and WebKit.
+
+An actual-core Chromium 1366×768 smoke loaded the private cartridge, crossed
+A1/A15, verified mask/history export, ran briefly with the mask, reconnected,
+requested recovery and clean-restarted without page errors. A no-fault actual
+cartridge run through tick 2401 matched the previous sampled RAM, native-picture
+and stereo-audio baseline exactly. This does not verify healthy faulted gameplay,
+audible playback, actual Z80 execution, physical pin mapping or native macOS
+acceptance. See [Address-line chip](ADDRESS-LINE-CHIP.md) for reproduction.

@@ -114,6 +114,54 @@ int main(void)
     work_ram_logic_start();
     assert(get_logic_pulse_state() == WORK_RAM_PULSE_NONE);
 
+    /* Every single-line mask across all word addresses, independently indexed. */
+    work_ram_logic_start();
+    for (uint32_t word = 0; word < 32768; word++)
+        put_native_word(word * 2, (uint16_t)word);
+    for (int line = 0; line < 15; line++) {
+        assert(set_logic_address_mask(1 << line, WORK_RAM_FAULT_APPLY_READ) == 0);
+        for (uint32_t word = 0; word < 32768; word++)
+            assert(work_ram_logic_read16(0xe00000 + word * 2) ==
+                   (uint16_t)(word & ~(1u << line)));
+        assert(get_logic_reads() == 16384);
+    }
+    for (int mask = 0x2aaa; mask <= 0x5555; mask += 0x2aab) {
+        assert(set_logic_address_mask(mask, WORK_RAM_FAULT_APPLY_READ) == 0);
+        for (uint32_t word = 0; word < 32768; word++)
+            assert(work_ram_logic_read16(0xe00000 + word * 2) == (uint16_t)(word & ~(uint32_t)mask));
+    }
+    for (uint32_t word = 0; word < 32768; word++)
+        assert(*(uint16_t *)(work_ram + word * 2) == word); /* reads never mutate */
+    assert(set_logic_address_mask(0x7fff, WORK_RAM_FAULT_APPLY_BOTH) == 0);
+    assert(get_logic_address_mask() == 0x7fff);
+    assert(set_logic_address_mask(0x8000, 3) == WORK_RAM_FAULT_INVALID_CONFIG);
+    assert(set_logic_address_mask(-1, 3) == WORK_RAM_FAULT_INVALID_CONFIG);
+    assert(set_logic_address_mask(1, 0) == WORK_RAM_FAULT_INVALID_CONFIG);
+    assert(get_logic_address_mask() == 0x7fff);
+    assert(set_logic_fault(2, 3, 0, 8) == WORK_RAM_FAULT_UNSUPPORTED_LANE);
+    assert(get_logic_address_mask() == 0x7fff);
+    work_ram_logic_write8(0xffffff, 0x5a); /* all word bits removed, odd lane retained */
+    assert(work_ram_logic_read8(0xe00001) == 0x5a);
+    assert(set_logic_address_mask(0, 3) == 0);
+    assert(work_ram_logic_read8(0xe00001) == 0x5a); /* persistent write */
+    assert(set_logic_address_mask(3, WORK_RAM_FAULT_APPLY_WRITE) == 0);
+    put_native_word(4, 0x1234);
+    assert(work_ram_logic_read16(0xe00004) == 0x1234); /* write-only does not alias reads */
+    work_ram_logic_write16(0xe00004, 0x5678);
+    assert(*(uint16_t *)work_ram == 0x5678);
+    assert(set_logic_fault(1, 1, 0, 1) == 0);
+    assert(get_logic_address_mask() == 0);
+    assert(set_logic_address_mask(1, 1) == 0);
+    assert(arm_logic_write_pulse(1, 0, 1, 1) == 0);
+    assert(get_logic_address_mask() == 0);
+    assert(set_logic_address_mask(1, 1) == 0);
+    work_ram_logic_tick();
+    assert(get_logic_address_mask() == 1 && get_logic_pulse_state() == WORK_RAM_PULSE_NONE);
+    assert(recover_logic_cpu(1) == 0 && get_logic_address_mask() == 0);
+    assert(set_logic_address_mask(1, 1) == 0);
+    work_ram_logic_start();
+    assert(get_logic_address_mask() == 0);
+
     assert(!work_ram_logic_address(0xdfffff));
     assert(work_ram_logic_address(0xe00000));
     assert(work_ram_logic_address(0xffffff));

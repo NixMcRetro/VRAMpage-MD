@@ -7,7 +7,7 @@ window.Module = async () => {
   const logic = {
     active: false, config: {kind: 0, access: 0, a: 0, b: 0},
     reads: 0, writes: 0, frame: 0, activationFrame: 0, cpuFlags: 0,
-    setterCalls: [], storedWrites: 0, recoveries: [], pulseState: 0, budget: 0, writesPerTick: 1,
+    setterCalls: [], storedWrites: 0, recoveries: [], pulseState: 0, budget: 0, writesPerTick: 1, addressMask:0,
   };
   window.mockCore = {starts: 0, ticks: 0, lastStartTick: 0, short: [-1, -1], inputs: [], logic};
 
@@ -15,6 +15,7 @@ window.Module = async () => {
     logic.setterCalls.push([kind, access, a, b]);
     if (kind === 0) {
       if (logic.pulseState === 1) logic.pulseState = 4;
+      logic.addressMask=0;
       logic.active = false;
       logic.config = {kind: 0, access: 0, a: 0, b: 0};
       logic.reads = 0;
@@ -27,7 +28,7 @@ window.Module = async () => {
         a >= lineLimit || b >= lineLimit || a === b)
       return 5;
     if (kind === 2 && Math.floor(a / 8) !== Math.floor(b / 8)) return 6;
-    logic.pulseState = 0; logic.budget = 0;
+    logic.pulseState = 0; logic.budget = 0;logic.addressMask=0;
     logic.active = true;
     logic.config = {kind, access, a, b};
     logic.reads = 0;
@@ -44,7 +45,7 @@ window.Module = async () => {
     logic.frame = 0;
     logic.activationFrame = 0;
     logic.cpuFlags = 0;
-    logic.storedWrites = 0;
+    logic.storedWrites = 0;logic.addressMask=0;
     logic.pulseState = 0; logic.budget = 0;
   }
   // Native 640-pixel pitch, coloured even rows, missing odd rows.
@@ -104,6 +105,13 @@ window.Module = async () => {
         logic.active = false; logic.cpuFlags = 0;
         return 0;
       },
+      _set_logic_address_mask(mask,access) {
+        if (!Number.isInteger(mask)||mask<0||mask>0x7fff||![1,2,3].includes(access)) return 5;
+        setLogicFault(0,0,0,0);logic.addressMask=mask;
+        if(mask) {logic.active=true;logic.config={kind:3,access,a:0,b:0};logic.activationFrame=logic.frame;}
+        return 0;
+      },
+      _get_logic_address_mask:()=>logic.addressMask,
       _arm_logic_write_pulse(kind,a,b,limit) {
         if (!Number.isInteger(limit) || limit<1 || limit>1024) return 5;
         const status=setLogicFault(kind,2,a,b);
@@ -123,5 +131,6 @@ window.Module = async () => {
   if (window.__legacyWritePulseCore) {
     delete core._arm_logic_write_pulse;delete core._get_logic_pulse_state;
   }
+  if (window.__legacyChipCore) {delete core._set_logic_address_mask;delete core._get_logic_address_mask;}
   return core;
 };

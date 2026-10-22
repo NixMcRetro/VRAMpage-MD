@@ -30,6 +30,10 @@ enum {
 };
 int arm_logic_write_pulse(int kind, int line_a, int line_b, int limit);
 uint32_t get_logic_pulse_state(void);
+/* Conceptual disconnected-line approximation: each selected A1..A15 is
+ * forced low, never a floating analogue input. Bit 0 selects CPU A1. */
+int set_logic_address_mask(int mask, int access);
+uint32_t get_logic_address_mask(void);
 uint32_t get_logic_reads(void);
 uint32_t get_logic_writes(void);
 uint32_t get_logic_frame(void);

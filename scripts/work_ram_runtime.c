@@ -19,6 +19,8 @@ static uint32_t logic_frame;
 static uint32_t logic_activation_frame;
 static uint32_t logic_write_budget;
 static uint32_t logic_pulse_state;
+static uint16_t logic_address_mask;
+static work_ram_fault_access logic_mask_access;
 
 static void changed_write(void)
 {
@@ -32,9 +34,10 @@ static void changed_write(void)
 
 static int operation_applies(work_ram_fault_access operation)
 {
-    return logic_config.kind != WORK_RAM_FAULT_NONE &&
-        (logic_config.access == WORK_RAM_FAULT_APPLY_BOTH ||
-         logic_config.access == operation);
+    return (logic_config.kind != WORK_RAM_FAULT_NONE &&
+        (logic_config.access == WORK_RAM_FAULT_APPLY_BOTH || logic_config.access == operation)) ||
+        (logic_address_mask != 0 &&
+         (logic_mask_access == WORK_RAM_FAULT_APPLY_BOTH || logic_mask_access == operation));
 }
 
 int work_ram_logic_address(uint32_t address)
@@ -56,6 +59,9 @@ static uint32_t mapped_byte_offset(uint32_t byte_offset,
     if (work_ram_fault_map_byte_address(byte_offset, &logic_config,
                                         operation, &mapped) != WORK_RAM_FAULT_OK)
         return byte_offset;
+    if (logic_address_mask &&
+        (logic_mask_access == WORK_RAM_FAULT_APPLY_BOTH || logic_mask_access == operation))
+        mapped &= ~((uint32_t)logic_address_mask << 1);
     return mapped;
 }
 
@@ -67,6 +73,9 @@ static uint16_t mapped_word_offset(uint32_t byte_offset,
                                         &logic_config, operation,
                                         &mapped_word) != WORK_RAM_FAULT_OK)
         return (uint16_t)(byte_offset >> 1);
+    if (logic_address_mask &&
+        (logic_mask_access == WORK_RAM_FAULT_APPLY_BOTH || logic_mask_access == operation))
+        mapped_word &= (uint16_t)~logic_address_mask;
     return mapped_word;
 }
 
@@ -187,6 +196,8 @@ WORK_RAM_KEEPALIVE int set_logic_fault(int kind, int access,
     else if (logic_pulse_state == WORK_RAM_PULSE_ARMED)
         logic_pulse_state = WORK_RAM_PULSE_CANCELLED;
     logic_write_budget = 0;
+    logic_address_mask = 0;
+    logic_mask_access = WORK_RAM_FAULT_APPLY_NONE;
     logic_config = candidate;
     if (candidate.kind != WORK_RAM_FAULT_NONE) {
         logic_reads = 0;
@@ -213,6 +224,28 @@ WORK_RAM_KEEPALIVE int arm_logic_write_pulse(int kind, int line_a,
 WORK_RAM_KEEPALIVE uint32_t get_logic_pulse_state(void)
 {
     return logic_pulse_state;
+}
+
+WORK_RAM_KEEPALIVE int set_logic_address_mask(int mask, int access)
+{
+    if (mask < 0 || mask > 0x7fff || access < WORK_RAM_FAULT_APPLY_READ ||
+        access > WORK_RAM_FAULT_APPLY_BOTH)
+        return WORK_RAM_FAULT_INVALID_CONFIG;
+    set_logic_fault(WORK_RAM_FAULT_NONE, 0, 0, 0);
+    if (mask != 0) {
+        logic_address_mask = (uint16_t)mask;
+        logic_mask_access = (work_ram_fault_access)access;
+        logic_reads = 0;
+        logic_writes = 0;
+        logic_activation_frame = logic_frame;
+        logic_pulse_state = WORK_RAM_PULSE_NONE;
+    }
+    return WORK_RAM_FAULT_OK;
+}
+
+WORK_RAM_KEEPALIVE uint32_t get_logic_address_mask(void)
+{
+    return logic_address_mask;
 }
 
 WORK_RAM_KEEPALIVE int recover_logic_cpu(int mode)
@@ -257,6 +290,8 @@ WORK_RAM_KEEPALIVE uint32_t get_logic_cpu_flags(void)
 void work_ram_logic_start(void)
 {
     logic_config = work_ram_fault_clear();
+    logic_address_mask = 0;
+    logic_mask_access = WORK_RAM_FAULT_APPLY_NONE;
     logic_reads = 0;
     logic_writes = 0;
     logic_frame = 0;

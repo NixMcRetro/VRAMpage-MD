@@ -36,6 +36,7 @@
   let lastLogicExperiment = null;
   let cpuInterventions = [];
   let faultPulses = [], pendingPulse = null;
+  let logicAddressMask = 0, addressLineChanges = [];
   let logicResetState = 'No cartridge loaded';
   let romHashPromise = Promise.resolve(null);
   const CORE_PIN = '6090aff9e9b2f578cd28882bd4571d2e35b1d674';
@@ -78,6 +79,69 @@
       typeof emulator?._get_logic_pulse_state === 'function';
   }
 
+  function addressMaskApiReady() {
+    return typeof emulator?._set_logic_address_mask === 'function' &&
+      typeof emulator?._get_logic_address_mask === 'function';
+  }
+
+  function refreshChipControls() {
+    const ready=started && addressMaskApiReady();
+    for (const button of document.querySelectorAll('[data-chip-line]')) {
+      const line=Number(button.dataset.chipLine), disabled=!!(logicAddressMask & (1<<line));
+      button.disabled=!ready;
+      button.setAttribute('aria-pressed',String(disabled));
+      button.setAttribute('aria-label',`A${line+1}: ${disabled?'forced low; reconnect':'enabled; force low'}`);
+    }
+    $('chipRestoreBtn').disabled=!ready || logicAddressMask===0;
+  }
+
+  function chipTransitionSnapshot() {
+    return {frame:Number(emulator._get_logic_frame()),previousMask:logicAddressMask,
+      readCountBefore:Number(emulator._get_logic_reads()),writeCountBefore:Number(emulator._get_logic_writes())};
+  }
+
+  function recordAddressMask(mask,access,reason,before) {
+    if (mask!==logicAddressMask) addressLineChanges.push({...before,mask,access,reason});
+    logicAddressMask=mask;
+  }
+
+  function applyAddressMask(mask) {
+    if (!started || !addressMaskApiReady()) return;
+    const access=Number($('logicAccess').value);
+    const event=chipTransitionSnapshot();
+    if (mask===0) {
+      if (!disconnectLogic()) return;
+      return;
+    }
+    const status=emulator._set_logic_address_mask(mask,access);
+    if (status!==0) {setLogicStatus(`Address-line setting rejected (status ${status}).`);return;}
+    cancelPulse('replaced by address-line switches');
+    if (actualPair()) disconnect();
+    recordAddressMask(mask,access,'address line toggled',event); logicActive=true; logicStatsRetained=false;
+    const lines=Array.from({length:15},(_,i)=>i).filter(i=>mask & (1<<i)).map(i=>`A${i+1}`);
+    const accessLabel=['','read','write','read + write'][access];
+    lastLogicExperiment={kind:'address-stuck-low',access:accessLabel,lines,addressMask:mask,
+      activationFrame:Number(emulator._get_logic_activation_frame()),resetState:logicResetState,
+      currentFrame:event.frame,readCount:0,writeCount:0,cpuFlags:Number(emulator._get_logic_cpu_flags())};
+    setLogicStatus(`${lines.join(', ')} forced low on ${accessLabel}. Click crossed wires to reconnect; stored writes persist.`);
+    stamp(`Address lines forced low: ${lines.join(', ')} (${accessLabel})`);
+  }
+
+  function setupAddressChip() {
+    for (let line=0;line<15;line++) {
+      const button=document.createElement('button');
+      button.type='button';button.className='chip-pin';button.dataset.chipLine=String(line);
+      button.style.gridColumn=line<8?'1':'3';button.style.gridRow=String(line<8?line+1:line-7);
+      const label=document.createElement('span');label.textContent=`A${line+1}`;
+      const wire=document.createElement('span');wire.className='chip-wire';wire.setAttribute('aria-hidden','true');
+      const cut=document.createElement('span');cut.className='chip-cut';cut.textContent='×';wire.append(cut);
+      button.append(...(line<8?[label,wire]:[wire,label]));
+      button.addEventListener('click',()=>applyAddressMask(logicAddressMask ^ (1<<line)));
+      $('ramChip').append(button);
+    }
+    $('chipRestoreBtn').addEventListener('click',()=>applyAddressMask(0));
+  }
+
   function updateLogicControls() {
     logicApiAvailable = logicApiReady();
     const canUse = started && logicApiAvailable;
@@ -96,6 +160,7 @@
       logicStatusMessage = 'Load a ROM to enable logic faults.';
     $('logicStatus').textContent = logicStatusMessage;
     refreshLogicMetrics();
+    refreshChipControls();
   }
 
   function refreshLogicMetrics() {
@@ -179,6 +244,7 @@
       setLogicStatus('Affected-write pulses require Access: Write and a rebuilt core.');
       return false;
     }
+    const chipBefore=chipTransitionSnapshot();
     const status=writeLimit===null
       ? emulator._set_logic_fault(config.kind,config.access,config.a,config.b)
       : emulator._arm_logic_write_pulse(config.kind,config.a,config.b,writeLimit);
@@ -188,6 +254,7 @@
       return false;
     }
     cancelPulse('replaced by another fault');
+    recordAddressMask(0,0,'replaced by paired fault',chipBefore);
     logicActive=true;
     logicStatsRetained=false;
     const activation=Number(emulator._get_logic_activation_frame());
@@ -225,6 +292,8 @@
       return false;
     }
     logicActive=false;
+    recordAddressMask(0,0,'fault disconnected',{frame:finalFrame,previousMask:logicAddressMask,
+      readCountBefore:finalReads,writeCountBefore:finalWrites});
     logicStatsRetained=true;
     if (lastLogicExperiment) {
       lastLogicExperiment.disconnectedAtFrame=finalFrame;
@@ -352,8 +421,9 @@
     const reads=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.readCount : coreReads;
     const writes=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.writeCount : coreWrites;
     const data={
-      modelVersion:'2.3-experimental',
+      modelVersion:'2.4-experimental',
       corePin:CORE_PIN,
+      addressLineChanges:addressLineChanges.map(entry=>({...entry})),
       faultPulses:faultPulses.map(entry=>({...entry})),
       cpuInterventions:cpuInterventions.map(entry=>({...entry})),
       rom:{name:loadedName || null,sha256:romSha256},
@@ -604,6 +674,7 @@
     started=true;
     cpuInterventions=[];
     faultPulses=[]; pendingPulse=null;
+    logicAddressMask=0;addressLineChanges=[];
     logicActive=false; // runtime_start clears the work RAM fault and counters.
     logicStatsRetained=false;
     logicResetState=cleanRestart ? 'Clean restart; work RAM fault and counters reset' : 'Cartridge loaded; work RAM fault and counters reset';
@@ -767,6 +838,7 @@
     for (const id of ['logicAccess','logicLineA','logicLineB'])
       $(id).addEventListener('change',()=>setLogicStatus('Configuration changed; apply it to activate a fault.'));
     setupPulseButtons();
+    setupAddressChip();
     $('logicPulseBtn').addEventListener('click',()=>startFaultPulse());
     $('logicApplyBtn').addEventListener('click',()=>applyLogicFault());
     $('logicResumeBtn').addEventListener('click',()=>recoverLogicCPU(1));
