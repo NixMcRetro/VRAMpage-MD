@@ -9,6 +9,8 @@
 - Document the pinned emulator's RAM map, direct access paths, integration gaps
   and planned acceptance in [Logic bending](docs/LOGIC-BENDING.md).
 
+- Provide a ready-built local review ZIP through the manual GitHub Actions build,
+  with pinned Emscripten 4.0.23, so downloads work independently of cloud workspace connectivity.
 - Add `START.command` and a Python local launcher for ready-built review bundles;
   no Emscripten installation is needed to play the bundled app.
 

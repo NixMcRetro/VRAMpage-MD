@@ -51,3 +51,12 @@ Avoid embedding commercial Sonic ROMs or distributing copied game data. The brow
 ## Rollback
 
 A published release can be rolled back with a revert to the last known-good commit in McRetro's repository. A rollback also rebuilds the whole website, so maintain each version as a focused, reviewable deployment commit.
+
+
+## Local review download
+
+The manual **Build VRAMpage MD website bundle** workflow also creates a
+`VRAMpage-MD-local-review` artifact with the built core, corresponding source and
+local launcher. This uses the tested Emscripten 4.0.23 toolchain and does not
+deploy or modify McRetro.net. See [Run locally](RUNNING-LOCALLY.md) for download
+and launch steps. GitHub Actions retains this review artifact for 30 days.
