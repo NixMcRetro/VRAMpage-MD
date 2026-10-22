@@ -41,8 +41,8 @@ jobs:
           sha256sum VRAMpage-MD-v0.2.6-macos.zip > SHA256SUMS.txt
       - name: Attach the complete ZIP and publish the release
         run: |
-          # v0.2.4 and the superseded legacy v2.4.0 retain their original
-          # tags/assets/notes. The v0.2.4 correction is documented at:
+          # Earlier canonical releases retain their original assets and notes.
+          # The deleted legacy v2.4.0 retains only its source tag. See:
           # https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.4
           # Never replace assets or metadata of an already-public release.
           if gh release view v0.2.6 >/dev/null 2>&1 &&
