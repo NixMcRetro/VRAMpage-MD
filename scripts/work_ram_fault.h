@@ -15,7 +15,8 @@ typedef enum {
     WORK_RAM_FAULT_SHORT_BUFFER,
     WORK_RAM_FAULT_OUT_OF_BOUNDS,
     WORK_RAM_FAULT_MISALIGNED,
-    WORK_RAM_FAULT_INVALID_CONFIG
+    WORK_RAM_FAULT_INVALID_CONFIG,
+    WORK_RAM_FAULT_UNSUPPORTED_LANE = 6
 } work_ram_fault_status;
 
 typedef enum {
@@ -57,9 +58,35 @@ work_ram_fault_status work_ram_fault_validate(const work_ram_fault_config *confi
  * write is stored, so its effect remains after the caller supplies the clear
  * config. A projected read never changes backing memory.
  *
- * Byte-lane operations and accesses not expressed as aligned word
- * transactions are outside this foundation model.
+ * Byte operations use big-endian bus lanes: even byte addresses select the
+ * upper D8..D15 lane and odd addresses select the lower D0..D7 lane. A
+ * cross-lane data pair is unsupported for an applicable byte operation.
  */
+work_ram_fault_status work_ram_fault_map_word_address(
+    uint16_t word_address,
+    const work_ram_fault_config *config,
+    work_ram_fault_access operation,
+    uint16_t *mapped_word_address_out);
+
+work_ram_fault_status work_ram_fault_map_byte_address(
+    uint32_t byte_address,
+    const work_ram_fault_config *config,
+    work_ram_fault_access operation,
+    uint32_t *mapped_byte_address_out);
+
+work_ram_fault_status work_ram_fault_project_word(
+    uint16_t value,
+    const work_ram_fault_config *config,
+    work_ram_fault_access operation,
+    uint16_t *projected_value_out);
+
+work_ram_fault_status work_ram_fault_project_byte(
+    uint8_t value,
+    uint32_t byte_address,
+    const work_ram_fault_config *config,
+    work_ram_fault_access operation,
+    uint8_t *projected_value_out);
+
 work_ram_fault_status work_ram_fault_read_word(
     const uint8_t *memory,
     size_t memory_size,
@@ -73,5 +100,19 @@ work_ram_fault_status work_ram_fault_write_word(
     uint32_t byte_address,
     const work_ram_fault_config *config,
     uint16_t value);
+
+work_ram_fault_status work_ram_fault_read_byte(
+    const uint8_t *memory,
+    size_t memory_size,
+    uint32_t byte_address,
+    const work_ram_fault_config *config,
+    uint8_t *value_out);
+
+work_ram_fault_status work_ram_fault_write_byte(
+    uint8_t *memory,
+    size_t memory_size,
+    uint32_t byte_address,
+    const work_ram_fault_config *config,
+    uint8_t value);
 
 #endif
