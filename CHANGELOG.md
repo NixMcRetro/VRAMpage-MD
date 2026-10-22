@@ -1,5 +1,11 @@
 # Changelog
 
+## Post-v0.2.7 instruction-origin diagnostic
+
+- Add isolated developer-only staging and scalar instruction-origin diagnostics without changing the normal emulator, runtime API, app version or public package.
+- Verify instruction-start PC with synthetic CPU tests, preserve unknown PC for address-error exception writes, and test pulse cutoff, disabled tracing and record reset.
+- Record repeatable zero-write classification at PC `$B46` for the VBlank flag alias, with fresh-core observational equivalence against public v0.2.7. Sustained gameplay divergence remains unproven.
+
 ## Post-v0.2.7 RAM alias investigation
 
 - Correct the living source annotation: `$F62A` is the VBlank routine flag, not a sprite-buffer entry. Preserve the original generic trace and all historical JSON.

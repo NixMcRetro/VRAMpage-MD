@@ -54,9 +54,11 @@ write in the one-write phase-delay experiment. Traced/untraced equivalence, exac
 budgets, strict/sanitizer tests, actual-WASM coverage and independent specialist
 review passed. The bounded [audio/state follow-up](docs/RAM-ALIAS-AUDIO-PHASE.md)
 reproduces the one-tick player/demo delay without audio hash alignment at five
-tested offsets. Corrected source allocation identifies the VBlank flag. Next,
-distinguish its set/clear candidates with generic metadata if needed. The
-attract-mode divergence gate remains open.
+tested offsets. Corrected source allocation identifies the VBlank flag. The
+[isolated instruction diagnostic](docs/VBLANK-STORE-ORIGIN.md) identifies a
+zero-write at PC `$B46`, consistent with the clear candidate. Next, verify the
+bounded wait/release sequence without changing game code. The attract-mode
+divergence gate remains open.
 
 ## v0.2.0 | Logic-bending experiments
 
