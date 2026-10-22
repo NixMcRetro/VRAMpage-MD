@@ -57,3 +57,4 @@ Goal: an **unscripted attract-mode desynchronisation** where Sonic's demo contro
 - Prepare a self-contained `site/` release including `core/*.js`, `core/*.wasm` and corresponding modified source.
 - Stage into `NixMcRetro/mcretro.net:homepages/vrampage/` **on a review branch only**.
 - Deploy to mcretro.net only on explicit approval. A push to McRetro's main triggers the site's full Jekyll/Pagefind rebuild.
+\n## Documentation and tests\n\nFor documentation milestones, regression coverage and manual acceptance gates, see [the Markdown documentation roadmap](docs/DOCUMENTATION-ROADMAP.md), [testing guide](docs/TESTING.md) and [documentation index](docs/README.md). Document hardware assumptions separately from experimentally verified behaviour.\n

@@ -1,8 +1,8 @@
 # VRAMpage MD
 
-**VRAMpage MD v0.1** is an experimental, browser-based NTSC Sega Mega Drive / Genesis Model 1 circuit-bending project. The aim is to play a locally supplied game, such as *Sonic the Hedgehog* (1991), while changing emulated **hardware signals**, not merely filtering the finished picture or audio.
+**VRAMpage MD v0.1.x** is an experimental, browser-based NTSC Sega Mega Drive / Genesis Model 1 circuit-bending project. The aim is to play a locally supplied game, such as *Sonic the Hedgehog* (1991), while changing emulated **hardware signals**, not merely filtering the finished picture or audio.
 
-**Project status:** v0.1 runs locally on the developer's Mac with video, controls, sound and experimental VRAM address shorts verified. The GitHub repository is being set up; the complete local source import is the next step. No ROM or commercial game files belong in this repository.
+**Project status:** v0.1.x is experimental. Local Mac testing confirmed gameplay, controls, sound and VRAM shorts; the v0.1.3 video line recovery remains a display workaround, not a validated VDP fix. No ROM or commercial game files belong in this repository.
 
 ## Three planned fault domains
 
@@ -36,7 +36,7 @@ Open `http://localhost:8080` and load your legally usable `.md` / `.bin` / `.gen
 
 Development takes place here. A versioned release for `https://mcretro.net/homepages/vrampage/` is built and tested separately, then deliberately copied into the `NixMcRetro/mcretro.net` repository on a review branch. **There is no automatic deployment to McRetro.net and no direct push to its main branch.** This avoids a full Jekyll/Pagefind rebuild for every development commit.
 
-See [ROADMAP.md](ROADMAP.md) and [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the development stages and release process.
+See the [Markdown documentation index](docs/README.md), [documentation roadmap](docs/DOCUMENTATION-ROADMAP.md), [testing guide](docs/TESTING.md) and [release process](docs/DEPLOYMENT.md). The feature roadmap remains in [ROADMAP.md](ROADMAP.md).
 
 ## Source and rights
 
