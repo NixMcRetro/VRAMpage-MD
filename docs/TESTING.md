@@ -8,7 +8,10 @@ cartridge checks, including first-longword-half cutoff and byte trace metadata.
 Chromium passed 28 logic cases, six display cases and the actual-core browser
 smoke. Independent Luna High review inspected source/test design and reran the
 focused native/sanitizer, runner and actual-WASM tests with no remaining blocker.
-Private-cartridge trace evidence and CI are recorded separately when complete.
+Six private-cartridge runs identify the same first write with tracing enabled
+and preserve the untraced observations and immutable historical baseline/fault
+records exactly. See the exact record linked from the trace protocol. This is
+Node actual-core testing, not native Mac or audible acceptance. CI is pending.
 See [trace protocol](RAM-WRITE-TRACE.md). These checks do not establish physical
 fault accuracy or native Mac behaviour for the new build.
 

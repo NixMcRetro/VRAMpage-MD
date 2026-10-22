@@ -63,3 +63,26 @@ write budgets, byte lanes and longword cutoff. The real-cartridge comparison
 checks diagnostic noninterference for this bounded experiment only. It does not
 establish electrical accuracy, native macOS behaviour, audible output, continued
 healthy gameplay for arbitrary faults or sustained attract-mode divergence.
+
+## Recorded first-write result
+
+[Exact six-trial record](experiments/2026-10-22-first-affected-write-v1.json)
+uses committed source/tool `f0cc664d7b2bd22d5eaa03e5d00b02064236c678` and a
+locally built complete review package from that commit. This is a pre-merge
+review package, not a claim about a later public release binary. Tool source was
+clean and both actual core hashes are in the record. Runner SHA-256:
+`acbe20236e8ba94b8050fd02560bf255550e019f1a43dfb59bcdeac5f31a0ac5`.
+
+Baseline tracing stayed empty. The A10/A11 pulse recorded the first affected
+write in both enabled trials at CPU address `$FFF62A`, logical RAM offset
+`$F62A`, mapped offset `$F22A`, bus width one byte and completed-frame counter
+1800 (access during tick 1801). Reason bit 0 indicates address remapping. Exactly
+one affected write was reported and the pulse released. No memory value is in
+the record.
+
+Both traced runs matched the untraced run in all monitored fields and timeline
+hashes for each scenario. Both untraced observations matched the immutable
+v0.2.6 protocol-2 record exactly. This supports noninterference in this bounded
+experiment and localizes the changed bus access; it does not by itself identify
+the game routine or prove sustained gameplay divergence. The phase-delay result
+and RAM-stage acceptance limits remain unchanged.

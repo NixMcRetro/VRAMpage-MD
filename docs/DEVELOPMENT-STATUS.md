@@ -100,15 +100,26 @@ ran the six actual private-cartridge trials. Baseline Sonic object ID 1 was
 observed through all 602 timeline ticks. Source checks cover 63 Python tests,
 framebuffer suites, nine pulse groups, nine observer groups and both C smokes.
 
-## v0.2.7 work in progress
+## v0.2.7 verified diagnostic, integration pending
 
-An optional default-disabled first-affected-write diagnostic is under verification.
+An optional default-disabled first-affected-write diagnostic passed local verification.
 The API records logical address metadata, bus width, completed frame and reason,
 never memory values. The separate runner compares tracing off/on/repeated and
 checks historical v0.2.6 observations. This source increment does not replace the
 verified public v0.2.6 package until release checks pass. See
-[RAM write trace](RAM-WRITE-TRACE.md). Native/sanitizer, actual-WASM, independent
-review and full CI results must be recorded before merging.
+[RAM write trace](RAM-WRITE-TRACE.md). Strict native/sanitizer, 25 actual-WASM checks, 28 Chromium logic cases, six
+display cases and actual-core browser smoke passed. Independent Luna High source
+and test review approved the implementation. Full CI remains required before
+merge. The review ZIP from f0cc664 has 288 unique entries; independent default
+worker verified manifests, source/notices, executable launcher, ROM/secret
+exclusion, eight served assets and browser startup without errors.
+
+The six-trial [trace record](RAM-WRITE-TRACE.md#recorded-first-write-result)
+identified a byte write at `$FFF62A` mapped to logical `$F22A` during tick 1801.
+Traced/untraced and enabled repeats matched exactly. Baseline and one-write
+observations matched the preserved v0.2.6 protocol-2 output. This localizes the
+access and verifies bounded diagnostic noninterference; sustained gameplay
+divergence remains unproven.
 
 ## Highest-priority unfinished experiment
 
