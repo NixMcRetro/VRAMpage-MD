@@ -61,6 +61,13 @@ No guaranteed target effect for arbitrary modeled shorts.
 - See [CPU recovery](docs/CPU-RECOVERY.md). This review label does not complete
   the v0.2 attract-mode milestone or change the planned video/audio work below.
 
+## v2.2 | Short fault contacts (experimental)
+
+- Frame-counted RAM pulses followed by explicit force resume; adjacent-address
+  write-pulse buttons and exported intervention timing.
+- Smaller corruption and continued attract-mode gameplay remain experiments,
+  not acceptance claims. See [RAM pulses](docs/RAM-PULSES.md).
+
 ## v0.3 | More accurate VRAM reads and writes
 
 - Move from frame-level projection to fault handling at VDP VRAM access paths.

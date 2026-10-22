@@ -35,6 +35,7 @@
   let logicStatusMessage = 'Checking core support…';
   let lastLogicExperiment = null;
   let cpuInterventions = [];
+  let faultPulses = [], pendingPulse = null;
   let logicResetState = 'No cartridge loaded';
   let romHashPromise = Promise.resolve(null);
   const CORE_PIN = '6090aff9e9b2f578cd28882bd4571d2e35b1d674';
@@ -80,6 +81,8 @@
     $('logicDisconnectBtn').disabled = !canUse;
     for (const id of ['logicResumeBtn','logicCpuResetBtn'])
       $(id).disabled = !canUse || typeof emulator._recover_logic_cpu !== 'function';
+    for (const control of document.querySelectorAll('[data-ram-pulse], #logicPulseBtn, #logicPulseFrames'))
+      control.disabled = !canUse || typeof emulator._recover_logic_cpu !== 'function';
     $('logicExperimentBtn').disabled = !started || !romBytes;
     if (!logicApiAvailable) logicStatusMessage = 'Rebuild core for logic faults';
     else if (!started && ['Checking core support…','Rebuild core for logic faults'].includes(logicStatusMessage))
@@ -154,23 +157,24 @@
   function logicLineName(kind,line) { return kind===1 ? `A${line+1}` : `D${line}`; }
 
   function applyLogicFault() {
-    if (!started || !logicApiReady()) return;
+    if (!started || !logicApiReady()) return false;
     const config=logicConfigFromControls();
     if (config.a===config.b) {
       setLogicStatus('Choose two different lines. No fault was applied.');
-      return;
+      return false;
     }
     if (config.kind===2 && Math.floor(config.a/8)!==Math.floor(config.b/8)) {
       setLogicStatus('Data pairs must stay within D0–D7 or D8–D15. No fault was applied.');
-      return;
+      return false;
     }
     if (actualPair()) disconnect();
     const status=emulator._set_logic_fault(config.kind,config.access,config.a,config.b);
     if (status!==0) {
       setLogicStatus(`Core rejected this logic fault (status ${status}).`);
       stamp(`Logic fault rejected: core status ${status}`);
-      return;
+      return false;
     }
+    cancelPulse('replaced by another fault');
     logicActive=true;
     logicStatsRetained=false;
     const activation=Number(emulator._get_logic_activation_frame());
@@ -188,9 +192,11 @@
     };
     setLogicStatus(`Applied ${kindLabel} ${lineA} ↔ ${lineB} on ${accessLabel}.`);
     stamp(`LOGIC / WORK RAM FAULT: ${kindLabel} ${lineA} ↔ ${lineB}, ${accessLabel}`);
+    return true;
   }
 
   function disconnectLogic({silent=false}={}) {
+    cancelPulse('fault disconnected');
     if (!logicActive) {
       if (!silent) setLogicStatus('No logic fault is active.');
       return true;
@@ -223,6 +229,7 @@
   }
 
   function recoverLogicCPU(mode) {
+    cancelPulse('manual CPU recovery');
     if (!started || typeof emulator?._recover_logic_cpu !== 'function') return;
     const frame=Number(emulator._get_logic_frame());
     const flagsBefore=Number(emulator._get_logic_cpu_flags());
@@ -243,6 +250,59 @@
     setLogicStatus(`${mode===1 ? 'Forced resume attempted' : 'CPU-only reset issued'}. Faults disconnected; RAM preserved. Recovery is not guaranteed.`);
     stamp(`CPU intervention: ${action}; RAM preserved, faults disconnected`);
     refreshLogicMetrics();
+    return true;
+  }
+
+  function cancelPulse(reason) {
+    if (!pendingPulse) return;
+    pendingPulse.status='cancelled';
+    pendingPulse.reason=reason;
+    pendingPulse.endFrame=Number(emulator._get_logic_frame());
+    pendingPulse=null;
+  }
+
+  function startFaultPulse(pair=null) {
+    if (!started || typeof emulator?._recover_logic_cpu !== 'function') return;
+    const duration=Number($('logicPulseFrames').value);
+    if (![1,2,4,8].includes(duration)) return;
+    if (pair) {
+      $('logicKind').value='1'; configureLogicLines();
+      $('logicAccess').value='2'; // Quick pairs are explicitly labelled write pulses.
+      $('logicLineA').value=String(pair[0]); $('logicLineB').value=String(pair[1]);
+    }
+    if (!applyLogicFault()) return;
+    pendingPulse={...logicConfigFromControls(),requestedFrames:duration,
+      startFrame:Number(emulator._get_logic_frame()),status:'active'};
+    faultPulses.push(pendingPulse);
+    setLogicStatus(`RAM pulse active for ${duration} emulated frame${duration===1?'':'s'}; then disconnect and force resume.${paused?' Paused: press Resume to advance.':''}`);
+  }
+
+  function finishFaultPulse() {
+    if (!pendingPulse) return;
+    const frame=Number(emulator._get_logic_frame());
+    if (frame-pendingPulse.startFrame<pendingPulse.requestedFrames) return;
+    const pulse=pendingPulse;
+    pendingPulse=null; // Explicit completion must not be marked cancelled by recovery.
+    pulse.endFrame=frame;
+    pulse.status='completed';
+    pulse.readCount=Number(emulator._get_logic_reads());
+    pulse.writeCount=Number(emulator._get_logic_writes());
+    pulse.cpuFlagsAtEnd=Number(emulator._get_logic_cpu_flags());
+    const interventionIndex=cpuInterventions.length;
+    pulse.recoveryAccepted=recoverLogicCPU(1)===true;
+    if (pulse.recoveryAccepted) pulse.interventionIndex=interventionIndex;
+  }
+
+  function setupPulseButtons() {
+    for (let a=0;a<14;a++) {
+      const button=document.createElement('button');
+      button.type='button'; button.disabled=true;
+      button.dataset.ramPulse=String(a);
+      button.textContent=`A${a+1} ↔ A${a+2}`;
+      button.setAttribute('aria-label',`Pulse address A${a+1} and A${a+2} on writes`);
+      button.addEventListener('click',()=>startFaultPulse([a,a+1]));
+      $('logicPulsePairs').append(button);
+    }
   }
 
   function resetLogicSelection() {
@@ -265,8 +325,9 @@
     const reads=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.readCount : coreReads;
     const writes=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.writeCount : coreWrites;
     const data={
-      modelVersion:'2.1-experimental',
+      modelVersion:'2.2-experimental',
       corePin:CORE_PIN,
+      faultPulses:faultPulses.map(entry=>({...entry})),
       cpuInterventions:cpuInterventions.map(entry=>({...entry})),
       rom:{name:loadedName || null,sha256:romSha256},
       logicFault:lastLogicExperiment ? {...lastLogicExperiment} : null,
@@ -439,6 +500,7 @@
     ensureWasmViews();
     pollControls();
     emulator._tick();
+    finishFaultPulse();
     drawActiveVideo();
     audioFrame();
     frames++;
@@ -514,6 +576,7 @@
     frameView=null;
     started=true;
     cpuInterventions=[];
+    faultPulses=[]; pendingPulse=null;
     logicActive=false; // runtime_start clears the work RAM fault and counters.
     logicStatsRetained=false;
     logicResetState=cleanRestart ? 'Clean restart; work RAM fault and counters reset' : 'Cartridge loaded; work RAM fault and counters reset';
@@ -676,6 +739,8 @@
     });
     for (const id of ['logicAccess','logicLineA','logicLineB'])
       $(id).addEventListener('change',()=>setLogicStatus('Configuration changed; apply it to activate a fault.'));
+    setupPulseButtons();
+    $('logicPulseBtn').addEventListener('click',()=>startFaultPulse());
     $('logicApplyBtn').addEventListener('click',applyLogicFault);
     $('logicResumeBtn').addEventListener('click',()=>recoverLogicCPU(1));
     $('logicCpuResetBtn').addEventListener('click',()=>recoverLogicCPU(2));

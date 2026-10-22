@@ -229,12 +229,99 @@ class BrowserLogicTests(unittest.TestCase):
             "clean restart must reset the synthetic frame counter",
         )
 
+    def export_payload(self):
+        with self.page.expect_download() as info:
+            self.page.locator("#logicExperimentBtn").click()
+        return json.loads(Path(info.value.path()).read_text())
+
+    def test_pulses_end_on_exact_emulated_frame_and_preserve_writes(self):
+        self.load_rom()
+        for index, duration in enumerate([1, 2, 4, 8]):
+            self.page.locator("#pauseBtn").click()
+            self.page.locator("#logicAccess").select_option("2")
+            self.page.locator("#logicPulseFrames").select_option(str(duration))
+            self.page.locator("#logicPulseBtn").click()
+            before = self.page.evaluate("window.mockCore.logic.frame")
+            self.page.wait_for_timeout(80)
+            self.assertEqual(self.page.evaluate("window.mockCore.logic.frame"), before)
+            self.assertEqual(self.page.evaluate("window.mockCore.logic.recoveries.length"), index)
+            self.page.locator("#pauseBtn").click()
+            self.page.wait_for_function(f"window.mockCore.logic.recoveries.length === {index+1}")
+            self.page.locator("#pauseBtn").click()
+            data = self.export_payload()
+            pulse = data["faultPulses"][-1]
+            self.assertEqual(pulse["endFrame"]-pulse["startFrame"], duration)
+            self.assertEqual(pulse["status"], "completed")
+            self.assertTrue(pulse["recoveryAccepted"])
+            self.assertEqual(pulse["access"], 2)
+            self.assertEqual(data["writeCount"], duration)
+            self.assertEqual(pulse["writeCount"], duration)
+            self.assertEqual(pulse["readCount"], 0)
+            self.assertFalse(data["faultActive"])
+            self.assertEqual(data["cpuInterventions"][-1]["frame"], pulse["endFrame"])
+            self.assertGreater(self.page.evaluate("window.mockCore.logic.storedWrites"), 0)
+            # Leave running so the next loop pauses it again.
+            self.page.locator("#pauseBtn").click()
+
+    def test_quick_address_pair_keyboard_pulse_uses_writes(self):
+        self.load_rom()
+        self.page.locator("#pauseBtn").click()
+        pairs = self.page.locator("[data-ram-pulse]")
+        self.assertEqual(pairs.count(), 14)
+        pairs.nth(13).focus()
+        self.page.keyboard.press("Enter")
+        self.assertEqual(self.page.locator("#logicKind").input_value(), "1")
+        self.assertEqual(self.page.locator("#logicAccess").input_value(), "2")
+        self.page.locator("#pauseBtn").click()
+        self.page.wait_for_function("window.mockCore.logic.recoveries.length === 1")
+        pulse = self.export_payload()["faultPulses"][0]
+        self.assertEqual((pulse["a"], pulse["b"]), (13, 14))
+        self.assertEqual(pulse["status"], "completed")
+
+    def test_invalid_selection_keeps_existing_pulse_and_restart_cancels(self):
+        self.load_rom()
+        self.page.locator("#pauseBtn").click()
+        self.page.locator("#logicPulseBtn").click()
+        self.page.locator("#logicLineB").select_option("0")
+        self.page.locator("#logicApplyBtn").click()
+        self.assertEqual(self.export_payload()["faultPulses"][0]["status"], "active")
+        self.page.locator("#pauseBtn").click()
+        self.page.wait_for_function("window.mockCore.logic.recoveries.length === 1")
+        self.page.locator("#pauseBtn").click()
+        self.page.locator("#logicLineB").select_option("1")
+        self.page.locator("#logicPulseFrames").select_option("8")
+        self.page.locator("#logicPulseBtn").click()
+        self.page.locator("#resetBtn").click()
+        self.assertEqual(self.export_payload()["faultPulses"], [])
+        self.page.wait_for_timeout(200)
+        self.assertEqual(self.page.evaluate("window.mockCore.logic.recoveries.length"), 1)
+
+    def test_manual_disconnect_and_replacement_cancel_pending_pulse(self):
+        self.load_rom()
+        self.page.locator("#pauseBtn").click()
+        self.page.locator("#logicPulseFrames").select_option("8")
+        self.page.locator("#logicPulseBtn").click()
+        self.page.locator("#logicDisconnectBtn").click()
+        self.assertEqual(self.export_payload()["faultPulses"][0]["status"], "cancelled")
+        self.page.locator("#logicPulseBtn").click()
+        self.page.locator("#logicPulseFrames").select_option("1")
+        self.page.locator("#logicPulseBtn").click()
+        self.page.locator("#pauseBtn").click()
+        self.page.wait_for_function("window.mockCore.logic.recoveries.length === 1")
+        data = self.export_payload()
+        self.assertEqual([p["status"] for p in data["faultPulses"]],
+                         ["cancelled", "cancelled", "completed"])
+        self.page.locator("#resetBtn").click()
+        self.assertEqual(self.export_payload()["faultPulses"], [])
+
     def test_older_logic_core_disables_only_recovery(self):
         page = self.new_page(legacy_recovery=True)
         self.load_rom(page)
         expect(page.locator("#logicApplyBtn")).to_be_enabled()
         expect(page.locator("#logicResumeBtn")).to_be_disabled()
         expect(page.locator("#logicCpuResetBtn")).to_be_disabled()
+        expect(page.locator("#logicPulseBtn")).to_be_disabled()
+        expect(page.locator("[data-ram-pulse]").first).to_be_disabled()
         page.locator("#logicApplyBtn").click()
         expect(page.locator("#logicStatus")).to_contain_text("Applied address")
 
@@ -276,7 +363,7 @@ class BrowserLogicTests(unittest.TestCase):
             self.page.locator("#logicExperimentBtn").click()
         download = download_info.value
         payload = json.loads(Path(download.path()).read_text())
-        self.assertEqual(payload["modelVersion"], "2.1-experimental")
+        self.assertEqual(payload["modelVersion"], "2.2-experimental")
         self.assertEqual(payload["rom"]["name"], "synthetic-test.bin")
         self.assertEqual(payload["rom"]["sha256"], hashlib.sha256(rom).hexdigest())
         self.assertNotIn("bytes", payload["rom"])

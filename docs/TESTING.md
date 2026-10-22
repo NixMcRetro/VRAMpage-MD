@@ -263,3 +263,21 @@ CPU-only reset had no STOP/HALT flag and changed RAM over the following ticks.
 Neither action changed the RAM digest synchronously. This is one trial per action
 and does not prove healthy gameplay; results and a reproducible runner are linked
 from [CPU recovery](CPU-RECOVERY.md#observed-halted-cartridge-trial).
+
+## v2.2 pulse verification (22 October 2026)
+
+Local Chromium passed **12 logic UI tests** (four new pulse cases) plus the six
+existing display tests. Tests check exact 1/2/4/8-tick contacts, pause suspension,
+write retention, quick-pair keyboard activation, recovery/export frame linkage,
+legacy-core disabling, manual/replacement cancellation, restart cleanup and
+invalid-selection preservation. The display suite retains nine viewport sizes,
+including 1366×768, resizing, raw output, fullscreen and Light/Dark appearance.
+Browser screenshots are saved outside Git. CI runs both suites on all three engines.
+
+An actual-core Chromium **1366×768** smoke loaded the private cartridge and
+completed a one-frame address-write pulse, disconnected it, requested forced
+resume and exported matching frame/intervention metadata without page errors.
+It did not verify normal gameplay or the extent of corruption. The existing
+core is reused unchanged; source tests and 12 actual-WASM original-cartridge
+checks remain required. Native macOS acceptance and physical fidelity remain open.
+See [RAM pulses](RAM-PULSES.md) for manual reproduction and limitations.

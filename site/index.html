@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#dedbd2" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#171c20" media="(prefers-color-scheme: dark)">
-  <title>VRAMpage MD v2.1 experimental | Mega Drive circuit bending</title>
+  <title>VRAMpage MD v2.2 experimental | Mega Drive circuit bending</title>
   <link rel="stylesheet" href="style.css">
   <script src="core/genplus.js" defer onerror="window.__coreMissing = true"></script>
   <script src="framebuffer.js" defer></script>
@@ -16,7 +16,7 @@
   <main class="shell">
     <header class="masthead">
       <div>
-        <div class="brand"><h1>VRAMpage <span>MD</span></h1><span class="version">v2.1 experimental</span></div>
+        <div class="brand"><h1>VRAMpage <span>MD</span></h1><span class="version">v2.2 experimental</span></div>
         <p class="subtitle">Mega Drive memory experiments. NTSC / Model 1.</p>
       </div>
       <div class="machine-status"><span class="led" id="powerLed"></span><span id="powerLabel">CORE NOT READY</span></div>
@@ -97,6 +97,16 @@
         <button id="logicCpuResetBtn" type="button" disabled>CPU-only reset</button>
       </div>
       <p class="logic-note">Experimental recovery preserves corrupted RAM and may immediately stop again. Both actions disconnect faults. CPU-only reset leaves other chips running. Use Clean restart for a full reboot.</p>
+      <div class="logic-actions pulse-settings">
+        <label for="logicPulseFrames">Pulse length</label>
+        <select id="logicPulseFrames" disabled aria-label="Pulse length in emulated frames">
+          <option value="1">1 frame (~17 ms)</option><option value="2">2 frames (~33 ms)</option>
+          <option value="4">4 frames (~67 ms)</option><option value="8">8 frames (~134 ms)</option>
+        </select>
+        <button id="logicPulseBtn" type="button" disabled>Pulse selected fault → force resume</button>
+      </div>
+      <p class="logic-note">Quick address pairs: <strong>write pulses</strong>, using the length above. Each button applies a pair, then disconnects and attempts resume. These bridge address lines, not particular RAM locations. One frame can affect many accesses; small or recoverable corruption is not guaranteed.</p>
+      <div id="logicPulsePairs" class="logic-actions" role="group" aria-label="Quick address write pulses"></div>
       <p id="logicStatus" class="logic-status" role="status" aria-live="polite">Checking core support…</p>
       <div class="logic-metrics">
         <div><span>Affected reads</span><strong id="logicReadCount">0</strong></div>
@@ -105,7 +115,7 @@
         <div><span>Activation frame</span><strong id="logicActivationFrame">—</strong></div>
         <div class="cpu-state"><span>CPU status flags</span><strong id="logicCpuStatus">—</strong></div>
       </div>
-      <p class="logic-note"><strong>Model limits.</strong> This is an experimental transaction model, not an exact physical pin or cycle-level simulation. Read faults affect returned values; write faults alter stored RAM and those changes persist after disconnecting. CPU STOP/HALT indicators report flags only; no automatic recovery is attempted. Data pairs must stay within D0–D7 or D8–D15. Only one fault domain (VRAM or logic/work RAM) is active at a time.</p>
+      <p class="logic-note"><strong>Model limits.</strong> This is an experimental transaction model, not an exact physical pin or cycle-level simulation. Read faults affect returned values; write faults alter stored RAM and those changes persist after disconnecting. CPU STOP/HALT indicators report flags only; recovery occurs only through explicit recovery or pulse controls. Data pairs must stay within D0–D7 or D8–D15. Only one fault domain (VRAM or logic/work RAM) is active at a time.</p>
     </details>
 
     <section class="bottom-grid">
@@ -122,7 +132,7 @@
         <p class="small-note">Emulator: <a href="https://github.com/h1romas4/wasm-genplus" target="_blank" rel="noreferrer">wasm-genplus</a> / <a href="https://github.com/ekeeke/Genesis-Plus-GX" target="_blank" rel="noreferrer">Genesis Plus GX</a>. Redistributing a modified core requires its corresponding source and applicable licence notices.</p>
       </details>
     </section>
-    <footer><span>VRAMpage MD &nbsp;·&nbsp; v2.1 experimental (review candidate)</span><span>NTSC HARDWARE MODE &nbsp; / &nbsp; AUTOMATIC MISSING-LINE RECOVERY</span></footer>
+    <footer><span>VRAMpage MD &nbsp;·&nbsp; v2.2 experimental (review candidate)</span><span>NTSC HARDWARE MODE &nbsp; / &nbsp; AUTOMATIC MISSING-LINE RECOVERY</span></footer>
   </main>
 </body>
 </html>

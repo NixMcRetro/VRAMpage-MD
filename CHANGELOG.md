@@ -1,5 +1,15 @@
 # Changelog
 
+## v2.2 — experimental RAM pulses, 22 October 2026
+
+- Apply selected RAM faults for 1/2/4/8 emulated frames, then disconnect and
+  attempt force resume. Add 14 adjacent-address write-pulse buttons.
+- Record pulse timing, configuration, cancellation and recovery linkage in JSON.
+- Cancel pending pulses on explicit replacement/disconnect/restart; retain
+  frame-based timing during pause or hidden tabs. Older cores disable pulses.
+- Document that a frame may corrupt many accesses; small or recoverable
+  corruption is not guaranteed. See [RAM pulses](docs/RAM-PULSES.md).
+
 ## v2.1 — experimental CPU recovery, 22 October 2026
 
 - Add explicit disconnect-and-force-resume and CPU-only reset actions. Preserve
