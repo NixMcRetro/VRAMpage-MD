@@ -106,3 +106,14 @@ build workflow and creates a
 local launcher. This uses the tested Emscripten 4.0.23 toolchain and does not
 deploy or modify McRetro.net. See [Run locally](RUNNING-LOCALLY.md) for download
 and launch steps. GitHub Actions retains this review artifact for 30 days.
+
+## Updating the presentation of existing GitHub releases
+
+The human-readable titles and descriptions of existing releases live in
+[`release-notes/`](../release-notes/) and are validated against immutable
+tag commit IDs and asset names before metadata changes. The scoped workflow
+[Maintain VRAMpage release presentation](../.github/workflows/curate-releases.yml)
+updates these notes after the curated files merge into `VRAMpage-MD/main`.
+This operation does **not** rebuild or re-upload packages or create tags.
+See [release presentation instructions](RELEASE-CURATION.md). New software
+versions use the separate signed-off build/publish workflow above.

@@ -1,70 +1,53 @@
 # VRAMpage MD
 
-VRAMpage MD is a browser-based NTSC Sega Mega Drive / Genesis Model 1 emulator
-experiment. Play your own locally supplied cartridge while exploring deterministic,
-hardware-informed VRAM and 68000 work-RAM faults. **v0.2.6 is experimental:** the
-chip diagrams are conceptual and the models are not electrically accurate.
+**Play Sega Mega Drive / Genesis games in your browser and experiment with simulated hardware faults.** VRAMpage MD is an experimental, hardware-informed circuit-bending workbench built from a modified Genesis Plus GX emulator. Supply your own legally usable game cartridge file. No game ROMs are included or uploaded.
 
-Experiment exports include the application source commit when running a complete
-release package, with an explicit unavailable status otherwise. See
-[experiment records](docs/EXPERIMENTS.md#export-schema-and-build-identification-v026).
+> **New here? Start with the Mac download below.** You do not need to know Git, install a developer application or compile an emulator.
 
-## Download and run on a Mac
+## Download and play on your Mac
 
-**[Download the complete v0.2.6 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.6/VRAMpage-MD-v0.2.6-macos.zip)**
-([release notes](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.6)).
-The [corrected v0.2.4 release](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.4)
-remains available. The misnumbered v2.4.0 release entry has been removed; its Git
-tag remains in the source history. See the [complete release history](docs/RELEASE-HISTORY.md).
+**[Download VRAMpage MD v0.2.6 — complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.6/VRAMpage-MD-v0.2.6-macos.zip)**
 
-1. Download that ZIP and extract it in Finder.
-2. Open the extracted **VRAMpage-MD** folder and double-click **START.command**.
-3. The app opens in your default browser. Click **Load ROM** and choose your own
-   legally usable `.md`, `.bin` or `.gen` cartridge.
-4. Click **Enable Sound** for audio. Leave the launcher's Terminal window open.
+1. Download the ZIP and double-click it in Finder to extract it.
+2. Open the **VRAMpage-MD** folder and double-click **START.command**.
+3. When the browser opens, choose **Load ROM** and select your own legally usable `.md`, `.bin` or `.gen` game.
+4. Click **Enable Sound** for audio. Keep the launcher Terminal window open while playing.
 
-The complete download includes the compiled WebAssembly core, modified source,
-licence notices and launcher. You do not need Git, Emscripten or a developer app.
-**Python 3 is required**; the launcher explains how to install it if missing.
-GitHub's **Code → Download ZIP** is source-only, so use the download above.
-If macOS blocks the launcher, follow the simple drag-and-drop Terminal fallback
-in [Run locally](docs/RUNNING-LOCALLY.md). Firefox users can make Firefox their
-default browser or open the address printed by the launcher in Firefox.
+**Needs:** macOS and **Python 3**. The included launcher runs a small server on your own computer. There is no account, cloud backend or Emscripten setup. It is a *local browser app*, not a native Mac `.app`.
 
-## What works
+If your Mac blocks `START.command`, right-click it and choose **Open**, or follow the short [Mac launch and troubleshooting guide](docs/RUNNING-LOCALLY.md). To use Firefox, make Firefox your default browser or open the local address printed by the launcher in Firefox.
 
-- Local cartridge picker, keyboard three-button controls, pause, sound toggle,
-  fullscreen and clean restart. ROM data stays on your computer.
-- Native framebuffer correction, responsive window sizing and automatic system
-  Light/Dark appearance; legacy-core row recovery and raw-output option remain.
-- VRAM AD0-AD7 leg switches: click to show a × and force an address net low;
-  click again to reconnect. Bridge mode, presets and momentary/latched shorts remain.
-- Experimental work-RAM address/data faults with read/write direction, affected
-  access counters and CPU STOP/HALT monitoring.
-- Explicit CPU resume/reset, short frame pulses and affected-write limits.
-- Compact chips with internal labels, short legs and crosses; independent A1-A15 stuck-low
-  switches show crosses on disabled lines.
-- Local experiment logging and JSON metadata export, without ROM or RAM bytes.
+**Important:** GitHub's green **Code → Download ZIP** gives you a *source-only* archive, not the ready-to-run application. Use the **complete Mac ZIP** above.
 
-Only one fault domain is active at a time. Faulted writes can persist after
-reconnection; recovery does not guarantee healthy gameplay. Keyboard mappings
-are shown in the app. Standard gamepad axes and buttons are mapped; physical
-USB/Bluetooth controller acceptance remains a manual check.
+[Latest release and checksum](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.6) · [Other runnable versions and historical source releases](docs/RELEASE-HISTORY.md)
 
-## Limits and unfinished experiments
+## What can it do?
 
-VRAM faults are frame-scoped approximations. Work-RAM faults model transactions,
-not analogue floating pins. Physical pin mappings, continued attract-mode play
-after faults, actual Z80 execution coverage, cartridge-bus faults and audio
-bending remain incomplete. Normal FM/PSG audio is supported. Native macOS Firefox
-and audible playback acceptance must be checked on your Mac; cloud browser and
-actual-core checks are recorded in [Testing](docs/TESTING.md).
+- **Play:** Load a cartridge from your computer, use keyboard/gamepad controls, enable sound, pause, reset or go fullscreen.
+- **Bend video memory:** Click the VRAM AD0–AD7 chip legs to simulate disconnected address lines, or bridge two signals. Watch how the game's video memory responds.
+- **Bend game logic:** Experiment with 68000 work-RAM address/data faults, short pulses and affected-write limits. Check CPU STOP/HALT indicators and try explicit recovery.
+- **Compare experiments:** Record fault settings and export JSON containing reproducibility metadata, including a build identifier when available.
 
-## Contributor build
+The interface fits different window sizes, follows your system Light/Dark preference and offers both corrected video output and raw diagnostic output. Some faults can freeze a game or leave persistent RAM corruption until a **Clean restart**.
 
-Trying the app requires only the complete download above. To modify the core,
-install Git, Python 3, Make, CMake and Emscripten **4.0.23**, then from this
-repository root run:
+**Experimental limitations:** The VRAM model is frame-scoped; neither VRAM nor RAM faults reproduce every physical electrical effect. The circuit diagrams are conceptual, not verified motherboard pinouts. Audio circuit bending and transaction-level VRAM bending remain future milestones. Automated Linux browser/core tests are not the same as native Mac Firefox or physical-hardware validation.
+
+## For developers, researchers and maintainers
+
+| Topic | Where to start |
+| --- | --- |
+| Source code and contributor build | [Developer build instructions](docs/DEPLOYMENT.md) |
+| Technical architecture and fault assumptions | [Logic bending](docs/LOGIC-BENDING.md) · [Video output](docs/VIDEO-OUTPUT.md) |
+| Current verified state and experiments | [Development status](docs/DEVELOPMENT-STATUS.md) · [Experiment records](docs/EXPERIMENTS.md) |
+| Roadmap and next work | [ROADMAP.md](ROADMAP.md) · [Work queue](docs/WORK-QUEUE.md) |
+| Automated and manual validation | [Testing guide](docs/TESTING.md) |
+| Release versions and provenance | [Release history](docs/RELEASE-HISTORY.md) · [Versioning policy](docs/VERSIONING.md) |
+| All technical documents | [Documentation index](docs/README.md) |
+| Agent/development rules | [AGENTS.md](AGENTS.md) |
+
+### Build from source
+
+Contributors need Git, Python 3, Make, CMake and Emscripten 4.0.23. From the repository root:
 
 ```sh
 source ~/emsdk/emsdk_env.sh
@@ -74,20 +57,6 @@ node tests/test_wasm_logic.cjs site/core/genplus.js
 python3 scripts/serve.py --no-browser
 ```
 
-CMake 4.1.3 is verified; the build supplies the upstream compatibility policy.
-Build outputs under `vendor/`, `site/core/` and `site/source/` stay out of Git.
-See [release instructions](docs/DEPLOYMENT.md) for producing a complete ZIP.
+The emulator uses `h1romas4/wasm-genplus` pinned at `6090aff9e9b2f578cd28882bd4571d2e35b1d674`, with modified Genesis Plus GX. See the [third-party notices](THIRD-PARTY-NOTICES.md): the upstream restrictions include **non-commercial distribution** and corresponding-source requirements. Runnable releases include the modified emulator source, notices, launcher and checksums; no Sega ROMs or commercial game assets.
 
-## Source, rights and project history
-
-The core is `h1romas4/wasm-genplus` pinned at
-`6090aff9e9b2f578cd28882bd4571d2e35b1d674`, with modified Genesis Plus GX.
-**Non-commercial redistribution only**, with complete corresponding modified
-source and upstream notices. See [third-party notices](THIRD-PARTY-NOTICES.md).
-No Sega games, logos or commercial ROMs are included.
-
-The integrated history preserves development from the source import through
-v0.2.6. Historical prototype and experiment records remain in the
-[documentation index](docs/README.md). See [changelog](CHANGELOG.md), [versioning policy](docs/VERSIONING.md) and
-[roadmap](ROADMAP.md). Releases belong to this independent repository;
-**McRetro.net is not modified or deployed by this workflow**.
+**Repository separation:** Development and releases belong to `NixMcRetro/VRAMpage-MD`. Nothing in this repository automatically deploys to [McRetro.net](https://mcretro.net/); website publication needs separate explicit approval.

@@ -13,6 +13,7 @@ older standalone-model descriptions are historical development records.
 | Document | Purpose |
 | --- | --- |
 | [Release history](RELEASE-HISTORY.md) | Canonical historical versions and current runnable downloads |
+| [Release presentation](RELEASE-CURATION.md) | How titles/notes stay novice-friendly without changing tags or binaries |
 | [Changelog](../CHANGELOG.md) | Versioned changes and verification limits |
 | [Versioning](VERSIONING.md) | Canonical 0.2.x release labels and historical identifier mapping |
 | [Run locally](RUNNING-LOCALLY.md) | Start a ready-built review bundle without building WebAssembly |
