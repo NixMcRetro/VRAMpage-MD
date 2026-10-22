@@ -102,3 +102,26 @@ The next bounded investigation should locate the sprite-entry write and compare
 its target state and generated sound under the same one-write pulse. Preserve
 zero-input/reset equivalence and phase-aligned player/demo checks. Do not begin
 audio-bending features or infer gameplay divergence from this address alias.
+
+
+## Next bounded developer protocol
+
+In the pinned s1disasm source linked above, `BuildSprites` uses eight-byte
+sprite pieces. Offset `$4A` is the dimension byte of the tenth rendered piece
+(`9 * 8 + 2`). The flipped and unflipped build paths contain candidate `move.b`
+writes, and the level/demo source calls sprite building after `ExecuteObjects`.
+This identifies a candidate source path, not the exact instruction executed in
+the recorded trial or a proved cause of the delay.
+
+Reuse the existing one-write scenario and phase-aligned player/demo/raw-frame
+observations. Add developer-only per-tick audio sample counts and left/right
+sample hashes, with repeated baseline and fault runs, equivalent reset/zero-input
+schedules and matching pre-fault observations. Compare audio at the same tick
+and offsets of minus/plus one tick, reporting sample counts and complete pair
+counts. Keep raw samples and game data out of the report.
+
+Audio that aligns with the same phase shift is evidence consistent with delay.
+Residual hash differences motivate a bounded follow-up; they do not establish
+causality or an audible effect. This protocol must not reuse the older sweep's
+post-contact force-resume behaviour. Add no app feature, audio fault model or CPU
+rescue, and keep the published v0.2.6 observer and historical records unchanged.

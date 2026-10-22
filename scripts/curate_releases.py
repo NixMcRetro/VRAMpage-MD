@@ -28,7 +28,9 @@ def load_catalog():
         raise CurationError("Published release version is newer than source VERSION.")
     entries = data["releases"]
     tags = [entry["tag"] for entry in entries]
-    if len(tags) != 12 or len(set(tags)) != len(tags) or tags[0] != data["current"]:
+    required_history = {f"v0.1.{n}" for n in range(5)} | {f"v0.2.{n}" for n in range(7)}
+    if (not required_history.issubset(tags) or len(set(tags)) != len(tags) or
+            not tags or tags[0] != data["current"]):
         raise CurationError("Incorrect, duplicate or unordered release entries.")
     for entry in entries:
         tag = entry["tag"]
@@ -38,17 +40,20 @@ def load_catalog():
             raise CurationError(f"Invalid original commit for {tag}")
         if entry["title"] != f"VRAMpage MD {tag}":
             raise CurationError(f"Release title must be exactly VRAMpage MD {tag}")
+        version = tuple(map(int, tag[1:].split(".")))
         expected = ([f"VRAMpage-MD-{tag}-macos.zip", "SHA256SUMS.txt"]
-                    if tag in ("v0.2.4", "v0.2.5", "v0.2.6") else [])
+                    if version >= (0, 2, 4) else [])
         if sorted(entry["assets"]) != sorted(expected):
             raise CurationError(f"Unexpected asset policy for {tag}")
         note = (ROOT / "release-notes" / f"{tag}.md").read_text(encoding="utf-8")
-        if entry["source_commit"] not in note or "v0.2.6" not in note:
+        if entry["source_commit"] not in note or data["current"] not in note:
             raise CurationError(f"Missing provenance/latest-version link for {tag}")
         if expected and expected[0] not in note:
             raise CurationError(f"No direct Mac ZIP link for {tag}")
         if not expected and "SOURCE HISTORY ONLY" not in note:
             raise CurationError(f"Historical {tag} must state source-only status.")
+    if tags != sorted(tags, key=lambda tag: tuple(map(int, tag[1:].split("."))), reverse=True):
+        raise CurationError("Release entries must be newest first.")
     return data
 
 

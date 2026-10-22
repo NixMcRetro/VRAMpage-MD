@@ -1,6 +1,6 @@
 # Editing GitHub release presentation
 
-This repository has complete Mac downloads and historical source-only milestones. The **latest published runnable version** is recorded in `release-notes/catalog.json`, currently **v0.2.6**. The repository's `VERSION` can be ahead (currently v0.2.7 development) without a published ZIP; do not advertise unreleased source as downloadable.
+This repository has complete Mac downloads and historical source-only milestones. The **latest published runnable version** is recorded in `release-notes/catalog.json`, currently **v0.2.7**. The repository's `VERSION` can be ahead (currently v0.2.7) without a published ZIP; do not advertise unreleased source as downloadable.
 
 ## The presentation rules
 
@@ -16,7 +16,7 @@ This repository has complete Mac downloads and historical source-only milestones
 
 ## Original notes are archived
 
-The 12 original published release descriptions and titles were captured verbatim
+The original published release descriptions and titles were captured verbatim
 before curation under [original release notes](archive/original-release-notes/).
 The copies preserve detailed technical commentary and old historical pointers.
 Do not change or delete those archival snapshots when rewriting public-facing notes.
