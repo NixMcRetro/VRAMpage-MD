@@ -26,6 +26,7 @@
   let lastFrame = 0, accumulated = 0, frames = 0, measuredAt = 0;
   let focusReleased = false;
   let lastContact = '';
+  let possibleVramResidue = false;
   let displayRefreshQueued = false;
 
   function stamp(message) {
@@ -68,6 +69,9 @@
       button.setAttribute('aria-pressed', isActive);
     });
     const next = describe(pair);
+    if (pair && started) possibleVramResidue = true;
+    const faultHint = $('faultHint');
+    if (faultHint) faultHint.hidden = !(!pair && possibleVramResidue && started);
     if (next !== lastContact) {
       if (emulator && typeof emulator._set_vram_short === 'function')
         emulator._set_vram_short(pair ? pair[0] : -1, pair ? pair[1] : -1);
@@ -384,7 +388,18 @@
   function setup() {
     setupPatchbay();installKeyboard();
     $('romFile').addEventListener('change',event=>{loadLocalRom(event.target.files?.[0]);event.target.value='';});
-    $('resetBtn').addEventListener('click',async()=>{if(romBytes) await startCartridge(romBytes,loadedName);});
+    $('resetBtn').addEventListener('click',async()=>{
+      if (!romBytes) return;
+      // Reset the VDP and reload the original cartridge without any bridged pins.
+      // VRAM content altered by earlier simulated shorts cannot be undone by disconnecting alone.
+      disconnect();
+      try {
+        await startCartridge(romBytes,loadedName);
+        possibleVramResidue = false;
+        updateFaultUI();
+        stamp('Clean restart: VRAM reset, all shorts disconnected');
+      } catch (error) { stamp(`Restart failed: ${error.message}`); }
+    });
     $('pauseBtn').addEventListener('click',pauseToggle);
     $('soundBtn').addEventListener('click',()=>soundToggle().catch(e=>stamp(`Audio error: ${e.message}`)));
     $('fullscreenBtn').addEventListener('click', toggleFullscreen);

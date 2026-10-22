@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#dedbd2">
-  <title>VRAMpage MD v0.1.1 | Mega Drive circuit bending</title>
+  <title>VRAMpage MD v0.1.2 | Mega Drive circuit bending</title>
   <link rel="stylesheet" href="style.css">
   <script src="core/genplus.js" defer onerror="window.__coreMissing = true"></script>
   <script src="app.js" defer></script>
@@ -13,8 +13,8 @@
   <main class="shell">
     <header class="masthead">
       <div>
-        <div class="brand"><h1>VRAMpage <span>MD</span></h1><span class="version">v0.1.1</span></div>
-        <p class="subtitle">An experimental Sega Mega Drive circuit-bending workbench.</p>
+        <div class="brand"><h1>VRAMpage <span>MD</span></h1><span class="version">v0.1.2</span></div>
+        <p class="subtitle">Mega Drive memory experiments. NTSC / Model 1.</p>
       </div>
       <div class="machine-status"><span class="led" id="powerLed"></span><span id="powerLabel">CORE NOT READY</span></div>
     </header>
@@ -35,20 +35,20 @@
         <div class="toolbar">
           <label class="load-btn" for="romFile">Load ROM</label>
           <input id="romFile" type="file" accept=".bin,.md,.gen,application/octet-stream" aria-label="Load Mega Drive ROM">
-          <button id="resetBtn" type="button" disabled>Reset</button>
+          <button id="resetBtn" type="button" disabled title="Disconnect faults and reboot from the same cartridge">Clean restart</button>
           <button id="pauseBtn" type="button" disabled>Pause</button>
           <button id="soundBtn" type="button" disabled aria-pressed="false">Enable Sound</button>
           <button id="fullscreenBtn" type="button" aria-pressed="false">Fullscreen</button>
         </div>
         <div class="instructions">
-          <p><strong>CONTROLLER</strong> Arrows: move &nbsp;·&nbsp; Z, X, C: buttons &nbsp;·&nbsp; Enter: Start</p>
-          <p><strong>BENDING</strong> 1–8: connect &nbsp;·&nbsp; Shift + 1–8: hold &nbsp;·&nbsp; 0: disconnect &nbsp;·&nbsp; P: pause</p>
+          <p><strong>PLAY</strong> Arrows / Z X C / Enter <span class="help-divider">|</span> <strong>FAULTS</strong> 1–8 toggle / Shift+1–8 hold / 0 disconnect / P pause</p>
+          <p id="faultHint" class="fault-hint" hidden>Earlier shorts may have altered VRAM. Use <strong>Clean restart</strong> to clear it.</p>
         </div>
       </section>
 
       <aside class="bender-panel" aria-label="VRAM patchbay">
         <div class="section-heading"><h2>02 <span>/</span> VRAM patchbay</h2><span>AD0–AD7</span></div>
-        <p class="explain">Choose two address nets to connect. Click two pins, or use the numbered presets.</p>
+        <p class="explain">Bridge two VRAM address nets. Use the pins or presets 1–8.</p>
         <div class="chip-box">
           <p class="board-label">315-5313 &nbsp; / &nbsp; VDP ADDRESS BUS</p>
           <div class="pin-grid" id="pinGrid"></div>
@@ -67,18 +67,19 @@
     </div>
 
     <section class="bottom-grid">
-      <div class="log-block">
-        <div class="section-heading"><h2>03 <span>/</span> Event log</h2><button id="clearLogBtn" type="button">Clear</button></div>
+      <details class="log-block">
+        <summary class="section-heading"><h2>03 <span>/</span> Event log</h2><span>View activity</span></summary>
+        <button id="clearLogBtn" type="button" class="clear-log">Clear log</button>
         <ol id="experimentLog" aria-live="polite"></ol>
-      </div>
-      <div class="notes-block">
-        <div class="section-heading"><h2>04 <span>/</span> About this build</h2></div>
-        <p>Works offline once hosted locally. No ROM is included; choose a game you may lawfully use. The cartridge file stays on your device.</p>
-        <p>Clean stereo sound is available using <strong>Enable Sound</strong>. Audio and 68000 logic bending are planned for later builds.</p>
-        <p class="small-note">Emulator: <a href="https://github.com/h1romas4/wasm-genplus" target="_blank" rel="noreferrer">wasm-genplus</a> / <a href="https://github.com/ekeeke/Genesis-Plus-GX" target="_blank" rel="noreferrer">Genesis Plus GX</a>. Corresponding source and licence notices accompany any public build.</p>
-      </div>
+      </details>
+      <details class="notes-block">
+        <summary class="section-heading"><h2>04 <span>/</span> Build notes</h2><span>Technical details</span></summary>
+        <p>No ROM included. Your cartridge data stays in this browser.</p>
+        <p>Sound is available with <strong>Enable Sound</strong>. Audio and 68000 logic bending are planned for later builds.</p>
+        <p class="small-note">Emulator: <a href="https://github.com/h1romas4/wasm-genplus" target="_blank" rel="noreferrer">wasm-genplus</a> / <a href="https://github.com/ekeeke/Genesis-Plus-GX" target="_blank" rel="noreferrer">Genesis Plus GX</a>. Redistributing a modified core requires its corresponding source and applicable licence notices.</p>
+      </details>
     </section>
-    <footer><span>VRAMpage MD &nbsp;·&nbsp; v0.1.1</span><span>NTSC HARDWARE MODE &nbsp; / &nbsp; NO VIDEO FILTERS</span></footer>
+    <footer><span>VRAMpage MD &nbsp;·&nbsp; v0.1.2</span><span>NTSC HARDWARE MODE &nbsp; / &nbsp; NO VIDEO FILTERS</span></footer>
   </main>
 </body>
 </html>

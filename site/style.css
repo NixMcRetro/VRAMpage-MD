@@ -120,3 +120,68 @@ footer { display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; 
   .patch-status { padding-inline:12px; }
   .notice { margin-inline:12px; }
 }
+
+/* v0.1.2 compact workbench. Native VDP pixels are NEVER striped or filtered.
+   Reduced player size and collapsible diagnostics keep the important controls
+   visible without requiring a very tall browser window. */
+.shell { width:min(1060px, calc(100% - 28px)); padding:11px 0 18px; }
+.masthead { padding-bottom:9px; margin-bottom:11px; }
+h1 { font-size:28px; letter-spacing:-.8px; }
+.subtitle { margin-top:3px; font-size:11px; }
+.main-grid { grid-template-columns:minmax(0,1.64fr) minmax(310px,.93fr); gap:11px; }
+.section-heading { padding:9px 12px 8px; }
+.screen-well { display:flex; justify-content:center; padding:9px 10px; }
+.screen-frame { width:min(100%, 570px, calc(49dvh * 10 / 7)); max-width:100%; flex:none; border-width:4px; }
+.screen-info { padding:6px 10px; font-size:10px; }
+#romName { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+#fpsIndicator { flex:none; }
+.toolbar { padding:9px 10px; gap:5px; }
+.toolbar button,.load-btn { min-height:32px; min-width:70px; padding:6px 7px; font-size:11px; }
+.instructions { padding:6px 10px; }
+.instructions p { font-size:11px; line-height:1.5; }
+.help-divider { margin:0 8px; color:var(--rule); }
+.fault-hint { color:#8e391f!important; margin-top:4px; }
+.fault-hint[hidden] { display:none!important; }
+.bender-panel .explain { padding:8px 12px; font-size:12px; }
+.chip-box { margin:0 11px 8px; padding:10px; }
+.board-label { margin-bottom:7px; }
+.pin { padding:8px 0; }
+.chip-middle { margin:4px 7px; padding:10px 5px; }
+.chip-middle strong { font-size:20px; }
+.chip-foot { padding-top:6px; font-size:10px; }
+.patch-status { padding:8px 12px; }
+.presets-head { padding:8px 11px 7px; }
+.preset-grid { padding:0 11px; gap:4px; }
+.preset { min-height:39px; padding:4px 2px; }
+.metrics { margin:9px 11px 0; }
+.metrics > div { padding-top:6px; }
+.metrics strong { font-size:17px; padding-top:0; }
+.notice { margin:9px 11px 10px; padding:7px 8px; font-size:10px; }
+.bottom-grid { gap:11px; margin-top:11px; }
+.bottom-grid details { align-self:start; }
+.bottom-grid summary { cursor:pointer; list-style:none; user-select:none; }
+.bottom-grid summary::-webkit-details-marker { display:none; }
+.bottom-grid summary::after { content:'+'; color:var(--muted); font:20px/1 ui-monospace,monospace; margin-left:7px; }
+.bottom-grid details[open] summary::after { content:'−'; }
+.bottom-grid summary > span { margin-left:auto; }
+.clear-log { margin:8px 12px 0; padding:4px 7px; font-size:11px; }
+#experimentLog { min-height:0; max-height:140px; margin:5px 11px 11px; }
+footer { padding-top:9px; font-size:10px; }
+/* Fullscreen rule MUST override width cap applied to the normal screen. */
+#displayViewport:fullscreen { width:100vw; height:100vh; max-width:none; }
+@media (max-width:840px) {
+  .main-grid { grid-template-columns:1fr; }
+  .shell { width:min(680px, calc(100% - 20px)); }
+  .screen-frame { width:min(100%,570px,calc(45dvh * 10 / 7)); }
+}
+@media (max-width:540px) {
+  .shell { padding-top:10px; }
+  .masthead { margin-bottom:8px; }
+  h1 { font-size:25px; }
+  .screen-well { padding:6px; }
+  .screen-frame { width:100%; border-width:3px; }
+  .toolbar button,.load-btn { flex:1 1 27%; }
+  .bottom-grid { grid-template-columns:1fr; }
+  .machine-status { font-size:9px; }
+  .chip-box { margin-inline:10px; }
+}
