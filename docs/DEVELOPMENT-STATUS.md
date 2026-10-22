@@ -21,6 +21,15 @@ Verified on 22 October 2026. Read [work queue](WORK-QUEUE.md),
   their Mac, as far as they can tell. This is qualified feedback, not complete
   native macOS Firefox or audible-output acceptance.
 
+## User-reported native acceptance
+
+The user confirms sound, USB keyboard input, resize and fullscreen in Mac
+Firefox. Fault removal works while responsive. Exceptions and hard crashes need
+CPU restart or clean restart; removal alone does not recover them. Both restart
+actions reportedly clear the observed condition. The package version was not
+identified with this feedback. The user has no physical gamepad, so physical
+controller acceptance remains untested. See [Testing](TESTING.md) for scope.
+
 ## Implemented functionality and evidence limits
 
 The application includes the native framebuffer fix, legacy missing-line
@@ -90,6 +99,16 @@ Independent Luna High review checked actual code, field mappings and tests and
 ran the six actual private-cartridge trials. Baseline Sonic object ID 1 was
 observed through all 602 timeline ticks. Source checks cover 63 Python tests,
 framebuffer suites, nine pulse groups, nine observer groups and both C smokes.
+
+## v0.2.7 work in progress
+
+An optional default-disabled first-affected-write diagnostic is under verification.
+The API records logical address metadata, bus width, completed frame and reason,
+never memory values. The separate runner compares tracing off/on/repeated and
+checks historical v0.2.6 observations. This source increment does not replace the
+verified public v0.2.6 package until release checks pass. See
+[RAM write trace](RAM-WRITE-TRACE.md). Native/sanitizer, actual-WASM, independent
+review and full CI results must be recorded before merging.
 
 ## Highest-priority unfinished experiment
 

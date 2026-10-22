@@ -106,3 +106,7 @@ build workflow and creates a
 local launcher. This uses the tested Emscripten 4.0.23 toolchain and does not
 deploy or modify McRetro.net. See [Run locally](RUNNING-LOCALLY.md) for download
 and launch steps. GitHub Actions retains this review artifact for 30 days.
+
+Development source v0.2.7 adds an optional metadata-only RAM write trace. The
+current verified download above remains v0.2.6 until the v0.2.7 package passes
+release verification. See [trace documentation](RAM-WRITE-TRACE.md).

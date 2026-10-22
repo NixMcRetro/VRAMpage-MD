@@ -29,6 +29,22 @@ class WorkRamIntegration(unittest.TestCase):
             )
             subprocess.run([str(executable)], cwd=ROOT, check=True)
 
+    def test_runtime_bridge_native_transactions_sanitized(self):
+        with tempfile.TemporaryDirectory(prefix="work-ram-runtime-sanitized-") as temp:
+            executable = Path(temp) / "runtime-smoke-sanitized"
+            subprocess.run(
+                [
+                    "cc", "-std=c11", "-O1", "-g", "-Wall", "-Wextra", "-Werror",
+                    "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
+                    "-DLSB_FIRST", "-DWORK_RAM_RUNTIME_TEST", "-Iscripts",
+                    "scripts/work_ram_fault.c", "scripts/work_ram_runtime.c",
+                    "tests/work_ram_runtime_smoke.c", "-o", str(executable),
+                ],
+                cwd=ROOT,
+                check=True,
+            )
+            subprocess.run([str(executable)], cwd=ROOT, check=True)
+
     def test_pinned_access_hooks_are_idempotent_and_cover_bypass_paths(self):
         cpu = '''#include "m68k.h"
 #define m68k_read_immediate_16(address) *(uint16 *)(m68ki_cpu.memory_map[((address)>>16)&0xff].base + ((address) & 0xffff))

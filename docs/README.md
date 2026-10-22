@@ -55,3 +55,9 @@ VRAMpage-MD development does not automatically publish to `mcretro.net`. Deploy 
 - [Development status](DEVELOPMENT-STATUS.md): verified evidence, limits and continuation.
 
 - [Attract-mode observations](ATTRACT-MODE-OBSERVATIONS.md): read-only demo markers, repeated trials and acceptance limits.
+
+- [First affected RAM write trace](RAM-WRITE-TRACE.md): optional generic diagnostic and bounded private comparison.
+
+Development source v0.2.7 adds an optional metadata-only RAM write trace. The
+current verified download above remains v0.2.6 until the v0.2.7 package passes
+release verification. See [trace documentation](RAM-WRITE-TRACE.md).

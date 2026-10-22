@@ -17,7 +17,7 @@ BLITTER_MARKER = b"VRAMpage MD: native RGBA output blitter"
 def make_checkout(root, *, wasm=True, include_rom=False):
     files = {
         "README.md": b"Review bundle README",
-        "VERSION": b"0.2.6\n",
+        "VERSION": b"0.2.7\n",
         "START.command": b"#!/bin/bash\n",
         "docs/RUNNING-LOCALLY.md": b"Run guide",
         "scripts/serve.py": b"print('serve')\n",
@@ -82,7 +82,7 @@ class ReviewBundleTests(unittest.TestCase):
                 metadata = json.loads(root_info)
                 self.assertEqual(set(metadata), {"application", "application_version",
                                                  "source_commit", "package_format"})
-                self.assertEqual(metadata["application_version"], "0.2.6")
+                self.assertEqual(metadata["application_version"], "0.2.7")
                 self.assertEqual(metadata["source_commit"], subprocess.check_output(
                     ["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip())
                 mode = archive.getinfo("VRAMpage-MD/START.command").external_attr >> 16
@@ -120,7 +120,7 @@ class ReviewBundleTests(unittest.TestCase):
                 canonical = archive.read("VRAMpage-MD/BUILD-INFO.json")
                 self.assertEqual(canonical, archive.read("VRAMpage-MD/site/build-info.json"))
                 self.assertEqual(json.loads(canonical)["source_commit"], commit)
-                self.assertEqual(json.loads(canonical)["application_version"], "0.2.6")
+                self.assertEqual(json.loads(canonical)["application_version"], "0.2.7")
             for name in ("BUILD-INFO.json", "site/build-info.json"):
                 self.assertEqual((root / name).read_bytes(), forged)
 

@@ -14,6 +14,28 @@ uint16_t work_ram_logic_read16(uint32_t address);
 void work_ram_logic_write8(uint32_t address, uint8_t value);
 void work_ram_logic_write16(uint32_t address, uint16_t value);
 
+/* Optional first-affected-write trace. It stores metadata only (never RAM
+ * values) and records one byte/word bus access per enable/fault activation.
+ * Frame is get_logic_frame() as seen by the write hook; the runtime increments
+ * that counter after system_frame_gen, so an access during the next frame is
+ * tagged with the preceding completed frame. State changes from IN_PROGRESS
+ * before the native store to COMPLETED after changed_write/pulse release. */
+enum {
+    WORK_RAM_TRACE_EMPTY = 0,
+    WORK_RAM_TRACE_IN_PROGRESS = 1,
+    WORK_RAM_TRACE_COMPLETED = 2,
+    WORK_RAM_TRACE_REASON_ADDRESS = 1,
+    WORK_RAM_TRACE_REASON_DATA = 2
+};
+int set_logic_write_trace_enabled(int enabled);
+uint32_t get_logic_write_trace_state(void);
+uint32_t get_logic_write_trace_cpu_address(void);
+uint32_t get_logic_write_trace_ram_offset(void);
+uint32_t get_logic_write_trace_mapped_offset(void);
+uint32_t get_logic_write_trace_width(void);
+uint32_t get_logic_write_trace_frame(void);
+uint32_t get_logic_write_trace_reason(void);
+
 /* Public controls and diagnostics. kind: 0 none, 1 address, 2 data;
  * access: 1 read, 2 write, 3 both. Data-line byte operations require both
  * selected lines to be in the same byte lane. */

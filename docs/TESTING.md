@@ -1,3 +1,31 @@
+# v0.2.7 first affected write trace verification
+
+Local checks passed: 64 Python tests including strict native runtime and
+AddressSanitizer/UndefinedBehaviorSanitizer execution, framebuffer suites, nine
+pulse groups, nine observer groups, five trace-runner groups and both C smokes.
+The Emscripten 4.0.23 / CMake 4.1.3 rebuild passed 25 actual-WASM original 68000
+cartridge checks, including first-longword-half cutoff and byte trace metadata.
+Chromium passed 28 logic cases, six display cases and the actual-core browser
+smoke. Independent Luna High review inspected source/test design and reran the
+focused native/sanitizer, runner and actual-WASM tests with no remaining blocker.
+Private-cartridge trace evidence and CI are recorded separately when complete.
+See [trace protocol](RAM-WRITE-TRACE.md). These checks do not establish physical
+fault accuracy or native Mac behaviour for the new build.
+
+# User-reported Mac Firefox acceptance
+
+The user reports sound, USB keyboard input, window resizing and fullscreen work
+on their Mac in Firefox. Removing a fault works while the emulator remains
+responsive. An exception or hard crash does not recover merely by removing the
+fault: CPU restart or clean restart is required, and the user reports both clear
+the observed condition. This is user-reported acceptance, not cloud automation or
+a guarantee that recovery preserves healthy gameplay for every fault.
+
+The user has no physical gamepad. Physical gamepad acceptance remains untested;
+injected browser gamepad tests cover the adapter only. System Light/Dark
+appearance and Finder quarantine handling were not explicitly confirmed in this
+feedback. The exact running package version was not supplied with these results.
+
 # Post-v0.2.6 read-only experiment tooling
 
 The application/core are unchanged. The full source suite passed 63 Python tests,
