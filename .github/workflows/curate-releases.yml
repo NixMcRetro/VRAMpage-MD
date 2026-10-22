@@ -1,0 +1,34 @@
+name: Maintain VRAMpage release presentation
+
+# Changes only existing release titles/notes and the Latest pointer.
+# Never creates tags, releases, or uploads/replaces/deletes release binaries.
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/curate-releases.yml'
+      - 'scripts/curate_releases.py'
+      - 'release-notes/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vrampage-release-curation
+  cancel-in-progress: false
+
+jobs:
+  curate:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate release notes and source-commit manifest
+        run: python3 scripts/curate_releases.py --check
+      - name: Check original release assets and update existing titles/notes
+        run: python3 scripts/curate_releases.py --apply
