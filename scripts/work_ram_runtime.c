@@ -21,6 +21,46 @@ static uint32_t logic_write_budget;
 static uint32_t logic_pulse_state;
 static uint16_t logic_address_mask;
 static work_ram_fault_access logic_mask_access;
+static int logic_write_trace_enabled;
+static uint32_t logic_write_trace_state;
+static uint32_t logic_write_trace_cpu_address;
+static uint32_t logic_write_trace_ram_offset;
+static uint32_t logic_write_trace_mapped_offset;
+static uint32_t logic_write_trace_width;
+static uint32_t logic_write_trace_frame;
+static uint32_t logic_write_trace_reason;
+
+static void reset_write_trace_record(void)
+{
+    logic_write_trace_state = WORK_RAM_TRACE_EMPTY;
+    logic_write_trace_cpu_address = 0;
+    logic_write_trace_ram_offset = 0;
+    logic_write_trace_mapped_offset = 0;
+    logic_write_trace_width = 0;
+    logic_write_trace_frame = 0;
+    logic_write_trace_reason = 0;
+}
+
+static void trace_affected_write(uint32_t address, uint32_t original,
+                                uint32_t mapped, uint32_t width,
+                                uint32_t reason)
+{
+    if (!logic_write_trace_enabled || logic_write_trace_state != WORK_RAM_TRACE_EMPTY)
+        return;
+    logic_write_trace_cpu_address = address & 0x00ffffffu;
+    logic_write_trace_ram_offset = original;
+    logic_write_trace_mapped_offset = mapped;
+    logic_write_trace_width = width;
+    logic_write_trace_frame = logic_frame;
+    logic_write_trace_reason = reason;
+    logic_write_trace_state = WORK_RAM_TRACE_IN_PROGRESS;
+}
+
+static void complete_affected_write_trace(void)
+{
+    if (logic_write_trace_state == WORK_RAM_TRACE_IN_PROGRESS)
+        logic_write_trace_state = WORK_RAM_TRACE_COMPLETED;
+}
 
 static void changed_write(void)
 {
@@ -141,9 +181,14 @@ void work_ram_logic_write8(uint32_t address, uint8_t value)
         native_write_byte(address & 0xffffu, value);
         return;
     }
-    native_write_byte(offset, projected);
-    if (offset != original || projected != value)
+    if (offset != original || projected != value) {
+        uint32_t reason = (offset != original ? WORK_RAM_TRACE_REASON_ADDRESS : 0u) |
+                          (projected != value ? WORK_RAM_TRACE_REASON_DATA : 0u);
+        trace_affected_write(address, original, offset, 1u, reason);
+        native_write_byte(offset, projected);
         changed_write();
+        complete_affected_write_trace();
+    } else native_write_byte(offset, projected);
 }
 
 void work_ram_logic_write16(uint32_t address, uint16_t value)
@@ -158,9 +203,15 @@ void work_ram_logic_write16(uint32_t address, uint16_t value)
         *(uint16_t *)(work_ram + (address & 0xffffu)) = value;
         return;
     }
-    *(uint16_t *)(work_ram + ((uint32_t)word << 1)) = projected;
-    if (((uint32_t)word << 1) != original || projected != value)
+    if (((uint32_t)word << 1) != original || projected != value) {
+        uint32_t mapped = (uint32_t)word << 1;
+        uint32_t reason = (mapped != original ? WORK_RAM_TRACE_REASON_ADDRESS : 0u) |
+                          (projected != value ? WORK_RAM_TRACE_REASON_DATA : 0u);
+        trace_affected_write(address, original, mapped, 2u, reason);
+        *(uint16_t *)(work_ram + mapped) = projected;
         changed_write();
+        complete_affected_write_trace();
+    } else *(uint16_t *)(work_ram + ((uint32_t)word << 1)) = projected;
 }
 
 WORK_RAM_KEEPALIVE int set_logic_fault(int kind, int access,
@@ -203,6 +254,7 @@ WORK_RAM_KEEPALIVE int set_logic_fault(int kind, int access,
         logic_reads = 0;
         logic_writes = 0;
         logic_activation_frame = logic_frame;
+        reset_write_trace_record();
     }
     return WORK_RAM_FAULT_OK;
 }
@@ -226,6 +278,23 @@ WORK_RAM_KEEPALIVE uint32_t get_logic_pulse_state(void)
     return logic_pulse_state;
 }
 
+WORK_RAM_KEEPALIVE int set_logic_write_trace_enabled(int enabled)
+{
+    if (enabled != 0 && enabled != 1)
+        return WORK_RAM_FAULT_INVALID_CONFIG;
+    logic_write_trace_enabled = enabled;
+    reset_write_trace_record();
+    return WORK_RAM_FAULT_OK;
+}
+
+WORK_RAM_KEEPALIVE uint32_t get_logic_write_trace_state(void) { return logic_write_trace_state; }
+WORK_RAM_KEEPALIVE uint32_t get_logic_write_trace_cpu_address(void) { return logic_write_trace_cpu_address; }
+WORK_RAM_KEEPALIVE uint32_t get_logic_write_trace_ram_offset(void) { return logic_write_trace_ram_offset; }
+WORK_RAM_KEEPALIVE uint32_t get_logic_write_trace_mapped_offset(void) { return logic_write_trace_mapped_offset; }
+WORK_RAM_KEEPALIVE uint32_t get_logic_write_trace_width(void) { return logic_write_trace_width; }
+WORK_RAM_KEEPALIVE uint32_t get_logic_write_trace_frame(void) { return logic_write_trace_frame; }
+WORK_RAM_KEEPALIVE uint32_t get_logic_write_trace_reason(void) { return logic_write_trace_reason; }
+
 WORK_RAM_KEEPALIVE int set_logic_address_mask(int mask, int access)
 {
     if (mask < 0 || mask > 0x7fff || access < WORK_RAM_FAULT_APPLY_READ ||
@@ -238,6 +307,7 @@ WORK_RAM_KEEPALIVE int set_logic_address_mask(int mask, int access)
         logic_reads = 0;
         logic_writes = 0;
         logic_activation_frame = logic_frame;
+        reset_write_trace_record();
         logic_pulse_state = WORK_RAM_PULSE_NONE;
     }
     return WORK_RAM_FAULT_OK;
@@ -298,6 +368,8 @@ void work_ram_logic_start(void)
     logic_activation_frame = 0;
     logic_write_budget = 0;
     logic_pulse_state = WORK_RAM_PULSE_NONE;
+    logic_write_trace_enabled = 0;
+    reset_write_trace_record();
 }
 
 void work_ram_logic_tick(void)

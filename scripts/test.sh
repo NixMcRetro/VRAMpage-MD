@@ -10,6 +10,8 @@ node tests/test_framebuffer_properties.cjs
 node tests/test_pulse_sweep.cjs
 node --check scripts/observe-attract-demo.cjs
 node tests/test_attract_diagnostics.cjs
+node --check scripts/trace-attract-write.cjs
+node tests/test_write_trace_runner.cjs
 cc -std=c11 -O2 -Wall -Wextra -Werror tests/fault_engine_smoke.c -o /tmp/vrambender_fault_smoke
 /tmp/vrambender_fault_smoke
 cc -std=c11 -O2 -Wall -Wextra -Werror \

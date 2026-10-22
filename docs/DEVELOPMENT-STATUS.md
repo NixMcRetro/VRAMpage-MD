@@ -21,6 +21,15 @@ Verified on 22 October 2026. Read [work queue](WORK-QUEUE.md),
   their Mac, as far as they can tell. This is qualified feedback, not complete
   native macOS Firefox or audible-output acceptance.
 
+## User-reported native acceptance
+
+The user confirms sound, USB keyboard input, resize and fullscreen in Mac
+Firefox. Fault removal works while responsive. Exceptions and hard crashes need
+CPU restart or clean restart; removal alone does not recover them. Both restart
+actions reportedly clear the observed condition. The package version was not
+identified with this feedback. The user has no physical gamepad, so physical
+controller acceptance remains untested. See [Testing](TESTING.md) for scope.
+
 ## Implemented functionality and evidence limits
 
 The application includes the native framebuffer fix, legacy missing-line
@@ -91,6 +100,32 @@ ran the six actual private-cartridge trials. Baseline Sonic object ID 1 was
 observed through all 602 timeline ticks. Source checks cover 63 Python tests,
 framebuffer suites, nine pulse groups, nine observer groups and both C smokes.
 
+## v0.2.7 verified diagnostic, integration pending
+
+An optional default-disabled first-affected-write diagnostic passed local verification.
+The API records logical address metadata, bus width, completed frame and reason,
+never memory values. The separate runner compares tracing off/on/repeated and
+checks historical v0.2.6 observations. This source increment does not replace the
+verified public v0.2.6 package until release checks pass. See
+[RAM write trace](RAM-WRITE-TRACE.md). Strict native/sanitizer, 25 actual-WASM checks, 28 Chromium logic cases, six
+display cases and actual-core browser smoke passed. Independent Luna High source
+and test review approved the implementation. Full CI remains required before
+merge. The review ZIP from f0cc664 has 288 unique entries; independent default
+worker verified manifests, source/notices, executable launcher, ROM/secret
+exclusion, eight served assets and browser startup without errors.
+
+Independent specialist review reran all six trials and obtained byte-identical
+output. Source layout identifies the original address inside the sprite-table
+buffer and the alias as the `AMSFMSPan` field of the first sound-effects FM track.
+This does not prove an audible effect or explain the gameplay delay.
+
+The six-trial [trace record](RAM-WRITE-TRACE.md#recorded-first-write-result)
+identified a byte write at `$FFF62A` mapped to logical `$F22A` during tick 1801.
+Traced/untraced and enabled repeats matched exactly. Baseline and one-write
+observations matched the preserved v0.2.6 protocol-2 output. This localizes the
+access and verifies bounded diagnostic noninterference; sustained gameplay
+divergence remains unproven.
+
 ## Highest-priority unfinished experiment
 
 The user supplied the private 512 KiB cartridge matching the historical
@@ -107,8 +142,10 @@ alignment; they do not establish changed gameplay. Visual scene identity,
 whole-game equivalence, native Mac/Firefox, audible output, other revisions and
 physical hardware are not validated. The RAM-stage acceptance remains open.
 
-Next assignment: Luna High should identify the first affected generic RAM write
-behind the one-tick delay. Inspect existing hooks and reuse diagnostics where
+The first affected generic write is now identified; its causal effect remains
+unknown. Next assignment: Luna High should locate that sprite-entry write and
+compare the named alias-target state and generated sound under the same pulse,
+with phase-aligned player/demo checks. Inspect existing hooks and reuse diagnostics where
 possible. If additional passive address/width/frame tracing is needed, define a
 bounded implementation in the generic RAM access layer, with no game-specific
 writes, no silent recovery and no ROM/RAM byte output. Require independent

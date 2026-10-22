@@ -1,6 +1,6 @@
 # Versioning policy
 
-Current development/release version: **v0.2.6** (`VERSION` stores `0.2.6`).
+Current development version: **v0.2.7** (`VERSION` stores `0.2.7`). The latest public release remains **v0.2.6** until v0.2.7 is reviewed, built from main and published.
 
 VRAMpage MD is experimental, **not version 2.x**. Use semantic-looking
 `MAJOR.MINOR.PATCH` identifiers with leading `0` until a deliberately

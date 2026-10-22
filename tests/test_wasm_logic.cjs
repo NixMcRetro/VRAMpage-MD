@@ -61,6 +61,7 @@ async function create(words, config, init) {
   assert.equal(getWord(c,0x1010),0xa55a);assert.equal(getByte(c,0x1012),0x3c);
   assert.equal(getWord(c,0x1018),0x1122);assert.equal(getWord(c,0x101a),0x3344);
   assert.equal(c._get_logic_reads(),0);assert.equal(c._get_logic_writes(),0);
+  assert.equal(c._get_logic_write_trace_state(),0,'trace is disabled by default');tests++;
   assert.equal(c._get_logic_cpu_flags(),1);tests++;
 
   c=await create([
@@ -155,12 +156,32 @@ async function create(words, config, init) {
   assert.equal(c._get_logic_writes(),2);tests++;
   // The first longword half consumes the budget; the second must use normal RAM.
   c=await create([...longWrite(0xff0004,0x11223344),...wordWrite(0xff0008,0x5566),...stop],null,c=>{
+    assert.equal(c._set_logic_write_trace_enabled(1),0);
     assert.equal(c._arm_logic_write_pulse(1,1,2,1),0);
   });
   assert.equal(getWord(c,0),0x1122);assert.equal(getWord(c,2),0);
   assert.equal(getWord(c,4),0);assert.equal(getWord(c,6),0x3344);
   assert.equal(getWord(c,8),0x5566);assert.equal(c._get_logic_writes(),1);
+  assert.equal(c._get_logic_write_trace_state(),2);
+  assert.equal(c._get_logic_write_trace_cpu_address(),0xff0004);
+  assert.equal(c._get_logic_write_trace_ram_offset(),4);
+  assert.equal(c._get_logic_write_trace_mapped_offset(),0);
+  assert.equal(c._get_logic_write_trace_width(),2);
+  assert.equal(c._get_logic_write_trace_reason(),1);
   assert.equal(c._get_logic_pulse_state(),2);tests++;
+
+  // Byte writes report the CPU address and logical offsets, with data-only cause.
+  c=await create([...byteWrite(0xff1001,0x01),...stop],null,c=>{
+    assert.equal(c._set_logic_write_trace_enabled(1),0);
+    assert.equal(c._arm_logic_write_pulse(2,0,1,1),0);
+  });
+  assert.equal(c._get_logic_write_trace_state(),2);
+  assert.equal(c._get_logic_write_trace_cpu_address(),0xff1001);
+  assert.equal(c._get_logic_write_trace_ram_offset(),0x1001);
+  assert.equal(c._get_logic_write_trace_mapped_offset(),0x1001);
+  assert.equal(c._get_logic_write_trace_width(),1);
+  assert.equal(c._get_logic_write_trace_reason(),2);
+  assert.equal(c._get_logic_writes(),1);tests++;
 
   // Unaffected lanes/values do not consume a data budget; subsequent writes stay normal.
   c=await create([

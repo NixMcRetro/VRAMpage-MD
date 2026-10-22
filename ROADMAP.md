@@ -9,7 +9,10 @@ to experiment exports without changing the fault models. The complete versioned 
 includes the compiled core, source/notices and launcher; see
 [Run locally](docs/RUNNING-LOCALLY.md). The immediate goal is reliable launching
 and acceptance on the user's Mac. The user reports that v0.2.5 appears to work
-on their Mac, as far as they can tell; this is not a complete acceptance test. Per-access VRAM and audio bending remain
+on their Mac. Subsequent feedback confirms sound, USB keyboard, resize and
+fullscreen. Removing a fault does not recover an exception or hard crash; CPU
+restart or clean restart is required. Physical gamepad acceptance remains open.
+Per-access VRAM and audio bending remain
 separate future milestones. Historical milestones below retain their original
 research context.
 
@@ -42,6 +45,13 @@ research context.
   see [testing evidence](docs/TESTING.md) and [changelog](CHANGELOG.md).
 - Carry the open display acceptance checks forward while v0.2 work begins; they
   remain separate from browser-independent model work.
+
+## Next increment: v0.2.7 first affected RAM write trace
+
+Add a default-disabled, metadata-only diagnostic to identify the first changed
+bus write behind the observed phase delay. Require traced/untraced equivalence,
+exact write budgets, strict/sanitizer tests, actual-WASM coverage and independent
+specialist review. This does not complete the attract-mode divergence gate.
 
 ## v0.2.0 | Logic-bending experiments
 

@@ -2,7 +2,7 @@
 
 VRAMpage MD is a browser-based NTSC Sega Mega Drive / Genesis Model 1 emulator
 experiment. Play your own locally supplied cartridge while exploring deterministic,
-hardware-informed VRAM and 68000 work-RAM faults. **v0.2.6 is experimental:** the
+hardware-informed VRAM and 68000 work-RAM faults. **v0.2.7 development source is experimental:** the
 chip diagrams are conceptual and the models are not electrically accurate.
 
 Experiment exports include the application source commit when running a complete
@@ -56,9 +56,12 @@ USB/Bluetooth controller acceptance remains a manual check.
 VRAM faults are frame-scoped approximations. Work-RAM faults model transactions,
 not analogue floating pins. Physical pin mappings, continued attract-mode play
 after faults, actual Z80 execution coverage, cartridge-bus faults and audio
-bending remain incomplete. Normal FM/PSG audio is supported. Native macOS Firefox
-and audible playback acceptance must be checked on your Mac; cloud browser and
-actual-core checks are recorded in [Testing](docs/TESTING.md).
+bending remain incomplete. Normal FM/PSG audio is supported. The user reports
+Mac Firefox sound, USB keyboard, resize and fullscreen work.
+Exceptions or hard crashes require CPU restart or clean restart; removing the
+fault alone does not recover them. Physical gamepad acceptance remains untested.
+Cloud browser, actual-core checks and feedback limits are recorded in
+[Testing](docs/TESTING.md).
 
 ## Contributor build
 
@@ -91,3 +94,7 @@ v0.2.6. Historical prototype and experiment records remain in the
 [documentation index](docs/README.md). See [changelog](CHANGELOG.md), [versioning policy](docs/VERSIONING.md) and
 [roadmap](ROADMAP.md). Releases belong to this independent repository;
 **McRetro.net is not modified or deployed by this workflow**.
+
+Development source v0.2.7 adds an optional metadata-only RAM write trace. The
+current verified download above remains v0.2.6 until the v0.2.7 package passes
+release verification. See [trace documentation](docs/RAM-WRITE-TRACE.md).

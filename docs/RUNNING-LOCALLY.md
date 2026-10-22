@@ -71,3 +71,7 @@ manual Firefox checklist and the limits of cloud validation.
 Maintainers can still use GitHub Actions artifacts for temporary review. They
 expire, and GitHub may wrap the package in another ZIP; the versioned release
 asset above is the normal user download.
+
+Development source v0.2.7 adds an optional metadata-only RAM write trace. The
+current verified download above remains v0.2.6 until the v0.2.7 package passes
+release verification. See [trace documentation](RAM-WRITE-TRACE.md).

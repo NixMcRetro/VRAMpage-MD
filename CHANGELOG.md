@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.2.7 - optional first affected RAM write trace
+
+- Add a default-disabled metadata-only first-write diagnostic without changing the fault model or write budgets.
+- Add native and actual-WASM regression coverage and a bounded traced/untraced experiment runner.
+- Record user-reported Mac Firefox sound, USB keyboard, resize, fullscreen and restart behaviour; physical gamepad remains untested.
+- Preserve existing releases, pinned observer profiles and experiment records.
+
 ## Post-v0.2.6 experiment tooling
 
 - Add a read-only, pinned-ROM/core demo-state observer with byte-lane, field-width,
