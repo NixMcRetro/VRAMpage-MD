@@ -63,6 +63,14 @@ def gh_get(repository, path):
 def preflight(data):
     """Check every immutable source tag and attached file BEFORE changing notes."""
     remote = {}
+    published = gh_get(data["repository"], "releases?per_page=100")
+    known = {item["tag"] for item in data["releases"]}
+    if len(published) >= 100:
+        raise CurationError("Release listing needs pagination; refusing incomplete preflight.")
+    unexpected = [item["tag_name"] for item in published
+                  if not item.get("draft") and item["tag_name"] not in known]
+    if unexpected:
+        raise CurationError(f"New published releases are missing from curation: {unexpected}")
     for item in data["releases"]:
         tag = item["tag"]
         rel = gh_get(data["repository"], f"releases/tags/{tag}")
