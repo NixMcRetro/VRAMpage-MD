@@ -48,3 +48,30 @@ restart. Repeat with the same activation point for each action. A new halt,
 static output, broken sound or total failure is a valid result; do not describe
 clearing the flags alone as recovered gameplay. Commercial-cartridge recovery
 and native macOS behavior remain manual acceptance checks.
+
+## Observed halted-cartridge trial
+
+Using the same cartridge fingerprint and pinned core as the
+[initial work-RAM experiments](EXPERIMENTS.md#initial-actual-cartridge-results--22-october-2026),
+each action was tested in an independent zero-external-input Node run. Apply
+A1/A2 read at tick 1800, run to tick 2000, recover, then run another 120 ticks.
+At recovery the CPU was halted (flag 2) and affected reads were 327.
+
+- Force resume: immediate flags became 0, but returned to HALT by tick 2120.
+  The sampled RAM digest remained unchanged. Recovery failed in this trial.
+- CPU-only reset: immediate flags became 0 and remained 0 at tick 2120. The RAM
+  digest changed over the subsequent ticks, indicating resumed activity, without
+  establishing normal gameplay or continued demo input.
+
+Both actions retained the exact RAM digest, frame and affected-read count
+synchronously on invocation. The unchanged read counter after recovery is
+consistent with disconnecting the fault, not evidence of no subsequent reads.
+[Scalar/hash results](experiments/2026-10-22-cpu-recovery.json) contain no game bytes.
+Reproduce after building:
+
+```sh
+node scripts/run-cpu-recovery.cjs /private/path/cartridge.md > /tmp/recovery.json
+```
+
+This is one trial per action, not a repeated recovery success rate. Actual
+post-recovery visuals, sound and native macOS behavior remain unverified.

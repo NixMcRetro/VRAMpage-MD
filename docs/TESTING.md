@@ -256,3 +256,10 @@ history and clean restart without page errors. This verifies the UI/API path;
 it does not establish recovered gameplay after a halted Sonic run. Native
 macOS and commercial-cartridge post-HALT gameplay remain manual acceptance work.
 See [CPU recovery](CPU-RECOVERY.md) for an exact reproduction procedure.
+
+A subsequent private cartridge run tested recovery from actual HALT: A1/A2 read
+fault at tick 1800, recovery at 2000, observation at 2120. Force resume re-halted;
+CPU-only reset had no STOP/HALT flag and changed RAM over the following ticks.
+Neither action changed the RAM digest synchronously. This is one trial per action
+and does not prove healthy gameplay; results and a reproducible runner are linked
+from [CPU recovery](CPU-RECOVERY.md#observed-halted-cartridge-trial).
