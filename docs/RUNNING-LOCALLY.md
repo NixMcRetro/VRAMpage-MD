@@ -4,11 +4,15 @@
 2. Double-click `START.command`.
 3. The launcher opens VRAMpage MD in your browser. Load a game file from your computer using **Load ROM**.
 
-Python 3 must be installed ([official macOS installer](https://www.python.org/downloads/macos/)). If macOS blocks `START.command`, open Terminal, move into the unzipped folder, and run:
+Python 3 must be installed ([official macOS installer](https://www.python.org/downloads/macos/)).
+If macOS blocks `START.command`, use this Terminal fallback:
 
-```sh
-bash START.command
-```
+1. Open **Terminal**.
+2. Type `bash `, including the space after it.
+3. Drag `START.command` from Finder into the Terminal window.
+4. Press **Return**. The script finds its own folder automatically.
+
+The launcher chooses an available local port, so another local app need not be stopped.
 
 The launcher serves the files from your computer and only listens on `127.0.0.1`. It does not send game files to a server. Leave the Terminal window open while using the page; press **Control+C** there to stop it.
 

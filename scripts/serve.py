@@ -45,8 +45,8 @@ def validate_bundle():
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--port", type=int, default=8080,
-                        help="local port to use (default: 8080; use 0 for an available port)")
+    parser.add_argument("--port", type=int, default=0,
+                        help="local port to use (default: 0, automatically choose an available port)")
     parser.add_argument("--no-browser", action="store_true",
                         help="serve without opening a browser (useful for tests and cloud environments)")
     args = parser.parse_args(argv)

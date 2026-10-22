@@ -33,9 +33,12 @@ def make_bundle(root, *, core=True):
 
 
 class LocalLauncherTests(unittest.TestCase):
-    def start_server(self, launcher, port=0):
+    def start_server(self, launcher, port=None):
+        command = [sys.executable, str(launcher), "--no-browser"]
+        if port is not None:
+            command += ["--port", str(port)]
         return subprocess.Popen(
-            [sys.executable, str(launcher), "--no-browser", "--port", str(port)],
+            command,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
 
     def read_ready_line(self, process):
