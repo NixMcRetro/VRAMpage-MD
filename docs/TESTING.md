@@ -547,3 +547,19 @@ bash scripts/test.sh
 python3 tests/browser_logic.py --executable /usr/lib/chromium/chromium
 python3 tests/browser_display.py --executable /usr/lib/chromium/chromium
 ```
+
+
+## Clean-restart browser counter sampling
+
+The Firefox logic step of [main CI run 39784898869](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39784898869),
+attempt 2, failed `test_vram_and_logic_domains_are_exclusive_and_clean_restart_resets`.
+It exposed a test read race: separate Playwright evaluations read `logic.frame`
+and `ticks - lastStartTick` on different animation frames and reported `0 != 1`. The check now captures all three counters in one synchronous
+evaluation and retains the exact equality. No app, emulator, version or timing
+behaviour changed, and no tolerance or retry was added.
+
+A deterministic scheduling probe advanced one animation tick between the old
+separate reads, reproducing `0 != 1`; the synchronous snapshot still matched
+exactly. Chromium passed the affected case 20 consecutive times and all 28 logic
+cases. Firefox and WebKit validation remain part of the CI checks for this test-only
+correction; these local runs do not claim those engines passed.

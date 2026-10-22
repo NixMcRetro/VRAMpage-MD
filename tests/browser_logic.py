@@ -259,9 +259,15 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertEqual(self.page.evaluate("window.mockCore.logic.reads"), 0)
         self.assertEqual(self.page.evaluate("window.mockCore.logic.writes"), 0)
         self.assertEqual(self.page.evaluate("window.mockCore.logic.storedWrites"), 0)
+        # Read one synchronous snapshot: animation frames can advance between
+        # separate Playwright calls, even when the reset invariant is correct.
+        counters = self.page.evaluate("""() => ({
+            frame: window.mockCore.logic.frame,
+            ticks: window.mockCore.ticks,
+            lastStartTick: window.mockCore.lastStartTick
+        })""")
         self.assertEqual(
-            self.page.evaluate("window.mockCore.logic.frame"),
-            self.page.evaluate("window.mockCore.ticks - window.mockCore.lastStartTick"),
+            counters["frame"], counters["ticks"] - counters["lastStartTick"],
             "clean restart must reset the synthetic frame counter",
         )
 
