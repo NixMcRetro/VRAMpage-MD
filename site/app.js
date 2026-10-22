@@ -29,6 +29,7 @@
   let lastFrame = 0, accumulated = 0, frames = 0, measuredAt = 0;
   let focusReleased = false;
   let lastContact = '';
+  let vramAddressMask=0, vramAddressLineChanges=[];
   let possibleVramResidue = false;
   let displayRefreshQueued = false;
   let logicApiAvailable = false, logicActive = false, logicStatsRetained = false;
@@ -63,12 +64,72 @@
     $('pauseBtn').disabled = !running;
     $('soundBtn').disabled = !running;
     updateLogicControls();
+    refreshVramControls();
   }
 
   function samePair(a,b) { return !!(a && b) && a[0] === b[0] && a[1] === b[1]; }
   function canonical(pair) { return pair ? [...pair].sort((a,b) => a-b) : null; }
   function actualPair() { return momentary || latched; }
-  function describe(pair) { return pair ? `AD${pair[0]} ↔ AD${pair[1]}` : 'NONE — OPEN CIRCUIT'; }
+  function describe(pair) { return pair ? `AD${pair[0]} ↔ AD${pair[1]}` : 'NONE — NORMAL ADDRESSING'; }
+
+  function vramMaskApiReady() {
+    return typeof emulator?._set_vram_address_mask==='function' &&
+      typeof emulator?._get_vram_address_mask==='function';
+  }
+
+  function vramFaultActive() { return !!(vramAddressMask || actualPair()); }
+  function vramLines(mask) {
+    return Array.from({length:8},(_,i)=>i).filter(i=>mask & (1<<i)).map(i=>`AD${i}`);
+  }
+
+  function refreshVramControls() {
+    const supported=vramMaskApiReady();
+    $('vramMode').querySelector('[value="disconnect"]').disabled=!!emulator && !supported;
+    $('vramModeHint').textContent=emulator && !supported
+      ? 'This older core supports bridges only. Rebuild or download the current release for leg switches.'
+      : 'Disconnected legs use a stuck-low approximation, not floating-wire physics. Click a crossed leg to reconnect.';
+    const switching=$('vramMode').value==='disconnect';
+    pinButtons.forEach((button,index)=>{
+      const cut=!!(vramAddressMask & (1<<index));
+      button.disabled=switching && (!started || !supported);
+      button.setAttribute('aria-label', switching
+        ? `AD${index}: ${cut?'forced low; reconnect':'enabled; force low'}`
+        : `AD${index}: ${cut?'forced low; select to replace with bridge':'select net to bridge'}`);
+      button.title=button.getAttribute('aria-label');
+    });
+  }
+
+  function vramTransitionSnapshot() {
+    return {
+      frame:logicApiReady()?Number(emulator._get_logic_frame()):null,
+      previousMask:vramAddressMask,
+      projectedDifferencesBefore:Number(emulator?._get_vram_changed_reads?.() || 0),
+      changedBytesBefore:Number(emulator?._get_vram_changed_writes?.() || 0)
+    };
+  }
+
+  function recordVramMask(mask,reason,before=vramTransitionSnapshot()) {
+    if(mask!==vramAddressMask) vramAddressLineChanges.push({...before,mask,reason});
+    vramAddressMask=mask;
+  }
+
+  function applyVramAddressMask(mask) {
+    if(!started || !vramMaskApiReady()) return;
+    const removedLogic=!!(mask && logicActive);
+    if(removedLogic && !disconnectLogic({silent:true})) {
+      stamp('VRAM leg unchanged: could not disconnect the RAM fault.');return;
+    }
+    const before=vramTransitionSnapshot();
+    const status=emulator._set_vram_address_mask(mask);
+    if(status!==0) {
+      if(removedLogic) setLogicStatus('RAM fault disconnected; VRAM leg setting rejected.');
+      stamp(`VRAM leg setting rejected (status ${status}).`);return;
+    }
+    recordVramMask(mask,'VRAM leg toggled',before);
+    if (removedLogic) setLogicStatus('VRAM patch active; logic/work RAM fault disconnected.');
+    latched=null;momentary=null;selectedPin=null;
+    updateFaultUI();
+  }
 
   function logicApiReady(core=emulator) {
     return !!core && LOGIC_API.every(name => typeof core[name] === 'function');
@@ -116,7 +177,7 @@
     const status=emulator._set_logic_address_mask(mask,access);
     if (status!==0) {setLogicStatus(`Address-line setting rejected (status ${status}).`);return;}
     cancelPulse('replaced by address-line switches');
-    if (actualPair()) disconnect();
+    if (vramFaultActive()) disconnect();
     recordAddressMask(mask,access,'address line toggled',event); logicActive=true; logicStatsRetained=false;
     const lines=Array.from({length:15},(_,i)=>i).filter(i=>mask & (1<<i)).map(i=>`A${i+1}`);
     const accessLabel=['','read','write','read + write'][access];
@@ -239,7 +300,6 @@
       setLogicStatus('Data pairs must stay within D0–D7 or D8–D15. No fault was applied.');
       return false;
     }
-    if (actualPair()) disconnect();
     if (writeLimit!==null && (!writePulseApiReady() || config.access!==2)) {
       setLogicStatus('Affected-write pulses require Access: Write and a rebuilt core.');
       return false;
@@ -253,6 +313,7 @@
       stamp(`Logic fault rejected: core status ${status}`);
       return false;
     }
+    if (vramFaultActive()) disconnect('RAM fault activated');
     cancelPulse('replaced by another fault');
     recordAddressMask(0,0,'replaced by paired fault',chipBefore);
     logicActive=true;
@@ -275,9 +336,9 @@
     return true;
   }
 
-  function disconnectLogic({silent=false}={}) {
-    cancelPulse('fault disconnected');
+  function disconnectLogic({silent=false,pulseReason='fault disconnected'}={}) {
     if (!logicActive) {
+      cancelPulse(pulseReason);
       if (!silent) setLogicStatus('No logic fault is active.');
       return true;
     }
@@ -291,6 +352,7 @@
       if (!silent) setLogicStatus(`Core could not disconnect the logic fault (status ${status}).`);
       return false;
     }
+    cancelPulse(pulseReason);
     logicActive=false;
     recordAddressMask(0,0,'fault disconnected',{frame:finalFrame,previousMask:logicAddressMask,
       readCountBefore:finalReads,writeCountBefore:finalWrites});
@@ -311,11 +373,10 @@
   }
 
   function recoverLogicCPU(mode) {
-    cancelPulse('manual CPU recovery');
     if (!started || typeof emulator?._recover_logic_cpu !== 'function') return;
     const frame=Number(emulator._get_logic_frame());
     const flagsBefore=Number(emulator._get_logic_cpu_flags());
-    if (!disconnectLogic({silent:true})) {
+    if (!disconnectLogic({silent:true,pulseReason:'manual CPU recovery'})) {
       setLogicStatus('Recovery stopped: could not disconnect RAM fault.');
       return;
     }
@@ -421,7 +482,10 @@
     const reads=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.readCount : coreReads;
     const writes=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.writeCount : coreWrites;
     const data={
-      modelVersion:'0.2.4-experimental',
+      modelVersion:'0.2.5-experimental',
+      vramFault:{kind:vramAddressMask?'address-stuck-low':actualPair()?'address-bridge':'none',
+        addressMask:vramAddressMask,lines:vramLines(vramAddressMask),bridge:actualPair()?[...actualPair()]:null},
+      vramAddressLineChanges:vramAddressLineChanges.map(entry=>({...entry})),
       corePin:CORE_PIN,
       addressLineChanges:addressLineChanges.map(entry=>({...entry})),
       faultPulses:faultPulses.map(entry=>({...entry})),
@@ -445,21 +509,24 @@
 
   function updateFaultUI() {
     const pair = actualPair();
-    $('connectionLabel').textContent = describe(pair);
+    const contact=vramAddressMask ? `${vramLines(vramAddressMask).join(', ')} FORCED LOW` : describe(pair);
+    $('connectionLabel').textContent = contact;
     pinButtons.forEach((button, index) => {
       button.classList.toggle('connected', !!(pair && pair.includes(index)));
+      button.classList.toggle('cut', !!(vramAddressMask & (1<<index)));
       button.classList.toggle('selected', selectedPin === index);
-      button.setAttribute('aria-pressed', !!(pair && pair.includes(index)));
+      button.setAttribute('aria-pressed', !!((vramAddressMask & (1<<index)) || (pair && pair.includes(index))));
     });
     document.querySelectorAll('.preset').forEach((button, index) => {
       const isActive = samePair(pair, PRESETS[index]);
       button.classList.toggle('active', isActive);
       button.setAttribute('aria-pressed', isActive);
     });
-    const next = describe(pair);
-    if (pair && started) possibleVramResidue = true;
+    refreshVramControls();
+    const next = contact;
+    if ((pair || vramAddressMask) && started) possibleVramResidue = true;
     const faultHint = $('faultHint');
-    if (faultHint) faultHint.hidden = !(!pair && possibleVramResidue && started);
+    if (faultHint) faultHint.hidden = !(!vramFaultActive() && possibleVramResidue && started);
     if (next !== lastContact) {
       const removedLogic=!!(pair && started && logicActive);
       if (removedLogic && !disconnectLogic({silent:true})) {
@@ -469,7 +536,7 @@
         setLogicStatus('Could not disconnect the logic fault; VRAM fault was not applied.');
         return;
       }
-      if (emulator && typeof emulator._set_vram_short === 'function')
+      if (!vramAddressMask && emulator && typeof emulator._set_vram_short === 'function')
         emulator._set_vram_short(pair ? pair[0] : -1, pair ? pair[1] : -1);
       if (removedLogic) {
         logicResetState='Logic fault disconnected because VRAM fault was activated';
@@ -477,19 +544,21 @@
         $('logicStatus').textContent=logicStatusMessage;
         stamp('Logic/work RAM fault disconnected because the VRAM patch was activated');
       }
-      if (lastContact) stamp(pair ? `SHORT CONNECTED: ${next}` : 'All shorts removed');
+      if (lastContact) stamp(vramAddressMask ? `VRAM lines forced low: ${vramLines(vramAddressMask).join(', ')}` : pair ? `SHORT CONNECTED: ${next}` : 'All VRAM faults removed');
       lastContact = next;
     }
   }
 
   function latch(pair) {
+    recordVramMask(0,'replaced by VRAM bridge');
     const sorted = canonical(pair);
     latched = samePair(latched, sorted) ? null : sorted;
     selectedPin = null;
     updateFaultUI();
   }
 
-  function disconnect() {
+  function disconnect(reason='all VRAM contacts reconnected') {
+    recordVramMask(0,reason);
     latched = null;
     momentary = null;
     selectedPin = null;
@@ -503,11 +572,13 @@
       b.style.gridColumn=i<4?'1':'3'; b.style.gridRow=String(i<4?i+1:i-3);
       const label=document.createElement('span'); label.className='chip-signal'; label.textContent=`AD${i}`;
       const wire=document.createElement('span'); wire.className='chip-wire'; wire.setAttribute('aria-hidden','true');
+      const cut=document.createElement('span');cut.className='chip-cut';cut.textContent='×';wire.append(cut);
       b.append(...(i<4?[wire,label]:[label,wire]));
       b.title=`External address/data net AD${i}. Select a second net to bridge.`;
       b.setAttribute('aria-label', `Select net AD${i}`);
       b.setAttribute('aria-pressed', 'false');
       b.addEventListener('click', () => {
+        if ($('vramMode').value==='disconnect') {applyVramAddressMask(vramAddressMask ^ (1<<i));return;}
         if (selectedPin === null) selectedPin = i;
         else if (selectedPin === i) selectedPin = null;
         else { latch([selectedPin, i]); selectedPin = null; }
@@ -516,6 +587,7 @@
       $('pinGrid').append(b);
       pinButtons.push(b);
     }
+    $('vramMode').addEventListener('change',()=>{selectedPin=null;updateFaultUI();});
     PRESETS.forEach((pair,index) => {
       const b=document.createElement('button');
       b.type='button'; b.className='preset'; b.setAttribute('aria-pressed','false');
@@ -525,7 +597,7 @@
       b.addEventListener('click',() => latch(pair));
       $('presetGrid').append(b);
     });
-    $('disconnectBtn').addEventListener('click',disconnect);
+    $('disconnectBtn').addEventListener('click',()=>disconnect());
     $('clearLogBtn').addEventListener('click',()=> {logEl.replaceChildren();stamp('Log cleared');});
     updateFaultUI();
   }
@@ -678,6 +750,7 @@
     started=true;
     cpuInterventions=[];
     faultPulses=[]; pendingPulse=null;
+    vramAddressMask=0;vramAddressLineChanges=[];
     logicAddressMask=0;addressLineChanges=[];
     logicActive=false; // runtime_start clears the work RAM fault and counters.
     logicStatsRetained=false;
@@ -732,7 +805,7 @@
         if (event.repeat) return;
         const n=Number(code.slice(5));
         if (n===0)disconnect();
-        else if (event.shiftKey) { momentary=canonical(PRESETS[n-1]);updateFaultUI(); }
+        else if (event.shiftKey) { recordVramMask(0,'replaced by momentary VRAM bridge');momentary=canonical(PRESETS[n-1]);updateFaultUI(); }
         else latch(PRESETS[n-1]);
       } else if (code==='KeyP' && !event.repeat) {
         event.preventDefault();pauseToggle();
@@ -768,6 +841,7 @@
       emulator._init();
       if(typeof emulator._set_vram_short!=='function')
         throw new Error('Unmodified core detected. Run scripts/build-core.sh for VRAM fault support.');
+      if (!vramMaskApiReady()) $('vramMode').value='bridge';
       logicApiAvailable=logicApiReady();
       updateFaultUI();
       setRunning(false);

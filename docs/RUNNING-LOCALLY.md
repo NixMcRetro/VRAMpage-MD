@@ -2,7 +2,7 @@
 
 ## Download once, then launch
 
-1. [Download VRAMpage-MD-v0.2.4-macos.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.4/VRAMpage-MD-v0.2.4-macos.zip).
+1. [Download VRAMpage-MD-v0.2.5-macos.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.5/VRAMpage-MD-v0.2.5-macos.zip).
 2. Double-click the ZIP in Finder to extract it. Open the **VRAMpage-MD** folder.
 3. Double-click **START.command**. It starts a local server and opens your default browser.
 4. Click **Load ROM** and select your own legally usable Mega Drive cartridge.
@@ -47,6 +47,18 @@ The script finds its own folder, even if its name contains spaces.
   corrupted RAM and may not restore play. **Clean restart** reboots the cartridge.
 - **Untrusted file warning:** this launcher is an unsigned shell script. Obtain
   the archive from this repository's release page and read it before running.
+
+## Disconnect a VRAM leg
+
+Leave **Leg action** on **Disconnect / reconnect**. After loading a cartridge,
+click an AD0–AD7 leg: a **×** marks that address signal forced low. Click the
+same leg again to reconnect it, or choose **Reconnect all [0]**. Several legs
+may be crossed at once. Choose **Bridge two nets** to retain the earlier paired
+short interaction; presets and keyboard contacts still work.
+
+This is a deterministic address-signal approximation, not removal of the entire
+VRAM chip. Written corruption can persist; **Clean restart** reboots the cartridge.
+See [VRAM leg switches](VRAM-LEG-SWITCHES.md) for details.
 
 ## What the complete ZIP contains
 
