@@ -34,12 +34,12 @@ const SONIC1_LAYOUT = Object.freeze({
 });
 // s1disasm AS @ 15dfa3a6ee4c53aeb482233e493755c84b4f3479:
 // _Variables.asm allocates v_objspace after byte regions totaling
-// $A400+$400+$200+$200+$400+$1800+$2E0+$20+$100+$380+$80 = $D100;
+// $A400+$400+$200+$200+$400+$1800+$2E0+$20+$100+$380+$80 = $D000;
 // v_player is object slot 0. _Constants.asm defines object_size=$40 and the
 // player fields below. obX/obY are 16.16 fixed-point longs; obVelX/obVelY
 // are signed 16-bit words. LSB_FIRST byte lanes are resolved by the readers.
 const PLAYER_LAYOUT = Object.freeze({
-  objectBase: 0xd100,
+  objectBase: 0xd000,
   objectId: 0x00,
   worldXFixed: 0x08,
   worldYFixed: 0x0c,

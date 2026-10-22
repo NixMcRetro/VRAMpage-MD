@@ -161,19 +161,19 @@ function fakeCore({events, pulseWrite=true}={}) {
   stateHeap[stateBase + (0xfff1 ^ 1)] = 0x01;
   stateHeap[stateBase + (0xfff2 ^ 1)] = 0x00;
   stateHeap[stateBase + (0xfff3 ^ 1)] = 0x02;
-  stateHeap[stateBase + (0xd100 ^ 1)] = 0x01;
-  stateHeap[stateBase + (0xd108 ^ 1)] = 0x12;
-  stateHeap[stateBase + (0xd109 ^ 1)] = 0x34;
-  stateHeap[stateBase + (0xd10a ^ 1)] = 0x56;
-  stateHeap[stateBase + (0xd10b ^ 1)] = 0x78;
-  stateHeap[stateBase + (0xd10c ^ 1)] = 0x89;
-  stateHeap[stateBase + (0xd10d ^ 1)] = 0xab;
-  stateHeap[stateBase + (0xd10e ^ 1)] = 0xcd;
-  stateHeap[stateBase + (0xd10f ^ 1)] = 0xef;
-  stateHeap[stateBase + (0xd110 ^ 1)] = 0xff;
-  stateHeap[stateBase + (0xd111 ^ 1)] = 0xfe;
-  stateHeap[stateBase + (0xd112 ^ 1)] = 0x12;
-  stateHeap[stateBase + (0xd113 ^ 1)] = 0x34;
+  stateHeap[stateBase + (0xd000 ^ 1)] = 0x01;
+  stateHeap[stateBase + (0xd008 ^ 1)] = 0x12;
+  stateHeap[stateBase + (0xd009 ^ 1)] = 0x34;
+  stateHeap[stateBase + (0xd00a ^ 1)] = 0x56;
+  stateHeap[stateBase + (0xd00b ^ 1)] = 0x78;
+  stateHeap[stateBase + (0xd00c ^ 1)] = 0x89;
+  stateHeap[stateBase + (0xd00d ^ 1)] = 0xab;
+  stateHeap[stateBase + (0xd00e ^ 1)] = 0xcd;
+  stateHeap[stateBase + (0xd00f ^ 1)] = 0xef;
+  stateHeap[stateBase + (0xd010 ^ 1)] = 0xff;
+  stateHeap[stateBase + (0xd011 ^ 1)] = 0xfe;
+  stateHeap[stateBase + (0xd012 ^ 1)] = 0x12;
+  stateHeap[stateBase + (0xd013 ^ 1)] = 0x34;
   const before = Buffer.from(stateHeap.subarray(stateBase, stateBase + 0x10000));
   assert.deepEqual(readAttractFields(stateHeap, stateBase), {
     gameMode: 8, demoFlag: 1, demoLevelNumber: 2, demoCursor: 0x1234,
@@ -185,7 +185,11 @@ function fakeCore({events, pulseWrite=true}={}) {
     'diagnostic readers do not change work RAM');
   tests++;
 
-  assert.equal(PLAYER_LAYOUT.objectBase, 0xd100);
+  const playerAllocationOffset = 0x200 * 0x52 + 0x80 * 8 + 0x200 + 0x200 + 8 * 0x80 +
+    0x1800 + 0x20 * 23 + 0x20 + 0x100 + 0x380 + 0x80;
+  assert.equal(playerAllocationOffset, 0xd000,
+    'v_objspace follows the source allocation sizes in _Variables.asm/_Constants.asm');
+  assert.equal(PLAYER_LAYOUT.objectBase, playerAllocationOffset);
   assert.equal(PHASE_WINDOW.candidateTickCount, 596);
   assert.equal(TOOL_VERSION, 2);
   assert.equal(PROTOCOL_VERSION, 2);
