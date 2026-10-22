@@ -59,4 +59,4 @@ for (const seed of [1, 17, 2345, 0xdecafbad]) {
 // Buffer bounds fail explicitly, rather than reading or writing out of range.
 assert.throws(() => copyActiveFrame(new Uint8Array(30), outputBuffer()), RangeError);
 assert.throws(() => copyActiveFrame(inputBuffer(), new Uint8ClampedArray(20)), RangeError);
-console.log('Framebuffer property tests: seven cases passed.');
+console.log('Framebuffer property tests passed.');
