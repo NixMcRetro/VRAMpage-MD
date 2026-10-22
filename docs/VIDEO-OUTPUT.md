@@ -1,10 +1,12 @@
-# v0.1.3 video output and missing-line recovery
+# Video output: v0.1.3 recovery and v0.1.4 core correction
 
 The initial UI incorrectly attributed horizontal bands to a cosmetic CRT effect or leftover VRAM corruption. After reviewing the original project README, `wasm-genplus` rendering code and a user screenshot of Sonic 3 & Knuckles, we found an **alternating pattern of fully black native output rows** across the game image. The project does not add a scanline filter in CSS. The stripes are present in the displayed emulator picture.
 
-Upstream `wasm-genplus` allocates a 640×480 RGBA framebuffer with a stride of 640 pixels. A standard Sonic 1 picture has 320×224 active pixels. The original output wrapper uses the 640×480 allocation. The VRAMpage browser frontend copies the active region row by row, retaining the 640-pixel source pitch. This avoids the earlier top-left-quarter fullscreen cropping problem.
+Upstream `wasm-genplus` allocates a 640×480 RGBA framebuffer with a stride of 640 pixels. A standard Sonic 1 picture has 320×224 active pixels. The output wrapper uses the 640×480 allocation. The frontend adapter respects the 640-pixel source pitch, but copies a 320×224 region from the buffer origin; with the faulty custom blitter, that region is only the upper-left portion of the output.
 
-Genesis Plus GX has interlaced video modes, including mode 2's two 224-line fields. Our pinned core sets `config.render=0` by default. We have **not yet established the specific cause** of the missing alternate output rows in the user's Sonic 3 & Knuckles test. Rather than assume all horizontal stripes are deliberate VRAM corruption, v0.1.3 adds a minimal display-only recovery path.
+The specific cause is now established for the pinned WebAssembly build. Its custom blitter in [`vdp_render.h` at the pinned revision](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/vdp_render.h#L101-L120) advances the output row by `line * 2 * bitmap.pitch`, leaving alternate rows unwritten. It also treats the byte-valued pitch as a count of `uint32_t` pixels in `dst + w * bitmap.pitch`, producing out-of-bounds writes. A genuine-ROM probe of that build showed non-black output only on rows 0, 2, …, 446 across the 640-pixel buffer. The frontend's 320×224 crop then selected only the upper-left portion of that buffer.
+
+The v0.1.3 display-only recovery remains as a compatibility fallback for legacy cores. The source patch now writes each input pixel once at `line * bitmap.pitch`, using the byte pitch for row addressing. A rebuilt core should provide ordinary native rows without invoking the 112-row recovery. The corrected binary built successfully with Emscripten 4.0.23 and displayed the complete Sonic title and Green Hill in Chromium; the no-fault output reported native pixels. Guard tests exercise the patched macro, including pitch gaps and adjacent canaries. This remains a review candidate pending the browser/platform acceptance gates in [Testing](TESTING.md). Genesis Plus GX's interlaced modes remain relevant to other output paths, but they do not explain this pinned blitter's row gaps.
 
 ## v0.1.3 fallback
 
@@ -24,7 +26,7 @@ The page follows the operating system using CSS `@media (prefers-color-scheme: d
 
 ## Local development
 
-The frontend changes do **not** require rebuilding WebAssembly. Keep your already compiled files at `site/core/genplus.js` and `site/core/genplus.wasm` unchanged. Copy `index.html`, `style.css`, `app.js`, `framebuffer.js` into your existing `site/` directory, preserving the core files. Reload with Command+Shift+R. From a checked-out source repo, `./scripts/test.sh` checks the adapter, theme contract, and the existing VRAM fault model.
+The v0.1.4 display sizing and keyboard changes alone are frontend changes, but the pinned-core video correction requires rebuilding WebAssembly. Run `./scripts/build-core.sh` with the Emscripten SDK, then serve the resulting `site/` directory; replacing only frontend files leaves the old faulty core in place. Keep `site/core/genplus.js` and `site/core/genplus.wasm` out of Git. From a checked-out source repo, `./scripts/test.sh` checks the adapter, theme contract, and the existing VRAM fault model; the native-blitter C guard test runs in that suite too. A rebuilt-core ROM run is a separate check.
 
 ## v0.1.4 normal-window sizing
 
@@ -49,14 +51,14 @@ Extremely short windows may need vertical scrolling: the frame budget has a
 Mobile patchbay and diagnostics can still sit below the game; the page scrolls
 normally. No manual display-size selector or saved theme preference is needed.
 
-The framebuffer adapter is unchanged. Upstream's pinned
+The framebuffer adapter is unchanged and continues to support legacy cores. Upstream's pinned
 [`wasm.c`](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/wasm/wasm.c)
 confirms the 640×480 allocation and `bitmap.pitch = VIDEO_WIDTH * 4` in `start()`.
 The pinned [config.c](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/wasm/config.c)
-defaults `config.render` to zero; [vdp_render.c](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/vdp_render.c)
-doubles row coordinates when `interlaced && config.render`. These facts
-do **not** establish why alternate rows were missing in the original
-report. Keep raw output for diagnosis; no emulator-level fix is claimed here.
+defaults `config.render` to zero; the defect described above is in the custom
+WASM output blitter, independently of that interlace setting. Raw output remains
+useful for diagnosing hardware faults. The display fallback must not be described
+as the fix for the pinned core's crop or out-of-bounds writes.
 
 For keyboard patching, Tab to a pin, press Enter or Space, then choose a second
 pin. Native activation of focused buttons, links and disclosure summaries now

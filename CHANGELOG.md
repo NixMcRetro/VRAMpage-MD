@@ -5,12 +5,16 @@
 - Fit the normal-window picture to the measured space below the header and above
   the game controls/help, including wrapped controls. Remove the 570-pixel cap.
 - Preserve the 320×224 canvas and 10:7 picture proportions independently of CSS
-  sizing; retain fullscreen repainting and raw/recovered output.
+  sizing; retain fullscreen repainting and legacy raw/recovery output.
+- Correct the pinned WebAssembly custom blitter's doubled row address and
+  byte-pitch-as-pixel indexing. A rebuilt core is required. Emscripten build,
+  guard tests and a Chromium cartridge smoke test passed; see the test record.
 - Restore Enter/Space activation of focused patchbay buttons and other controls.
 - Add optional Playwright regression tests using an original synthetic core,
   screenshot artifacts and a three-engine CI job. Local Chromium results and
   outstanding manual/other-engine checks are recorded in [Testing](docs/TESTING.md).
-- No changes to framebuffer recovery, emulation timing, audio or hardware faults.
+- Keep `framebuffer.js` recovery unchanged for legacy cores. This correction is
+  in the core output path; it does not change emulation timing, audio or faults.
 
 ## v0.1.3 — existing prototype
 

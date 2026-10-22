@@ -17,8 +17,13 @@
 
 - Implemented: measured window sizing, unchanged native framebuffer recovery,
   focused-control keyboard activation and synthetic browser regressions.
+- Source correction under review: write one native output row per input row and
+  use byte pitch correctly in the pinned custom blitter. Rebuild the core; the
+  legacy framebuffer recovery remains available for old core binaries.
 - Verified locally: Chromium layout/input/fullscreen/media response at nine sizes.
-- Pending: Firefox/WebKit runs, macOS fullscreen and genuine gameplay/audio checks;
+- Verified locally: Emscripten build, full Sonic title/Green Hill in Chromium,
+  fault selection/removal and clean restart.
+- Pending: final browser CI, macOS fullscreen and audible playback acceptance;
   see [testing evidence](docs/TESTING.md) and [changelog](CHANGELOG.md).
 - Complete display acceptance before implementing v0.2 hardware changes.
 

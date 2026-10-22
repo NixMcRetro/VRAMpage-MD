@@ -18,6 +18,7 @@ The script runs Python unit tests, JavaScript syntax checks, framebuffer unit te
 | Layer | File / suite | What it proves | What it does **not** prove |
 | --- | --- | --- | --- |
 | Digital pin mapping | `tests/test_mapping.py` | Deterministic model mappings and address invariants | Electrical pin contention on a real Model 1 |
+| Native video blitter | `tests/test_native_blitter.py` | Patched pinned macro produces bounded native RGBA at zero, one, 256 and 320-pixel widths; source drift rejected; patching idempotent | Every VDP/interlace mode or physical video timing |
 | C implementation | `tests/fault_engine_smoke.c` | C smoke test compiles and exercises the included fault engine | Cycle-accurate VRAM timing |
 | Buffer repair | `tests/test_framebuffer.cjs` | Handles missing rows, raw pass-through and uncorrupted frames | Real-game fidelity in Firefox |
 | Framebuffer properties | `tests/test_framebuffer_properties.cjs` | More malformed-buffer, no-op and raw-output invariants | A complete VDP emulator |
@@ -86,33 +87,64 @@ available without Playwright; CI runs the browser suite as a separate job.
 Six tests cover nine window sizes (360×640, 390×844, 768×768, 844×390, 1024×600,
 1280×720, **1366×768**, 1440×900, 1920×1080), picture ratio and drawing-buffer size,
 visible game controls, scrolling stability, live Light/Dark/Light, real element
-fullscreen entry/resize/exit, exact synthetic raw/recovered pixels while paused,
+fullscreen entry/exit at two sizes with windowed resizing between cycles, exact synthetic raw/recovered pixels while paused,
 mouse/keyboard patching, momentary/latched shortcuts, controller mapping,
 pause/resume and clean restart. Screenshot artifacts contain synthetic pixels only.
 An old source-text assertion requiring `49dvh`/`570px` was replaced to reflect the
 new measured budget; real geometry assertions now protect the sizing behaviour.
 
-### Local validation record — 22 October 2026
+### Validation record — 22 October 2026
 
-- Baseline: PR #5 tip `63421d9`, which includes PR #4 tip `6b4b88c` as an ancestor.
-  PR review/merge metadata could not be read because GitHub API access was denied.
-- Chromium 154.0.8037.57 on Linux, installed `/usr/bin/chromium`: all six browser
-  tests passed at all nine sizes. Native element fullscreen was exercised, not
-  an emulated `fullscreenElement`. Screenshots were inspected at 1366×768 and
-  844×390; raw/recovery pixels were asserted directly.
-- Reproduce the installed-browser run with
-  `python3 tests/browser_display.py --browser chromium --executable /usr/bin/chromium --artifacts /tmp/vrampage-browser`.
-- Regression sensitivity: the new responsive and keyboard tests were run against
-  a temporary copy of PR #5 source. All nine geometry cases, the desktop-width
-  check and keyboard pin activation failed there, as expected.
-- Firefox and WebKit: not run locally; Playwright downloads were denied by the
-  network proxy. CI configuration is provided; its results remain unverified.
-- Emscripten 4.0.23 installation was denied at `storage.googleapis.com`, so no WASM
-  build, genuine cartridge execution, audio playback or Sonic attract mode was
-  verified. The user's local cartridge backup was kept outside the repository.
-- Native macOS fullscreen/browser chrome, Firefox compositor behaviour, physical
-  hardware and actual OS theme switching remain manual checks. Playwright media
-  emulation verifies the CSS response, not the operating system itself.
+- Baseline: PR #5 tip `63421d9`, including PR #4 tip `6b4b88c`. Live GitHub
+  metadata confirms the open chain #4 → `main`, #5 → `import/v0.1-source`,
+  #6 → `docs/testing-foundation`. Nothing was merged.
+- `bash scripts/test.sh`: **32 Python tests**, both Node framebuffer suites and
+  the compiled C fault-engine smoke test passed. The Python suite also compiles
+  and executes the patched native blitter against guarded buffers. It covers
+  zero/one/256/320-pixel widths, rows 0/1/112/223, colour order, unused pitch gaps,
+  adjacent canaries, patch idempotency and rejection of unexpected source drift.
+- Chromium 154.0.8037.57 (installed) and downloaded Chromium 151.0.7922.34 on
+  Linux: all six synthetic browser tests passed at all nine window sizes.
+  The newer installed browser tolerated a fullscreen resize that the pinned CI
+  browser rejected. The harness now enters/exits real fullscreen at 1280×720 and
+  1366×768 with windowed resizes between cycles. This preserves the lifecycle and
+  geometry assertions; resizing an already-fullscreen native window is manual.
+- Regression sensitivity: the new responsive and keyboard tests failed against
+  a temporary copy of PR #5 source: all nine geometry cases, the desktop-width
+  check and keyboard pin activation, as expected.
+- Initial CI: source suite and WebKit passed; Chromium rejected the unsupported
+  fullscreen resize, while Firefox automatically exited fullscreen on that
+  resize. Its subsequent exit call failed. Both are addressed by the corrected
+  two-size lifecycle test. Final CI results must be checked on the latest commit.
+- Local Firefox 153.0 could not complete its launch handshake (container namespace
+  restrictions); WebKit 26.5 closed before page creation. Signed Debian library
+  packages were extracted outside the checkout to satisfy WebKit dependencies,
+  but did not resolve that host limitation. These are failed setup attempts,
+  not passing browser suites. Use CI for those engines.
+- Emscripten **4.0.23**, CMake **4.1.3** and Node **24.19.0** successfully built the
+  corrected pinned core. The generated JS/WASM and corresponding modified source
+  include the native-blitter patch and upstream licence notices.
+- Genuine cartridge smoke test in Chromium 154 on Linux: the supplied local Sonic
+  backup booted to the full title picture and Green Hill; Start and direction/jump
+  inputs were sent through the app. At 1366×768, 1280×720, 390×844 and 844×390,
+  the canvas stayed 320×224, retained 10:7 proportions and kept the toolbar visible.
+  Paused raw/recovered switching, element fullscreen entry/exit, fault activation,
+  disconnect and clean restart completed without uncaught JS errors. Normal
+  output reports native pixels, with no missing-line repair. Nonzero audio samples
+  were produced and Web Audio enabled/muted; audible stereo quality was not tested.
+  Only method counters and scalar frame metrics were instrumented; game bytes and
+  game-derived captures remain outside Git. Cartridge SHA-256:
+  `46160baa06362c711c9f1a5017cb7371026444936c8af5e93a78996cf32ff2a6`.
+- Native macOS fullscreen/browser chrome, Firefox compositor behaviour with the
+  genuine cartridge, audible playback, physical hardware and actual OS theme
+  switching remain manual checks. Playwright media emulation verifies the CSS
+  response, not the operating system itself. Interlace and 256-pixel gameplay
+  have not been validated; the frontend still targets the standard 320×224 mode.
+
+Reproduce the installed-browser suite with
+`python3 tests/browser_display.py --browser chromium --executable /usr/bin/chromium --artifacts /tmp/vrampage-browser`.
+For downloaded engines, set `PLAYWRIGHT_BROWSERS_PATH` to their installation
+location if it differs from Playwright's default. No cartridge is used by that suite.
 
 ### Genuine cartridge / macOS Firefox acceptance procedure
 

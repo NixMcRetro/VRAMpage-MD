@@ -34,14 +34,17 @@ if [[ -e "$CORE" ]]; then
       exit 1
     fi
     git -C "$CORE" submodule update --init --recursive
-    python3 "$ROOT/scripts/patch_core.py" "$CORE"
   fi
 else
   git clone --recursive https://github.com/h1romas4/wasm-genplus.git "$CORE"
   git -C "$CORE" checkout "$PINNED_COMMIT"
   git -C "$CORE" submodule update --init --recursive
-  python3 "$ROOT/scripts/patch_core.py" "$CORE"
 fi
+
+# Reapply the supported, idempotent patches on both fresh and previously
+# patched pinned checkouts. This also upgrades an existing checkout when a
+# later frontend release needs a narrowly scoped source patch.
+python3 "$ROOT/scripts/patch_core.py" "$CORE"
 
 # Emscripten 4.0.7+ no longer exports HEAPU8 / HEAPF32 by default.
 # The standalone browser frontend reads pixel, ROM, controller and audio data
