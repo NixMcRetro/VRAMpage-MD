@@ -48,10 +48,12 @@ research context.
 Goal: an **unscripted attract-mode desynchronisation** where Sonic's demo controller playback continues, but faulty RAM or cartridge transactions change the game state. Sonic could collide with scenery, get stuck or crash depending on the hardware fault.
 
 **Current status:** experimental work-RAM integration and UI are implemented.
-Actual-WASM and Chromium checks pass; repeated cartridge trials produce HALT
-or static output. Continued internal demo playback remains unverified, so the
-attract-mode goal is not complete. See [the logic-bending
-model](docs/LOGIC-BENDING.md) and [experiment procedure](docs/EXPERIMENTS.md).
+Actual-WASM and Chromium checks pass. Read-only repeated cartridge trials now
+confirm internal demo playback in the baseline and after one A10/A11 write.
+Phase alignment shows the monitored player/demo trajectory is delayed one tick,
+so genuine sustained gameplay desynchronisation is not established. The
+attract-mode goal remains incomplete. See [the read-only observations](docs/ATTRACT-MODE-OBSERVATIONS.md),
+[logic-bending model](docs/LOGIC-BENDING.md) and [experiment procedure](docs/EXPERIMENTS.md).
 
 - Start with 68000 work-RAM address/data short model, focusing on bus read/write integration rather than arbitrary random values.
 - Distinguish read and write faults and persistent emulator-RAM changes; do not

@@ -1,5 +1,13 @@
 # Changelog
 
+## Post-v0.2.6 experiment tooling
+
+- Add a read-only, pinned-ROM/core demo-state observer with byte-lane, field-width,
+  timing, provenance and pre-fault comparison tests. Emulator behaviour is unchanged.
+- Preserve separate six-trial protocol 1 and protocol 2 records. Add phase-aligned
+  player/demo comparisons that distinguish the observed one-tick delay from
+  still-unproven sustained gameplay divergence. Earlier records remain unchanged.
+
 ## Development coordination
 
 - Add permanent agent instructions, prioritised work queue and verified status checkpoint.

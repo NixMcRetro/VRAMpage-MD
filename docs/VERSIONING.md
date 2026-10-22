@@ -51,6 +51,12 @@ audio bending for v0.4.0. A leg switch does not advance either milestone.
   emulator behaviour. Always retain and compare source commit, core revision,
   protocol version, ROM hash and experimental settings.
 
+Experiment tools can have separate schema, protocol and tool versions; protocol
+2 does not mean application v2.x. A runner pinned to an immutable released core
+must retain that core's actual application/model version and source identity,
+with the runner commit/hash recorded separately. Developer-tooling and evidence
+updates do not rebuild or retag an unchanged public application release.
+
 ## Required checks for a release
 
 1. Update `VERSION`, the app/version export, documentation and release workflows
