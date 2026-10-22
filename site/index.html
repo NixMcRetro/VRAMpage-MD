@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#dedbd2" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#171c20" media="(prefers-color-scheme: dark)">
-  <title>VRAMpage MD v0.2.4 experimental | Mega Drive circuit bending</title>
+  <title>VRAMpage MD v0.2.5 experimental | Mega Drive circuit bending</title>
   <link rel="stylesheet" href="style.css">
   <script src="core/genplus.js" defer onerror="window.__coreMissing = true"></script>
   <script src="framebuffer.js" defer></script>
@@ -16,7 +16,7 @@
   <main class="shell">
     <header class="masthead">
       <div>
-        <div class="brand"><h1>VRAMpage <span>MD</span></h1><span class="version">v0.2.4 experimental</span></div>
+        <div class="brand"><h1>VRAMpage <span>MD</span></h1><span class="version">v0.2.5 experimental</span></div>
         <p class="subtitle">Mega Drive memory experiments. NTSC / Model 1.</p>
       </div>
       <div class="machine-status"><span class="led" id="powerLed"></span><span id="powerLabel">CORE NOT READY</span></div>
@@ -45,23 +45,25 @@
           <button id="fullscreenBtn" type="button" aria-pressed="false">Fullscreen</button>
         </div>
         <div class="instructions">
-          <p><strong>PLAY</strong> Arrows / Z X C / Enter <span class="help-divider">|</span> <strong>FAULTS</strong> 1–8 toggle / Shift+1–8 hold / 0 disconnect / P pause</p>
-          <p id="faultHint" class="fault-hint" hidden>A previous short may have changed VRAM. Clean restart resets emulation; it cannot correct missing emulator output rows.</p>
+          <p><strong>PLAY</strong> Arrows / Z X C / Enter <span class="help-divider">|</span> <strong>FAULTS</strong> 1–8 toggle / Shift+1–8 hold / 0 reconnect / P pause</p>
+          <p id="faultHint" class="fault-hint" hidden>A previous VRAM fault may have changed VRAM. Clean restart resets emulation; it cannot correct missing emulator output rows.</p>
         </div>
       </section>
 
       <aside class="bender-panel" aria-label="VRAM patchbay">
         <div class="section-heading"><h2>02 <span>/</span> VRAM patchbay</h2><span>AD0–AD7</span></div>
-        <p class="explain">Bridge two VRAM address nets. Use the pins or presets 1–8.</p>
+        <p class="explain">Click a leg to disconnect or reconnect its address signal. Use Bridge mode or presets 1–8 for shorts.</p>
+        <label class="vram-mode">Leg action <select id="vramMode"><option value="disconnect">Disconnect / reconnect</option><option value="bridge">Bridge two nets</option></select></label>
+        <p id="vramModeHint" class="explain"></p>
         <div class="chip-box">
           <p class="board-label">315-5313 &nbsp; / &nbsp; VDP ADDRESS BUS</p>
           <div class="pin-grid" id="pinGrid" role="group" aria-label="Conceptual VRAM address nets">
             <div class="chip-middle"><strong>VRAM</strong><span>AD0–AD7</span></div>
           </div>
-          <div class="chip-foot">Select one pin, then another. One connection at a time.</div>
+          <div class="chip-foot">× marks a signal forced low. Several legs may be disconnected.</div>
         </div>
-        <div class="patch-status"><span>ACTIVE CONNECTION</span><strong id="connectionLabel">NONE — OPEN CIRCUIT</strong></div>
-        <div class="presets-head"><h3>Presets</h3><button id="disconnectBtn" type="button">Disconnect [0]</button></div>
+        <div class="patch-status"><span>VRAM FAULT</span><strong id="connectionLabel">NONE — NORMAL ADDRESSING</strong></div>
+        <div class="presets-head"><h3>Presets</h3><button id="disconnectBtn" type="button">Reconnect all [0]</button></div>
         <div id="presetGrid" class="preset-grid"></div>
         <div class="metrics">
           <div><span>Projected differences</span><strong id="readCount">0</strong></div>
@@ -142,7 +144,7 @@
         <p class="small-note">Emulator: <a href="https://github.com/h1romas4/wasm-genplus" target="_blank" rel="noreferrer">wasm-genplus</a> / <a href="https://github.com/ekeeke/Genesis-Plus-GX" target="_blank" rel="noreferrer">Genesis Plus GX</a>. Redistributing a modified core requires its corresponding source and applicable licence notices.</p>
       </details>
     </section>
-    <footer><span>VRAMpage MD &nbsp;·&nbsp; v0.2.4 experimental (review candidate)</span><span>NTSC HARDWARE MODE &nbsp; / &nbsp; AUTOMATIC MISSING-LINE RECOVERY</span></footer>
+    <footer><span>VRAMpage MD &nbsp;·&nbsp; v0.2.5 experimental (review candidate)</span><span>NTSC HARDWARE MODE &nbsp; / &nbsp; AUTOMATIC MISSING-LINE RECOVERY</span></footer>
   </main>
 </body>
 </html>

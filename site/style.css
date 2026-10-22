@@ -312,3 +312,9 @@ footer { padding-top:9px; font-size:10px; }
 .pin:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
 .pin:hover:not(:disabled), .pin.selected { background:var(--surface); color:var(--ink); border-color:var(--ink); }
 .pin.connected { background:var(--surface); color:var(--accent); border-color:var(--accent); }
+
+/* Independent VRAM leg switches share the work-RAM cross convention. */
+.vram-mode { display:flex; align-items:center; gap:8px; margin:0 11px 8px; font-size:11px; }
+.vram-mode select { min-width:0; flex:1; }
+.pin.cut { color:var(--accent); background:var(--surface); border-color:var(--rule); }
+.pin.cut .chip-cut { visibility:visible; }

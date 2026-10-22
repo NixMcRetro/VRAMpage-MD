@@ -11,7 +11,7 @@ ZIP = f"VRAMpage-MD-{TAG}-macos.zip"
 
 class VersioningTests(unittest.TestCase):
     def test_single_canonical_version(self):
-        self.assertEqual(VERSION, "0.2.4")
+        self.assertEqual(VERSION, "0.2.5")
         self.assertTrue((ROOT / "docs/VERSIONING.md").exists())
         self.assertIn(TAG, (ROOT / "docs/VERSIONING.md").read_text())
 
@@ -33,8 +33,11 @@ class VersioningTests(unittest.TestCase):
         self.assertIn("BUILD-INFO.json", workflow)
         self.assertIn("Source commit:", workflow)
         self.assertIn("github.ref == 'refs/heads/main'", workflow)
-        self.assertIn("published release as superseded", workflow)
-        self.assertIn("info['application_version'] == '0.2.4'", workflow)
+        self.assertIn("Never replace assets or metadata of an already-public release", workflow)
+        self.assertIn("is already public; publish a new version", workflow)
+        self.assertIn(f"info['application_version'] == '{VERSION}'", workflow)
+        self.assertNotIn("gh release edit v0.2.4", workflow)
+        self.assertNotIn("gh release edit v2.4.0", workflow)
 
     def test_current_download_documentation(self):
         for path in ["README.md", "docs/README.md", "docs/RUNNING-LOCALLY.md",

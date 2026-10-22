@@ -1,3 +1,36 @@
+# v0.2.5 VRAM leg-switch verification
+
+This incremental version adds independent AD0–AD7 stuck-low switches to the
+existing frame-scoped VRAM model. It does not introduce transaction-level VRAM.
+The corrected v0.2.4 release was downloaded and verified before development:
+checksum/provenance, launcher, runtime assets, actual-core browser smoke and
+`0.2.4-experimental` export all passed. Its archive/tag remain unchanged, and the
+misnumbered v2.4.0 release is marked superseded without replacing its assets.
+
+`bash scripts/test.sh` passed 61 Python tests, both framebuffer suites, nine
+pulse-protocol groups and both C smoke programs. For v0.2.5, exhaustive native tests cover all 256 masks across all 65,536 VRAM
+addresses, source integrity, cache restoration, write collisions/persistence,
+invalid input, pair replacement and reset. Strict C plus AddressSanitizer and
+UndefinedBehaviorSanitizer runs passed. Rebuilding the existing patched vendor
+exercised upgrade of the embedded VRAM block; reapplying the patch is idempotent.
+The pinned Emscripten 4.0.23 core passed **23 actual-WASM original-cartridge checks**,
+including two new API/reset and VDP write/readback cases.
+
+Local Chromium passed **23 logic UI cases**, six display cases and the actual-core
+video/audio/control smoke. Four new UI cases cover multiple VRAM crosses,
+mouse/Enter/Space, reconnect one/all, export and history reset, explicit Bridge
+mode, presets/momentary replacement, RAM/pulse/recovery takeover, rejected settings
+and old-core fallback. A refused takeover or CPU recovery keeps an armed RAM
+pulse timer intact so it can still expire normally. Existing layout/Light/Dark/fullscreen tests remain in place.
+The actual-core browser smoke now toggles two VRAM legs and verifies exported
+history before recovery/restart. CI runs all three browser interface engines and
+a fresh WASM build/actual-core smoke on the reviewed commit.
+
+See [VRAM leg switches](VRAM-LEG-SWITCHES.md) for mapping and manual Firefox steps.
+No native macOS, audible hardware output or commercial-game test was performed
+for this change. Historical experiment JSON remains immutable; records below
+retain the outcomes and version identifiers of their original runs.
+
 # v0.2.4 consolidated application verification
 
 ## Current release checks

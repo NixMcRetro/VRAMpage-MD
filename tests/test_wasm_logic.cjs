@@ -212,5 +212,45 @@ async function create(words, config, init) {
   ],null,c=>assert.equal(c._set_logic_address_mask(1,2),0));
   assert.equal(getWord(c,0),0x5678);assert.equal(getWord(c,2),0);
   c._start();assert.equal(c._get_logic_address_mask(),0);tests++;
+  // VRAM masks use the compiled frame projection, not work-RAM fault hooks.
+  c=await create(stop,null,c=>{
+    assert.equal(c._set_vram_address_mask(0x81),0);
+    assert.equal(c._get_vram_address_mask(),0x81);
+    assert.equal(c._get_vram_short_a(),-1);
+    assert.equal(c._set_vram_address_mask(-1),1);
+    assert.equal(c._set_vram_address_mask(256),1);
+    assert.equal(c._get_vram_address_mask(),0x81);
+  });
+  c._set_vram_short(2,7);
+  assert.equal(c._get_vram_address_mask(),0);
+  assert.equal(c._get_vram_short_a(),2);
+  assert.equal(c._set_vram_address_mask(256),1);
+  assert.equal(c._get_vram_short_a(),2);
+  assert.equal(c._set_vram_address_mask(2),0);
+  assert.equal(c._get_vram_short_a(),-1);
+  c._start();
+  assert.equal(c._get_vram_address_mask(),0);
+  assert.equal(c._get_vram_short_a(),-1);
+  assert.equal(c._get_vram_changed_reads(),0);
+  assert.equal(c._get_vram_changed_writes(),0);tests++;
+
+  // Original 68000 cartridge writes VRAM at logical byte address 8. AD1 low
+  // clears row A3, so the frame's changed bytes reconcile to physical address 0.
+  // Resume after removing the mask, then read through the real VDP data port.
+  c=await create([
+    ...wordWrite(0xc00004,0x8004),...wordWrite(0xc00004,0x8144),
+    ...wordWrite(0xc00004,0x8f02),...longWrite(0xc00004,0x40080000),
+    ...wordWrite(0xc00000,0xccdd),...stop,
+    ...longWrite(0xc00004,0),0x3039,0x00c0,0x0000,0x33c0,0x00ff,0x1100,
+    ...longWrite(0xc00004,0x00080000),0x3039,0x00c0,0x0000,0x33c0,0x00ff,0x1102,
+    ...stop
+  ],null,c=>assert.equal(c._set_vram_address_mask(2),0));
+  assert.equal(c._get_vram_changed_writes(),2);
+  assert.equal(c._set_vram_address_mask(0),0);
+  assert.equal(c._recover_logic_cpu(1),0);
+  c._tick();c._sound();
+  assert.equal(getWord(c,0x1100),0xccdd,'reconciled VRAM write persists after reconnect');
+  assert.equal(getWord(c,0x1102),0,'unmapped physical VRAM source remains unchanged');
+  assert.equal(c._get_vram_address_mask(),0);tests++;
   console.log(`Actual WASM logic integration: ${tests} original 68000 cartridge checks passed.`);
 })().catch(error=>{console.error(error);process.exitCode=1;});

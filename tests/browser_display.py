@@ -163,6 +163,7 @@ class BrowserDisplayTests(unittest.TestCase):
         expect(self.page.locator('#videoStatus')).to_contain_text('112 missing output lines recovered')
 
     def test_patchbay_keyboard_mouse_and_clean_restart(self):
+        self.page.locator('#vramMode').select_option('bridge')
         pins = self.page.locator('.pin')
         pins.nth(0).focus()
         self.page.keyboard.press('Enter')
@@ -184,7 +185,7 @@ class BrowserDisplayTests(unittest.TestCase):
         self.page.keyboard.up('Shift')
         expect(self.page.locator('#connectionLabel')).to_have_text('AD0 ↔ AD1')
         self.page.locator('#resetBtn').click()
-        expect(self.page.locator('#connectionLabel')).to_have_text('NONE — OPEN CIRCUIT')
+        expect(self.page.locator('#connectionLabel')).to_have_text('NONE — NORMAL ADDRESSING')
         self.assertEqual(self.page.evaluate('window.mockCore.short'), [-1, -1])
         self.assertEqual(self.page.evaluate('window.mockCore.starts'), 2)
         expect(self.page.locator('#faultHint')).to_be_hidden()

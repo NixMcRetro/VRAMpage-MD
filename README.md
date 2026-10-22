@@ -2,13 +2,15 @@
 
 VRAMpage MD is a browser-based NTSC Sega Mega Drive / Genesis Model 1 emulator
 experiment. Play your own locally supplied cartridge while exploring deterministic,
-hardware-informed VRAM and 68000 work-RAM faults. **v0.2.4 is experimental:** the
+hardware-informed VRAM and 68000 work-RAM faults. **v0.2.5 is experimental:** the
 chip diagrams are conceptual and the models are not electrically accurate.
 
 ## Download and run on a Mac
 
-**[Download the complete v0.2.4 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.4/VRAMpage-MD-v0.2.4-macos.zip)**
-([release notes](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.4)).
+**[Download the complete v0.2.5 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.5/VRAMpage-MD-v0.2.5-macos.zip)**
+([release notes](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.5)).
+The [corrected v0.2.4 release](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.4)
+remains available; the earlier misnumbered v2.4.0 is marked superseded.
 
 1. Download that ZIP and extract it in Finder.
 2. Open the extracted **VRAMpage-MD** folder and double-click **START.command**.
@@ -30,11 +32,12 @@ default browser or open the address printed by the launcher in Firefox.
   fullscreen and clean restart. ROM data stays on your computer.
 - Native framebuffer correction, responsive window sizing and automatic system
   Light/Dark appearance; legacy-core row recovery and raw-output option remain.
-- VRAM AD0–AD7 paired bridges, presets, momentary and latched contacts.
+- VRAM AD0–AD7 leg switches: click to show a × and force an address net low;
+  click again to reconnect. Bridge mode, presets and momentary/latched shorts remain.
 - Experimental work-RAM address/data faults with read/write direction, affected
   access counters and CPU STOP/HALT monitoring.
 - Explicit CPU resume/reset, short frame pulses and affected-write limits.
-- Compact chips with internal labels and short legs; independent A1–A15 stuck-low
+- Compact chips with internal labels, short legs and crosses; independent A1–A15 stuck-low
   switches show crosses on disabled lines.
 - Local experiment logging and JSON metadata export, without ROM or RAM bytes.
 
@@ -79,7 +82,7 @@ source and upstream notices. See [third-party notices](THIRD-PARTY-NOTICES.md).
 No Sega games, logos or commercial ROMs are included.
 
 The integrated history preserves development from the source import through
-v0.2.4. Historical prototype and experiment records remain in the
+v0.2.5. Historical prototype and experiment records remain in the
 [documentation index](docs/README.md). See [changelog](CHANGELOG.md), [versioning policy](docs/VERSIONING.md) and
 [roadmap](ROADMAP.md). Releases belong to this independent repository;
 **McRetro.net is not modified or deployed by this workflow**.

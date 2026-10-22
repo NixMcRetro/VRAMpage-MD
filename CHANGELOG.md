@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.2.5 — independent VRAM leg switches
+
+- Toggle AD0–AD7 address nets independently with mouse or Enter/Space; × marks
+  a stuck-low line. Reconnect one leg or all contacts without undoing stored writes.
+- Preserve paired bridges in explicit Bridge mode and via existing presets/shortcuts.
+- Keep VRAM masks, bridges and work-RAM faults exclusive; recovery/restart clears masks.
+- Export VRAM mask/bridge state and line-transition history; legacy cores retain bridges.
+- Upgrade already-patched vendor sources safely so rebuilds include the new API.
+- Keep v0.2.4 and older recorded experiments/releases intact. This remains a
+  frame-scoped approximation, not the planned v0.3.0 transaction-level model.
+
+
 ## v0.2.4 — consolidated runnable release
 
 - Consolidate the linear source-import, display and v0.2.4 development history.

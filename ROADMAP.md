@@ -1,13 +1,15 @@
 # VRAMpage MD roadmap
 
-## Current delivery: v0.2.4 consolidated application
+## Current delivery: v0.2.5 VRAM leg-switch improvement
 
 The source import, display fixes and work-RAM development through v0.2.4 are
-consolidated into one runnable application. The complete versioned Mac ZIP
+consolidated into one runnable application. v0.2.5 adds independent VRAM leg
+switches while retaining that foundation. The complete versioned Mac ZIP
 includes the compiled core, source/notices and launcher; see
 [Run locally](docs/RUNNING-LOCALLY.md). The immediate goal is reliable launching
-and acceptance on the user's Mac. No new hardware features are part of this
-consolidation. Historical milestones below retain their original research context.
+and acceptance on the user's Mac. Per-access VRAM and audio bending remain
+separate future milestones. Historical milestones below retain their original
+research context.
 
 
 ## v0.1 | NTSC hardware-mode foundation
@@ -97,7 +99,17 @@ No guaranteed target effect for arbitrary modeled shorts.
 - Physical SRAM packages/pin mapping and floating-input behavior remain unverified;
   see [Address-line chip](docs/ADDRESS-LINE-CHIP.md).
 
-## v0.3 | More accurate VRAM reads and writes
+## v0.2.5 | VRAM leg switches (incremental)
+
+- Click individual AD0–AD7 legs to toggle deterministic stuck-low signals with ×.
+- Keep Bridge mode, presets and momentary contacts; masks and bridges replace one another.
+- Preserve frame-scoped projection, persistent writes and VRAM/RAM exclusivity.
+- Export active VRAM mask/bridge and frame-stamped line changes.
+- See [VRAM leg switches](docs/VRAM-LEG-SWITCHES.md) for assumptions and reproduction.
+- Continue current-stage work as v0.2.6, v0.2.7, etc.; this does not complete the
+  attract-mode desynchronisation criterion or introduce per-access VRAM.
+
+## v0.3.0 | More accurate VRAM reads and writes
 
 - Move from frame-level projection to fault handling at VDP VRAM access paths.
 - Model row/column address multiplexing and write/read timing, with explicit treatment of VDP pattern-cache invalidation.
@@ -105,7 +117,7 @@ No guaranteed target effect for arbitrary modeled shorts.
 - Validate several signal faults against recorded physical-hardware observations where practical.
 - Keep deterministic low-dominant contention as a selectable *approximation* until measurements support alternatives.
 
-## v0.4 | Audio bending
+## v0.4.0 | Audio bending
 
 - Introduce Yamaha YM2612 register/address/data fault hooks and SN76489-compatible PSG bus experiments.
 - Extend to Z80 sound-CPU shared memory and bus arbitration only when mapping has been verified.

@@ -181,6 +181,28 @@ def patch_dma(source: str) -> str:
         'VDP DMA work-RAM IO-window read')
 
 
+def patch_vram_fault(wasm: str, patch: str) -> str:
+    """Refresh only the uniquely bounded embedded frame fault implementation."""
+    tick = 'void EMSCRIPTEN_KEEPALIVE tick(void) {'
+    block_start = '/*\n * ' + FAULT_MARKER
+    if FAULT_MARKER in wasm:
+        if (wasm.count(FAULT_MARKER) != 1 or wasm.count(block_start) != 1 or
+                wasm.count(tick) != 1 or wasm.count('bend_before_frame();') != 1 or
+                wasm.count('bend_after_frame();') != 1):
+            raise SystemExit('Existing frame-scoped patch is ambiguous or incomplete. No modifications made.')
+        start = wasm.index(block_start)
+        end = wasm.index(tick)
+        if end <= start:
+            raise SystemExit('Existing frame-scoped patch has invalid boundaries. No modifications made.')
+        return wasm[:start] + patch.rstrip() + '\n' + wasm[end:]
+    anchor = tick + '\n    system_frame_gen(0);\n}'
+    if wasm.count(anchor) != 1:
+        raise SystemExit('Expected tick() anchor missing; upstream changed. No modifications made.')
+    return wasm.replace(anchor, patch.rstrip() + '\n' + tick + '\n'
+                        '    bend_before_frame();\n    system_frame_gen(0);\n'
+                        '    bend_after_frame();\n}', 1)
+
+
 def patch_core(root: Path) -> bool:
     """Patch a clean or previously patched pinned source tree; return changed."""
     patch = Path(__file__).with_name('vram_fault_patch.c').read_text()
@@ -200,18 +222,7 @@ def patch_core(root: Path) -> bool:
 
     if wasm.count('#define SOUND_FREQUENCY 44100') != 1:
         raise SystemExit('Expected wasm.c header missing; upstream changed. No modifications made.')
-    if FAULT_MARKER in wasm:
-        if wasm.count(FAULT_MARKER) != 1 or wasm.count('bend_before_frame();') != 1 or \
-                wasm.count('bend_after_frame();') != 1:
-            raise SystemExit('Existing frame-scoped patch is ambiguous or incomplete. No modifications made.')
-    else:
-        anchor = 'void EMSCRIPTEN_KEEPALIVE tick(void) {\n    system_frame_gen(0);\n}'
-        if wasm.count(anchor) != 1:
-            raise SystemExit('Expected tick() anchor missing; upstream changed. No modifications made.')
-        wasm = wasm.replace(anchor,
-            patch + '\nvoid EMSCRIPTEN_KEEPALIVE tick(void) {\n'
-            '    bend_before_frame();\n    system_frame_gen(0);\n'
-            '    bend_after_frame();\n}', 1)
+    wasm = patch_vram_fault(wasm, patch)
 
     runtime_includes = ('#include "work_ram_fault.c"\n'
                         '#include "work_ram_runtime.c" /* ' + WORK_RAM_MARKER + ' */')
@@ -225,14 +236,23 @@ def patch_core(root: Path) -> bool:
             raise SystemExit('Expected wasm.c include anchor missing; upstream changed. No modifications made.')
         wasm = wasm.replace(include_anchor, include_anchor + '\n' + runtime_includes, 1)
 
+    # start() precedes the embedded VRAM block, requiring a forward declaration.
+    declaration = 'static void bend_reset(void);\n'
+    header_anchor = '#define SOUND_FREQUENCY 44100'
+    if declaration not in wasm:
+        wasm = wasm.replace(header_anchor, declaration + '\n' + header_anchor, 1)
+    elif wasm.count(declaration) != 1:
+        raise SystemExit('VRAM reset declaration is ambiguous. No modifications made.')
     start_anchor = '    system_reset();\n}'
-    start_hook = '    system_reset();\n    work_ram_logic_start();\n}'
+    old_start_hook = '    system_reset();\n    work_ram_logic_start();\n}'
+    start_hook = '    system_reset();\n    work_ram_logic_start();\n    bend_reset();\n}'
     if wasm.count(start_hook) == 0:
-        if wasm.count(start_anchor) != 1:
+        anchor = old_start_hook if old_start_hook in wasm else start_anchor
+        if wasm.count(anchor) != 1:
             raise SystemExit('Expected start() reset anchor missing or ambiguous. No modifications made.')
-        wasm = wasm.replace(start_anchor, start_hook, 1)
+        wasm = wasm.replace(anchor, start_hook, 1)
     elif wasm.count(start_hook) != 1:
-        raise SystemExit('Work-RAM start hook is ambiguous. No modifications made.')
+        raise SystemExit('Fault reset start hook is ambiguous. No modifications made.')
 
     tick_hook = '    system_frame_gen(0);\n    bend_after_frame();\n'
     tick_replacement = '    system_frame_gen(0);\n    work_ram_logic_tick();\n    bend_after_frame();\n'

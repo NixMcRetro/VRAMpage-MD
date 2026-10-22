@@ -1,6 +1,6 @@
 # Versioning policy
 
-Current development/release version: **v0.2.4** (`VERSION` stores `0.2.4`).
+Current development/release version: **v0.2.5** (`VERSION` stores `0.2.5`).
 
 VRAMpage MD is experimental, **not version 2.x**. Use semantic-looking
 `MAJOR.MINOR.PATCH` identifiers with leading `0` until a deliberately
@@ -23,6 +23,11 @@ Do not declare `v1.0.0` solely because a new patchbay control was added.
 The `v0.2.4` release includes all preceding milestones; it does **not**
 imply the attract-mode desynchronisation acceptance criterion is complete.
 
+v0.2.5 adds independent VRAM AD0–AD7 leg switches within the current
+frame-scoped model. Further incremental RAM-stage improvements use v0.2.6,
+v0.2.7, etc. Per-access VRAM remains reserved for v0.3.0 and hardware-informed
+audio bending for v0.4.0. A leg switch does not advance either milestone.
+
 ## What changes and what remains historical
 
 - New app titles, export `modelVersion`, generated protocols, release assets,
@@ -35,9 +40,8 @@ imply the attract-mode desynchronisation acceptance criterion is complete.
   **v0.2.x** development stage; do not rewrite or regenerate those files.
 - The older `v2.4.0` GitHub release was published before this correction.
   It remains available with its original tag, commit and artifact for provenance.
-  The corrected `v0.2.4` release is rebuilt from the current tested `main`.
-  The publishing workflow will mark the old release as superseded after
-  publishing the replacement. Never silently retag a public historical release.
+  The corrected `v0.2.4` release was rebuilt from tested `main` and published;
+  the old release is marked superseded. Later releases preserve both records. Never silently retag a public historical release.
 - Version labels alone cannot prove two experiment reports have equivalent
   emulator behaviour. Always retain and compare source commit, core revision,
   protocol version, ROM hash and experimental settings.

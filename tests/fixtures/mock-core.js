@@ -9,11 +9,12 @@ window.Module = async () => {
     reads: 0, writes: 0, frame: 0, activationFrame: 0, cpuFlags: 0,
     setterCalls: [], storedWrites: 0, recoveries: [], pulseState: 0, budget: 0, writesPerTick: 1, addressMask:0,
   };
-  window.mockCore = {starts: 0, ticks: 0, lastStartTick: 0, short: [-1, -1], inputs: [], logic};
+  window.mockCore = {starts: 0, ticks: 0, lastStartTick: 0, short: [-1, -1], vramAddressMask:0, vramMaskCalls:[], inputs: [], logic};
 
   function setLogicFault(kind, access, a, b) {
     logic.setterCalls.push([kind, access, a, b]);
     if (kind === 0) {
+      if(window.mockCore.rejectLogicClear)return 5;
       if (logic.pulseState === 1) logic.pulseState = 4;
       logic.addressMask=0;
       logic.active = false;
@@ -68,7 +69,7 @@ window.Module = async () => {
     _get_web_audio_r_ref: () => input + 16384,
     _start() {
       window.mockCore.starts++;
-      resetLogic();
+      resetLogic();window.mockCore.short=[-1,-1];window.mockCore.vramAddressMask=0;
       window.mockCore.lastStartTick = window.mockCore.ticks;
     },
     _tick() {
@@ -90,7 +91,13 @@ window.Module = async () => {
     _wasm_input_update() {
       window.mockCore.inputs = Array.from(new Float32Array(memory, input, 32));
     },
-    _set_vram_short(a, b) { window.mockCore.short = [a, b]; },
+    _set_vram_short(a, b) { window.mockCore.short = [a, b];window.mockCore.vramAddressMask=0; },
+    _set_vram_address_mask(mask) {
+      window.mockCore.vramMaskCalls.push(mask);
+      if(window.mockCore.rejectVramMask || !Number.isInteger(mask)||mask<0||mask>255)return 1;
+      window.mockCore.vramAddressMask=mask;window.mockCore.short=[-1,-1];return 0;
+    },
+    _get_vram_address_mask:()=>window.mockCore.vramAddressMask,
     _get_vram_changed_reads: () => 0,
     _get_vram_changed_writes: () => 0,
   };
@@ -132,5 +139,6 @@ window.Module = async () => {
     delete core._arm_logic_write_pulse;delete core._get_logic_pulse_state;
   }
   if (window.__legacyChipCore) {delete core._set_logic_address_mask;delete core._get_logic_address_mask;}
+  if(window.__legacyVramChipCore) {delete core._set_vram_address_mask;delete core._get_vram_address_mask;}
   return core;
 };
