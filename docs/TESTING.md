@@ -6,7 +6,7 @@ passed. Fresh public ZIP/tag/source/checksum and extracted launcher checks passe
 The public core passed 25 original-cartridge WASM checks and actual-core Chromium
 video, generated audio, controls, faults, recovery, restart and export smoke using
 its real build manifest. Package source is `1d87fd9a921194a557fc5320e54be48295c62b1f`.
-The release-catalog follow-up passed 72 Python tests, including new-version,
+The release-catalog follow-up passed 73 Python tests, including new-version,
 missing-history, asset-policy and remote tag/asset preflight regression cases,
 plus the unchanged native/sanitizer, framebuffer and protocol suites.
 See [development status](DEVELOPMENT-STATUS.md) for checksum and historical failed

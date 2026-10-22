@@ -1,6 +1,7 @@
 """Check that release notes distinguish runnable downloads from source-only history."""
 import json
 import copy
+import re
 import shutil
 import tempfile
 from unittest.mock import patch
@@ -40,6 +41,16 @@ class ReleaseCurationTests(unittest.TestCase):
                 else:
                     self.assertIn("SOURCE HISTORY ONLY", note)
                     self.assertIn("NO READY-TO-RUN", note)
+
+    def test_mac_download_version_labels_match_targets(self):
+        for entry in DATA["releases"]:
+            note = (ROOT / f"release-notes/{entry['tag']}.md").read_text()
+            links = re.findall(r"\[([^]\n]+)\]\([^)]*/releases/download/(v0\.\d+\.\d+)/VRAMpage-MD-\2-macos\.zip\)", note)
+            self.assertTrue(links, entry["tag"])
+            for label, target in links:
+                for displayed in re.findall(r"v0\.\d+\.\d+", label):
+                    with self.subTest(release=entry["tag"], label=label):
+                        self.assertEqual(displayed, target)
 
     def test_original_public_descriptions_are_archived(self):
         archive = ROOT / "docs/archive/original-release-notes"
