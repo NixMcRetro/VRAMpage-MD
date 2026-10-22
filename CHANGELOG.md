@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased
+## v2.4.0 — consolidated runnable release
+
+- Consolidate the linear source-import, display and v2.4 development history.
+- Provide a versioned complete Mac ZIP containing the compiled emulator,
+  corresponding source, licence notices and double-click launcher.
+- Put download and launch instructions first; retain technical/history records.
+- Preserve existing fault models, recovery, pulses, exports and display behavior.
+
+### Compact-diagram follow-up
 
 - Compact both chip diagrams, especially VRAM, with internal signal labels and
   short external legs. Preserve work-RAM disabled-line crosses and all bridge,

@@ -1,29 +1,61 @@
-# Run VRAMpage MD locally
+# Run VRAMpage MD on your Mac
 
-1. Open the GitHub Actions build linked in the development report. Sign in to GitHub if prompted, then download **VRAMpage-MD-local-review** under **Artifacts**.
-2. Unzip the download, then unzip the `VRAMpage-MD-local-review.zip` inside it. The inner ZIP preserves the Mac launcher’s executable permissions. GitHub’s **Code → Download ZIP** is source-only and does not include the built emulator.
-3. In the resulting `VRAMpage-MD` folder, double-click `START.command`.
-4. The launcher opens VRAMpage MD in your browser. Load a game file from your computer using **Load ROM**.
+## Download once, then launch
 
-Python 3 must be installed ([official macOS installer](https://www.python.org/downloads/macos/)).
-If macOS blocks `START.command`, use this Terminal fallback:
+1. [Download VRAMpage-MD-v2.4.0-macos.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v2.4.0/VRAMpage-MD-v2.4.0-macos.zip).
+2. Double-click the ZIP in Finder to extract it. Open the **VRAMpage-MD** folder.
+3. Double-click **START.command**. It starts a local server and opens your default browser.
+4. Click **Load ROM** and select your own legally usable Mega Drive cartridge.
+5. Click **Enable Sound**. Use the on-screen keyboard guide to play.
 
-1. Open **Terminal**.
-2. Type `bash `, including the space after it.
-3. Drag `START.command` from Finder into the Terminal window.
-4. Press **Return**. The script finds its own folder automatically.
+This is one complete ZIP, with the emulator already compiled. No cloning,
+GitHub login, Emscripten or manual compilation is needed. **Code → Download ZIP**
+on GitHub is a different, source-only download and cannot run without building.
 
-The launcher chooses an available local port, so another local app need not be stopped.
+Python 3 is the only local prerequisite. If the launcher reports that it is
+missing, install it using the [official macOS installer](https://www.python.org/downloads/macos/),
+then double-click **START.command** again. You do not need a desktop development app.
 
-The launcher serves the files from your computer and only listens on `127.0.0.1`. It does not send game files to a server. Leave the Terminal window open while using the page; press **Control+C** there to stop it.
+To use Firefox, make it your default browser before launching, or copy the local
+address printed in the launcher's Terminal window into Firefox's address bar.
+Keep that window open while playing. Press **Control+C** there to stop the server.
+ROM files are read locally by your browser; they are not uploaded.
 
-The review bundle includes the built emulator and its corresponding source, so it does not need the Emscripten SDK. A source checkout without those build outputs must first follow the build instructions in [README.md](../README.md).
+## If macOS blocks START.command
 
-The playable interface is v0.1.4. The first v0.2 work-RAM model is a separately
-tested C foundation; it does not add game-logic fault controls yet.
+First try right-clicking **START.command**, choosing **Open**, and confirming
+**Open** if macOS offers it. If it still refuses to run:
 
-Review artifacts are kept on GitHub for 30 days and require a GitHub sign-in.
-They do not depend on the Codex cloud environment remaining connected. To refresh
-one, run **VRAMpage MD source checks** on the review branch with **Build a
-ready-to-run local review download** enabled. It builds artifacts and does not
-deploy the website.
+1. Open **Terminal** (Applications → Utilities → Terminal).
+2. Type `bash `, including the space.
+3. Drag **START.command** from Finder into the Terminal window.
+4. Press **Return**. No path or other command needs to be typed.
+
+The script finds its own folder, even if its name contains spaces.
+
+## Common problems
+
+- **Missing emulator files:** re-download the complete release ZIP and extract
+  the whole folder. Do not move START.command away from its accompanying files.
+- **Port already in use:** the launcher normally chooses a free port automatically.
+  Close a previous launcher window if you no longer need it; do not stop unrelated apps.
+- **Browser does not open:** copy the local address printed in the Terminal window
+  into Firefox. The server can still be running successfully.
+- **No sound:** click Enable Sound after loading a cartridge, check Firefox's
+  audio permissions, the tab's mute setting and your Mac's volume.
+- **Game stops after a fault:** reconnect lines first. CPU recovery preserves
+  corrupted RAM and may not restore play. **Clean restart** reboots the cartridge.
+- **Untrusted file warning:** this launcher is an unsigned shell script. Obtain
+  the archive from this repository's release page and read it before running.
+
+## What the complete ZIP contains
+
+HTML/CSS/JavaScript, the compiled JS/WASM emulator, its complete corresponding
+modified source and third-party notices, the Python local server and Mac launcher.
+The launcher listens only on `127.0.0.1`; it does not require an internet server.
+The package contains no commercial ROM. See [Testing](TESTING.md) for the short
+manual Firefox checklist and the limits of cloud validation.
+
+Maintainers can still use GitHub Actions artifacts for temporary review. They
+expire, and GitHub may wrap the package in another ZIP; the versioned release
+asset above is the normal user download.

@@ -4,6 +4,12 @@ VRAMpage MD is a browser-based NTSC Mega Drive/Genesis experiment. It runs a loc
 
 ## Start here
 
+**[Download the complete v2.4.0 Mac app](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v2.4.0/VRAMpage-MD-v2.4.0-macos.zip)**,
+extract it and open START.command. See [Run locally](RUNNING-LOCALLY.md) for Python
+and macOS launch help. The work-RAM controls are implemented and experimental;
+older standalone-model descriptions are historical development records.
+
+
 | Document | Purpose |
 | --- | --- |
 | [Changelog](../CHANGELOG.md) | Versioned changes and verification limits |
@@ -21,7 +27,7 @@ VRAMpage MD is a browser-based NTSC Mega Drive/Genesis experiment. It runs a loc
 | [RAM pulses](RAM-PULSES.md) | Short contacts, quick address write pairs, frame timing and cancellation |
 | [CPU recovery](CPU-RECOVERY.md) | v2.1 force-resume/reset semantics, metadata and limits |
 | [Experiments](EXPERIMENTS.md) | Repeatable zero-fault and RAM-fault attract-mode procedure |
-| [Build and deployment](DEPLOYMENT.md) | Manual publishing to McRetro.net, never direct from feature work |
+| [Build and deployment](DEPLOYMENT.md) | Versioned local downloads and separately authorised website deployment |
 | [Source import](IMPORTING.md) | How the original v0.1 working prototype entered GitHub |
 | [Prototype notes](PROTOTYPE-V0.1-NOTES.md) | Historical first-stage implementation and technical assumptions |
 

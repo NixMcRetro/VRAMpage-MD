@@ -1,3 +1,67 @@
+# v2.4.0 consolidated application verification
+
+## Current release checks
+
+The consolidation preserves the full linear ancestry of PRs #4–#14. The local
+pinned Emscripten 4.0.23 core build passes all 21 original-cartridge WASM checks.
+The new `tests/browser_core.py` uses the actual compiled core and an original
+68000 cartridge that paints a red backdrop, emits a PSG tone and increments RAM.
+It verifies all 224 native picture rows, nonzero finite audio samples, Web Audio
+enable/mute, file-picker loading, keyboard input, injected standard gamepad
+state, VRAM bridge/removal, RAM chip masks/crosses/reconnect, recovery, clean
+restart and valid hashed JSON export without page errors. This is synthetic
+program execution, not evidence of commercial-game compatibility or audible output.
+
+Existing synthetic browser suites cover 19 logic and six display cases per
+engine, including resize/fullscreen, 1366×768 fit, mobile sizes, Light/Dark,
+pulses, write budgets, legacy fallback, recovery and export. CI runs Chromium,
+Firefox and WebKit interface suites and a fresh compiled-core Chromium smoke.
+See each release's linked Actions run for the final commit's outcomes.
+
+The final ZIP must carry the merged commit in BUILD-INFO.json. Extract it,
+launch START.command from an unrelated working directory and verify nonempty
+HTTP responses for every runtime asset. Packaging checks executable permissions,
+source/notices, ROM signatures, secrets and opaque archives. The launcher tests
+cover missing/unusable Python, missing files and busy ports. Cloud validation
+cannot establish Finder quarantine behavior on a native Mac.
+
+Commands from the repository root:
+
+```sh
+bash scripts/test.sh
+bash scripts/build-core.sh
+node tests/test_wasm_logic.cjs site/core/genplus.js
+python3 tests/browser_core.py --executable /usr/lib/chromium/chromium
+python3 tests/browser_logic.py --executable /usr/lib/chromium/chromium
+python3 tests/browser_display.py --executable /usr/lib/chromium/chromium
+```
+
+## Short manual Mac / Firefox acceptance checklist
+
+Use the complete release ZIP and your own legally usable cartridge. Never commit
+ROMs, captures or private attachment paths. No native macOS Firefox or commercial
+gameplay test was performed during consolidation.
+
+1. Extract the ZIP and open START.command. Confirm Firefox loads without a
+   missing-file message; use the documented fallback if macOS blocks the launcher.
+2. Load your cartridge. Check the entire picture, including its bottom rows, at
+   1366×768. Resize, enter/leave fullscreen, toggle raw video and change system
+   Light/Dark appearance. A black border alone is not evidence of cropped rows.
+3. Check arrows, Z/X/C and Enter. If using a physical controller, verify its
+   axes/buttons too; only injected standard gamepad state is automated.
+4. Click Enable Sound and listen; mute and enable again. Cloud samples and
+   Web Audio state do not establish audible playback on your Mac.
+5. Connect/remove a VRAM pair. Clean restart, then try a RAM pair and one chip
+   line. Confirm the cross, reconnect, try recovery and finally Clean restart.
+   Corrupted RAM or CPU stops may persist after reconnection as documented.
+6. Export experiment JSON and confirm the cartridge hash, fault settings and
+   recorded transitions. Stop the launcher with Control+C when finished.
+
+## Historical test records
+
+The records below belong to their stated earlier builds and tests. Historical
+Sonic observations are preserved as history, not claimed as new release testing.
+
 # Testing and release checks
 
 The tests are deliberately layered. The browser UI, emulator, memory fault model, display adapter and final static release can regress independently. **Source-level contract tests are not substitutes for a real emulator/gameplay run.** Never commit a commercial Sonic ROM as a fixture.

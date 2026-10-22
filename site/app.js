@@ -756,7 +756,7 @@
   async function initialiseCore() {
     if (window.__coreMissing || typeof window.Module!=='function') {
       message('MODIFIED CORE NOT FOUND',
-        'The patchbay is ready, but Sonic cannot run until you build the local genplus.js and genplus.wasm files. See README.md.');
+        'Emulator files are missing. Download and extract the complete runnable ZIP from the VRAMpage MD release page. Source checkouts need the contributor build described in README.md.');
       stamp('No emulator core. Run scripts/build-core.sh with the Emscripten SDK.');
       return;
     }

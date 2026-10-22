@@ -1,5 +1,15 @@
 # VRAMpage MD roadmap
 
+## Current delivery: v2.4.0 consolidated application
+
+The source import, display fixes and work-RAM development through v2.4 are
+consolidated into one runnable application. The complete versioned Mac ZIP
+includes the compiled core, source/notices and launcher; see
+[Run locally](docs/RUNNING-LOCALLY.md). The immediate goal is reliable launching
+and acceptance on the user's Mac. No new hardware features are part of this
+consolidation. Historical milestones below retain their original research context.
+
+
 ## v0.1 | NTSC hardware-mode foundation
 
 **Known local working baseline (22 October 2026)**
@@ -13,11 +23,11 @@
 
 **Acceptance gates:** local clean boot, stereo sound without fault, keyboard input, repeatable active short, restored video after disconnection (except persistence caused by genuine writes), no ROM included, no external runtime dependencies.
 
-## v0.1.4 | Display review candidate
+## v0.1.4 | Display foundation (included in v2.4.0)
 
 - Implemented: measured window sizing, unchanged native framebuffer recovery,
   focused-control keyboard activation and synthetic browser regressions.
-- Source correction under review: write one native output row per input row and
+- Included source correction: write one native output row per input row and
   use byte pitch correctly in the pinned custom blitter. Rebuild the core; the
   legacy framebuffer recovery remains available for old core binaries.
 - Verified locally: Chromium layout/input/fullscreen/media response at nine sizes.

@@ -40,6 +40,15 @@ jobs:
           test -s site/core/genplus.wasm
           test -f site/source/README.txt
           node tests/test_wasm_logic.cjs site/core/genplus.js
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install actual-core browser test tools
+        run: |
+          python3 -m pip install -r tests/requirements-browser.txt
+          python3 -m playwright install --with-deps chromium
+      - name: Verify actual-core video, audio and controls
+        run: python3 tests/browser_core.py --browser chromium
       - name: Package static website with corresponding emulator source
         shell: bash
         run: |
