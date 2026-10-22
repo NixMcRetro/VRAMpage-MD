@@ -2,7 +2,7 @@ name: VRAMpage MD source checks
 
 on:
   push:
-    branches: [main, 'import/**', 'feature/**', 'release/**']
+    branches: [main, 'import/**', 'feature/**', 'release/**', 'integration/**']
   pull_request:
   workflow_dispatch:
     inputs:
@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   review-bundle:
-    if: github.event_name == 'workflow_dispatch' && inputs.review_bundle
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.review_bundle)
     uses: ./.github/workflows/build-website.yml
 
   source-tests:

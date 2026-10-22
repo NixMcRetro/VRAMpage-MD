@@ -1,6 +1,7 @@
 """Checks the local review ZIP builder using disposable Git checkouts."""
 from pathlib import Path
 import os
+import json
 import subprocess
 import sys
 import tempfile
@@ -47,6 +48,8 @@ def make_checkout(root, *, wasm=True, include_rom=False):
     subprocess.run(["git", "init", "-q", str(root)], check=True)
     subprocess.run(["git", "-C", str(root), "add", "README.md", "START.command",
                     "docs", "scripts/serve.py", "scripts/package-review.py", "site"], check=True)
+    subprocess.run(["git", "-C", str(root), "-c", "user.name=Bundle test",
+                    "-c", "user.email=bundle-test@example.invalid", "commit", "-qm", "Fixture"], check=True)
     return shutil_copy
 
 
@@ -71,6 +74,9 @@ class ReviewBundleTests(unittest.TestCase):
                 self.assertTrue(all(name.startswith("VRAMpage-MD/") for name in archive.namelist()))
                 names = {name.removeprefix("VRAMpage-MD/") for name in archive.namelist()}
                 self.assertIn("START.command", names)
+                metadata = json.loads(archive.read("VRAMpage-MD/BUILD-INFO.json"))
+                self.assertEqual(metadata["source_commit"], subprocess.check_output(
+                    ["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip())
                 mode = archive.getinfo("VRAMpage-MD/START.command").external_attr >> 16
                 self.assertTrue(mode & 0o111, oct(mode))
                 self.assertIn("site/core/genplus.wasm", names)
@@ -79,6 +85,18 @@ class ReviewBundleTests(unittest.TestCase):
                 self.assertNotIn("private-notes.txt", names)
                 self.assertFalse(any("__pycache__" in name for name in names))
                 self.assertFalse(any(name.endswith(".bin") for name in names))
+
+    def test_uncommitted_tracked_changes_reject_misleading_provenance(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "checkout"
+            root.mkdir()
+            launcher = make_checkout(root)
+            (root / "site/app.js").write_text("// changed application")
+            output = Path(directory) / "review.zip"
+            result = self.run_packager(launcher, output)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("Commit tracked source changes", result.stderr)
+            self.assertFalse(output.exists())
 
     def test_missing_wasm_fails_before_creating_archive(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -90,6 +108,21 @@ class ReviewBundleTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             self.assertIn("site/core/genplus.wasm", result.stderr)
             self.assertFalse(output.exists())
+
+    def test_private_files_and_nested_archives_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "checkout"
+            root.mkdir()
+            launcher = make_checkout(root)
+            output = Path(directory) / "review.zip"
+            for name in (".env", "credentials.json", "private.zip"):
+                with self.subTest(name=name):
+                    private = root / "site" / name
+                    private.write_text("private data")
+                    result = self.run_packager(launcher, output)
+                    self.assertEqual(result.returncode, 1)
+                    self.assertFalse(output.exists())
+                    private.unlink()
 
     def test_rom_signature_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:

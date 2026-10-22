@@ -2,6 +2,7 @@
 """Create a ROM-free local review ZIP from a built VRAMpage MD checkout."""
 
 import argparse
+import json
 import os
 from pathlib import Path, PurePosixPath
 import stat
@@ -25,6 +26,7 @@ SECRET_NAMES = {
     "id_ecdsa", "secrets.json", "secrets.yaml", "secrets.yml",
 }
 SECRET_SUFFIXES = {".pem", ".p12", ".pfx", ".key"}
+ARCHIVE_SUFFIXES = {".zip", ".7z", ".rar", ".tar", ".gz", ".bz2", ".xz"}
 REQUIRED_FILES = (
     "START.command",
     "README.md",
@@ -116,6 +118,8 @@ def _collect_paths(output_path):
             raise BundleError(f"Refusing to package a file that may contain a user secret: {relative}")
         if PurePosixPath(relative).suffix.lower() in ROM_SUFFIXES:
             raise BundleError(f"Refusing to package a game ROM or disc image: {relative}")
+        if PurePosixPath(relative).suffix.lower() in ARCHIVE_SUFFIXES:
+            raise BundleError(f"Refusing to package an opaque nested archive: {relative}")
         data = source.read_bytes()
         if len(data) >= 0x104 and data[0x100:0x104] == b"SEGA":
             raise BundleError(f"Refusing to package a Mega Drive ROM signature: {relative}")
@@ -135,12 +139,35 @@ def _collect_paths(output_path):
     return selected
 
 
+def _build_info():
+    """Tie a runnable download to a clean, committed application source tree."""
+    try:
+        dirty = subprocess.check_output(
+            ["git", "-C", str(ROOT), "status", "--porcelain", "--untracked-files=no"],
+            text=True).strip()
+        commit = subprocess.check_output(
+            ["git", "-C", str(ROOT), "rev-parse", "--verify", "HEAD^{commit}"],
+            text=True).strip()
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise BundleError("Package source must have a readable Git commit.") from error
+    if dirty:
+        raise BundleError("Commit tracked source changes before packaging so BUILD-INFO.json identifies the exact source.")
+    return json.dumps({"application": "VRAMpage MD", "source_commit": commit,
+                       "package_format": 1}, indent=2).encode() + b"\n"
+
+
 def create_package(output_path):
     output_path = Path(output_path).expanduser().absolute()
     selected = _collect_paths(output_path)
+    build_info = _build_info()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(output_path, "w", compression=zipfile.ZIP_DEFLATED,
                          compresslevel=9) as archive:
+        info = zipfile.ZipInfo("VRAMpage-MD/BUILD-INFO.json")
+        info.compress_type = zipfile.ZIP_DEFLATED
+        info.create_system = 3
+        info.external_attr = (stat.S_IFREG | 0o644) << 16
+        archive.writestr(info, build_info)
         for relative, source, data in selected:
             info = zipfile.ZipInfo(f"VRAMpage-MD/{relative}")
             info.compress_type = zipfile.ZIP_DEFLATED
@@ -148,7 +175,7 @@ def create_package(output_path):
             mode = stat.S_IMODE(source.stat().st_mode)
             info.external_attr = (stat.S_IFREG | mode) << 16
             archive.writestr(info, data)
-    return len(selected)
+    return len(selected) + 1
 
 
 def main(argv=None):

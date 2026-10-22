@@ -61,6 +61,34 @@ class LocalLauncherTests(unittest.TestCase):
         stdout, stderr = process.communicate(timeout=5)
         return stdout, stderr
 
+    def test_mac_launcher_reports_unusable_python_shim(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            launcher = root / "START.command"
+            shutil.copy2(ROOT / "START.command", launcher)
+            tools = root / "tools"
+            tools.mkdir()
+            (tools / "dirname").symlink_to(shutil.which("dirname"))
+            shim = tools / "python3"
+            shim.write_text("#!/bin/sh\nexit 127\n")
+            shim.chmod(0o755)
+            result = subprocess.run([shutil.which("bash"), str(launcher)],
+                                    env={"PATH": str(tools)}, input="\n",
+                                    capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("Python 3.8 or later", result.stdout)
+            self.assertIn("python.org/downloads/macos", result.stdout)
+
+    def test_mac_launcher_reports_incomplete_extraction(self):
+        with tempfile.TemporaryDirectory() as directory:
+            launcher = Path(directory) / "START.command"
+            shutil.copy2(ROOT / "START.command", launcher)
+            result = subprocess.run([shutil.which("bash"), str(launcher)], input="\n",
+                                    capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("scripts/serve.py is missing", result.stdout)
+            self.assertIn("extract the whole folder", result.stdout)
+
     def test_missing_core_fails_with_actionable_bundle_message(self):
         with tempfile.TemporaryDirectory() as directory:
             launcher = make_bundle(Path(directory), core=False)
