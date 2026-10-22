@@ -53,3 +53,5 @@ VRAMpage-MD development does not automatically publish to `mcretro.net`. Deploy 
 - [Agent instructions](../AGENTS.md): worker selection, review and publishing rules.
 - [Work queue](WORK-QUEUE.md): priorities, dependencies and acceptance criteria.
 - [Development status](DEVELOPMENT-STATUS.md): verified evidence, limits and continuation.
+
+- [Attract-mode observations](ATTRACT-MODE-OBSERVATIONS.md): read-only demo markers, repeated trials and acceptance limits.

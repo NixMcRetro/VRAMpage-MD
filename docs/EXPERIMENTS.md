@@ -140,3 +140,10 @@ Compare source commit, core revision, ROM hash, protocol version, reset state
 and fault settings when comparing runs. Matching identifiers do not prove
 identical input timing or deterministic gameplay. Preserve older JSON unchanged;
 absence of these new fields in historical records is expected.
+
+## Read-only demo-state follow-up
+
+See [Attract-mode observations](ATTRACT-MODE-OBSERVATIONS.md) for a pinned-ROM,
+pinned-core observer and repeated baseline/read-fault/one-write trials. Internal
+playback continuation is observed in the one-write candidate; independent
+gameplay trajectory divergence remains unproven.
