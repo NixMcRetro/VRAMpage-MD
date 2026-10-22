@@ -152,6 +152,8 @@ class NativeBlitterPatchTests(unittest.TestCase):
   else WRITE_BYTE(temp->base, (address) & 0xffff, value);
   if (temp->write16) (*temp->write16)(ADDRESS_68K(address),value);
   else *(uint16 *)(temp->base + ((address) & 0xffff)) = value;
+  if (temp->write16) (*temp->write16)(ADDRESS_68K(address),value>>16);
+  else *(uint16 *)(temp->base + ((address) & 0xffff)) = value >> 16;
   if (temp->write16) (*temp->write16)(ADDRESS_68K(address+2),value&0xffff);
   else *(uint16 *)(temp->base + ((address + 2) & 0xffff)) = value;
 ''')

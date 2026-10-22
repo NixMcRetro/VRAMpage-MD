@@ -108,3 +108,12 @@ The pinned core enables data address-error handling but disables PC address-erro
 checking. Active word projections assume aligned accesses; behavior after a fault
 creates an odd instruction PC is not a validated hardware outcome. STOP/HALT flags
 do not detect every exception, hang or invalid game state.
+
+## v2.3 transaction cutoff and longword correction
+
+[Affected-write pulses](ACCESS-LIMITED-PULSES.md) release the RAM fault after a
+selected number of changed write transactions or at the next frame boundary.
+The related regression uncovered/fixed a missing first-half longword write hook.
+Earlier claims of complete longword fault coverage were too broad: the original
+WASM checks exercised no-fault longwords, not both faulted halves. Current
+original-cartridge checks assert both halves and a cutoff between them.

@@ -52,7 +52,7 @@ class BrowserLogicTests(unittest.TestCase):
             context.close()
         self.assertEqual(self.errors, [], "Uncaught application errors")
 
-    def new_page(self, legacy_core=False, legacy_recovery=False):
+    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False):
         context = self.browser.new_context(
             viewport={"width": 1366, "height": 768},
             color_scheme="light",
@@ -61,6 +61,8 @@ class BrowserLogicTests(unittest.TestCase):
         self.contexts.append(context)
         page = context.new_page()
         page.on("pageerror", lambda error: self.errors.append(str(error)))
+        if legacy_write_pulse:
+            page.add_init_script("window.__legacyWritePulseCore = true;")
         if legacy_recovery:
             page.add_init_script("window.__legacyRecoveryCore = true;")
         if legacy_core:
@@ -314,6 +316,50 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.locator("#resetBtn").click()
         self.assertEqual(self.export_payload()["faultPulses"], [])
 
+    def test_affected_write_budget_exhaustion_records_limit(self):
+        self.load_rom()
+        for index, limit in enumerate([1,2,4,8]):
+            self.page.locator("#pauseBtn").click()
+            self.page.evaluate("window.mockCore.logic.writesPerTick = 20")
+            self.page.locator("#logicPulseFrames").select_option(f"writes:{limit}")
+            self.page.locator("[data-ram-pulse]").first.click()
+            self.page.locator("#pauseBtn").click()
+            self.page.wait_for_function(f"window.mockCore.logic.recoveries.length === {index+1}")
+            pulse = self.export_payload()["faultPulses"][-1]
+            self.assertEqual(pulse["writeCount"], limit)
+            self.assertEqual(pulse["requestedWrites"], limit)
+            self.assertEqual(pulse["releaseReason"], "affected-write-limit")
+            self.assertEqual(pulse["corePulseState"], 2)
+            self.assertEqual(pulse["mode"], "affected-writes")
+            self.assertEqual(pulse["endFrame"]-pulse["startFrame"], 1)
+            self.assertTrue(pulse["recoveryAccepted"])
+
+    def test_affected_write_timeout_and_read_rejection(self):
+        self.load_rom()
+        self.page.locator("#pauseBtn").click()
+        self.page.locator("#logicPulseFrames").select_option("writes:1")
+        self.page.locator("#logicPulseBtn").click()
+        expect(self.page.locator("#logicStatus")).to_contain_text("require Access: Write")
+        self.assertEqual(self.export_payload()["faultPulses"], [])
+        self.page.evaluate("window.mockCore.logic.writesPerTick = 0")
+        self.page.locator("[data-ram-pulse]").first.click()
+        self.page.locator("#pauseBtn").click()
+        self.page.wait_for_function("window.mockCore.logic.recoveries.length === 1")
+        pulse = self.export_payload()["faultPulses"][0]
+        self.assertEqual(pulse["writeCount"], 0)
+        self.assertEqual(pulse["releaseReason"], "frame-limit")
+        self.assertEqual(pulse["corePulseState"], 3)
+        self.assertFalse(self.page.evaluate("window.mockCore.logic.active"))
+
+    def test_older_pulse_core_keeps_frame_controls(self):
+        page = self.new_page(legacy_write_pulse=True)
+        self.load_rom(page)
+        expect(page.locator("#logicPulseFrames option[value='writes:1']")).to_be_disabled()
+        expect(page.locator("#logicPulseBtn")).to_be_enabled()
+        page.locator("[data-ram-pulse]").first.click()
+        page.wait_for_function("window.mockCore.logic.recoveries.length === 1")
+        expect(page.locator("#logicStatus")).to_contain_text("Forced resume attempted")
+
     def test_older_logic_core_disables_only_recovery(self):
         page = self.new_page(legacy_recovery=True)
         self.load_rom(page)
@@ -363,7 +409,7 @@ class BrowserLogicTests(unittest.TestCase):
             self.page.locator("#logicExperimentBtn").click()
         download = download_info.value
         payload = json.loads(Path(download.path()).read_text())
-        self.assertEqual(payload["modelVersion"], "2.2-experimental")
+        self.assertEqual(payload["modelVersion"], "2.3-experimental")
         self.assertEqual(payload["rom"]["name"], "synthetic-test.bin")
         self.assertEqual(payload["rom"]["sha256"], hashlib.sha256(rom).hexdigest())
         self.assertNotIn("bytes", payload["rom"])

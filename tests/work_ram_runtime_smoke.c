@@ -72,6 +72,48 @@ int main(void)
     assert(recover_logic_cpu(2) == WORK_RAM_FAULT_OK);
     assert(memcmp(snapshot, work_ram, sizeof(snapshot)) == 0);
 
+    /* Exact budgets, including further calls in the same emulated frame. */
+    for (int budget = 1; budget <= 8; budget *= 2) {
+        work_ram_logic_start();
+        memset(work_ram, 0, sizeof(work_ram));
+        assert(arm_logic_write_pulse(1, 0, 1, budget) == 0);
+        assert(arm_logic_write_pulse(1, 0, 1, 0) == WORK_RAM_FAULT_INVALID_CONFIG);
+        assert(get_logic_pulse_state() == WORK_RAM_PULSE_ARMED);
+        for (int i = 0; i < budget + 2; i++)
+            work_ram_logic_write16(0xe00004, (uint16_t)(0x1111 + i));
+        assert(get_logic_writes() == (uint32_t)budget);
+        assert(*(uint16_t *)(work_ram + 0) == (uint16_t)(0x1111 + budget - 1));
+        assert(*(uint16_t *)(work_ram + 4) == (uint16_t)(0x1111 + budget + 1));
+        assert(get_logic_pulse_state() == WORK_RAM_PULSE_EXHAUSTED);
+        assert(!work_ram_logic_applies(WORK_RAM_FAULT_APPLY_WRITE));
+        assert(recover_logic_cpu(1) == 0);
+        assert(get_logic_pulse_state() == WORK_RAM_PULSE_EXHAUSTED);
+    }
+    work_ram_logic_start();
+    assert(arm_logic_write_pulse(2, 0, 1, 1) == 0);
+    work_ram_logic_write8(0xe00020, 0x01); /* upper lane is unaffected */
+    work_ram_logic_write8(0xe00021, 0x00); /* lower lane, but no value change */
+    (void)work_ram_logic_read16(0xe00020); /* reads cannot spend a write budget */
+    assert(get_logic_writes() == 0);
+    assert(get_logic_pulse_state() == WORK_RAM_PULSE_ARMED);
+    work_ram_logic_tick();
+    assert(get_logic_pulse_state() == WORK_RAM_PULSE_TIMEOUT);
+    assert(!work_ram_logic_applies(WORK_RAM_FAULT_APPLY_WRITE));
+    work_ram_logic_write8(0xe00021, 0x01);
+    assert(work_ram_logic_read8(0xe00021) == 0x01);
+    assert(arm_logic_write_pulse(2, 0, 8, 1) == WORK_RAM_FAULT_UNSUPPORTED_LANE);
+    assert(get_logic_pulse_state() == WORK_RAM_PULSE_TIMEOUT);
+    assert(arm_logic_write_pulse(1, 0, 1, 1) == 0);
+    assert(set_logic_fault(0, 0, 0, 0) == 0);
+    assert(get_logic_pulse_state() == WORK_RAM_PULSE_CANCELLED);
+    assert(arm_logic_write_pulse(1, 0, 1, 1024) == WORK_RAM_FAULT_OK);
+    assert(set_logic_fault(0, 0, 0, 0) == WORK_RAM_FAULT_OK);
+    assert(arm_logic_write_pulse(1, 0, 1, 1025) == WORK_RAM_FAULT_INVALID_CONFIG);
+    assert(arm_logic_write_pulse(0, 0, 1, 1) == WORK_RAM_FAULT_INVALID_CONFIG);
+    assert(arm_logic_write_pulse(1, 0, 1, 1) == 0);
+    work_ram_logic_start();
+    assert(get_logic_pulse_state() == WORK_RAM_PULSE_NONE);
+
     assert(!work_ram_logic_address(0xdfffff));
     assert(work_ram_logic_address(0xe00000));
     assert(work_ram_logic_address(0xffffff));

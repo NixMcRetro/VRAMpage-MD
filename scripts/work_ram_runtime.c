@@ -17,6 +17,18 @@ static uint32_t logic_reads;
 static uint32_t logic_writes;
 static uint32_t logic_frame;
 static uint32_t logic_activation_frame;
+static uint32_t logic_write_budget;
+static uint32_t logic_pulse_state;
+
+static void changed_write(void)
+{
+    logic_writes++;
+    if (logic_pulse_state == WORK_RAM_PULSE_ARMED && --logic_write_budget == 0) {
+        /* Release before the next bus access, including a longword's second half. */
+        logic_config = work_ram_fault_clear();
+        logic_pulse_state = WORK_RAM_PULSE_EXHAUSTED;
+    }
+}
 
 static int operation_applies(work_ram_fault_access operation)
 {
@@ -122,7 +134,7 @@ void work_ram_logic_write8(uint32_t address, uint8_t value)
     }
     native_write_byte(offset, projected);
     if (offset != original || projected != value)
-        logic_writes++;
+        changed_write();
 }
 
 void work_ram_logic_write16(uint32_t address, uint16_t value)
@@ -139,7 +151,7 @@ void work_ram_logic_write16(uint32_t address, uint16_t value)
     }
     *(uint16_t *)(work_ram + ((uint32_t)word << 1)) = projected;
     if (((uint32_t)word << 1) != original || projected != value)
-        logic_writes++;
+        changed_write();
 }
 
 WORK_RAM_KEEPALIVE int set_logic_fault(int kind, int access,
@@ -170,6 +182,11 @@ WORK_RAM_KEEPALIVE int set_logic_fault(int kind, int access,
         (candidate.line_a >> 3) != (candidate.line_b >> 3))
         return WORK_RAM_FAULT_UNSUPPORTED_LANE;
 
+    if (candidate.kind != WORK_RAM_FAULT_NONE)
+        logic_pulse_state = WORK_RAM_PULSE_NONE;
+    else if (logic_pulse_state == WORK_RAM_PULSE_ARMED)
+        logic_pulse_state = WORK_RAM_PULSE_CANCELLED;
+    logic_write_budget = 0;
     logic_config = candidate;
     if (candidate.kind != WORK_RAM_FAULT_NONE) {
         logic_reads = 0;
@@ -177,6 +194,25 @@ WORK_RAM_KEEPALIVE int set_logic_fault(int kind, int access,
         logic_activation_frame = logic_frame;
     }
     return WORK_RAM_FAULT_OK;
+}
+
+WORK_RAM_KEEPALIVE int arm_logic_write_pulse(int kind, int line_a,
+                                            int line_b, int limit)
+{
+    if ((kind != WORK_RAM_FAULT_ADDRESS && kind != WORK_RAM_FAULT_DATA) ||
+        limit < 1 || limit > 1024)
+        return WORK_RAM_FAULT_INVALID_CONFIG;
+    int status = set_logic_fault(kind, WORK_RAM_FAULT_APPLY_WRITE, line_a, line_b);
+    if (status != WORK_RAM_FAULT_OK)
+        return status;
+    logic_write_budget = (uint32_t)limit;
+    logic_pulse_state = WORK_RAM_PULSE_ARMED;
+    return WORK_RAM_FAULT_OK;
+}
+
+WORK_RAM_KEEPALIVE uint32_t get_logic_pulse_state(void)
+{
+    return logic_pulse_state;
 }
 
 WORK_RAM_KEEPALIVE int recover_logic_cpu(int mode)
@@ -225,9 +261,16 @@ void work_ram_logic_start(void)
     logic_writes = 0;
     logic_frame = 0;
     logic_activation_frame = 0;
+    logic_write_budget = 0;
+    logic_pulse_state = WORK_RAM_PULSE_NONE;
 }
 
 void work_ram_logic_tick(void)
 {
+    if (logic_pulse_state == WORK_RAM_PULSE_ARMED) {
+        logic_config = work_ram_fault_clear();
+        logic_write_budget = 0;
+        logic_pulse_state = WORK_RAM_PULSE_TIMEOUT;
+    }
     logic_frame++;
 }

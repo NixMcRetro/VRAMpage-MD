@@ -71,6 +71,15 @@ No guaranteed target effect for arbitrary modeled shorts.
 - Smaller corruption and continued attract-mode gameplay remain experiments,
   not acceptance claims. See [RAM pulses](docs/RAM-PULSES.md).
 
+## v2.3 | Affected-write limits (experimental)
+
+- Core-enforced transaction budgets and a one-frame maximum, with release reasons.
+- Correct both halves of faulted longword writes; preserve old survey results
+  as historical records of the incomplete hook.
+- Repeated corrected-core surveys find small-change and divergent-output cases,
+  but continued demo input and healthy gameplay remain unverified.
+- See [Affected-write pulses](docs/ACCESS-LIMITED-PULSES.md).
+
 ## v0.3 | More accurate VRAM reads and writes
 
 - Move from frame-level projection to fault handling at VDP VRAM access paths.

@@ -94,6 +94,8 @@ def patch_m68k_cpu(source: str) -> str:
          '  if (work_ram_logic_applies(WORK_RAM_FAULT_APPLY_WRITE) && work_ram_logic_address(address)) work_ram_logic_write8(address, (uint8_t)value);\n  else if (temp->write8) (*temp->write8)(ADDRESS_68K(address),value);\n  else WRITE_BYTE(temp->base, (address) & 0xffff, value);'),
         ('  if (temp->write16) (*temp->write16)(ADDRESS_68K(address),value);\n  else *(uint16 *)(temp->base + ((address) & 0xffff)) = value;',
          '  if (work_ram_logic_applies(WORK_RAM_FAULT_APPLY_WRITE) && work_ram_logic_address(address)) work_ram_logic_write16(address, (uint16)value);\n  else if (temp->write16) (*temp->write16)(ADDRESS_68K(address),value);\n  else *(uint16 *)(temp->base + ((address) & 0xffff)) = value;'),
+        ('  if (temp->write16) (*temp->write16)(ADDRESS_68K(address),value>>16);\n  else *(uint16 *)(temp->base + ((address) & 0xffff)) = value >> 16;',
+         '  if (work_ram_logic_applies(WORK_RAM_FAULT_APPLY_WRITE) && work_ram_logic_address(address)) work_ram_logic_write16(address, (uint16)(value >> 16));\n  else if (temp->write16) (*temp->write16)(ADDRESS_68K(address),value>>16);\n  else *(uint16 *)(temp->base + ((address) & 0xffff)) = value >> 16;'),
         ('  if (temp->write16) (*temp->write16)(ADDRESS_68K(address+2),value&0xffff);\n  else *(uint16 *)(temp->base + ((address + 2) & 0xffff)) = value;',
          '  if (work_ram_logic_applies(WORK_RAM_FAULT_APPLY_WRITE) && work_ram_logic_address(address + 2)) work_ram_logic_write16(address + 2, (uint16)value);\n  else if (temp->write16) (*temp->write16)(ADDRESS_68K(address+2),value&0xffff);\n  else *(uint16 *)(temp->base + ((address + 2) & 0xffff)) = value;'),
     ]

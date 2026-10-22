@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#dedbd2" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#171c20" media="(prefers-color-scheme: dark)">
-  <title>VRAMpage MD v2.2 experimental | Mega Drive circuit bending</title>
+  <title>VRAMpage MD v2.3 experimental | Mega Drive circuit bending</title>
   <link rel="stylesheet" href="style.css">
   <script src="core/genplus.js" defer onerror="window.__coreMissing = true"></script>
   <script src="framebuffer.js" defer></script>
@@ -16,7 +16,7 @@
   <main class="shell">
     <header class="masthead">
       <div>
-        <div class="brand"><h1>VRAMpage <span>MD</span></h1><span class="version">v2.2 experimental</span></div>
+        <div class="brand"><h1>VRAMpage <span>MD</span></h1><span class="version">v2.3 experimental</span></div>
         <p class="subtitle">Mega Drive memory experiments. NTSC / Model 1.</p>
       </div>
       <div class="machine-status"><span class="led" id="powerLed"></span><span id="powerLabel">CORE NOT READY</span></div>
@@ -99,13 +99,17 @@
       <p class="logic-note">Experimental recovery preserves corrupted RAM and may immediately stop again. Both actions disconnect faults. CPU-only reset leaves other chips running. Use Clean restart for a full reboot.</p>
       <div class="logic-actions pulse-settings">
         <label for="logicPulseFrames">Pulse length</label>
-        <select id="logicPulseFrames" disabled aria-label="Pulse length in emulated frames">
-          <option value="1">1 frame (~17 ms)</option><option value="2">2 frames (~33 ms)</option>
+        <select id="logicPulseFrames" disabled aria-label="Pulse limit: emulated frames or affected writes">
+          <option value="writes:1" data-write-limit>1 affected write (≤1 frame)</option>
+          <option value="writes:2" data-write-limit>2 affected writes (≤1 frame)</option>
+          <option value="writes:4" data-write-limit>4 affected writes (≤1 frame)</option>
+          <option value="writes:8" data-write-limit>8 affected writes (≤1 frame)</option>
+          <option value="1" selected>1 frame (~17 ms)</option><option value="2">2 frames (~33 ms)</option>
           <option value="4">4 frames (~67 ms)</option><option value="8">8 frames (~134 ms)</option>
         </select>
         <button id="logicPulseBtn" type="button" disabled>Pulse selected fault → force resume</button>
       </div>
-      <p class="logic-note">Quick address pairs: <strong>write pulses</strong>, using the length above. Each button applies a pair, then disconnects and attempts resume. These bridge address lines, not particular RAM locations. One frame can affect many accesses; small or recoverable corruption is not guaranteed.</p>
+      <p class="logic-note">Quick address pairs: <strong>write pulses</strong>, using the limit above. Each button applies a pair, then disconnects and attempts resume. These bridge address lines, not particular RAM locations. Affected-write limits release inside the core and expire after one frame. Even one affected write can disrupt later execution; small or recoverable corruption is not guaranteed.</p>
       <div id="logicPulsePairs" class="logic-actions" role="group" aria-label="Quick address write pulses"></div>
       <p id="logicStatus" class="logic-status" role="status" aria-live="polite">Checking core support…</p>
       <div class="logic-metrics">
@@ -132,7 +136,7 @@
         <p class="small-note">Emulator: <a href="https://github.com/h1romas4/wasm-genplus" target="_blank" rel="noreferrer">wasm-genplus</a> / <a href="https://github.com/ekeeke/Genesis-Plus-GX" target="_blank" rel="noreferrer">Genesis Plus GX</a>. Redistributing a modified core requires its corresponding source and applicable licence notices.</p>
       </details>
     </section>
-    <footer><span>VRAMpage MD &nbsp;·&nbsp; v2.2 experimental (review candidate)</span><span>NTSC HARDWARE MODE &nbsp; / &nbsp; AUTOMATIC MISSING-LINE RECOVERY</span></footer>
+    <footer><span>VRAMpage MD &nbsp;·&nbsp; v2.3 experimental (review candidate)</span><span>NTSC HARDWARE MODE &nbsp; / &nbsp; AUTOMATIC MISSING-LINE RECOVERY</span></footer>
   </main>
 </body>
 </html>

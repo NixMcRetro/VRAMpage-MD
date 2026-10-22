@@ -73,6 +73,11 @@
     return !!core && LOGIC_API.every(name => typeof core[name] === 'function');
   }
 
+  function writePulseApiReady() {
+    return typeof emulator?._arm_logic_write_pulse === 'function' &&
+      typeof emulator?._get_logic_pulse_state === 'function';
+  }
+
   function updateLogicControls() {
     logicApiAvailable = logicApiReady();
     const canUse = started && logicApiAvailable;
@@ -83,6 +88,8 @@
       $(id).disabled = !canUse || typeof emulator._recover_logic_cpu !== 'function';
     for (const control of document.querySelectorAll('[data-ram-pulse], #logicPulseBtn, #logicPulseFrames'))
       control.disabled = !canUse || typeof emulator._recover_logic_cpu !== 'function';
+    for (const option of $('logicPulseFrames').querySelectorAll('[data-write-limit]'))
+      option.disabled = !writePulseApiReady();
     $('logicExperimentBtn').disabled = !started || !romBytes;
     if (!logicApiAvailable) logicStatusMessage = 'Rebuild core for logic faults';
     else if (!started && ['Checking core support…','Rebuild core for logic faults'].includes(logicStatusMessage))
@@ -156,7 +163,7 @@
 
   function logicLineName(kind,line) { return kind===1 ? `A${line+1}` : `D${line}`; }
 
-  function applyLogicFault() {
+  function applyLogicFault(writeLimit=null) {
     if (!started || !logicApiReady()) return false;
     const config=logicConfigFromControls();
     if (config.a===config.b) {
@@ -168,7 +175,13 @@
       return false;
     }
     if (actualPair()) disconnect();
-    const status=emulator._set_logic_fault(config.kind,config.access,config.a,config.b);
+    if (writeLimit!==null && (!writePulseApiReady() || config.access!==2)) {
+      setLogicStatus('Affected-write pulses require Access: Write and a rebuilt core.');
+      return false;
+    }
+    const status=writeLimit===null
+      ? emulator._set_logic_fault(config.kind,config.access,config.a,config.b)
+      : emulator._arm_logic_write_pulse(config.kind,config.a,config.b,writeLimit);
     if (status!==0) {
       setLogicStatus(`Core rejected this logic fault (status ${status}).`);
       stamp(`Logic fault rejected: core status ${status}`);
@@ -263,18 +276,23 @@
 
   function startFaultPulse(pair=null) {
     if (!started || typeof emulator?._recover_logic_cpu !== 'function') return;
-    const duration=Number($('logicPulseFrames').value);
-    if (![1,2,4,8].includes(duration)) return;
+    const selection=$('logicPulseFrames').value;
+    const writeLimited=selection.startsWith('writes:');
+    const amount=Number(writeLimited ? selection.slice(7) : selection);
+    if (![1,2,4,8].includes(amount)) return;
+    const duration=writeLimited ? 1 : amount;
     if (pair) {
       $('logicKind').value='1'; configureLogicLines();
       $('logicAccess').value='2'; // Quick pairs are explicitly labelled write pulses.
       $('logicLineA').value=String(pair[0]); $('logicLineB').value=String(pair[1]);
     }
-    if (!applyLogicFault()) return;
-    pendingPulse={...logicConfigFromControls(),requestedFrames:duration,
+    if (!applyLogicFault(writeLimited ? amount : null)) return;
+    pendingPulse={...logicConfigFromControls(),mode:writeLimited?'affected-writes':'frames',
+      ...(writeLimited ? {requestedWrites:amount} : {}),requestedFrames:duration,
       startFrame:Number(emulator._get_logic_frame()),status:'active'};
     faultPulses.push(pendingPulse);
-    setLogicStatus(`RAM pulse active for ${duration} emulated frame${duration===1?'':'s'}; then disconnect and force resume.${paused?' Paused: press Resume to advance.':''}`);
+    const length=writeLimited ? `up to ${amount} affected write${amount===1?'':'s'} (one-frame maximum)` : `${duration} emulated frame${duration===1?'':'s'}`;
+    setLogicStatus(`RAM pulse active for ${length}; then disconnect and force resume.${paused?' Paused: press Resume to advance.':''}`);
   }
 
   function finishFaultPulse() {
@@ -285,12 +303,21 @@
     pendingPulse=null; // Explicit completion must not be marked cancelled by recovery.
     pulse.endFrame=frame;
     pulse.status='completed';
+    pulse.releaseReason=pulse.mode==='affected-writes' && emulator._get_logic_pulse_state()===2
+      ? 'affected-write-limit' : 'frame-limit';
+    if (pulse.mode==='affected-writes') pulse.corePulseState=emulator._get_logic_pulse_state();
     pulse.readCount=Number(emulator._get_logic_reads());
     pulse.writeCount=Number(emulator._get_logic_writes());
     pulse.cpuFlagsAtEnd=Number(emulator._get_logic_cpu_flags());
     const interventionIndex=cpuInterventions.length;
     pulse.recoveryAccepted=recoverLogicCPU(1)===true;
-    if (pulse.recoveryAccepted) pulse.interventionIndex=interventionIndex;
+    if (pulse.recoveryAccepted) {
+      pulse.interventionIndex=interventionIndex;
+      if (pulse.mode==='affected-writes') {
+        const ending=pulse.releaseReason==='affected-write-limit' ? 'write limit reached' : 'one-frame cutoff reached';
+        setLogicStatus(`Pulse ended: ${pulse.writeCount} affected write${pulse.writeCount===1?'':'s'}; ${ending}. Fault disconnected; force resume attempted.`);
+      }
+    }
   }
 
   function setupPulseButtons() {
@@ -325,7 +352,7 @@
     const reads=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.readCount : coreReads;
     const writes=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.writeCount : coreWrites;
     const data={
-      modelVersion:'2.2-experimental',
+      modelVersion:'2.3-experimental',
       corePin:CORE_PIN,
       faultPulses:faultPulses.map(entry=>({...entry})),
       cpuInterventions:cpuInterventions.map(entry=>({...entry})),
@@ -741,7 +768,7 @@
       $(id).addEventListener('change',()=>setLogicStatus('Configuration changed; apply it to activate a fault.'));
     setupPulseButtons();
     $('logicPulseBtn').addEventListener('click',()=>startFaultPulse());
-    $('logicApplyBtn').addEventListener('click',applyLogicFault);
+    $('logicApplyBtn').addEventListener('click',()=>applyLogicFault());
     $('logicResumeBtn').addEventListener('click',()=>recoverLogicCPU(1));
     $('logicCpuResetBtn').addEventListener('click',()=>recoverLogicCPU(2));
     $('logicDisconnectBtn').addEventListener('click',()=>disconnectLogic());

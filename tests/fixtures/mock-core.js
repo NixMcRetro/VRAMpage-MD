@@ -7,13 +7,14 @@ window.Module = async () => {
   const logic = {
     active: false, config: {kind: 0, access: 0, a: 0, b: 0},
     reads: 0, writes: 0, frame: 0, activationFrame: 0, cpuFlags: 0,
-    setterCalls: [], storedWrites: 0, recoveries: [],
+    setterCalls: [], storedWrites: 0, recoveries: [], pulseState: 0, budget: 0, writesPerTick: 1,
   };
   window.mockCore = {starts: 0, ticks: 0, lastStartTick: 0, short: [-1, -1], inputs: [], logic};
 
   function setLogicFault(kind, access, a, b) {
     logic.setterCalls.push([kind, access, a, b]);
     if (kind === 0) {
+      if (logic.pulseState === 1) logic.pulseState = 4;
       logic.active = false;
       logic.config = {kind: 0, access: 0, a: 0, b: 0};
       logic.reads = 0;
@@ -26,6 +27,7 @@ window.Module = async () => {
         a >= lineLimit || b >= lineLimit || a === b)
       return 5;
     if (kind === 2 && Math.floor(a / 8) !== Math.floor(b / 8)) return 6;
+    logic.pulseState = 0; logic.budget = 0;
     logic.active = true;
     logic.config = {kind, access, a, b};
     logic.reads = 0;
@@ -43,6 +45,7 @@ window.Module = async () => {
     logic.activationFrame = 0;
     logic.cpuFlags = 0;
     logic.storedWrites = 0;
+    logic.pulseState = 0; logic.budget = 0;
   }
   // Native 640-pixel pitch, coloured even rows, missing odd rows.
   for (let y = 0; y < 224; y++) {
@@ -73,9 +76,14 @@ window.Module = async () => {
       if (!logic.active) return;
       if (logic.config.access === 1 || logic.config.access === 3) logic.reads++;
       if (logic.config.access === 2 || logic.config.access === 3) {
-        logic.writes++;
-        logic.storedWrites++;
+        for (let i=0; i<logic.writesPerTick && logic.active; i++) {
+          logic.writes++; logic.storedWrites++;
+          if (logic.pulseState === 1 && --logic.budget === 0) {
+            logic.active = false; logic.pulseState = 2;
+          }
+        }
       }
+      if (logic.pulseState === 1) {logic.active=false;logic.pulseState=3;}
     },
     _sound: () => 0,
     _wasm_input_update() {
@@ -96,6 +104,13 @@ window.Module = async () => {
         logic.active = false; logic.cpuFlags = 0;
         return 0;
       },
+      _arm_logic_write_pulse(kind,a,b,limit) {
+        if (!Number.isInteger(limit) || limit<1 || limit>1024) return 5;
+        const status=setLogicFault(kind,2,a,b);
+        if (status!==0) return status;
+        logic.pulseState=1;logic.budget=limit;return 0;
+      },
+      _get_logic_pulse_state:()=>logic.pulseState,
       _set_logic_fault: setLogicFault,
       _get_logic_reads: () => logic.reads,
       _get_logic_writes: () => logic.writes,
@@ -105,5 +120,8 @@ window.Module = async () => {
     });
   }
   if (window.__legacyRecoveryCore) delete core._recover_logic_cpu;
+  if (window.__legacyWritePulseCore) {
+    delete core._arm_logic_write_pulse;delete core._get_logic_pulse_state;
+  }
   return core;
 };

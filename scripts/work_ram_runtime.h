@@ -21,6 +21,15 @@ int set_logic_fault(int kind, int access, int line_a, int line_b);
 /* Explicit intervention: 1 clear STOP/HALT, 2 pulse only the 68000 reset.
  * Both disconnect RAM faults, retain counters/frame and preserve work RAM. */
 int recover_logic_cpu(int mode);
+/* Budgeted write contact: disconnect after limit changed bus writes, or at
+ * the end of the next emulated frame. Ordinary writes do not spend budget. */
+enum {
+    WORK_RAM_PULSE_NONE = 0, WORK_RAM_PULSE_ARMED = 1,
+    WORK_RAM_PULSE_EXHAUSTED = 2, WORK_RAM_PULSE_TIMEOUT = 3,
+    WORK_RAM_PULSE_CANCELLED = 4
+};
+int arm_logic_write_pulse(int kind, int line_a, int line_b, int limit);
+uint32_t get_logic_pulse_state(void);
 uint32_t get_logic_reads(void);
 uint32_t get_logic_writes(void);
 uint32_t get_logic_frame(void);

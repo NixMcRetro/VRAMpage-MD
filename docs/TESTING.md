@@ -300,3 +300,38 @@ browser cases remain the UI evidence, with CI regression runs on the new branch.
 Cartridge visuals used for diagnostic inspection remain private. This does not
 verify physical shorts, audible playback, native macOS behavior or continued
 internal demo-controller playback.
+
+## v2.3 affected-write limits (22 October 2026)
+
+Emscripten 4.0.23 rebuild passed. **18 actual-WASM original-cartridge checks**
+passed, including six added cases: both ordinary faulted longword halves,
+cutoff between halves, byte-lane/no-op identity, zero/partial-budget timeout,
+and clean restart. The first new longword cutoff assertion initially failed
+and exposed a missing first-half write hook; the patch was corrected rather
+than changing the expected memory mapping. Patcher idempotence fixtures now
+include that path explicitly. Standalone transaction properties are unchanged.
+
+Native runtime assertions cover budgets 1/2/4/8, limits 0/1024/1025, invalid
+configuration preservation, non-consuming reads/no-ops/other lanes, disconnect,
+timeout, cancellation and reset. Strict C and AddressSanitizer/UndefinedBehaviorSanitizer
+runs passed. `bash scripts/test.sh` passed 50 Python tests, both framebuffer
+suites, nine pulse-survey protocol test groups and both C smoke programs.
+
+Local Chromium passed **15 logic UI cases** plus all six display cases. Three
+new cases cover write budgets, timeout/read-mode rejection and fallback to frame
+pulses on older cores. The display suite retains nine sizes including 1366×768,
+mobile, resize/fullscreen/raw output and appearance cases. Screenshots remain
+outside Git; CI runs the same suites on Chromium/Firefox/WebKit.
+
+An actual-core Chromium **1366×768** smoke selected one affected write and a
+quick pair, observed exactly one affected write, disconnection and accepted
+force resume, then checked exported limit/reason/frame/intervention fields with
+no page errors. It did not establish recovered gameplay.
+
+Two corrected-core 30-trial surveys exercised ordinary one-frame contacts and
+one-write contacts across all 14 pairs, repeating each pair and baseline. Every
+pair repeated identically; both sampled no-fault RAM/picture/stereo-audio records
+matched the historical v2.2 baseline. The ordinary faulted results change with
+the longword correction. See [Affected-write pulses](ACCESS-LIMITED-PULSES.md)
+for records and exact commands. Continued demo-controller playback, physical
+behavior, audible playback and native macOS acceptance remain unverified.

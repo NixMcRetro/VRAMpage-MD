@@ -1,5 +1,16 @@
 # Changelog
 
+## v2.3 — affected-write pulse limits, 22 October 2026
+
+- Add core-enforced 1/2/4/8 affected-write limits with a one-frame cutoff and
+  release-reason exports. Preserve existing frame controls on older cores.
+- Fix the missing RAM-fault hook on the first half of a 32-bit write, exposed
+  by the new actual-WASM cutoff regression. Ordinary faulted longwords change.
+- Record corrected-core frame/write surveys and activation-specific outcomes;
+  one affected write does not guarantee small or recoverable corruption.
+- See [Affected-write pulses](docs/ACCESS-LIMITED-PULSES.md) for semantics,
+  test evidence and the historical-survey caveat.
+
 ## v2.2 — experimental RAM pulses, 22 October 2026
 
 - Add a deterministic 14-pair pulse survey, independent protocol tests and

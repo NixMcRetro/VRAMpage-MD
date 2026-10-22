@@ -41,6 +41,8 @@ class WorkRamIntegration(unittest.TestCase):
   else WRITE_BYTE(temp->base, (address) & 0xffff, value);
   if (temp->write16) (*temp->write16)(ADDRESS_68K(address),value);
   else *(uint16 *)(temp->base + ((address) & 0xffff)) = value;
+  if (temp->write16) (*temp->write16)(ADDRESS_68K(address),value>>16);
+  else *(uint16 *)(temp->base + ((address) & 0xffff)) = value >> 16;
   if (temp->write16) (*temp->write16)(ADDRESS_68K(address+2),value&0xffff);
   else *(uint16 *)(temp->base + ((address + 2) & 0xffff)) = value;
 '''
@@ -51,6 +53,7 @@ class WorkRamIntegration(unittest.TestCase):
             "work_ram_logic_read16(address)",
             "work_ram_logic_write8(address, (uint8_t)value)",
             "work_ram_logic_write16(address + 2, (uint16)value)",
+            "work_ram_logic_write16(address, (uint16)(value >> 16))",
             "m68k_read_immediate_16(address)",
             "m68k_read_pcrelative_8(address)",
         ):

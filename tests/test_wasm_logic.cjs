@@ -148,5 +148,47 @@ async function create(words, config, init) {
   assert.equal(c._get_logic_cpu_flags(),0);
   // This only proves release of HALT, not successful game recovery.
   assert.equal(c._recover_logic_cpu(2),0);tests++;
+  // Regression: both longword halves must traverse the ordinary write-fault hook.
+  c=await create([...longWrite(0xff0004,0x11223344),...stop],[1,2,1,2]);
+  assert.equal(getWord(c,0),0x1122);assert.equal(getWord(c,2),0x3344);
+  assert.equal(getWord(c,4),0);assert.equal(getWord(c,6),0);
+  assert.equal(c._get_logic_writes(),2);tests++;
+  // The first longword half consumes the budget; the second must use normal RAM.
+  c=await create([...longWrite(0xff0004,0x11223344),...wordWrite(0xff0008,0x5566),...stop],null,c=>{
+    assert.equal(c._arm_logic_write_pulse(1,1,2,1),0);
+  });
+  assert.equal(getWord(c,0),0x1122);assert.equal(getWord(c,2),0);
+  assert.equal(getWord(c,4),0);assert.equal(getWord(c,6),0x3344);
+  assert.equal(getWord(c,8),0x5566);assert.equal(c._get_logic_writes(),1);
+  assert.equal(c._get_logic_pulse_state(),2);tests++;
+
+  // Unaffected lanes/values do not consume a data budget; subsequent writes stay normal.
+  c=await create([
+    ...byteWrite(0xff1000,1),...byteWrite(0xff1001,3),
+    ...byteWrite(0xff1003,1),...byteWrite(0xff1005,2),...stop
+  ],null,c=>assert.equal(c._arm_logic_write_pulse(2,0,1,1),0));
+  assert.equal(getWord(c,0x1000),0x0103);assert.equal(getByte(c,0x1003),0);
+  assert.equal(getByte(c,0x1005),2);assert.equal(c._get_logic_writes(),1);
+  assert.equal(c._get_logic_reads(),0);assert.equal(c._get_logic_pulse_state(),2);tests++;
+
+  // No selected access means a zero-effect timeout, not an indefinitely armed fault.
+  c=await create(stop,null,c=>assert.equal(c._arm_logic_write_pulse(1,0,1,1),0));
+  assert.equal(c._get_logic_writes(),0);assert.equal(c._get_logic_pulse_state(),3);
+  assert.equal(c._get_logic_cpu_flags(),1);tests++;
+
+  // A partially used budget expires as a frame limit and preserves its write count.
+  c=await create([...wordWrite(0xff0004,0x1234),...stop],null,c=>{
+    assert.equal(c._arm_logic_write_pulse(1,0,1,4),0);
+    assert.equal(c._arm_logic_write_pulse(1,0,1,0),5);
+    assert.equal(c._get_logic_pulse_state(),1);
+  });
+  assert.equal(getWord(c,0),0x1234);assert.equal(c._get_logic_writes(),1);
+  assert.equal(c._get_logic_pulse_state(),3);
+  assert.equal(c._recover_logic_cpu(1),0);assert.equal(c._get_logic_pulse_state(),3);tests++;
+
+  assert.equal(c._arm_logic_write_pulse(1,0,1,1),0);
+  c._start();assert.equal(c._get_logic_pulse_state(),0);
+  c._tick();c._sound();assert.equal(getWord(c,4),0x1234);
+  assert.equal(c._get_logic_writes(),0);tests++;
   console.log(`Actual WASM logic integration: ${tests} original 68000 cartridge checks passed.`);
 })().catch(error=>{console.error(error);process.exitCode=1;});

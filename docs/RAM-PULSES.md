@@ -1,4 +1,4 @@
-# Short RAM fault pulses (v2.2 experimental)
+# Short RAM fault pulses
 
 **Pulse selected fault → force resume** applies the current RAM pair/direction
 for 1, 2, 4 or 8 emulated frames, then disconnects the fault and attempts forced
@@ -16,6 +16,13 @@ modify source RAM directly, but erroneous reads can cause the CPU to write bad
 state. The ordinary selectors still permit read/write/both and same-lane data
 pairs for the main pulse button.
 
+## Affected-write limits (v2.3)
+
+Pulse length also offers 1/2/4/8 affected writes, each with a one-frame maximum.
+These options require a rebuilt core and Access: Write; they use the same quick
+pairs. See [Affected-write pulses](ACCESS-LIMITED-PULSES.md) for cutoff semantics,
+export reasons and the longword-hook correction. The frame options below remain.
+
 ## Timing, interruption and recording
 
 The frontend checks completion immediately after each emulator tick, before the
@@ -32,7 +39,7 @@ Clean restart clears pulse/intervention history and cannot trigger stale recover
 A stopped CPU does not stop the emulator's frame counter, so the scheduled
 contact still ends. Recovery leaves the app's pause state unchanged.
 
-Experiment exports use `2.2-experimental` and include `faultPulses`, ordered
+Current experiment exports use `2.3-experimental` and include `faultPulses`, ordered
 records of kind/access/zero-based line indices, requested frame count, start/end
 frame, active/completed/cancelled status and cancellation reason. For address
 pairs, indices 0–14 correspond to A1–A15. A completed pulse also records affected reads/writes and the CPU flags at the
@@ -57,8 +64,12 @@ See [CPU recovery](CPU-RECOVERY.md) for the intervention's limitations.
 
 ## Measured candidates
 
-A repeated actual-core [one-frame survey](PULSE-EXPERIMENTS.md) at tick 1800
+**Historical v2.2 evidence:** a repeated actual-core [one-frame survey](PULSE-EXPERIMENTS.md) at tick 1800
 found A14/A15 left 28 RAM bytes different at the contact boundary with later
 sampled output matching baseline. A10/A11 produced different, changing output.
 These are activation-specific observations, not safe presets or proof that demo
 input continues. Most other pairs gave static output despite clear CPU flags.
+
+The v2.3 longword correction changes ordinary faulted writes. Use the
+[corrected-core comparisons](ACCESS-LIMITED-PULSES.md#actual-cartridge-comparison)
+for current observations rather than treating the earlier survey as universal.

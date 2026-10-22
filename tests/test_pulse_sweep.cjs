@@ -3,9 +3,9 @@ const assert = require('node:assert/strict');
 const {differenceCount, runTrial, sweep} = require('../scripts/sweep-ram-pulses.cjs');
 const settings = {activationFrame:2, pulseFrames:2, observeFrames:4, sampleEvery:2};
 const rom = new Uint8Array([1,2,3,4]); // Original protocol fixture, not an executable cartridge.
-function fixture({reject=false, seed=0, staticPicture=false} = {}) {
+function fixture({reject=false, seed=0, staticPicture=false, noWrites=false} = {}) {
   const heap = new Uint8Array(2_000_000), events = [];
-  let frame=0, active=false, writes=0, flags=0;
+  let frame=0, active=false, writes=0, flags=0, budget=0, pulseState=0;
   const ram=1_300_000;
   const core = {
     HEAPU8:heap, events,
@@ -21,11 +21,21 @@ function fixture({reject=false, seed=0, staticPicture=false} = {}) {
       if(reject) return 5;
       active=true;writes=0;return 0;
     },
+    _arm_logic_write_pulse(kind,a,b,limit) {
+      const status=core._set_logic_fault(kind,2,a,b);
+      if(status!==0) return status;
+      budget=limit;pulseState=1;return 0;
+    },
+    _get_logic_pulse_state:()=>pulseState,
     _tick() {
       frame++;heap[ram]=frame;
       if(!staticPicture) heap[0]=frame;
       events.push(['tick',frame,active]);
-      if(active) {heap[ram+1]=77;writes++;flags=2;}
+      if(active && !noWrites) {
+        heap[ram+1]=77;writes++;flags=2;
+        if(pulseState===1 && --budget===0) {active=false;pulseState=2;}
+      }
+      if(pulseState===1) {active=false;pulseState=3;}
     },
     _sound() {events.push(['sound',frame]);return 0;},
     _recover_logic_cpu(mode) {events.push(['recover',frame,mode]);active=false;flags=0;return 0;}
@@ -82,5 +92,19 @@ function fixture({reject=false, seed=0, staticPicture=false} = {}) {
   await assert.rejects(runTrial(async()=>badFrame,rom,null,settings),/framebuffer range/);
   const badAudio=fixture();badAudio._sound=()=>-1;
   await assert.rejects(runTrial(async()=>badAudio,rom,null,settings),/audio sample count/);tests++;
+  const bounded={...settings,pulseFrames:1,affectedWrites:1};
+  const boundedSweep=await sweep(async()=>fixture(),rom,bounded,[[0,1]]);
+  assert.equal(boundedSweep.results[0].comparison.frameEndRAMBytesDifferentFromBaseline,1);
+  assert.equal(boundedSweep.results[0].comparison.contactEndRAMBytesDifferentFromBaseline,undefined);
+  const limited=await runTrial(async()=>fixture(),rom,[0,1],bounded);
+  assert.equal(limited.record.recovery.writePulseState,2);
+  assert.equal(limited.record.recovery.releaseReason,'affected-write-limit');
+  assert.equal(limited.record.samples.at(-1).writes,1);
+  const noWrite=await runTrial(async()=>fixture({noWrites:true}),rom,[0,1],bounded);
+  assert.equal(noWrite.record.recovery.writePulseState,3);
+  assert.equal(noWrite.record.recovery.releaseReason,'frame-limit');
+  assert.equal(noWrite.record.samples.at(-1).writes,0);
+  await assert.rejects(runTrial(async()=>fixture(),rom,[0,1],{...bounded,affectedWrites:0}),/Affected-write limits/);
+  await assert.rejects(runTrial(async()=>fixture(),rom,[0,1],{...bounded,pulseFrames:2}),/one-frame/);tests++;
   console.log(`Pulse sweep protocol: ${tests} test groups passed.`);
 })().catch(error=>{console.error(error);process.exitCode=1;});

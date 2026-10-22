@@ -17,6 +17,9 @@ function validateSettings(settings) {
   for (const name of ['activationFrame','pulseFrames','observeFrames','sampleEvery'])
     if (!Number.isSafeInteger(settings[name]) || settings[name] < 1)
       throw Error(`${name} must be a positive safe integer`);
+  if (settings.affectedWrites !== undefined &&
+      (!Number.isSafeInteger(settings.affectedWrites) || settings.affectedWrites<1 || settings.affectedWrites>1024 || settings.pulseFrames!==1))
+    throw Error('Affected-write limits must be 1..1024 with a one-frame maximum');
   if (!Number.isSafeInteger(settings.activationFrame + settings.pulseFrames + settings.observeFrames))
     throw Error('Frame range is too large');
 }
@@ -32,6 +35,9 @@ async function runTrial(factory, rom, pair, settings) {
     '_set_logic_fault','_recover_logic_cpu','_get_logic_cpu_flags',
     '_get_logic_frame','_get_logic_reads','_get_logic_writes'])
     if (typeof core[name] !== 'function') throw Error(`Core missing ${name}; rebuild it`);
+  if (settings.affectedWrites !== undefined)
+    for (const name of ['_arm_logic_write_pulse','_get_logic_pulse_state'])
+      if (typeof core[name] !== 'function') throw Error(`Core missing ${name}; rebuild it`);
   core._init();
   const romPointer = core._get_rom_buffer_ref(rom.length);
   if (!romPointer) throw Error('Core refused cartridge buffer');
@@ -51,7 +57,9 @@ async function runTrial(factory, rom, pair, settings) {
   let contactEndRAM, recovery = null;
   for (let frame = 1; frame <= finalFrame; frame++) {
     if (pair && frame === settings.activationFrame + 1) {
-      const status = core._set_logic_fault(1, 2, pair[0], pair[1]);
+      const status = settings.affectedWrites===undefined
+        ? core._set_logic_fault(1, 2, pair[0], pair[1])
+        : core._arm_logic_write_pulse(1,pair[0],pair[1],settings.affectedWrites);
       if (status !== 0) throw Error(`Fault rejected: ${status}`);
     }
     new Float32Array(core.HEAPU8.buffer, core._get_input_buffer_ref(), 32).fill(0);
@@ -85,9 +93,11 @@ async function runTrial(factory, rom, pair, settings) {
       contactEndRAM = bytes;
       if (pair) {
         const flagsBefore = core._get_logic_cpu_flags();
+        const pulseState=settings.affectedWrites===undefined ? null : core._get_logic_pulse_state();
         const status = core._recover_logic_cpu(1);
         if (status !== 0) throw Error(`Recovery rejected: ${status}`);
-        recovery = {frame, action:'force-resume', status, flagsBefore,
+        recovery = {...(pulseState===null ? {} : {writePulseState:pulseState,
+          releaseReason:pulseState===2 ? 'affected-write-limit' : 'frame-limit'}),frame, action:'force-resume', status, flagsBefore,
           flagsAfter:core._get_logic_cpu_flags(), ramBytesChanged:differenceCount(bytes, ram())};
       }
     }
@@ -102,7 +112,9 @@ function compareTrial(trial, baseline) {
   let pictureChanges = 0;
   for (let i = 1; i < after.length; i++)
     if (after[i].pictureSHA256 !== after[i-1].pictureSHA256) pictureChanges++;
-  return {contactEndRAMBytesDifferentFromBaseline:differenceCount(trial.contactEndRAM, baseline.contactEndRAM),
+  const ramMetric=record.recovery?.writePulseState===undefined
+    ? 'contactEndRAMBytesDifferentFromBaseline' : 'frameEndRAMBytesDifferentFromBaseline';
+  return {[ramMetric]:differenceCount(trial.contactEndRAM, baseline.contactEndRAM),
     finalRAMMatchesBaseline:last.ramSHA256 === baselineLast.ramSHA256,
     finalPictureMatchesBaseline:last.pictureSHA256 === baselineLast.pictureSHA256,
     pictureChangesBetweenPostContactSamples:pictureChanges,
@@ -129,17 +141,17 @@ async function sweep(factory, rom, settings, pairs, progress = () => {}) {
     const repeat = await attempt(pair);
     results.push({...trial.record, ...repeatRecord(trial.record, repeat.record), comparison:trial.record.error ? null : compareTrial(trial, baseline)});
   }
-  return {protocolVersion:1, modelVersion:'2.2-experimental', corePin:PIN,
+  return {protocolVersion:settings.affectedWrites===undefined?1:2, modelVersion:'2.3-experimental', corePin:PIN,
     romSHA256:digest(rom), externalInput:'all zero', settings,
     baseline:{...baseline.record, ...repeatRecord(baseline.record, baselineRepeat.record)}, results};
 }
 
 async function main(argv) {
   const [romFile, ...options] = argv;
-  if (!romFile) throw Error('Usage: node scripts/sweep-ram-pulses.cjs /private/cartridge.md [--core core.js] [--activation N] [--pulse N] [--observe N]');
+  if (!romFile) throw Error('Usage: node scripts/sweep-ram-pulses.cjs /private/cartridge.md [--core core.js] [--activation N] [--pulse N] [--observe N] [--writes N]');
   const settings = {activationFrame:1800, pulseFrames:1, observeFrames:600, sampleEvery:60};
   let coreFile = path.resolve('site/core/genplus.js');
-  const keys = {'--activation':'activationFrame','--pulse':'pulseFrames','--observe':'observeFrames'};
+  const keys = {'--activation':'activationFrame','--pulse':'pulseFrames','--observe':'observeFrames','--writes':'affectedWrites'};
   for (let i = 0; i < options.length; i += 2) {
     const name = options[i], value = options[i+1];
     if (!value) throw Error(`Missing value for ${name}`);
