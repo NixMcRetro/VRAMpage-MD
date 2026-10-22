@@ -20,13 +20,14 @@ const APP_PROFILE = Object.freeze({
 
 // s1disasm AS @ 15dfa3a6ee4c53aeb482233e493755c84b4f3479.
 // v_gamemode and pad states are bytes; v_btnpushtime2 is operated on as a
-// byte at the low lane of its allocated word; v_btnpushtime1 is a word.
+// byte at the word's logical base ($F792); LSB_FIRST stores it physically at
+// RAM+$F793 through the byte-lane XOR. v_btnpushtime1 is a word.
 const SONIC1_LAYOUT = Object.freeze({
   gameMode: 0xf600,
   heldPad: 0xf604,
   pressedPad: 0xf605,
   demoCursor: 0xf790,
-  demoCountdown: 0xf793,
+  demoCountdown: 0xf792,
   demoFlag: 0xfff0,
   demoLevelNumber: 0xfff2
 });
@@ -170,9 +171,9 @@ function requireCoreAPI(core, scenario) {
   const names = ['_init', '_start', '_tick', '_sound', '_wasm_input_update',
     '_get_rom_buffer_ref', '_get_input_buffer_ref', '_get_frame_buffer_ref',
     '_get_logic_ram_ref', '_get_logic_frame', '_get_logic_reads', '_get_logic_writes',
-    '_get_logic_cpu_flags', '_get_logic_activation_frame'];
+    '_get_logic_cpu_flags', '_get_logic_activation_frame', '_get_logic_pulse_state'];
   if (scenario !== 'baseline') names.push('_set_logic_fault');
-  if (scenario === 'A10A11-one-write') names.push('_arm_logic_write_pulse', '_get_logic_pulse_state');
+  if (scenario === 'A10A11-one-write') names.push('_arm_logic_write_pulse');
   for (const name of names) if (typeof core[name] !== 'function') fail(`Core API missing ${name}.`);
   if (!(core.HEAPU8 instanceof Uint8Array)) fail('Core API missing HEAPU8.');
 }
@@ -235,9 +236,8 @@ async function runTrial(coreFactory, rom, scenario) {
       if (fields.heldPad !== previous.heldPad) heldPadValueChanges++;
     }
     previous = fields;
-    let corePulseState = null;
+    const corePulseState = core._get_logic_pulse_state();
     if (scenario === 'A10A11-one-write') {
-      corePulseState = core._get_logic_pulse_state();
       pulseStateAtEnd = corePulseState;
       if (pulseReleaseTick === null && (corePulseState === 2 || corePulseState === 3)) {
         pulseReleaseTick = tick;

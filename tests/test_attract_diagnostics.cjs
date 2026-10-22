@@ -130,10 +130,20 @@ function fakeCore({events, pulseWrite=true}={}) {
 
   const stateHeap = new Uint8Array(0x10000 + 32);
   const stateBase = 8;
-  putFields(stateHeap, stateBase, {
-    gameMode: 8, heldPad: 0x08, pressedPad: 0x10,
-    demoCursor: 0x1234, demoCountdown: 0x56, demoFlag: 1, demoLevelNumber: 2
-  });
+  // Contract fixture uses literal logical addresses, independently of layout constants.
+  // Distinct adjacent bytes catch accidental word reads and wrong byte offsets.
+  stateHeap[stateBase + (0xf600 ^ 1)] = 0x08;
+  stateHeap[stateBase + (0xf601 ^ 1)] = 0x99;
+  stateHeap[stateBase + (0xf604 ^ 1)] = 0x08;
+  stateHeap[stateBase + (0xf605 ^ 1)] = 0x10;
+  stateHeap[stateBase + (0xf790 ^ 1)] = 0x12;
+  stateHeap[stateBase + (0xf791 ^ 1)] = 0x34;
+  stateHeap[stateBase + (0xf792 ^ 1)] = 0x56;
+  stateHeap[stateBase + (0xf793 ^ 1)] = 0xaa;
+  stateHeap[stateBase + (0xfff0 ^ 1)] = 0x00;
+  stateHeap[stateBase + (0xfff1 ^ 1)] = 0x01;
+  stateHeap[stateBase + (0xfff2 ^ 1)] = 0x00;
+  stateHeap[stateBase + (0xfff3 ^ 1)] = 0x02;
   const before = Buffer.from(stateHeap.subarray(stateBase, stateBase + 0x10000));
   assert.deepEqual(readAttractFields(stateHeap, stateBase), {
     gameMode: 8, demoFlag: 1, demoLevelNumber: 2, demoCursor: 0x1234,
@@ -226,6 +236,12 @@ function fakeCore({events, pulseWrite=true}={}) {
   assert.equal(pulse.samples.find(s => s.tick === 1801).corePulseState, 2);
   assert.equal('recover' in pulse, false, 'observer never resumes or resets the CPU');
   assert.equal(prefaultMatches(baseline, ordinary), true);
+  assert.equal(prefaultMatches(baseline, pulse), true,
+    'baseline and pulse share the observed pre-fault pulse state');
+  const changedPrefault = structuredClone(pulse);
+  changedPrefault.samples.find(s => s.tick === 1800).demoCountdown ^= 1;
+  assert.equal(prefaultMatches(baseline, changedPrefault), false,
+    'a changed pre-fault sample must break the comparison');
   assert.equal(sameTrials(baseline, await runTrial(async () => fakeCore(), Buffer.from([1]), 'baseline')), true);
   const noWritePulse = await runTrial(async () => fakeCore({pulseWrite:false}), Buffer.from([1]), 'A10A11-one-write');
   assert.equal(noWritePulse.pulse.finalCoreState, 3);
