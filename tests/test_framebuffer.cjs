@@ -55,4 +55,19 @@ function field(parity, chosenPixels = WIDTH) {
   assert.equal(result.repairedRows,0); // no overwrite of genuine nonzero pixels
   assert.equal(out[stride+9*4],64);
 }
-console.log('Framebuffer recovery: six tests passed.');
+{
+  // Alternating rows with a mid-screen field polarity change. A simple
+  // global even/odd heuristic misses this, but isolated gaps still recover.
+  const src = new Uint8Array(PITCH*480), out = dest();
+  for (let y=0;y<HEIGHT;y++) {
+    const parity = y < 112 ? 0 : 1;
+    if ((y&1) !== parity) continue;
+    for(let x=0;x<WIDTH;x++){
+      const i=y*PITCH+x*4;
+      src[i]=40;src[i+1]=180;src[i+2]=45;src[i+3]=255;
+    }
+  }
+  const result=copyActiveFrame(src,out);
+  assert.ok(result.repairedRows>=100);
+}
+console.log('Framebuffer recovery: seven tests passed.');

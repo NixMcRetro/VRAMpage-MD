@@ -9,12 +9,12 @@ Genesis Plus GX has interlaced video modes, including mode 2's two 224-line fiel
 ## v0.1.3 fallback
 
 - Each frame, sample native RGB pixels in all 224 source rows.
-- If at least 88 rows in one parity contain colour and at most 8 in the other parity contain colour, regard the sparse parity as potentially missing.
-- Before filling an individual row, confirm **every RGB pixel in that row is black**, so the adapter does not overwrite existing coloured pixels.
+- If at least 70 rows contain colour **and** at least 70 near-black rows are isolated between active rows, treat this as systematic output-line blanking. This also handles field phase changes.
+- Before filling an individual row, confirm **every RGB channel in that row is near-black (16/255 or below)**, so the adapter does not overwrite existing coloured pixels.
 - Duplicate the nearest active adjacent row into that display row. This is an intentionally simple *line-doubling approximation*, not full temporal deinterlacing.
 - The checkbox **Raw emulator output** disables recovery immediately. Raw mode is useful for diagnosing hardware faults and checking what the emulator really produced.
 - The adaptation is in `site/framebuffer.js`, not in emulated memory or the VDP patch. Genuine VRAM read/write effects are untouched; clean progressive frames are copied exactly.
-- The status below the display reports how many missing output rows were repaired. The adapter does nothing for ordinary dark scenes or normal progressive frames.
+- The status below the display reports how many missing output rows were repaired. The adapter does nothing for ordinary dark scenes or normal progressive frames. The near-black threshold is a pragmatic compatibility heuristic, not an emulator-level diagnosis.
 
 An intentional hardware glitch that blanks alternate native output rows may also trigger recovery. In that situation, switch on **Raw emulator output** to see the glitch unmodified. More faithful VDP and interlace integration is an independent issue to investigate before calling this hardware-accurate.
 
