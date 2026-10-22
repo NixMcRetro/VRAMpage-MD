@@ -52,7 +52,7 @@ class BrowserLogicTests(unittest.TestCase):
             context.close()
         self.assertEqual(self.errors, [], "Uncaught application errors")
 
-    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False):
+    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False):
         context = self.browser.new_context(
             viewport={"width": 1366, "height": 768},
             color_scheme="light",
@@ -74,6 +74,35 @@ class BrowserLogicTests(unittest.TestCase):
         page.route("**/core/genplus.js", lambda route: route.fulfill(
             path=str(ROOT / "tests/fixtures/mock-core.js"),
             content_type="application/javascript"))
+        if stalled_build_info:
+            # This fetch deliberately ignores abort, proving the export race is bounded.
+            page.add_init_script("""(() => {
+                const nativeFetch=window.fetch;
+                const nativeTimeout=window.setTimeout;
+                window.setTimeout=(callback,delay,...args)=>{
+                    if(delay===1500) {
+                        window.__finishBuildInfoTimeout=callback;
+                        return nativeTimeout(()=>{},60000);
+                    }
+                    return nativeTimeout(callback,delay,...args);
+                };
+                window.__buildInfoRequests=0;
+                window.fetch=(url,options)=>{
+                    if(String(url)==='./build-info.json') {
+                        window.__buildInfoRequests++;
+                        window.__buildInfoOptions={credentials:options.credentials,cache:options.cache};
+                        options.signal.addEventListener('abort',()=>{window.__buildInfoAborted=true;});
+                        return new Promise(()=>{});
+                    }
+                    return nativeFetch(url,options);
+                };
+            })();""")
+        else:
+            page.route('**/build-info.json', lambda route: route.fulfill(
+                status=404 if build_info is None else 200,
+                content_type='application/json',
+                body='Not found' if build_info is None else
+                    json.dumps(build_info) if isinstance(build_info, (dict,list)) else build_info))
         page.goto(f"http://127.0.0.1:{self.server.server_port}/")
         expect(page.locator("#powerLabel")).to_have_text("WAITING FOR ROM")
         if legacy_core:
@@ -623,6 +652,63 @@ class BrowserLogicTests(unittest.TestCase):
             self.page.locator("#logicExperimentBtn").click()
         self.assertEqual(json.loads(Path(info.value.path()).read_text())["cpuInterventions"], [])
 
+    def assert_build_export(self, expected):
+        rom=self.load_rom()
+        self.page.locator('#logicApplyBtn').click()
+        payload=self.export_payload()
+        self.assertEqual(payload['schemaVersion'],1)
+        self.assertEqual(payload['build'],expected)
+        self.assertEqual(payload['modelVersion'],'0.2.6-experimental')
+        self.assertEqual(payload['rom']['sha256'],hashlib.sha256(rom).hexdigest())
+        self.assertEqual(payload['logicFault']['kind'],'address')
+        self.assertTrue(payload['faultActive'])
+        self.assertNotIn('romBytes',payload)
+        return payload
+
+    @staticmethod
+    def valid_build_info():
+        return {'application':'VRAMpage MD','application_version':'0.2.6',
+                'source_commit':'a'*40,'package_format':1}
+
+    def test_export_provenance_valid_and_filters_unknown_fields(self):
+        info=self.valid_build_info()
+        info.update({'token':'must-not-be-exported','private':{'secret':'ignore'}})
+        self.page=self.new_page(build_info=info)
+        payload=self.assert_build_export({'status':'available','applicationVersion':'0.2.6','sourceCommit':'a'*40})
+        self.assertNotIn('must-not-be-exported',json.dumps(payload))
+        self.assertNotIn('private',payload['build'])
+        self.page.locator('#resetBtn').click()
+        self.assertEqual(self.export_payload()['build']['sourceCommit'],'a'*40)
+
+    def test_export_provenance_missing(self):
+        self.assert_build_export({'status':'unavailable','applicationVersion':'0.2.6','sourceCommit':None})
+
+    def test_export_provenance_malformed(self):
+        for malformed in ('{broken', 'null', [], self.valid_build_info() | {'source_commit':'A'*40},
+                          self.valid_build_info() | {'source_commit':'a'*39},
+                          self.valid_build_info() | {'package_format':'1'}):
+            with self.subTest(metadata=malformed):
+                self.page=self.new_page(build_info=malformed)
+                self.assert_build_export({'status':'unavailable','applicationVersion':'0.2.6','sourceCommit':None})
+
+    def test_export_provenance_mismatched_application_or_version(self):
+        for mismatch in ({'application':'Other app'},{'application_version':'0.2.5'},
+                         {'package_format':2}):
+            with self.subTest(metadata=mismatch):
+                self.page=self.new_page(build_info=self.valid_build_info() | mismatch)
+                self.assert_build_export({'status':'unavailable','applicationVersion':'0.2.6','sourceCommit':None})
+
+    def test_export_provenance_timeout_never_blocks_play_or_export(self):
+        self.page=self.new_page(stalled_build_info=True)
+        self.assert_build_export({'status':'unavailable','applicationVersion':'0.2.6','sourceCommit':None})
+        self.assertEqual(self.page.evaluate('window.__buildInfoRequests'),1)
+        self.assertEqual(self.page.evaluate('window.__buildInfoOptions'),{'credentials':'omit','cache':'no-store'})
+        self.assertGreater(self.page.evaluate('mockCore.ticks'),0)
+        self.assertFalse(self.page.evaluate('!!window.__buildInfoAborted'), 'Export must finish while metadata is still pending')
+        self.page.evaluate('window.__finishBuildInfoTimeout()')
+        self.assertTrue(self.page.evaluate('window.__buildInfoAborted'))
+        self.assertEqual(self.export_payload()['build']['status'],'unavailable')
+
     def test_experiment_export_contains_hash_and_metadata_not_rom_bytes(self):
         rom = self.load_rom()
         self.page.locator("#logicApplyBtn").click()
@@ -632,7 +718,7 @@ class BrowserLogicTests(unittest.TestCase):
             self.page.locator("#logicExperimentBtn").click()
         download = download_info.value
         payload = json.loads(Path(download.path()).read_text())
-        self.assertEqual(payload["modelVersion"], "0.2.5-experimental")
+        self.assertEqual(payload["modelVersion"], "0.2.6-experimental")
         self.assertEqual(payload["rom"]["name"], "synthetic-test.bin")
         self.assertEqual(payload["rom"]["sha256"], hashlib.sha256(rom).hexdigest())
         self.assertNotIn("bytes", payload["rom"])
