@@ -27,6 +27,12 @@ artifact is not evidence for a different commit. Keep a SHA-256 checksum beside
 the downloadable ZIP. GitHub Actions artifacts remain useful for CI/review, but
 release assets provide a persistent direct download without nested archives.
 
+To publish without a local upload, run **Publish complete v2.4.0 local download**
+in GitHub Actions on `main` after its checks pass. It rebuilds and tests the core,
+verifies BUILD-INFO against the run commit, attaches the ZIP/checksum and publishes
+the release using the repository-scoped Actions token. It never accesses
+McRetro.net. This explicit workflow is the supported cloud release path.
+
 The consolidation integrates PRs #4–#14 without cherry-picking or replacing
 features. Close redundant draft PRs only after checking their tips are ancestors
 of main and link the integration merge. Retain branches and original attribution.
