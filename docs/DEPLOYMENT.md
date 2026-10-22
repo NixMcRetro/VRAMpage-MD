@@ -3,7 +3,7 @@
 ## Complete local application release
 
 The normal user download is the single versioned ZIP attached to the
-[VRAMpage-MD v0.2.6 release](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.6),
+[VRAMpage-MD v0.2.7 release](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.7),
 not GitHub's source archive. It includes START.command, the site, compiled
 JS/WASM, complete modified core source, licence notices and launch instructions.
 It requires Python 3 on the user's Mac but no build tools or Git authentication.
@@ -107,9 +107,7 @@ local launcher. This uses the tested Emscripten 4.0.23 toolchain and does not
 deploy or modify McRetro.net. See [Run locally](RUNNING-LOCALLY.md) for download
 and launch steps. GitHub Actions retains this review artifact for 30 days.
 
-Development source v0.2.7 adds an optional metadata-only RAM write trace. The
-current verified download above remains v0.2.6 until the v0.2.7 package passes
-release verification. See [trace documentation](RAM-WRITE-TRACE.md).
+v0.2.7 includes an optional, default-disabled metadata-only RAM write trace for developer experiments. See [trace documentation](RAM-WRITE-TRACE.md).
 
 ## Editing existing GitHub release descriptions
 

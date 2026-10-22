@@ -1,11 +1,12 @@
 # VRAMpage MD roadmap
 
-## Current delivery: v0.2.6 experiment build identification
+## Current delivery: v0.2.7 optional RAM write diagnostics
 
 The source import, display fixes and work-RAM development through v0.2.4 are
 consolidated into one runnable application. v0.2.5 adds independent VRAM leg
 switches while retaining that foundation. v0.2.6 adds source-commit identification
-to experiment exports without changing the fault models. The complete versioned Mac ZIP
+to experiment exports without changing the fault models. v0.2.7 adds an optional,
+default-disabled first-affected-write diagnostic. The complete versioned Mac ZIP
 includes the compiled core, source/notices and launcher; see
 [Run locally](docs/RUNNING-LOCALLY.md). The immediate goal is reliable launching
 and acceptance on the user's Mac. The user reports that v0.2.5 appears to work
@@ -46,12 +47,13 @@ research context.
 - Carry the open display acceptance checks forward while v0.2 work begins; they
   remain separate from browser-independent model work.
 
-## Next increment: v0.2.7 first affected RAM write trace
+## Completed increment: v0.2.7 first affected RAM write trace
 
-Add a default-disabled, metadata-only diagnostic to identify the first changed
-bus write behind the observed phase delay. Require traced/untraced equivalence,
-exact write budgets, strict/sanitizer tests, actual-WASM coverage and independent
-specialist review. This does not complete the attract-mode divergence gate.
+The default-disabled metadata-only diagnostic identifies the first affected bus
+write in the one-write phase-delay experiment. Traced/untraced equivalence, exact write
+budgets, strict/sanitizer tests, actual-WASM coverage and independent specialist
+review passed. Next, explain the identified sprite-buffer to sound-track alias
+with bounded passive observations. The attract-mode divergence gate remains open.
 
 ## v0.2.0 | Logic-bending experiments
 

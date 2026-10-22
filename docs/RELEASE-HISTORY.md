@@ -1,10 +1,10 @@
 # VRAMpage MD releases and source history
 
-**[Download the current ready-to-run Mac package: v0.2.6](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.6/VRAMpage-MD-v0.2.6-macos.zip)**
+**[Download the current ready-to-run Mac package: v0.2.7](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.7/VRAMpage-MD-v0.2.7-macos.zip)**
 
 For ordinary use, download the complete ZIP, extract it, open **START.command** and load your own legally usable cartridge. Python 3 is required; you do not need Git or WebAssembly build tools. See [Mac launch help](RUNNING-LOCALLY.md).
 
-**Note:** Source development on `main` is labelled v0.2.7; that does not mean a v0.2.7 runnable release has been published. The latest published package listed here remains v0.2.6.
+**Current release:** v0.2.7 is published as a complete, verified Mac download.
 
 There are **two kinds of GitHub release** here. The complete Mac downloads include the compiled emulator; older *source-history milestones* do not. GitHub's automatically generated **Source code (zip)** is not a playable Mac application.
 
@@ -12,11 +12,12 @@ There are **two kinds of GitHub release** here. The complete Mac downloads inclu
 
 | Version | What changed | Download |
 | --- | --- | --- |
-| **[v0.2.6](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.6)** (current) | Build identification in experiment exports; existing VRAM/RAM patchbay | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.6/VRAMpage-MD-v0.2.6-macos.zip) |
+| **[v0.2.7](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.7)** (current) | Optional first affected RAM write diagnostics | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.7/VRAMpage-MD-v0.2.7-macos.zip) |
+| [v0.2.6](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.6) | Build identification in experiment exports; existing VRAM/RAM patchbay | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.6/VRAMpage-MD-v0.2.6-macos.zip) |
 | [v0.2.5](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.5) | Independent VRAM leg switches | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.5/VRAMpage-MD-v0.2.5-macos.zip) |
 | [v0.2.4](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.4) | Consolidated workbench, RAM controls and core display fixes | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.4/VRAMpage-MD-v0.2.4-macos.zip) |
 
-Each runnable release has its own `SHA256SUMS.txt`, release-specific source commit, original compiled core and corresponding modified emulator source. Previous packages remain available for reproducibility; use v0.2.6 for new installations.
+Each runnable release has its own `SHA256SUMS.txt`, release-specific source commit, original compiled core and corresponding modified emulator source. Previous packages remain available for reproducibility; use v0.2.7 for new installations.
 
 ## Earlier milestones: source history only
 

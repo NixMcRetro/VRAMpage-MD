@@ -2,7 +2,7 @@
 
 ## Download once, then launch
 
-1. [Download VRAMpage-MD-v0.2.6-macos.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.6/VRAMpage-MD-v0.2.6-macos.zip).
+1. [Download VRAMpage-MD-v0.2.7-macos.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.7/VRAMpage-MD-v0.2.7-macos.zip).
 2. Double-click the ZIP in Finder to extract it. Open the **VRAMpage-MD** folder.
 3. Double-click **START.command**. It starts a local server and opens your default browser.
 4. Click **Load ROM** and select your own legally usable Mega Drive cartridge.
@@ -72,6 +72,5 @@ Maintainers can still use GitHub Actions artifacts for temporary review. They
 expire, and GitHub may wrap the package in another ZIP; the versioned release
 asset above is the normal user download.
 
-Development source v0.2.7 adds an optional metadata-only RAM write trace. The
-current verified download above remains v0.2.6 until the v0.2.7 package passes
-release verification. See [trace documentation](RAM-WRITE-TRACE.md).
+v0.2.7 includes an optional, default-disabled metadata-only RAM write trace for
+developer experiments. Normal play needs no trace setup. See [trace documentation](RAM-WRITE-TRACE.md).

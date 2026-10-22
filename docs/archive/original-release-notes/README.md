@@ -12,3 +12,6 @@ For a working app, visit the [current releases](../../RELEASE-HISTORY.md).
 For the simplified current release descriptions, see [release-notes](../../../release-notes/).
 Release tag SHAs, package binaries, checksums and original experimental
 records are not altered by metadata curation.
+
+The initial v0.2.7 publication description is also preserved verbatim before its
+23 October 2026 catalog update. The original twelve snapshots remain unchanged.

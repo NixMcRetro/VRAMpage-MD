@@ -4,7 +4,7 @@ VRAMpage MD is a browser-based NTSC Mega Drive/Genesis experiment. It runs a loc
 
 ## Start here
 
-**[Download the complete v0.2.6 Mac app](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.6/VRAMpage-MD-v0.2.6-macos.zip)**,
+**[Download the complete v0.2.7 Mac app](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.7/VRAMpage-MD-v0.2.7-macos.zip)**,
 extract it and open START.command. See [Run locally](RUNNING-LOCALLY.md) for Python
 and macOS launch help. The work-RAM controls are implemented and experimental;
 older standalone-model descriptions are historical development records.
@@ -59,6 +59,4 @@ VRAMpage-MD development does not automatically publish to `mcretro.net`. Deploy 
 
 - [First affected RAM write trace](RAM-WRITE-TRACE.md): optional generic diagnostic and bounded private comparison.
 
-Development source v0.2.7 adds an optional metadata-only RAM write trace. The
-current verified download above remains v0.2.6 until the v0.2.7 package passes
-release verification. See [trace documentation](RAM-WRITE-TRACE.md).
+v0.2.7 includes an optional, default-disabled metadata-only RAM write trace for developer experiments. See [trace documentation](RAM-WRITE-TRACE.md).

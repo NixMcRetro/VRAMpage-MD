@@ -2,6 +2,8 @@
 
 ## v0.2.7 - optional first affected RAM write trace
 
+- Publish and freshly verify the complete Mac ZIP, and advance the release catalog/download links while preserving previous binaries, tags and original-description archives.
+
 - Add a default-disabled metadata-only first-write diagnostic without changing the fault model or write budgets.
 - Add native and actual-WASM regression coverage and a bounded traced/untraced experiment runner.
 - Record user-reported Mac Firefox sound, USB keyboard, resize, fullscreen and restart behaviour; physical gamepad remains untested.

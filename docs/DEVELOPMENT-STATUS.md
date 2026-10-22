@@ -1,12 +1,12 @@
 # Development status and continuation checkpoint
 
-Verified on 22 October 2026. Read [work queue](WORK-QUEUE.md),
+Verified on 23 October 2026. Read [work queue](WORK-QUEUE.md),
 [versioning](VERSIONING.md), [testing](TESTING.md) and [roadmap](../ROADMAP.md).
 
 ## Verified baseline
 
-- Main contains the complete stacked development history and canonical v0.2.4,
-  followed by v0.2.5 independent VRAM leg switches. Earlier work was not rebuilt
+- Main contains the complete stacked development history through v0.2.7,
+  including v0.2.5 VRAM leg switches and v0.2.6 build identification. Earlier work was not rebuilt
   from the initial main or blindly cherry-picked.
 - Corrected v0.2.4 remains public with its original tag and assets. A fresh public
   download matched SHA-256
@@ -44,7 +44,7 @@ are not measured electrical models or verified physical package pin mappings.
 Per-access VDP faults and hardware-informed audio bending remain unimplemented.
 No new native Mac, audible, commercial-game or physical-hardware test is claimed.
 
-## Latest integration and release
+## Historical v0.2.6 integration and release
 
 PR [#20](https://github.com/NixMcRetro/VRAMpage-MD/pull/20) merged v0.2.6 experiment
 build identification without changing core/fault models. Reviewed head:
@@ -81,7 +81,7 @@ commits after this release do not replace the tested package or retag it.
 
 ## Read-only observer checkpoint
 
-The application version and released binary remain v0.2.6. The separate developer
+The observer uses the immutable v0.2.6 application/core profile. The separate developer
 observer adds no core, game-code, direct game-variable or hardware-model edits.
 Permanent instructions/status/queue were merged in
 [PR #21](https://github.com/NixMcRetro/VRAMpage-MD/pull/21), main commit
@@ -100,18 +100,44 @@ ran the six actual private-cartridge trials. Baseline Sonic object ID 1 was
 observed through all 602 timeline ticks. Source checks cover 63 Python tests,
 framebuffer suites, nine pulse groups, nine observer groups and both C smokes.
 
-## v0.2.7 verified diagnostic, integration pending
+## v0.2.7 integration and release verification
 
-An optional default-disabled first-affected-write diagnostic passed local verification.
+PR [#23](https://github.com/NixMcRetro/VRAMpage-MD/pull/23) merged the diagnostic as
+`6c7469fefe8d004c0e61b360e08579dc9b100a9d` after all
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39784517150)
+passed. The first post-merge run [39784898869](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39784898869)
+exceeded the Firefox installation limit. A targeted fresh-runner retry reached
+all tests and exposed a separate-read counter race, not a runtime reset defect.
+[PR #26](https://github.com/NixMcRetro/VRAMpage-MD/pull/26) preserves the exact
+invariant in one synchronous snapshot. Its full
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39790523455)
+passed; merge `1d87fd9a921194a557fc5320e54be48295c62b1f` exactly matches the
+tested merge tree and preserves concurrent release-presentation PRs #24/#25.
+The [fixed main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39863314204)
+passed all source/browser/core/package jobs.
+
+The public [v0.2.7 release](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.7)
+was built by [39863608264](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39863608264)
+from exact source/tag `1d87fd9a921194a557fc5320e54be48295c62b1f`.
+The fresh public ZIP is 1,344,568 bytes, 319 unique entries, SHA-256
+`2e1beee265041a42f5544262291284be937fa1d23958f21ac553b79f8f46a1ae`.
+Its checksum, root/site manifests, version, tag, executable launcher, source,
+notices and ROM/secret checks passed. From an unrelated directory, START.command
+served eight assets successfully and stopped cleanly with Ctrl+C. The extracted
+public core passed 25 actual-WASM original-cartridge checks and the full actual-core
+Chromium smoke using real package metadata, including video/audio generation,
+controls, faults, recovery, restart and export. No native Mac or audible acceptance
+is claimed for this new build. Older release binaries and experiment records remain
+unchanged. Catalog/download presentation updates do not rebuild this public ZIP.
+
+The optional default-disabled first-affected-write diagnostic passed local verification.
 The API records logical address metadata, bus width, completed frame and reason,
 never memory values. The separate runner compares tracing off/on/repeated and
-checks historical v0.2.6 observations. This source increment does not replace the
-verified public v0.2.6 package until release checks pass. See
-[RAM write trace](RAM-WRITE-TRACE.md). Strict native/sanitizer, 25 actual-WASM checks, 28 Chromium logic cases, six
+checks historical v0.2.6 observations. See [RAM write trace](RAM-WRITE-TRACE.md).
+Strict native/sanitizer, 25 actual-WASM checks, 28 Chromium logic cases, six
 display cases and actual-core browser smoke passed. Independent Luna High source
-and test review approved the implementation. Full CI remains required before
-merge. The review ZIP from f0cc664 has 288 unique entries; independent default
-worker verified manifests, source/notices, executable launcher, ROM/secret
+and test review approved the implementation. The review ZIP from f0cc664 has
+288 unique entries; an independent default worker verified manifests, source/notices, executable launcher, ROM/secret
 exclusion, eight served assets and browser startup without errors.
 
 Independent specialist review reran all six trials and obtained byte-identical

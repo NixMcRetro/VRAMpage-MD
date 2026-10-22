@@ -1,3 +1,18 @@
+# v0.2.7 public package and final verification
+
+Fixed main CI [39863314204](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39863314204)
+and release build [39863608264](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39863608264)
+passed. Fresh public ZIP/tag/source/checksum and extracted launcher checks passed.
+The public core passed 25 original-cartridge WASM checks and actual-core Chromium
+video, generated audio, controls, faults, recovery, restart and export smoke using
+its real build manifest. Package source is `1d87fd9a921194a557fc5320e54be48295c62b1f`.
+The release-catalog follow-up passed 73 Python tests, including new-version,
+missing-history, asset-policy and remote tag/asset preflight regression cases,
+plus the unchanged native/sanitizer, framebuffer and protocol suites.
+See [development status](DEVELOPMENT-STATUS.md) for checksum and historical failed
+setup/test runs. Native Mac feedback below predates this release and does not
+establish native acceptance of the new build.
+
 # v0.2.7 first affected write trace verification
 
 Local checks passed: 64 Python tests including strict native runtime and
@@ -11,7 +26,12 @@ focused native/sanitizer, runner and actual-WASM tests with no remaining blocker
 Six private-cartridge runs identify the same first write with tracing enabled
 and preserve the untraced observations and immutable historical baseline/fault
 records exactly. See the exact record linked from the trace protocol. This is
-Node actual-core testing, not native Mac or audible acceptance. CI is pending.
+Node actual-core testing, not native Mac or audible acceptance.
+PR [#23 checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39784517150)
+passed, including source checks, Chromium, Firefox, WebKit and a fresh
+core/package build. The merged source is
+`6c7469fefe8d004c0e61b360e08579dc9b100a9d`. Final main and public-download
+verification are recorded in [development status](DEVELOPMENT-STATUS.md).
 See [trace protocol](RAM-WRITE-TRACE.md). These checks do not establish physical
 fault accuracy or native Mac behaviour for the new build.
 
