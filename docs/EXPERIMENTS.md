@@ -53,6 +53,13 @@ Repeat the baseline and fault run from the same reset state if the result is
 unclear. Report both runs, including no visible change. Do not generalize one
 cartridge's result to other games or board revisions.
 
+## Explicit recovery trials
+
+For v2.1, treat force resume and CPU-only reset as separate interventions,
+not part of the uninterrupted fault baseline. Exported `cpuInterventions` records
+the action/frame and before/after flags. Download records before clean restart.
+See [CPU recovery](CPU-RECOVERY.md); record failures as well as apparent recovery.
+
 ## Run record template
 
 | Field | Value |

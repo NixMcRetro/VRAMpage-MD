@@ -179,6 +179,21 @@ WORK_RAM_KEEPALIVE int set_logic_fault(int kind, int access,
     return WORK_RAM_FAULT_OK;
 }
 
+WORK_RAM_KEEPALIVE int recover_logic_cpu(int mode)
+{
+    if (mode != 1 && mode != 2)
+        return WORK_RAM_FAULT_INVALID_CONFIG;
+    set_logic_fault(WORK_RAM_FAULT_NONE, 0, 0, 0);
+#ifndef WORK_RAM_RUNTIME_TEST
+    extern m68ki_cpu_core m68k;
+    if (mode == 1)
+        m68k.stopped = 0;
+    else
+        m68k_pulse_reset();
+#endif
+    return WORK_RAM_FAULT_OK;
+}
+
 WORK_RAM_KEEPALIVE uint32_t get_logic_reads(void) { return logic_reads; }
 WORK_RAM_KEEPALIVE uint32_t get_logic_writes(void) { return logic_writes; }
 WORK_RAM_KEEPALIVE uint32_t get_logic_frame(void) { return logic_frame; }

@@ -52,7 +52,7 @@ class BrowserLogicTests(unittest.TestCase):
             context.close()
         self.assertEqual(self.errors, [], "Uncaught application errors")
 
-    def new_page(self, legacy_core=False):
+    def new_page(self, legacy_core=False, legacy_recovery=False):
         context = self.browser.new_context(
             viewport={"width": 1366, "height": 768},
             color_scheme="light",
@@ -61,6 +61,8 @@ class BrowserLogicTests(unittest.TestCase):
         self.contexts.append(context)
         page = context.new_page()
         page.on("pageerror", lambda error: self.errors.append(str(error)))
+        if legacy_recovery:
+            page.add_init_script("window.__legacyRecoveryCore = true;")
         if legacy_core:
             page.add_init_script("window.__legacyLogicCore = true;")
         page.route("**/core/genplus.js", lambda route: route.fulfill(
@@ -112,6 +114,8 @@ class BrowserLogicTests(unittest.TestCase):
         for control in ("#logicKind", "#logicAccess", "#logicLineA", "#logicLineB",
                         "#logicApplyBtn", "#logicDisconnectBtn"):
             self.assertTrue(legacy.locator(control).is_disabled(), control)
+        expect(legacy.locator("#logicResumeBtn")).to_be_disabled()
+        expect(legacy.locator("#logicCpuResetBtn")).to_be_disabled()
         expect(legacy.locator("#logicStatus")).to_have_text("Rebuild core for logic faults")
         self.load_rom(legacy)
         expect(legacy.locator("#powerLabel")).to_have_text("CONSOLE ON")
@@ -225,6 +229,44 @@ class BrowserLogicTests(unittest.TestCase):
             "clean restart must reset the synthetic frame counter",
         )
 
+    def test_older_logic_core_disables_only_recovery(self):
+        page = self.new_page(legacy_recovery=True)
+        self.load_rom(page)
+        expect(page.locator("#logicApplyBtn")).to_be_enabled()
+        expect(page.locator("#logicResumeBtn")).to_be_disabled()
+        expect(page.locator("#logicCpuResetBtn")).to_be_disabled()
+        page.locator("#logicApplyBtn").click()
+        expect(page.locator("#logicStatus")).to_contain_text("Applied address")
+
+    def test_recovery_preserves_ram_and_exports_each_intervention(self):
+        self.load_rom()
+        self.page.locator("#logicAccess").select_option("2")
+        self.page.locator("#logicApplyBtn").click()
+        self.page.wait_for_function("window.mockCore.logic.storedWrites > 0")
+        self.page.locator("#pauseBtn").click()
+        stored = self.page.evaluate("window.mockCore.logic.storedWrites")
+        self.page.evaluate("window.mockCore.logic.cpuFlags = 3")
+        self.page.locator("#logicResumeBtn").focus()
+        self.page.keyboard.press("Enter")
+        expect(self.page.locator("#logicCpuStatus")).to_have_text("No STOP/HALT flag")
+        self.assertFalse(self.page.evaluate("window.mockCore.logic.active"))
+        self.assertEqual(self.page.evaluate("window.mockCore.logic.storedWrites"), stored)
+        self.page.locator("#logicCpuResetBtn").focus()
+        self.page.keyboard.press("Space")
+        self.assertEqual(self.page.evaluate("window.mockCore.logic.recoveries"), [1,2])
+        self.assertEqual(self.page.evaluate("window.mockCore.starts"), 1)
+        with self.page.expect_download() as info:
+            self.page.locator("#logicExperimentBtn").click()
+        payload = json.loads(Path(info.value.path()).read_text())
+        self.assertEqual([e["action"] for e in payload["cpuInterventions"]],
+                         ["force-resume", "cpu-only-reset"])
+        self.assertEqual(payload["cpuInterventions"][0]["flagsBefore"], 3)
+        self.assertEqual(payload["cpuInterventions"][0]["flagsAfter"], 0)
+        self.page.locator("#resetBtn").click()
+        with self.page.expect_download() as info:
+            self.page.locator("#logicExperimentBtn").click()
+        self.assertEqual(json.loads(Path(info.value.path()).read_text())["cpuInterventions"], [])
+
     def test_experiment_export_contains_hash_and_metadata_not_rom_bytes(self):
         rom = self.load_rom()
         self.page.locator("#logicApplyBtn").click()
@@ -234,7 +276,7 @@ class BrowserLogicTests(unittest.TestCase):
             self.page.locator("#logicExperimentBtn").click()
         download = download_info.value
         payload = json.loads(Path(download.path()).read_text())
-        self.assertEqual(payload["modelVersion"], "0.2-experimental")
+        self.assertEqual(payload["modelVersion"], "2.1-experimental")
         self.assertEqual(payload["rom"]["name"], "synthetic-test.bin")
         self.assertEqual(payload["rom"]["sha256"], hashlib.sha256(rom).hexdigest())
         self.assertNotIn("bytes", payload["rom"])

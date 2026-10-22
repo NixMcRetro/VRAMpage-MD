@@ -57,6 +57,21 @@ int main(void)
     assert(work_ram_logic_read8(0xe00021u) == 0x00);
     assert(get_logic_writes() == 1 && get_logic_reads() == 1);
 
+    /* Recovery rejects invalid modes without disconnecting the active fault. */
+    assert(recover_logic_cpu(0) == WORK_RAM_FAULT_INVALID_CONFIG);
+    assert(work_ram_logic_applies(WORK_RAM_FAULT_APPLY_READ));
+    uint32_t reads = get_logic_reads(), writes = get_logic_writes();
+    uint32_t frame = get_logic_frame(), activation = get_logic_activation_frame();
+    uint8_t snapshot[WORK_RAM_FAULT_MEMORY_BYTES];
+    memcpy(snapshot, work_ram, sizeof(snapshot));
+    assert(recover_logic_cpu(1) == WORK_RAM_FAULT_OK);
+    assert(!work_ram_logic_applies(WORK_RAM_FAULT_APPLY_READ));
+    assert(get_logic_reads() == reads && get_logic_writes() == writes);
+    assert(get_logic_frame() == frame && get_logic_activation_frame() == activation);
+    assert(memcmp(snapshot, work_ram, sizeof(snapshot)) == 0);
+    assert(recover_logic_cpu(2) == WORK_RAM_FAULT_OK);
+    assert(memcmp(snapshot, work_ram, sizeof(snapshot)) == 0);
+
     assert(!work_ram_logic_address(0xdfffff));
     assert(work_ram_logic_address(0xe00000));
     assert(work_ram_logic_address(0xffffff));

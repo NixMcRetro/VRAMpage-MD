@@ -18,6 +18,9 @@ void work_ram_logic_write16(uint32_t address, uint16_t value);
  * access: 1 read, 2 write, 3 both. Data-line byte operations require both
  * selected lines to be in the same byte lane. */
 int set_logic_fault(int kind, int access, int line_a, int line_b);
+/* Explicit intervention: 1 clear STOP/HALT, 2 pulse only the 68000 reset.
+ * Both disconnect RAM faults, retain counters/frame and preserve work RAM. */
+int recover_logic_cpu(int mode);
 uint32_t get_logic_reads(void);
 uint32_t get_logic_writes(void);
 uint32_t get_logic_frame(void);

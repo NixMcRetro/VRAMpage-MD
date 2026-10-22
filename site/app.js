@@ -34,6 +34,7 @@
   let logicApiAvailable = false, logicActive = false, logicStatsRetained = false;
   let logicStatusMessage = 'Checking core support…';
   let lastLogicExperiment = null;
+  let cpuInterventions = [];
   let logicResetState = 'No cartridge loaded';
   let romHashPromise = Promise.resolve(null);
   const CORE_PIN = '6090aff9e9b2f578cd28882bd4571d2e35b1d674';
@@ -77,6 +78,8 @@
     for (const id of ['logicKind','logicAccess','logicLineA','logicLineB','logicApplyBtn'])
       $(id).disabled = !canUse;
     $('logicDisconnectBtn').disabled = !canUse;
+    for (const id of ['logicResumeBtn','logicCpuResetBtn'])
+      $(id).disabled = !canUse || typeof emulator._recover_logic_cpu !== 'function';
     $('logicExperimentBtn').disabled = !started || !romBytes;
     if (!logicApiAvailable) logicStatusMessage = 'Rebuild core for logic faults';
     else if (!started && ['Checking core support…','Rebuild core for logic faults'].includes(logicStatusMessage))
@@ -219,6 +222,29 @@
     return true;
   }
 
+  function recoverLogicCPU(mode) {
+    if (!started || typeof emulator?._recover_logic_cpu !== 'function') return;
+    const frame=Number(emulator._get_logic_frame());
+    const flagsBefore=Number(emulator._get_logic_cpu_flags());
+    if (!disconnectLogic({silent:true})) {
+      setLogicStatus('Recovery stopped: could not disconnect RAM fault.');
+      return;
+    }
+    disconnect();
+    const status=emulator._recover_logic_cpu(mode);
+    if (status!==0) {
+      setLogicStatus(`CPU recovery rejected (status ${status}).`);
+      return;
+    }
+    const action=mode===1 ? 'force-resume' : 'cpu-only-reset';
+    cpuInterventions.push({action,frame,flagsBefore,
+      flagsAfter:Number(emulator._get_logic_cpu_flags())});
+    logicResetState=`${action}; faults disconnected, RAM preserved`;
+    setLogicStatus(`${mode===1 ? 'Forced resume attempted' : 'CPU-only reset issued'}. Faults disconnected; RAM preserved. Recovery is not guaranteed.`);
+    stamp(`CPU intervention: ${action}; RAM preserved, faults disconnected`);
+    refreshLogicMetrics();
+  }
+
   function resetLogicSelection() {
     $('logicKind').value='1'; $('logicAccess').value='1';
     configureLogicLines();
@@ -239,8 +265,9 @@
     const reads=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.readCount : coreReads;
     const writes=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.writeCount : coreWrites;
     const data={
-      modelVersion:'0.2-experimental',
+      modelVersion:'2.1-experimental',
       corePin:CORE_PIN,
+      cpuInterventions:cpuInterventions.map(entry=>({...entry})),
       rom:{name:loadedName || null,sha256:romSha256},
       logicFault:lastLogicExperiment ? {...lastLogicExperiment} : null,
       faultActive:logicActive,
@@ -486,6 +513,7 @@
       throw new Error('Core missing _set_vram_short. You must build the patched core (not the upstream prebuilt WASM).');
     frameView=null;
     started=true;
+    cpuInterventions=[];
     logicActive=false; // runtime_start clears the work RAM fault and counters.
     logicStatsRetained=false;
     logicResetState=cleanRestart ? 'Clean restart; work RAM fault and counters reset' : 'Cartridge loaded; work RAM fault and counters reset';
@@ -649,6 +677,8 @@
     for (const id of ['logicAccess','logicLineA','logicLineB'])
       $(id).addEventListener('change',()=>setLogicStatus('Configuration changed; apply it to activate a fault.'));
     $('logicApplyBtn').addEventListener('click',applyLogicFault);
+    $('logicResumeBtn').addEventListener('click',()=>recoverLogicCPU(1));
+    $('logicCpuResetBtn').addEventListener('click',()=>recoverLogicCPU(2));
     $('logicDisconnectBtn').addEventListener('click',()=>disconnectLogic());
     $('logicExperimentBtn').addEventListener('click',()=>downloadExperimentJSON().catch(error=>{
       setLogicStatus(`Could not create experiment metadata: ${error.message}`);

@@ -7,7 +7,7 @@ window.Module = async () => {
   const logic = {
     active: false, config: {kind: 0, access: 0, a: 0, b: 0},
     reads: 0, writes: 0, frame: 0, activationFrame: 0, cpuFlags: 0,
-    setterCalls: [], storedWrites: 0,
+    setterCalls: [], storedWrites: 0, recoveries: [],
   };
   window.mockCore = {starts: 0, ticks: 0, lastStartTick: 0, short: [-1, -1], inputs: [], logic};
 
@@ -90,6 +90,12 @@ window.Module = async () => {
     // verify the core-level guard independently of UI validation.
     window.mockCore._set_logic_fault = setLogicFault;
     Object.assign(core, {
+      _recover_logic_cpu(mode) {
+        if (![1,2].includes(mode)) return 5;
+        logic.recoveries.push(mode);
+        logic.active = false; logic.cpuFlags = 0;
+        return 0;
+      },
       _set_logic_fault: setLogicFault,
       _get_logic_reads: () => logic.reads,
       _get_logic_writes: () => logic.writes,
@@ -98,5 +104,6 @@ window.Module = async () => {
       _get_logic_cpu_flags: () => logic.cpuFlags,
     });
   }
+  if (window.__legacyRecoveryCore) delete core._recover_logic_cpu;
   return core;
 };

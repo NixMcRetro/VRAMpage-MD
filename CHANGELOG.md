@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.1 — experimental CPU recovery, 22 October 2026
+
+- Add explicit disconnect-and-force-resume and CPU-only reset actions. Preserve
+  RAM and fault counters; neither action guarantees recovered gameplay.
+- Record intervention frames and before/after CPU flags in experiment JSON.
+- Preserve older-core support with recovery disabled when its export is absent.
+- Add actual-WASM STOP/HALT/reset checks and browser recovery/metadata regressions.
+  See [CPU recovery](docs/CPU-RECOVERY.md) for semantics and acceptance limits.
+
 ## v0.2 — work RAM integration (in progress)
 
 - Extend the 64 KiB big-endian work-RAM model to byte and word transactions with

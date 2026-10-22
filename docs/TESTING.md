@@ -233,3 +233,26 @@ applied/disconnected a RAM fault, checked the exported ROM SHA-256 and clean
 restart without page errors. No game screenshots or ROM bytes were committed.
 Native macOS window/fullscreen and audible audio acceptance still require the
 manual procedure above. See [Experiments](EXPERIMENTS.md) for deterministic runs.
+
+## v2.1 CPU recovery verification (22 October 2026)
+
+Emscripten 4.0.23 rebuild passed. The full source suite passed **50 Python tests**,
+both Node framebuffer suites and both C smokes. The native runtime test now checks
+recovery disconnection, invalid-mode rejection and retained RAM/counters/frames.
+Actual-WASM coverage grew from nine to **12 original-cartridge checks**, including
+STOP continuation, real nested-address-error HALT release, and CPU-only reset
+entry-point execution with a synchronous full-RAM preservation assertion.
+
+Local Chromium passed **eight logic UI tests** and all **six display tests**.
+Recovery cases exercise keyboard activation, retained stored writes, ordered
+export history, clean-restart clearing and older logic-core fallback. Screenshots
+were captured outside the repository. The existing display suite retains its
+nine viewport cases, including 1366×768, mobile sizes, resizing, fullscreen,
+raw output and appearance. CI runs both suites in all three browser engines.
+
+An actual-core Chromium **1366×768** smoke loaded the supplied cartridge, applied
+a fault, invoked both recovery actions, verified the hashed JSON/intervention
+history and clean restart without page errors. This verifies the UI/API path;
+it does not establish recovered gameplay after a halted Sonic run. Native
+macOS and commercial-cartridge post-HALT gameplay remain manual acceptance work.
+See [CPU recovery](CPU-RECOVERY.md) for an exact reproduction procedure.

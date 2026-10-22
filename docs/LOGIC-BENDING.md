@@ -74,7 +74,8 @@ alongside the frame-scoped VRAM approximation. The collapsible RAM panel selects
 an address or data pair and read, write, or both directions; selecting a pair
 does not apply it until **Apply RAM fault** is pressed. The monitor shows
 affected read/write counts, the model frame and activation frame, plus the
-emulated CPU STOP/HALT flags. It does not rescue or restart a stopped game. The
+emulated CPU STOP/HALT flags. It never automatically rescues a stopped game. Explicit v2.1
+[CPU recovery](CPU-RECOVERY.md) can attempt resume/reset while preserving RAM. The
 JSON export records model version, pinned core revision, ROM filename and
 SHA-256, fault setup, activation/current frame, reset state, counters and CPU
 flags. It contains no ROM or RAM bytes. Disconnect preserves the last experiment's

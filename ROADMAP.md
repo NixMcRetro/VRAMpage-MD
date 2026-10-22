@@ -53,6 +53,14 @@ attract replay and at least one recorded faulted replay while preserving
 unmodified game code. Follow [the experiment procedure](docs/EXPERIMENTS.md).
 No guaranteed target effect for arbitrary modeled shorts.
 
+## v2.1 | Explicit CPU recovery (experimental)
+
+- Force resume or CPU-only reset after disconnecting faults, preserving RAM.
+- Record every intervention; do not count forced execution as hardware fidelity
+  or proof that attract-mode playback continues.
+- See [CPU recovery](docs/CPU-RECOVERY.md). This review label does not complete
+  the v0.2 attract-mode milestone or change the planned video/audio work below.
+
 ## v0.3 | More accurate VRAM reads and writes
 
 - Move from frame-level projection to fault handling at VDP VRAM access paths.

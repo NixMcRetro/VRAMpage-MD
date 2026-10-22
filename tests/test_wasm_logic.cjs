@@ -116,5 +116,37 @@ async function create(words, config, init) {
   // A fresh cartridge load clears the fault, counters, and frame metadata.
   c._start();assert.equal(c._get_logic_reads(),0);assert.equal(c._get_logic_writes(),0);
   assert.equal(c._get_logic_frame(),0);assert.equal(c._get_logic_activation_frame(),0);tests++;
+  // Forced resume clears STOP and continues at the existing PC without rewriting RAM.
+  c=await create([...stop,...wordWrite(0xff1100,0x5678),...stop]);
+  putWord(c,0x1200,0xbeef);
+  assert.equal(c._get_logic_cpu_flags(),1);
+  assert.equal(c._set_logic_fault(2,1,0,1),0);
+  const frameBefore=c._get_logic_frame();
+  assert.equal(c._recover_logic_cpu(99),5);
+  assert.equal(c._get_logic_cpu_flags(),1);
+  assert.equal(c._recover_logic_cpu(1),0);
+  assert.equal(c._get_logic_cpu_flags(),0);
+  assert.equal(c._get_logic_frame(),frameBefore);
+  assert.equal(getWord(c,0x1200),0xbeef);
+  c._tick();c._sound();
+  assert.equal(getWord(c,0x1100),0x5678,'resume executes after STOP, with data fault disconnected');
+  assert.equal(c._get_logic_reads(),0);tests++;
+
+  // CPU-only reset rereads the cartridge vectors; no system/RAM reset occurs.
+  c=await create([0x5279,0x00ff,0x1000,...stop]); // ADDQ.W #1,($ff1000)
+  assert.equal(getWord(c,0x1000),1);
+  const before=Buffer.from(c.HEAPU8.subarray(c._get_logic_ram_ref(),c._get_logic_ram_ref()+65536));
+  assert.equal(c._recover_logic_cpu(2),0);
+  assert.equal(c._get_logic_cpu_flags(),0);
+  assert.deepEqual(Buffer.from(c.HEAPU8.subarray(c._get_logic_ram_ref(),c._get_logic_ram_ref()+65536)),before);
+  c._tick();c._sound();assert.equal(getWord(c,0x1000),2,'reset executes entry point again');tests++;
+
+  // Odd stack + odd word read causes a real nested address error and HALT.
+  c=await create([0x2e7c,0x0000,0x0001,0x3039,0x00ff,0x0001,...stop]);
+  assert.ok(c._get_logic_cpu_flags() & 2,'nested address error sets HALT (STOP may also remain set)');
+  assert.equal(c._recover_logic_cpu(1),0);
+  assert.equal(c._get_logic_cpu_flags(),0);
+  // This only proves release of HALT, not successful game recovery.
+  assert.equal(c._recover_logic_cpu(2),0);tests++;
   console.log(`Actual WASM logic integration: ${tests} original 68000 cartridge checks passed.`);
 })().catch(error=>{console.error(error);process.exitCode=1;});

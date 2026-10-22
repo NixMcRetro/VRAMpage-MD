@@ -1,6 +1,6 @@
 # VRAMpage MD
 
-**VRAMpage MD v0.2 experimental** is an experimental, browser-based NTSC Sega Mega Drive / Genesis Model 1 circuit-bending project. The aim is to play a locally supplied game, such as *Sonic the Hedgehog* (1991), while changing emulated **hardware signals**, not merely filtering the finished picture or audio.
+**VRAMpage MD v2.1 experimental** is an experimental, browser-based NTSC Sega Mega Drive / Genesis Model 1 circuit-bending project. The aim is to play a locally supplied game, such as *Sonic the Hedgehog* (1991), while changing emulated **hardware signals**, not merely filtering the finished picture or audio.
 
 **Project status:** v0.1.x is experimental. Historical Mac testing confirmed gameplay, controls, sound and VRAM-short behavior on the prior core. The v0.1.3 display recovery remains as a legacy-core fallback. A pinned WebAssembly blitter defect causing doubled-row output and out-of-bounds writes has been identified and a native-output source correction is under review; the corrected core has built and passed a local Chromium cartridge smoke test. The old generated core must be rebuilt to receive the correction. No ROM or commercial game files belong in this repository.
 
@@ -35,7 +35,8 @@ GitHub's source ZIP lacks the generated emulator and needs the build below.
 The v0.2 experimental RAM panel applies deterministic address/data faults to
 CPU accesses and VDP DMA. It includes read/write direction, affected-access
 counters, STOP/HALT flags and metadata export. Only one fault domain is active
-at a time. See [Logic bending](docs/LOGIC-BENDING.md) for restrictions and evidence.
+at a time. Explicit [CPU recovery](docs/CPU-RECOVERY.md) can attempt resume or
+a CPU-only reset while retaining corrupted RAM. See [Logic bending](docs/LOGIC-BENDING.md) for restrictions and evidence.
 
 ## Contributor build
 
