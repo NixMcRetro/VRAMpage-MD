@@ -36,8 +36,8 @@ def load_catalog():
             raise CurationError(f"Invalid release tag: {tag}")
         if not re.fullmatch("[a-f0-9]{40}", entry["source_commit"]):
             raise CurationError(f"Invalid original commit for {tag}")
-        if not entry["title"].startswith(f"VRAMpage MD {tag}"):
-            raise CurationError(f"Invalid title for {tag}")
+        if entry["title"] != f"VRAMpage MD {tag}":
+            raise CurationError(f"Release title must be exactly VRAMpage MD {tag}")
         expected = ([f"VRAMpage-MD-{tag}-macos.zip", "SHA256SUMS.txt"]
                     if tag in ("v0.2.4", "v0.2.5", "v0.2.6") else [])
         if sorted(entry["assets"]) != sorted(expected):

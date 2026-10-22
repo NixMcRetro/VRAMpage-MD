@@ -22,6 +22,9 @@ class ReleaseCurationTests(unittest.TestCase):
         self.assertGreaterEqual(source, released)
         self.assertEqual(len(DATA["releases"]), 12)
         for entry in DATA["releases"]:
+            with self.subTest(title=entry["tag"]):
+                self.assertEqual(entry["title"], f"VRAMpage MD {entry['tag']}")
+        for entry in DATA["releases"]:
             with self.subTest(tag=entry["tag"]):
                 note = (ROOT / f"release-notes/{entry['tag']}.md").read_text()
                 self.assertIn(entry["source_commit"], note)
