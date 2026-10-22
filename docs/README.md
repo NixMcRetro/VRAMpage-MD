@@ -47,3 +47,9 @@ older standalone-model descriptions are historical development records.
 ## Maintainer release rule
 
 VRAMpage-MD development does not automatically publish to `mcretro.net`. Deploy only a reviewed, approved static build to `/homepages/vrampage/` through a **separate branch** of the website repository. That merge triggers a full Jekyll/Pagefind rebuild.
+
+## Development coordination
+
+- [Agent instructions](../AGENTS.md): worker selection, review and publishing rules.
+- [Work queue](WORK-QUEUE.md): priorities, dependencies and acceptance criteria.
+- [Development status](DEVELOPMENT-STATUS.md): verified evidence, limits and continuation.
