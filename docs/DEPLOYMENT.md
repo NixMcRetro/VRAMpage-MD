@@ -110,3 +110,15 @@ and launch steps. GitHub Actions retains this review artifact for 30 days.
 Development source v0.2.7 adds an optional metadata-only RAM write trace. The
 current verified download above remains v0.2.6 until the v0.2.7 package passes
 release verification. See [trace documentation](RAM-WRITE-TRACE.md).
+
+## Editing existing GitHub release descriptions
+
+Public GitHub Releases use curated Markdown in [release-notes](../release-notes/)
+and a catalog of immutable tag commits and attached assets. Merging approved
+curation changes to `VRAMpage-MD/main` runs the tightly scoped
+[metadata-only workflow](../.github/workflows/curate-releases.yml). It checks
+all existing published release tags and asset lists first; it only updates
+existing titles, note bodies and the Latest pointer. It does not compile,
+replace, upload or delete binaries. See [release presentation](RELEASE-CURATION.md)
+for the original-description archive and future-update procedure. New runnable
+versions still require the separate reviewed release-build workflow above.
