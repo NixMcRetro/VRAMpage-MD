@@ -185,3 +185,49 @@ footer { padding-top:9px; font-size:10px; }
   .machine-status { font-size:9px; }
   .chip-box { margin-inline:10px; }
 }
+
+/* v0.1.3: controls remain legible in both macOS appearance modes.
+   The media query is live: no saved manual override or page reload required. */
+.video-options {
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between;
+  gap:8px; padding:5px 10px 7px; background:var(--surface-2);
+  border-bottom:1px solid var(--rule); color:var(--muted);
+  font:11px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+.video-options label { display:flex; align-items:center; gap:6px; cursor:pointer; }
+.video-options input { accent-color:var(--accent); margin:0; }
+#videoStatus { font-size:10px; }
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme:dark;
+    --paper:#171c20;
+    --surface:#242b30;
+    --surface-2:#1d2429;
+    --ink:#e4e4db;
+    --muted:#b6bdbb;
+    --rule:#505c61;
+    --accent:#e18a65;
+    --dark:#14191c;
+    --dark-rule:#667578;
+  }
+  a { color:#ed9d7a; }
+  button { background:#303a40; color:var(--ink); border-color:#6b797d; }
+  button:hover:not(:disabled) { background:#3b494f; border-color:#a2b1b3; }
+  button:active:not(:disabled) { background:#263136; }
+  .led { background:#505e62; border-color:#819092; }
+  .led.on { background:#73ba84; border-color:#98d3a6; }
+  .screen-well { background:#1b2226; }
+  .screen-info, .instructions p, .bender-panel .explain,
+  .notice, .notes-block > p { color:#c1c9c8; }
+  .load-btn { background:#b9583d; color:#fff; border-color:#e28970; }
+  .load-btn:hover { background:#a34731; }
+  .patch-status strong { color:#f2aa8e; }
+  .preset kbd { color:#b4c1c0; }
+  .preset.active { background:#a86a34; border-color:#d69a60; color:#fff; }
+  .preset.active kbd { color:#fce4c4; }
+  #experimentLog { color:#c2c6c2; }
+  .notes-block .small-note, footer { color:#b1b9b5; }
+  .notice { border-left-color:#818c91; }
+  .fault-hint { color:#ffc09a !important; }
+  .video-options { color:#c2cac7; }
+}

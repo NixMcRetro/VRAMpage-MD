@@ -16,6 +16,9 @@
   const ctx = canvas.getContext('2d', {alpha: false});
   ctx.imageSmoothingEnabled = false;
   const imageData = ctx.createImageData(GAME_WIDTH, GAME_HEIGHT);
+  const frameAdapter = window.VRAMpageFrame;
+  if (!frameAdapter) throw new Error("Missing framebuffer.js: display adapter could not load");
+  let previousVideoStatus = "";
   const pressed = new Set();
   const pinButtons = [];
   const logEl = $('experimentLog');
@@ -176,15 +179,19 @@
 
   function drawActiveVideo() {
     if (!frameView) return;
-    // Fixed 320 x 224 canvas: never resize the drawing buffer to the fullscreen window.
-    // Copy 320 active pixels per row; the source framebuffer pitch is 640.
-    const srcPitchBytes = SCREEN_WIDTH * 4;
-    const rowBytes = GAME_WIDTH * 4;
-    for (let y = 0; y < GAME_HEIGHT; y++) {
-      const start = y * srcPitchBytes;
-      imageData.data.set(frameView.subarray(start, start + rowBytes), y * rowBytes);
+    // The wasm-genplus output allocation is 640 x 480 with a 640-pixel pitch.
+    // Display recovery fills only systematically missing, fully blank source
+    // scanlines. It never changes the emulator's memory or signal simulation.
+    const raw = $('rawVideoToggle').checked;
+    const result = frameAdapter.copyActiveFrame(frameView, imageData.data, {raw});
+    ctx.putImageData(imageData, 0, 0);
+    const status = raw ? 'Video: raw core pixels' : result.repairedRows
+      ? `Video: ${result.repairedRows} missing output lines recovered`
+      : 'Video: native pixels';
+    if (status !== previousVideoStatus) {
+      $('videoStatus').textContent = status;
+      previousVideoStatus = status;
     }
-    ctx.putImageData(imageData,0,0);
   }
 
   function renderFrame() {
@@ -387,6 +394,10 @@
 
   function setup() {
     setupPatchbay();installKeyboard();
+    $('rawVideoToggle').addEventListener('change', () => {
+      previousVideoStatus = "";
+      drawActiveVideo();
+    });
     $('romFile').addEventListener('change',event=>{loadLocalRom(event.target.files?.[0]);event.target.value='';});
     $('resetBtn').addEventListener('click',async()=>{
       if (!romBytes) return;

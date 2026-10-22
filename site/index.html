@@ -3,17 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#dedbd2">
-  <title>VRAMpage MD v0.1.2 | Mega Drive circuit bending</title>
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#dedbd2" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#171c20" media="(prefers-color-scheme: dark)">
+  <title>VRAMpage MD v0.1.3 | Mega Drive circuit bending</title>
   <link rel="stylesheet" href="style.css">
   <script src="core/genplus.js" defer onerror="window.__coreMissing = true"></script>
+  <script src="framebuffer.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
   <main class="shell">
     <header class="masthead">
       <div>
-        <div class="brand"><h1>VRAMpage <span>MD</span></h1><span class="version">v0.1.2</span></div>
+        <div class="brand"><h1>VRAMpage <span>MD</span></h1><span class="version">v0.1.3</span></div>
         <p class="subtitle">Mega Drive memory experiments. NTSC / Model 1.</p>
       </div>
       <div class="machine-status"><span class="led" id="powerLed"></span><span id="powerLabel">CORE NOT READY</span></div>
@@ -32,6 +35,7 @@
           </div>
         </div>
         <div class="screen-info"><span id="romName">NO CARTRIDGE INSERTED</span><span id="fpsIndicator">— FPS</span></div>
+        <div class="video-options"><label><input id="rawVideoToggle" type="checkbox"> Raw emulator output</label><span id="videoStatus" role="status" aria-live="polite">Video: native pixels</span></div>
         <div class="toolbar">
           <label class="load-btn" for="romFile">Load ROM</label>
           <input id="romFile" type="file" accept=".bin,.md,.gen,application/octet-stream" aria-label="Load Mega Drive ROM">
@@ -42,7 +46,7 @@
         </div>
         <div class="instructions">
           <p><strong>PLAY</strong> Arrows / Z X C / Enter <span class="help-divider">|</span> <strong>FAULTS</strong> 1–8 toggle / Shift+1–8 hold / 0 disconnect / P pause</p>
-          <p id="faultHint" class="fault-hint" hidden>Earlier shorts may have altered VRAM. Use <strong>Clean restart</strong> to clear it.</p>
+          <p id="faultHint" class="fault-hint" hidden>A previous short may have changed VRAM. Clean restart resets emulation; it cannot correct missing emulator output rows.</p>
         </div>
       </section>
 
@@ -76,10 +80,11 @@
         <summary class="section-heading"><h2>04 <span>/</span> Build notes</h2><span>Technical details</span></summary>
         <p>No ROM included. Your cartridge data stays in this browser.</p>
         <p>Sound is available with <strong>Enable Sound</strong>. Audio and 68000 logic bending are planned for later builds.</p>
+        <p class="small-note">The game display automatically fills consistently missing framebuffer rows. Select <strong>Raw emulator output</strong> to inspect untouched pixels. This does not alter emulated VRAM or hardware faults.</p>
         <p class="small-note">Emulator: <a href="https://github.com/h1romas4/wasm-genplus" target="_blank" rel="noreferrer">wasm-genplus</a> / <a href="https://github.com/ekeeke/Genesis-Plus-GX" target="_blank" rel="noreferrer">Genesis Plus GX</a>. Redistributing a modified core requires its corresponding source and applicable licence notices.</p>
       </details>
     </section>
-    <footer><span>VRAMpage MD &nbsp;·&nbsp; v0.1.2</span><span>NTSC HARDWARE MODE &nbsp; / &nbsp; NO VIDEO FILTERS</span></footer>
+    <footer><span>VRAMpage MD &nbsp;·&nbsp; v0.1.3</span><span>NTSC HARDWARE MODE &nbsp; / &nbsp; AUTOMATIC MISSING-LINE RECOVERY</span></footer>
   </main>
 </body>
 </html>
