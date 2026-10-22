@@ -4,6 +4,8 @@ This repository has complete Mac downloads and historical source-only milestones
 
 ## The presentation rules
 
+- Use the exact public release title `VRAMpage MD v0.x.x`, with the matching actual version. No subtitles, suffixes, em dashes or other punctuation in the title. Keep release type and features in the Markdown description instead.
+
 - Put the latest usable Mac download first, with the direct ZIP link, `START.command` instructions and Python 3 requirement.
 - Keep previous Mac downloads for reproducible comparisons.
 - Label retrospective historical milestones **SOURCE HISTORY ONLY**; GitHub's automatic Source code ZIP is not runnable.
