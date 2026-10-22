@@ -44,6 +44,7 @@ REQUIRED_FILES = (
     "site/source/src/main/c/core/vdp_render.h",
     "site/source/src/main/c/core/ntsc/license.txt",
 )
+BUILD_INFO_PATHS = {"BUILD-INFO.json", "site/build-info.json"}
 NATIVE_BLITTER_MARKER = b"VRAMpage MD: native RGBA output blitter"
 
 
@@ -109,7 +110,9 @@ def _collect_paths(output_path):
     output_resolved = output_path.resolve()
     selected = []
     for relative in sorted(paths):
-        if _excluded_cache(relative):
+        # Metadata is generated from this clean HEAD, never copied from local
+        # files left by another build or supplied by a user.
+        if relative in BUILD_INFO_PATHS or _excluded_cache(relative):
             continue
         source = _repo_path(relative)
         if source.resolve() == output_resolved:
@@ -164,11 +167,12 @@ def create_package(output_path):
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(output_path, "w", compression=zipfile.ZIP_DEFLATED,
                          compresslevel=9) as archive:
-        info = zipfile.ZipInfo("VRAMpage-MD/BUILD-INFO.json")
-        info.compress_type = zipfile.ZIP_DEFLATED
-        info.create_system = 3
-        info.external_attr = (stat.S_IFREG | 0o644) << 16
-        archive.writestr(info, build_info)
+        for relative in sorted(BUILD_INFO_PATHS):
+            info = zipfile.ZipInfo(f"VRAMpage-MD/{relative}")
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.create_system = 3
+            info.external_attr = (stat.S_IFREG | 0o644) << 16
+            archive.writestr(info, build_info)
         for relative, source, data in selected:
             info = zipfile.ZipInfo(f"VRAMpage-MD/{relative}")
             info.compress_type = zipfile.ZIP_DEFLATED
@@ -176,7 +180,7 @@ def create_package(output_path):
             mode = stat.S_IMODE(source.stat().st_mode)
             info.external_attr = (stat.S_IFREG | mode) << 16
             archive.writestr(info, data)
-    return len(selected) + 1
+    return len(selected) + len(BUILD_INFO_PATHS)
 
 
 def main(argv=None):

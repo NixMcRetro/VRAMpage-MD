@@ -141,7 +141,7 @@ async function sweep(factory, rom, settings, pairs, progress = () => {}) {
     const repeat = await attempt(pair);
     results.push({...trial.record, ...repeatRecord(trial.record, repeat.record), comparison:trial.record.error ? null : compareTrial(trial, baseline)});
   }
-  return {protocolVersion:settings.affectedWrites===undefined?1:2, modelVersion:'0.2.5-experimental', corePin:PIN,
+  return {protocolVersion:settings.affectedWrites===undefined?1:2, modelVersion:'0.2.6-experimental', corePin:PIN,
     romSHA256:digest(rom), externalInput:'all zero', settings,
     baseline:{...baseline.record, ...repeatRecord(baseline.record, baselineRepeat.record)}, results};
 }
