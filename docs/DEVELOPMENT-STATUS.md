@@ -80,9 +80,12 @@ Do not claim the RAM-stage acceptance is complete.
 
 Next assignment: Luna High should inspect the existing runners and determine the
 smallest read-only diagnostic/observation protocol that proves internal demo
-playback and activation scene, preserving unmodified game code. A private legally
-usable cartridge is needed for actual Sonic evidence; no cartridge was found in
-the inspected project/session test locations. Do not fetch a commercial ROM.
+playback and activation scene, preserving unmodified game code. The user supplied
+a private 512 KiB cartridge after release verification. Its SHA-256 matches the
+historical `46160baa06362c711c9f1a5017cb7371026444936c8af5e93a78996cf32ff2a6`
+record. It is stored outside the repository and must not enter release packages.
+A bounded Luna High read-only investigation is underway; no new attract-mode
+acceptance result is claimed. Do not fetch a commercial ROM.
 Synthetic tests can verify diagnostic behaviour but cannot satisfy gameplay
 acceptance. Require an independent specialist review for emulator instrumentation.
 
