@@ -1,3 +1,24 @@
+# Post-v0.2.6 read-only experiment tooling
+
+The application/core are unchanged. The full source suite passed 63 Python tests,
+framebuffer suites, nine pulse-protocol groups, nine observer groups and both C
+smoke programs. Observer tests cover independent byte/word/long/address fixtures,
+signed velocities, source allocation arithmetic, profile rejection before core
+loading, activation order, read-only callbacks, phase offsets/missing rows and
+serialization without timelines or protected bytes.
+
+Independent Luna High review inspected code and test design, verified profile
+fields against the pinned public source and executed six actual-core trials for
+each recorded protocol. Repeats and pre-fault comparisons matched. Protocol 2
+observed Sonic object identity throughout the baseline and found the one-write
+candidate's demo/player state matched baseline one tick earlier in all 596 pairs.
+This does not establish sustained gameplay trajectory divergence. See
+[Attract-mode observations](ATTRACT-MODE-OBSERVATIONS.md) for exact source,
+core, cartridge, timing, typed fields and immutable results.
+
+This was Node emulation of a privately supplied cartridge, not native macOS
+Firefox, audible playback, physical hardware or visual scene acceptance.
+
 # v0.2.6 experiment build identification verification
 
 This increment preserves the existing fault models. Regression cases cover valid,

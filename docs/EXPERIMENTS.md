@@ -145,5 +145,6 @@ absence of these new fields in historical records is expected.
 
 See [Attract-mode observations](ATTRACT-MODE-OBSERVATIONS.md) for a pinned-ROM,
 pinned-core observer and repeated baseline/read-fault/one-write trials. Internal
-playback continuation is observed in the one-write candidate; independent
-gameplay trajectory divergence remains unproven.
+playback continuation is observed in the one-write candidate, but phase alignment
+shows the monitored demo/player state follows the baseline one tick earlier.
+Gameplay trajectory divergence remains unproven.

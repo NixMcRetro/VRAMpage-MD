@@ -70,29 +70,56 @@ is implied. Previous v0.2.4/v0.2.5 ZIP digests and historical JSON remain unchan
 Refresh CI/release state from GitHub before continuation; documentation-only
 commits after this release do not replace the tested package or retag it.
 
+## Read-only observer checkpoint
+
+The application version and released binary remain v0.2.6. The separate developer
+observer adds no core, game-code, direct game-variable or hardware-model edits.
+Permanent instructions/status/queue were merged in
+[PR #21](https://github.com/NixMcRetro/VRAMpage-MD/pull/21), main commit
+`8fbbbce9d935cf550a7f2c1a91b2610a2c7a9e88`; its
+[post-merge CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39772128971)
+passed all browser/source/package jobs. An earlier main WebKit installation
+exceeded its job limit before tests began; a fresh rerun of that job passed.
+
+Observer protocol 1 and 2 have separate immutable six-trial JSON records in
+[Attract-mode observations](ATTRACT-MODE-OBSERVATIONS.md). Protocol 2 tool source
+is `fff7c95e9cd3c6bf0eb7c3f18357972bcdc672eb`, file SHA-256
+`2dd2c8e46a622248a05b7aac161c6de0248a89059e547bf5701f7f207971a0f0`.
+Its record identifies the published package/core separately from the tool.
+Independent Luna High review checked actual code, field mappings and tests and
+ran the six actual private-cartridge trials. Baseline Sonic object ID 1 was
+observed through all 602 timeline ticks. Source checks cover 63 Python tests,
+framebuffer suites, nine pulse groups, nine observer groups and both C smokes.
+
 ## Highest-priority unfinished experiment
 
-Current actual-cartridge records show repeatable corruption, including halted or
-static-output cases and some divergent-output candidates. They do not establish
-that internal Sonic attract-mode demo playback continues after a fault. Zero
-external input, advancing ticks, clear CPU flags or changing hashes are insufficient.
-Do not claim the RAM-stage acceptance is complete.
+The user supplied the private 512 KiB cartridge matching the historical
+`46160baa06362c711c9f1a5017cb7371026444936c8af5e93a78996cf32ff2a6`
+fingerprint. It stays outside the repository and packages. Source-backed
+internal demo playback is now observed in baseline and A10/A11 one-write trials.
+The sustained D0/D1 read control stops the demo despite clear CPU flags.
 
-Next assignment: Luna High should inspect the existing runners and determine the
-smallest read-only diagnostic/observation protocol that proves internal demo
-playback and activation scene, preserving unmodified game code. The user supplied
-a private 512 KiB cartridge after release verification. Its SHA-256 matches the
-historical `46160baa06362c711c9f1a5017cb7371026444936c8af5e93a78996cf32ff2a6`
-record. It is stored outside the repository and must not enter release packages.
-A bounded Luna High read-only investigation is underway; no new attract-mode
-acceptance result is claimed. Do not fetch a commercial ROM.
-Synthetic tests can verify diagnostic behaviour but cannot satisfy gameplay
-acceptance. Require an independent specialist review for emulator instrumentation.
+For A10/A11, all 596 monitored demo/player tuples match baseline one tick earlier.
+Exactly one affected write is recorded, with no CPU recovery. This establishes
+a continuation candidate consistent with a phase delay, not sustained gameplay
+trajectory divergence. Thirty-five raw-frame hash differences remain after that
+alignment; they do not establish changed gameplay. Visual scene identity,
+whole-game equivalence, native Mac/Firefox, audible output, other revisions and
+physical hardware are not validated. The RAM-stage acceptance remains open.
 
-Record exact source/core/ROM hash, reset/input schedule, activation and release
-frames, scene observation, playback evidence, fault settings, CPU state and repeated
-baseline/fault outcomes. Export no protected bytes or captures. Report failures
-without implicit recovery. See WORK-QUEUE.md for dependencies and acceptance.
+Next assignment: Luna High should identify the first affected generic RAM write
+behind the one-tick delay. Inspect existing hooks and reuse diagnostics where
+possible. If additional passive address/width/frame tracing is needed, define a
+bounded implementation in the generic RAM access layer, with no game-specific
+writes, no silent recovery and no ROM/RAM byte output. Require independent
+specialist review and strict native/sanitizer, actual-WASM, no-fault and exact
+budget/counter regression tests. Record only diagnostic metadata. Any runtime
+API change uses the next 0.2.x version and keeps the v0.2.6 profile/artifacts intact.
+
+Use the identified access and source-backed scene/playback observation to choose
+a bounded next trial. Repeat baseline and fault from equivalent resets, examine
+phase alignment and player state, and record failures honestly. Do not run an
+undirected large sweep or advance to transaction-level VRAM on hash differences.
 
 ## Restart instructions
 
