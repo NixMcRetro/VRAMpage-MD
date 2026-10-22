@@ -28,7 +28,7 @@ def load_catalog():
         raise CurationError("Published release version is newer than source VERSION.")
     entries = data["releases"]
     tags = [entry["tag"] for entry in entries]
-    if len(tags) != 12 or len(set(tags)) != len(tags) or tags[0] != current:
+    if len(tags) != 12 or len(set(tags)) != len(tags) or tags[0] != data["current"]:
         raise CurationError("Incorrect, duplicate or unordered release entries.")
     for entry in entries:
         tag = entry["tag"]
