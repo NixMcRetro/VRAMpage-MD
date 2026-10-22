@@ -1,6 +1,6 @@
 # Versioning policy
 
-Current development/release version: **v0.2.5** (`VERSION` stores `0.2.5`).
+Current development/release version: **v0.2.6** (`VERSION` stores `0.2.6`).
 
 VRAMpage MD is experimental, **not version 2.x**. Use semantic-looking
 `MAJOR.MINOR.PATCH` identifiers with leading `0` until a deliberately
@@ -24,7 +24,8 @@ The `v0.2.4` release includes all preceding milestones; it does **not**
 imply the attract-mode desynchronisation acceptance criterion is complete.
 
 v0.2.5 adds independent VRAM AD0-AD7 leg switches within the current
-frame-scoped model. Further incremental RAM-stage improvements use v0.2.6,
+frame-scoped model. v0.2.6 adds build identification to experiment exports.
+Further incremental RAM-stage improvements use
 v0.2.7, etc. Per-access VRAM remains reserved for v0.3.0 and hardware-informed
 audio bending for v0.4.0. A leg switch does not advance either milestone.
 
@@ -41,7 +42,7 @@ audio bending for v0.4.0. A leg switch does not advance either milestone.
 - The older `v2.4.0` GitHub release was published before this correction.
   Its superseded release entry and attached assets have been removed. Its original
   Git tag and commit remain as source-history references. The corrected `v0.2.4`
-  and current `v0.2.5` downloads remain available. Never silently retag a public
+  and subsequent `v0.2.x` downloads remain available. Never silently retag a public
   historical release.
 - Historical release entries for v0.1.0 through v0.2.3 refer to their original
   development commits. They provide source archives, not newly verified Mac

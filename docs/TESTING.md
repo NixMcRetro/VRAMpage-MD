@@ -1,3 +1,19 @@
+# v0.2.6 experiment build identification verification
+
+This increment preserves the existing fault models. Regression cases cover valid,
+missing, malformed, mismatched and stalled metadata. Export completes while the
+metadata request is pending; timeout aborts the request and retains unavailable
+status. Package tests check exact HEAD/version, identical root/site manifests,
+unique archive entries and unchanged local stale metadata.
+
+The user reports v0.2.5 appears to work on their Mac, as far as they can tell.
+This does not establish complete native macOS/Firefox or audible-output acceptance.
+Local validation passed 63 Python tests, both framebuffer suites, nine pulse
+protocol groups and both native C smoke programs. Chromium passed 28 logic cases
+and the actual-core browser smoke. CI additionally runs Firefox and WebKit.
+Historical verification records below retain their original context. The
+superseded v2.4.0 release entry and assets were subsequently removed; its tag remains.
+
 # v0.2.5 VRAM leg-switch verification
 
 This incremental version adds independent AD0–AD7 stuck-low switches to the

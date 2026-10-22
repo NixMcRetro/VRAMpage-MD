@@ -17,7 +17,7 @@ BLITTER_MARKER = b"VRAMpage MD: native RGBA output blitter"
 def make_checkout(root, *, wasm=True, include_rom=False):
     files = {
         "README.md": b"Review bundle README",
-        "VERSION": b"0.2.4\n",
+        "VERSION": b"0.2.6\n",
         "START.command": b"#!/bin/bash\n",
         "docs/RUNNING-LOCALLY.md": b"Run guide",
         "scripts/serve.py": b"print('serve')\n",
@@ -71,12 +71,18 @@ class ReviewBundleTests(unittest.TestCase):
             output = Path(directory) / "review.zip"
             result = self.run_packager(launcher, output)
             self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse((root / "site/build-info.json").exists())
             with zipfile.ZipFile(output) as archive:
                 self.assertTrue(all(name.startswith("VRAMpage-MD/") for name in archive.namelist()))
                 names = {name.removeprefix("VRAMpage-MD/") for name in archive.namelist()}
                 self.assertIn("START.command", names)
-                metadata = json.loads(archive.read("VRAMpage-MD/BUILD-INFO.json"))
-                self.assertEqual(metadata["application_version"], "0.2.4")
+                root_info = archive.read("VRAMpage-MD/BUILD-INFO.json")
+                self.assertEqual(root_info, archive.read("VRAMpage-MD/site/build-info.json"))
+                self.assertEqual(len(archive.namelist()), len(set(archive.namelist())))
+                metadata = json.loads(root_info)
+                self.assertEqual(set(metadata), {"application", "application_version",
+                                                 "source_commit", "package_format"})
+                self.assertEqual(metadata["application_version"], "0.2.6")
                 self.assertEqual(metadata["source_commit"], subprocess.check_output(
                     ["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip())
                 mode = archive.getinfo("VRAMpage-MD/START.command").external_attr >> 16
@@ -87,6 +93,52 @@ class ReviewBundleTests(unittest.TestCase):
                 self.assertNotIn("private-notes.txt", names)
                 self.assertFalse(any("__pycache__" in name for name in names))
                 self.assertFalse(any(name.endswith(".bin") for name in names))
+
+    def test_stale_local_metadata_is_replaced_without_changing_checkout(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "checkout"
+            root.mkdir()
+            launcher = make_checkout(root)
+            forged = b'{"application_version":"old","source_commit":"forged"}\n'
+            for name in ("BUILD-INFO.json", "site/build-info.json"):
+                (root / name).write_bytes(forged)
+            # Also cover accidentally tracked metadata, not just an untracked
+            # site file. Only clean committed source may supply provenance.
+            subprocess.run(["git", "-C", str(root), "add", "BUILD-INFO.json",
+                            "site/build-info.json"], check=True)
+            subprocess.run(["git", "-C", str(root), "-c", "user.name=Bundle test",
+                            "-c", "user.email=bundle-test@example.invalid", "commit",
+                            "-qm", "Stale metadata fixture"], check=True)
+            commit = subprocess.check_output(
+                ["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip()
+            result = self.run_packager(launcher, Path(directory) / "review.zip")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            with zipfile.ZipFile(Path(directory) / "review.zip") as archive:
+                names = archive.namelist()
+                self.assertEqual(names.count("VRAMpage-MD/BUILD-INFO.json"), 1)
+                self.assertEqual(names.count("VRAMpage-MD/site/build-info.json"), 1)
+                canonical = archive.read("VRAMpage-MD/BUILD-INFO.json")
+                self.assertEqual(canonical, archive.read("VRAMpage-MD/site/build-info.json"))
+                self.assertEqual(json.loads(canonical)["source_commit"], commit)
+                self.assertEqual(json.loads(canonical)["application_version"], "0.2.6")
+            for name in ("BUILD-INFO.json", "site/build-info.json"):
+                self.assertEqual((root / name).read_bytes(), forged)
+
+    def test_untracked_forged_site_metadata_is_ignored(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "checkout"
+            root.mkdir()
+            launcher = make_checkout(root)
+            stale = root / "site/build-info.json"
+            stale.write_text('{"source_commit":"forged","application_version":"old"}')
+            output = Path(directory) / "review.zip"
+            result = self.run_packager(launcher, output)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            with zipfile.ZipFile(output) as archive:
+                canonical = archive.read("VRAMpage-MD/BUILD-INFO.json")
+                self.assertEqual(canonical, archive.read("VRAMpage-MD/site/build-info.json"))
+                self.assertNotEqual(json.loads(canonical)["source_commit"], "forged")
+            self.assertIn("forged", stale.read_text())
 
     def test_uncommitted_tracked_changes_reject_misleading_provenance(self):
         with tempfile.TemporaryDirectory() as directory:

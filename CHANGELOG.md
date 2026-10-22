@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.2.6 - experiment build identification
+
+- Add export schema version 1 and application version/source commit metadata.
+- Load package metadata in the background; missing, invalid or pending metadata
+  exports an explicit unavailable status and null source commit without blocking use.
+- Generate identical root and browser-readable build manifests in the complete ZIP.
+- Preserve fault models, existing export fields and historical experiment records.
+
 ## Release-history maintenance
 
 - Add missing canonical historical releases from v0.1.0 through v0.2.3 at

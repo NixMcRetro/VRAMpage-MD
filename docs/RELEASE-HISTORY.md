@@ -2,7 +2,7 @@
 
 [Browse GitHub Releases](https://github.com/NixMcRetro/VRAMpage-MD/releases).
 The current runnable Mac download is
-[VRAMpage MD v0.2.5](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.5/VRAMpage-MD-v0.2.5-macos.zip).
+[VRAMpage MD v0.2.6](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.6/VRAMpage-MD-v0.2.6-macos.zip).
 Extract it and open START.command. Python 3 and your own legally usable cartridge
 are required. No Git or WebAssembly compilation is needed for this download.
 
@@ -28,7 +28,8 @@ No prebuilt Mac ZIP or fresh runtime validation is claimed for these older commi
 
 - [v0.2.4](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.4): corrected
   canonical version of the consolidated application, with its original ZIP retained.
-- [v0.2.5](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.5): current
+- [v0.2.6](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.6): experiment build identification, complete Mac ZIP.
+- [v0.2.5](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.5): previous
   release, including individual VRAM leg switches.
 
 The misnumbered v2.4.0 release entry and its attached assets were removed. Its

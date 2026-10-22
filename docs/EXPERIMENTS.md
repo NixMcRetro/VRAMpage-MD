@@ -120,3 +120,23 @@ The [pulse survey](PULSE-EXPERIMENTS.md) compares all 14 adjacent address write
 pairs against a repeated baseline using the v0.2.2 one-frame protocol. It records
 small-change and divergent-output candidates without claiming continued internal
 demo input. Use the linked runner/results to reproduce the exact activation.
+
+## Export schema and build identification (v0.2.6)
+
+New exports add `schemaVersion: 1` and a `build` object containing `status`,
+`applicationVersion` and `sourceCommit`. A complete release ZIP includes
+`site/build-info.json`, identical to its root `BUILD-INFO.json`. The app accepts
+only the expected application, version and package format plus a 40-character
+lowercase hexadecimal commit. It copies no arbitrary manifest fields.
+
+Metadata loads once in the background with a bounded timeout. Export never
+waits for that request. Missing, invalid, mismatched, timed-out or still pending
+metadata produces `status: "unavailable"` and `sourceCommit: null`. An unpackaged
+source checkout normally has no generated manifest and uses this fallback.
+Playback and fault controls remain usable in either case.
+
+Build identification is not cryptographic attestation of unmodified files.
+Compare source commit, core revision, ROM hash, protocol version, reset state
+and fault settings when comparing runs. Matching identifiers do not prove
+identical input timing or deterministic gameplay. Preserve older JSON unchanged;
+absence of these new fields in historical records is expected.

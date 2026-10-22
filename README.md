@@ -2,13 +2,17 @@
 
 VRAMpage MD is a browser-based NTSC Sega Mega Drive / Genesis Model 1 emulator
 experiment. Play your own locally supplied cartridge while exploring deterministic,
-hardware-informed VRAM and 68000 work-RAM faults. **v0.2.5 is experimental:** the
+hardware-informed VRAM and 68000 work-RAM faults. **v0.2.6 is experimental:** the
 chip diagrams are conceptual and the models are not electrically accurate.
+
+Experiment exports include the application source commit when running a complete
+release package, with an explicit unavailable status otherwise. See
+[experiment records](docs/EXPERIMENTS.md#export-schema-and-build-identification-v026).
 
 ## Download and run on a Mac
 
-**[Download the complete v0.2.5 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.5/VRAMpage-MD-v0.2.5-macos.zip)**
-([release notes](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.5)).
+**[Download the complete v0.2.6 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.6/VRAMpage-MD-v0.2.6-macos.zip)**
+([release notes](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.6)).
 The [corrected v0.2.4 release](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.4)
 remains available. The misnumbered v2.4.0 release entry has been removed; its Git
 tag remains in the source history. See the [complete release history](docs/RELEASE-HISTORY.md).
@@ -83,7 +87,7 @@ source and upstream notices. See [third-party notices](THIRD-PARTY-NOTICES.md).
 No Sega games, logos or commercial ROMs are included.
 
 The integrated history preserves development from the source import through
-v0.2.5. Historical prototype and experiment records remain in the
+v0.2.6. Historical prototype and experiment records remain in the
 [documentation index](docs/README.md). See [changelog](CHANGELOG.md), [versioning policy](docs/VERSIONING.md) and
 [roadmap](ROADMAP.md). Releases belong to this independent repository;
 **McRetro.net is not modified or deployed by this workflow**.

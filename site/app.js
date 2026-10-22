@@ -41,6 +41,38 @@
   let logicResetState = 'No cartridge loaded';
   let romHashPromise = Promise.resolve(null);
   const CORE_PIN = '6090aff9e9b2f578cd28882bd4571d2e35b1d674';
+  const APPLICATION_VERSION = '0.2.6';
+  let buildInfo = {status:'unavailable',applicationVersion:APPLICATION_VERSION,sourceCommit:null};
+  loadBuildInfo().then(info=>{buildInfo=info;});
+
+  async function loadBuildInfo() {
+    const unavailable = {status:'unavailable',applicationVersion:APPLICATION_VERSION,sourceCommit:null};
+    let timer;
+    try {
+      const controller = new AbortController();
+      const request = fetch('./build-info.json', {
+        signal:controller.signal,cache:'no-store',credentials:'omit'
+      }).then(async response => {
+        if (!response.ok) return unavailable;
+        const info = await response.json();
+        if (!info || typeof info!=='object' || Array.isArray(info) ||
+            info.application!=='VRAMpage MD' || info.application_version!==APPLICATION_VERSION ||
+            info.package_format!==1 || typeof info.source_commit!=='string' ||
+            !/^[a-f0-9]{40}$/.test(info.source_commit)) return unavailable;
+        // Copy only the public, validated identity fields into experiment records.
+        return {status:'available',applicationVersion:APPLICATION_VERSION,sourceCommit:info.source_commit};
+      });
+      const timeout = new Promise(resolve => {
+        timer=setTimeout(()=>{resolve(unavailable);controller.abort();},1500);
+      });
+      return await Promise.race([request,timeout]);
+    } catch (_) {
+      return unavailable;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   const LOGIC_API = ['_set_logic_fault','_get_logic_reads','_get_logic_writes',
     '_get_logic_frame','_get_logic_activation_frame','_get_logic_cpu_flags'];
 
@@ -482,7 +514,9 @@
     const reads=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.readCount : coreReads;
     const writes=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.writeCount : coreWrites;
     const data={
-      modelVersion:'0.2.5-experimental',
+      schemaVersion:1,
+      build:{...buildInfo},
+      modelVersion:'0.2.6-experimental',
       vramFault:{kind:vramAddressMask?'address-stuck-low':actualPair()?'address-bridge':'none',
         addressMask:vramAddressMask,lines:vramLines(vramAddressMask),bridge:actualPair()?[...actualPair()]:null},
       vramAddressLineChanges:vramAddressLineChanges.map(entry=>({...entry})),
