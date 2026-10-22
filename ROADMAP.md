@@ -23,7 +23,8 @@
 - Verified locally: Chromium layout/input/fullscreen/media response at nine sizes.
 - Verified locally: Emscripten build, full Sonic title/Green Hill in Chromium,
   fault selection/removal and clean restart.
-- Pending: final browser CI, macOS fullscreen and audible playback acceptance;
+- Verified in CI: all source tests and Chromium/Firefox/WebKit synthetic suites.
+- Pending: native macOS/Firefox gameplay, fullscreen and audible playback acceptance;
   see [testing evidence](docs/TESTING.md) and [changelog](CHANGELOG.md).
 - Complete display acceptance before implementing v0.2 hardware changes.
 

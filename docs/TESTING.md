@@ -115,15 +115,19 @@ new measured budget; real geometry assertions now protect the sizing behaviour.
 - Initial CI: source suite and WebKit passed; Chromium rejected the unsupported
   fullscreen resize, while Firefox automatically exited fullscreen on that
   resize. Its subsequent exit call failed. Both are addressed by the corrected
-  two-size lifecycle test. Final CI results must be checked on the latest commit.
+  two-size lifecycle test. On commit `7521767`, [final CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39711634318)
+  passed the source job and all six synthetic tests in **each** of Chromium,
+  Firefox and WebKit (18 browser tests total).
 - Local Firefox 153.0 could not complete its launch handshake (container namespace
   restrictions); WebKit 26.5 closed before page creation. Signed Debian library
   packages were extracted outside the checkout to satisfy WebKit dependencies,
-  but did not resolve that host limitation. These are failed setup attempts,
-  not passing browser suites. Use CI for those engines.
+  but did not resolve that host limitation. These are failed local setup attempts;
+  the corresponding engine suites passed on GitHub Actions.
 - Emscripten **4.0.23**, CMake **4.1.3** and Node **24.19.0** successfully built the
   corrected pinned core. The generated JS/WASM and corresponding modified source
-  include the native-blitter patch and upstream licence notices.
+  include the native-blitter patch and upstream licence notices. A repeat build
+  also passed. A local static review archive was checked for all HTML assets,
+  the WASM pair and modified source; no cartridge data was present.
 - Genuine cartridge smoke test in Chromium 154 on Linux: the supplied local Sonic
   backup booted to the full title picture and Green Hill; Start and direction/jump
   inputs were sent through the app. At 1366×768, 1280×720, 390×844 and 844×390,
