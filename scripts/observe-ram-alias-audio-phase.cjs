@@ -58,7 +58,7 @@ function validateAppDirectory(directory, profile = APP_PROFILE) {
 }
 
 function hashFloatSamples(heap, pointer, count, capacity = AUDIO.capacity) {
-  if (!(heap instanceof Uint8Array) || !Number.isSafeInteger(pointer) || pointer < 0 ||
+  if (!(heap instanceof Uint8Array) || !Number.isSafeInteger(pointer) || pointer < 0 || pointer % 4 !== 0 ||
       !Number.isSafeInteger(count) || count < 0 || count > capacity ||
       !Number.isSafeInteger(capacity) || capacity <= 0 || pointer + capacity * 4 > heap.length) {
     fail('Audio buffer range or sample count is invalid.');

@@ -16,6 +16,7 @@ assert.throws(() => hashFloatSamples(heap, 0, -1, 16), /invalid/i);
 assert.throws(() => hashFloatSamples(heap, 0, 17, 16), /invalid/i);
 assert.throws(() => hashFloatSamples(heap, 4, 16, 16), /invalid/i);
 assert.throws(() => hashFloatSamples(heap, 0, 1.5, 16), /invalid/i);
+assert.throws(() => hashFloatSamples(new Uint8Array(68), 1, 1, 16), /invalid/i);
 const known = new Uint8Array(8);
 new DataView(known.buffer).setFloat32(0, 1, true);
 new DataView(known.buffer).setFloat32(4, -2, true);
