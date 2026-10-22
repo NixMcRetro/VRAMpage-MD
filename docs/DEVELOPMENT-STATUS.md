@@ -114,6 +114,11 @@ merge. The review ZIP from f0cc664 has 288 unique entries; independent default
 worker verified manifests, source/notices, executable launcher, ROM/secret
 exclusion, eight served assets and browser startup without errors.
 
+Independent specialist review reran all six trials and obtained byte-identical
+output. Source layout identifies the original address inside the sprite-table
+buffer and the alias as the `AMSFMSPan` field of the first sound-effects FM track.
+This does not prove an audible effect or explain the gameplay delay.
+
 The six-trial [trace record](RAM-WRITE-TRACE.md#recorded-first-write-result)
 identified a byte write at `$FFF62A` mapped to logical `$F22A` during tick 1801.
 Traced/untraced and enabled repeats matched exactly. Baseline and one-write
@@ -137,8 +142,10 @@ alignment; they do not establish changed gameplay. Visual scene identity,
 whole-game equivalence, native Mac/Firefox, audible output, other revisions and
 physical hardware are not validated. The RAM-stage acceptance remains open.
 
-Next assignment: Luna High should identify the first affected generic RAM write
-behind the one-tick delay. Inspect existing hooks and reuse diagnostics where
+The first affected generic write is now identified; its causal effect remains
+unknown. Next assignment: Luna High should locate that sprite-entry write and
+compare the named alias-target state and generated sound under the same pulse,
+with phase-aligned player/demo checks. Inspect existing hooks and reuse diagnostics where
 possible. If additional passive address/width/frame tracing is needed, define a
 bounded implementation in the generic RAM access layer, with no game-specific
 writes, no silent recovery and no ROM/RAM byte output. Require independent

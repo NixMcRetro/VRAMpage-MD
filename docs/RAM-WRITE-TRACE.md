@@ -86,3 +86,19 @@ v0.2.6 protocol-2 record exactly. This supports noninterference in this bounded
 experiment and localizes the changed bus access; it does not by itself identify
 the game routine or prove sustained gameplay divergence. The phase-delay result
 and RAM-stage acceptance limits remain unchanged.
+
+Independent Luna High review reran all six trials and produced a byte-identical
+record (SHA-256 `4789fc74fb3cfda95aa67d08f4b4ae413b65e97df4cbe9110f6b5459b0ff1f6c`).
+At the observer's pinned public
+[s1disasm source](https://github.com/sonicretro/s1disasm/tree/15dfa3a6ee4c53aeb482233e493755c84b4f3479),
+`_Variables.asm` and `_Constants.asm` map `$F62A` to
+`v_spritetablebuffer + $4A`. The allocation in `s1.sounddriver.ram.asm`
+maps `$F22A` to `v_sfx_fm3_track + $A`, its `AMSFMSPan` field. The original
+address is inside the sprite-table buffer; the alias target is in sound-effects
+track RAM. This is a source-layout interpretation, not an observation of an
+audible change or a causal explanation of the one-tick gameplay delay.
+
+The next bounded investigation should locate the sprite-entry write and compare
+its target state and generated sound under the same one-write pulse. Preserve
+zero-input/reset equivalence and phase-aligned player/demo checks. Do not begin
+audio-bending features or infer gameplay divergence from this address alias.

@@ -15,7 +15,7 @@ regressions and actual-WASM tests, then package from a clean tracked checkout:
 bash scripts/test.sh
 bash scripts/build-core.sh
 node tests/test_wasm_logic.cjs site/core/genplus.js
-python3 scripts/package-review.py --output /tmp/VRAMpage-MD-v0.2.6-macos.zip
+python3 scripts/package-review.py --output /tmp/VRAMpage-MD-v0.2.7-macos.zip
 ```
 
 Extract and launch the package before attaching it to a GitHub release. Preserve
@@ -27,7 +27,7 @@ artifact is not evidence for a different commit. Keep a SHA-256 checksum beside
 the downloadable ZIP. GitHub Actions artifacts remain useful for CI/review, but
 release assets provide a persistent direct download without nested archives.
 
-To publish without a local upload, run **Publish complete v0.2.6 local download**
+To publish without a local upload, run **Publish complete v0.2.7 local download**
 in GitHub Actions on `main` after its checks pass. It rebuilds and tests the core,
 verifies BUILD-INFO against the run commit, attaches the ZIP/checksum and publishes
 the release using the repository-scoped Actions token. It never accesses
