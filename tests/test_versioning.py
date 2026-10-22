@@ -33,7 +33,7 @@ class VersioningTests(unittest.TestCase):
         self.assertIn("BUILD-INFO.json", workflow)
         self.assertIn("Source commit:", workflow)
         self.assertIn("github.ref == 'refs/heads/main'", workflow)
-        self.assertIn("old release as superseded", workflow)
+        self.assertIn("published release as superseded", workflow)
         self.assertIn("info['application_version'] == '0.2.4'", workflow)
 
     def test_current_download_documentation(self):
