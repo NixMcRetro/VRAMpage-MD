@@ -48,7 +48,7 @@ jobs:
             exit 1
           fi
           if ! gh release view v0.2.5 >/dev/null 2>&1; then
-            gh release create v0.2.5 --draft --target "$GITHUB_SHA" --title 'VRAMpage MD v0.2.5 — ready-to-run Mac download' --notes 'Download the complete Mac ZIP below, extract it and open START.command. Python 3 is required. Load your own legally usable cartridge. See the included README and third-party non-commercial terms.'
+            gh release create v0.2.5 --draft --target "$GITHUB_SHA" --title 'VRAMpage MD v0.2.5 - ready-to-run Mac download' --notes 'Download the complete Mac ZIP below, extract it and open START.command. Python 3 is required. Load your own legally usable cartridge. See the included README and third-party non-commercial terms.'
           fi
           gh release view v0.2.5 --json body --jq .body > /tmp/release-notes.md
           python3 - <<'PY'

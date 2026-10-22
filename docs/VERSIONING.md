@@ -12,7 +12,7 @@ Do not declare `v1.0.0` solely because a new patchbay control was added.
 
 | Feature | Canonical version | Earlier provisional wording |
 |---|---|---|
-| Initial working emulator, UI and video recovery | v0.1.0–v0.1.3 | unchanged |
+| Initial working emulator, UI and video recovery | v0.1.0-v0.1.3 | unchanged |
 | Native blitter repair and browser-window sizing | v0.1.4 | unchanged |
 | 68000 work-RAM fault model and integration | v0.2.0 | v0.2 (experimental) |
 | Explicit CPU recovery | v0.2.1 | v2.1 |
@@ -23,7 +23,7 @@ Do not declare `v1.0.0` solely because a new patchbay control was added.
 The `v0.2.4` release includes all preceding milestones; it does **not**
 imply the attract-mode desynchronisation acceptance criterion is complete.
 
-v0.2.5 adds independent VRAM AD0–AD7 leg switches within the current
+v0.2.5 adds independent VRAM AD0-AD7 leg switches within the current
 frame-scoped model. Further incremental RAM-stage improvements use v0.2.6,
 v0.2.7, etc. Per-access VRAM remains reserved for v0.3.0 and hardware-informed
 audio bending for v0.4.0. A leg switch does not advance either milestone.
@@ -39,9 +39,13 @@ audio bending for v0.4.0. A leg switch does not advance either milestone.
   `2.2`, `2.3-experimental`, etc. labels mean the corresponding
   **v0.2.x** development stage; do not rewrite or regenerate those files.
 - The older `v2.4.0` GitHub release was published before this correction.
-  It remains available with its original tag, commit and artifact for provenance.
-  The corrected `v0.2.4` release was rebuilt from tested `main` and published;
-  the old release is marked superseded. Later releases preserve both records. Never silently retag a public historical release.
+  Its superseded release entry and attached assets have been removed. Its original
+  Git tag and commit remain as source-history references. The corrected `v0.2.4`
+  and current `v0.2.5` downloads remain available. Never silently retag a public
+  historical release.
+- Historical release entries for v0.1.0 through v0.2.3 refer to their original
+  development commits. They provide source archives, not newly verified Mac
+  binaries. See [Release history](RELEASE-HISTORY.md) for the exact mapping.
 - Version labels alone cannot prove two experiment reports have equivalent
   emulator behaviour. Always retain and compare source commit, core revision,
   protocol version, ROM hash and experimental settings.

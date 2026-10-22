@@ -1,8 +1,17 @@
 # Changelog
 
-## v0.2.5 — independent VRAM leg switches
+## Release-history maintenance
 
-- Toggle AD0–AD7 address nets independently with mouse or Enter/Space; × marks
+- Add missing canonical historical releases from v0.1.0 through v0.2.3 at
+  their original commits, with explicit source-only status and current download links.
+- Remove the superseded v2.4.0 release entry while retaining its Git tag and commit.
+- Keep v0.2.5 as the latest runnable release and preserve v0.2.4 assets.
+- Use plain hyphens in release titles and notes. Application version is unchanged.
+
+
+## v0.2.5 - independent VRAM leg switches
+
+- Toggle AD0-AD7 address nets independently with mouse or Enter/Space; × marks
   a stuck-low line. Reconnect one leg or all contacts without undoing stored writes.
 - Preserve paired bridges in explicit Bridge mode and via existing presets/shortcuts.
 - Keep VRAM masks, bridges and work-RAM faults exclusive; recovery/restart clears masks.
@@ -12,7 +21,7 @@
   frame-scoped approximation, not the planned v0.3.0 transaction-level model.
 
 
-## v0.2.4 — consolidated runnable release
+## v0.2.4 - consolidated runnable release
 
 - Consolidate the linear source-import, display and v0.2.4 development history.
 - Provide a versioned complete Mac ZIP containing the compiled emulator,
@@ -26,17 +35,17 @@
   short external legs. Preserve work-RAM disabled-line crosses and all bridge,
   keyboard, recovery and export controls.
 
-## v0.2.4 — chip-style address-line switches, 22 October 2026
+## v0.2.4 - chip-style address-line switches, 22 October 2026
 
 - Add keyboard/mouse wire buttons on a conceptual work-RAM chip. Crosses mark
-  independently forced-low A1–A15 signals; multiple lines may be disabled.
+  independently forced-low A1-A15 signals; multiple lines may be disabled.
 - Add deterministic address masks with read/write direction, persistent aliasing
   writes, transition metadata and reset/recovery/domain exclusivity.
 - Preserve paired faults and pulses; older cores disable only the new switches.
 - Document the stuck-low assumption and unverified physical pin arrangement in
   [Address-line chip](docs/ADDRESS-LINE-CHIP.md).
 
-## v0.2.3 — affected-write pulse limits, 22 October 2026
+## v0.2.3 - affected-write pulse limits, 22 October 2026
 
 - Add core-enforced 1/2/4/8 affected-write limits with a one-frame cutoff and
   release-reason exports. Preserve existing frame controls on older cores.
@@ -47,7 +56,7 @@
 - See [Affected-write pulses](docs/ACCESS-LIMITED-PULSES.md) for semantics,
   test evidence and the historical-survey caveat.
 
-## v0.2.2 — experimental RAM pulses, 22 October 2026
+## v0.2.2 - experimental RAM pulses, 22 October 2026
 
 - Add a deterministic 14-pair pulse survey, independent protocol tests and
   repeated actual-cartridge scalar/hash results. Record smaller-change and
@@ -61,7 +70,7 @@
 - Document that a frame may corrupt many accesses; small or recoverable
   corruption is not guaranteed. See [RAM pulses](docs/RAM-PULSES.md).
 
-## v0.2.1 — experimental CPU recovery, 22 October 2026
+## v0.2.1 - experimental CPU recovery, 22 October 2026
 
 - Add explicit disconnect-and-force-resume and CPU-only reset actions. Preserve
   RAM and fault counters; neither action guarantees recovered gameplay.
@@ -70,7 +79,7 @@
 - Add actual-WASM STOP/HALT/reset checks and browser recovery/metadata regressions.
   See [CPU recovery](docs/CPU-RECOVERY.md) for semantics and acceptance limits.
 
-## v0.2.0 — work RAM integration (in progress)
+## v0.2.0 - work RAM integration (in progress)
 
 - Extend the 64 KiB big-endian work-RAM model to byte and word transactions with
   byte-lane constraints and a low-dominant digital fault rule.
@@ -88,7 +97,7 @@
 - Add `START.command` and a Python local launcher for ready-built review bundles;
   no Emscripten installation is needed to play the bundled app.
 
-## v0.1.4 — review candidate, 22 October 2026
+## v0.1.4 - review candidate, 22 October 2026
 
 - Fit the normal-window picture to the measured space below the header and above
   the game controls/help, including wrapped controls. Remove the 570-pixel cap.
@@ -104,7 +113,7 @@
 - Keep `framebuffer.js` recovery unchanged for legacy cores. This correction is
   in the core output path; it does not change emulation timing, audio or faults.
 
-## v0.1.3 — existing prototype
+## v0.1.3 - existing prototype
 
 - Automatic OS Light/Dark appearance and display-only missing-row recovery,
   including mixed-parity gaps; raw emulator output remains selectable.
