@@ -1,5 +1,13 @@
 # Changelog
 
+## Development coordination
+
+- Add permanent agent instructions, prioritised work queue and verified status checkpoint.
+- Record fresh v0.2.4 download/launcher checks and qualified Mac feedback separately
+  from synthetic browser/core evidence. Keep v2.4.0 deleted as requested.
+- Require specialist review for demanding emulator work and direct demo-playback
+  evidence before claiming the RAM attract-mode milestone.
+
 ## v0.2.6 - experiment build identification
 
 - Add export schema version 1 and application version/source commit metadata.
