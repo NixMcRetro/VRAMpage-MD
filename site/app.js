@@ -132,10 +132,10 @@
       const button=document.createElement('button');
       button.type='button';button.className='chip-pin';button.dataset.chipLine=String(line);
       button.style.gridColumn=line<8?'1':'3';button.style.gridRow=String(line<8?line+1:line-7);
-      const label=document.createElement('span');label.textContent=`A${line+1}`;
+      const label=document.createElement('span');label.className='chip-signal';label.textContent=`A${line+1}`;
       const wire=document.createElement('span');wire.className='chip-wire';wire.setAttribute('aria-hidden','true');
       const cut=document.createElement('span');cut.className='chip-cut';cut.textContent='×';wire.append(cut);
-      button.append(...(line<8?[label,wire]:[wire,label]));
+      button.append(...(line<8?[wire,label]:[label,wire]));
       button.addEventListener('click',()=>applyAddressMask(logicAddressMask ^ (1<<line)));
       $('ramChip').append(button);
     }
@@ -499,7 +499,11 @@
   function setupPatchbay() {
     for (let i=0;i<8;i++) {
       const b = document.createElement('button');
-      b.type='button'; b.className='pin'; b.textContent=`AD${i}`;
+      b.type='button'; b.className='pin';
+      b.style.gridColumn=i<4?'1':'3'; b.style.gridRow=String(i<4?i+1:i-3);
+      const label=document.createElement('span'); label.className='chip-signal'; label.textContent=`AD${i}`;
+      const wire=document.createElement('span'); wire.className='chip-wire'; wire.setAttribute('aria-hidden','true');
+      b.append(...(i<4?[wire,label]:[label,wire]));
       b.title=`External address/data net AD${i}. Select a second net to bridge.`;
       b.setAttribute('aria-label', `Select net AD${i}`);
       b.setAttribute('aria-pressed', 'false');

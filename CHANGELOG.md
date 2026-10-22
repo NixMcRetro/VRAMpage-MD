@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Compact both chip diagrams, especially VRAM, with internal signal labels and
+  short external legs. Preserve work-RAM disabled-line crosses and all bridge,
+  keyboard, recovery and export controls.
+
 ## v2.4 — chip-style address-line switches, 22 October 2026
 
 - Add keyboard/mouse wire buttons on a conceptual work-RAM chip. Crosses mark

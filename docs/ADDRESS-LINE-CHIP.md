@@ -11,6 +11,15 @@ report which lines are forced low, without relying on color. The diagram follows
 system appearance and fits the tested laptop and mobile widths. Older cores
 without the mask API disable these switches while keeping existing controls usable.
 
+## Compact diagrams
+
+Both diagrams keep signal labels inside the chip outline with short external
+legs. VRAM uses four rows for AD0–AD7; work RAM uses eight for A1–A15.
+The full signal row remains a keyboard-focusable button. A visible **×** on a
+work-RAM leg marks a forced-low line and disappears on reconnection. VRAM
+retains its two-net bridge selection and connected highlights; a bridge is not
+a disabled line. Diagram size does not change fault behavior or exported data.
+
 ## The chip drawing is conceptual
 
 This is a logical view of the 64 KiB work-RAM address bus, **not a verified chip

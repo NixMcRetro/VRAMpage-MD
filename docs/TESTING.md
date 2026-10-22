@@ -361,3 +361,24 @@ cartridge run through tick 2401 matched the previous sampled RAM, native-picture
 and stereo-audio baseline exactly. This does not verify healthy faulted gameplay,
 audible playback, actual Z80 execution, physical pin mapping or native macOS
 acceptance. See [Address-line chip](ADDRESS-LINE-CHIP.md) for reproduction.
+
+
+## Compact chip layout follow-up
+
+The source/native suite passed (50 Python tests, framebuffer and pulse protocol
+suites, and both C smoke programs). System Chromium 154 passed all 19 logic UI
+cases and six display cases using the synthetic core. The new geometry case
+checks both chips at 1366×768, 390×844 and 844×390 in light and dark appearance:
+labels stay within body bounds, legs are at most 20 pixels, and diagram heights
+are at most 132 pixels for VRAM and 260 pixels for work RAM. Existing cases
+verify forced-low crosses, reconnect, keyboard input, export and legacy fallback.
+Screenshots were inspected and remain outside Git. No actual-core rebuild or
+private-ROM gameplay validation was performed for this presentation change.
+
+Commands used (system browser avoids a separate browser download):
+
+```sh
+bash scripts/test.sh
+python3 tests/browser_logic.py --executable /usr/lib/chromium/chromium
+python3 tests/browser_display.py --executable /usr/lib/chromium/chromium
+```

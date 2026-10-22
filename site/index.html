@@ -55,8 +55,9 @@
         <p class="explain">Bridge two VRAM address nets. Use the pins or presets 1–8.</p>
         <div class="chip-box">
           <p class="board-label">315-5313 &nbsp; / &nbsp; VDP ADDRESS BUS</p>
-          <div class="pin-grid" id="pinGrid"></div>
-          <div class="chip-middle"><strong>VRAM</strong><span>MULTIPLEXED ADDRESS LINES</span></div>
+          <div class="pin-grid" id="pinGrid" role="group" aria-label="Conceptual VRAM address nets">
+            <div class="chip-middle"><strong>VRAM</strong><span>AD0–AD7</span></div>
+          </div>
           <div class="chip-foot">Select one pin, then another. One connection at a time.</div>
         </div>
         <div class="patch-status"><span>ACTIVE CONNECTION</span><strong id="connectionLabel">NONE — OPEN CIRCUIT</strong></div>
