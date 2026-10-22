@@ -65,6 +65,12 @@ const countMismatch = Array.from({length: 602}, (_, i) => row(1799 + i,
 const counts = compareAudioPhase(baseline, countMismatch, 0);
 assert.equal(counts.sampleCountMatches, 595);
 assert.equal(counts.audioMatches, 595);
+const emptyRows = Array.from({length: 602}, (_, i) => row(1799 + i,
+  {sampleCount: 0, completePairs: 0, leftSHA256: hashFloatSamples(heap, 0, 0, 16),
+    rightSHA256: hashFloatSamples(heap, 0, 0, 16)}));
+const emptyComparison = compareAudioPhase(emptyRows, emptyRows, 0);
+assert.equal(emptyComparison.completeSamplePairs, 0);
+assert.equal(emptyComparison.audioMatches, 596);
 const aligned = Array.from({length: 602}, (_, i) => {
   const tick = 1799 + i;
   const source = baseline.find(r => r.tick === tick + 1);

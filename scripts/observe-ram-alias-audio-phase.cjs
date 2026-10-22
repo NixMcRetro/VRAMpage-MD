@@ -206,6 +206,7 @@ async function main(args) {
       setterFrame: 1800, effectiveTick: 1801, requestedAffectedWrites: 1, cpuRecovery: 'none',
       soundSampleCapacityPerChannel: AUDIO.capacity, bufferUnit: 'float32 samples',
       audioHashMethod: 'SHA-256 of the returned count of raw Float32 bytes per channel; WebAssembly memory is little-endian; buffers and sample values are never serialized',
+      emptyAudioComparison: 'zero-count channel buffers hash as SHA-256(empty); audioMatches includes equal zero-count pairs, while completeSamplePairs counts only pairs with samples',
       stateReadBoundary: 'after sound generation each tick; named work-RAM scalar values only',
       phaseOffsetConvention: observer.PHASE_WINDOW.offsetConvention, phaseOffsets: OFFSETS},
     equivalence: {baselineRepeats: sameObservation(...runs.baseline),
