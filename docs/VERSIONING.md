@@ -33,9 +33,11 @@ imply the attract-mode desynchronisation acceptance criterion is complete.
   are immutable historical evidence. Their old `2.1-experimental`,
   `2.2`, `2.3-experimental`, etc. labels mean the corresponding
   **v0.2.x** development stage; do not rewrite or regenerate those files.
-- An existing **draft** GitHub release named v2.4.0 is to be migrated to
-  v0.2.4 by the explicitly dispatched publishing workflow, after a verified
-  release build. Never retag an already published historical release silently.
+- The older `v2.4.0` GitHub release was published before this correction.
+  It remains available with its original tag, commit and artifact for provenance.
+  The corrected `v0.2.4` release is rebuilt from the current tested `main`.
+  The publishing workflow will mark the old release as superseded after
+  publishing the replacement. Never silently retag a public historical release.
 - Version labels alone cannot prove two experiment reports have equivalent
   emulator behaviour. Always retain and compare source commit, core revision,
   protocol version, ROM hash and experimental settings.

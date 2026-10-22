@@ -33,19 +33,18 @@ jobs:
           with zipfile.ZipFile('VRAMpage-MD-v0.2.4-macos.zip') as bundle:
               info = json.loads(bundle.read('VRAMpage-MD/BUILD-INFO.json'))
               assert info['source_commit'] == os.environ['GITHUB_SHA'], info
+              assert info['application_version'] == '0.2.4', info
           PY
           sha256sum VRAMpage-MD-v0.2.4-macos.zip > SHA256SUMS.txt
       - name: Attach the complete ZIP and publish the release
         run: |
-          # Preserve the existing unpublished legacy draft while correcting its tag.
-          # Never rewrite an already public legacy release.
-          if gh release view v2.4.0 >/dev/null 2>&1; then
-            if [ "$(gh release view v2.4.0 --json isDraft --jq '.isDraft')" != 'true' ]; then
-              echo 'Legacy v2.4.0 is public; manual migration required.' >&2
-              exit 1
-            fi
+          # A public misnumbered release already exists at v2.4.0.
+          # Preserve its old tag, SHA and artifact as immutable provenance.
+          # Rename only a draft, if the old release was never made public.
+          if gh release view v2.4.0 >/dev/null 2>&1 &&
+             [ "$(gh release view v2.4.0 --json isDraft --jq '.isDraft')" = 'true' ]; then
             if gh release view v0.2.4 >/dev/null 2>&1; then
-              echo 'Both v2.4.0 and v0.2.4 releases exist; review before proceeding.' >&2
+              echo 'Both v2.4.0 and v0.2.4 drafts exist; review required.' >&2
               exit 1
             fi
             legacy_id="$(gh api "repos/${GH_REPO}/releases/tags/v2.4.0" --jq '.id')"
@@ -70,3 +69,20 @@ jobs:
           gh release edit v0.2.4 --target "$GITHUB_SHA" --notes-file /tmp/release-notes.md
           gh release upload v0.2.4 download/VRAMpage-MD-v0.2.4-macos.zip download/SHA256SUMS.txt --clobber
           gh release edit v0.2.4 --draft=false --latest
+          # After publishing the corrected download, clearly label the old
+          # published release as superseded while leaving its tag/assets intact.
+          if gh release view v2.4.0 >/dev/null 2>&1 &&
+             [ "$(gh release view v2.4.0 --json isDraft --jq '.isDraft')" = 'false' ]; then
+            gh release view v2.4.0 --json body --jq '.body' > /tmp/old-release-notes.md
+            python3 - <<'PY'
+          from pathlib import Path
+          p = Path('/tmp/old-release-notes.md')
+          old = p.read_text()
+          notice = '**Legacy misnumbered release. Use [v0.2.4](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.4) instead.**'
+          if notice not in old:
+              p.write_text(notice + '\n\n' + old)
+          PY
+            gh release edit v2.4.0 \
+              --title 'VRAMpage MD legacy v2.4.0 (superseded by v0.2.4)' \
+              --notes-file /tmp/old-release-notes.md
+          fi
