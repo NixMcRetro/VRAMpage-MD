@@ -113,3 +113,10 @@ Separately, a disabled-fault comparison against the preceding display core ran
 3000 ticks. Full framebuffer and left-channel audio hashes at ticks 1, 600,
 1200, 1800, 2400 and 3000 matched exactly. This is sampled regression evidence,
 not exhaustive equivalence or audible-playback verification.
+
+## One-frame follow-up
+
+The [pulse survey](PULSE-EXPERIMENTS.md) compares all 14 adjacent address write
+pairs against a repeated baseline using the v2.2 one-frame protocol. It records
+small-change and divergent-output candidates without claiming continued internal
+demo input. Use the linked runner/results to reproduce the exact activation.

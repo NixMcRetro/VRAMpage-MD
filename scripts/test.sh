@@ -7,6 +7,7 @@ node --check site/app.js
 node --check site/framebuffer.js
 node tests/test_framebuffer.cjs
 node tests/test_framebuffer_properties.cjs
+node tests/test_pulse_sweep.cjs
 cc -std=c11 -O2 -Wall -Wextra -Werror tests/fault_engine_smoke.c -o /tmp/vrambender_fault_smoke
 /tmp/vrambender_fault_smoke
 cc -std=c11 -O2 -Wall -Wextra -Werror \

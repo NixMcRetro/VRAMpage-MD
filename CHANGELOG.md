@@ -2,6 +2,10 @@
 
 ## v2.2 — experimental RAM pulses, 22 October 2026
 
+- Add a deterministic 14-pair pulse survey, independent protocol tests and
+  repeated actual-cartridge scalar/hash results. Record smaller-change and
+  divergent-output candidates without claiming successful demo desynchronisation.
+
 - Apply selected RAM faults for 1/2/4/8 emulated frames, then disconnect and
   attempt force resume. Add 14 adjacent-address write-pulse buttons.
 - Record pulse timing, configuration, cancellation and recovery linkage in JSON.

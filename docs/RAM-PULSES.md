@@ -54,3 +54,11 @@ The scheduler/keyboard/export/cancellation checks use a synthetic browser core.
 They establish frame counts and state transitions, not successful Sonic recovery
 or electrical fidelity. Actual-core browser results are recorded in [Testing](TESTING.md).
 See [CPU recovery](CPU-RECOVERY.md) for the intervention's limitations.
+
+## Measured candidates
+
+A repeated actual-core [one-frame survey](PULSE-EXPERIMENTS.md) at tick 1800
+found A14/A15 left 28 RAM bytes different at the contact boundary with later
+sampled output matching baseline. A10/A11 produced different, changing output.
+These are activation-specific observations, not safe presets or proof that demo
+input continues. Most other pairs gave static output despite clear CPU flags.

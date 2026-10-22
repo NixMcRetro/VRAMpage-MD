@@ -281,3 +281,22 @@ It did not verify normal gameplay or the extent of corruption. The existing
 core is reused unchanged; source tests and 12 actual-WASM original-cartridge
 checks remain required. Native macOS acceptance and physical fidelity remain open.
 See [RAM pulses](RAM-PULSES.md) for manual reproduction and limitations.
+
+
+## v2.2 pulse survey research
+
+`bash scripts/test.sh` adds `tests/test_pulse_sweep.cjs`: eight protocol test groups
+cover exact activation/contact/recovery order, zero external inputs, independent
+repeats (including mismatches), RAM difference metrics, static output, failed
+trials, invalid configuration and buffer ranges. The synthetic fixture verifies
+the measurement code, not hardware behavior. Source validation still includes
+50 Python tests, both framebuffer suites and both C smokes. All 12 existing
+actual-WASM original-cartridge checks passed against the unchanged core.
+
+The actual-core [pulse survey](PULSE-EXPERIMENTS.md) ran 30 fresh-core trials:
+two baselines and two per adjacent address pair. All paired observations matched.
+There are no browser-facing changes in this follow-up; the prior 54 three-engine
+browser cases remain the UI evidence, with CI regression runs on the new branch.
+Cartridge visuals used for diagnostic inspection remain private. This does not
+verify physical shorts, audible playback, native macOS behavior or continued
+internal demo-controller playback.

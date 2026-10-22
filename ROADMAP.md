@@ -65,6 +65,9 @@ No guaranteed target effect for arbitrary modeled shorts.
 
 - Frame-counted RAM pulses followed by explicit force resume; adjacent-address
   write-pulse buttons and exported intervention timing.
+- A repeated [one-frame survey](docs/PULSE-EXPERIMENTS.md) found smaller-change
+  and changing-output candidates at one activation point; most pairs yielded
+  static output despite clear CPU flags.
 - Smaller corruption and continued attract-mode gameplay remain experiments,
   not acceptance claims. See [RAM pulses](docs/RAM-PULSES.md).
 
