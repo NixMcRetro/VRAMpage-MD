@@ -1,0 +1,20 @@
+# Changelog
+
+## v0.1.4 — review candidate, 22 October 2026
+
+- Fit the normal-window picture to the measured space below the header and above
+  the game controls/help, including wrapped controls. Remove the 570-pixel cap.
+- Preserve the 320×224 canvas and 10:7 picture proportions independently of CSS
+  sizing; retain fullscreen repainting and raw/recovered output.
+- Restore Enter/Space activation of focused patchbay buttons and other controls.
+- Add optional Playwright regression tests using an original synthetic core,
+  screenshot artifacts and a three-engine CI job. Local Chromium results and
+  outstanding manual/other-engine checks are recorded in [Testing](docs/TESTING.md).
+- No changes to framebuffer recovery, emulation timing, audio or hardware faults.
+
+## v0.1.3 — existing prototype
+
+- Automatic OS Light/Dark appearance and display-only missing-row recovery,
+  including mixed-parity gaps; raw emulator output remains selectable.
+- Documentation/testing foundation describes modelling limits and release gates.
+- Historical local gameplay observations are not new cross-browser verification.

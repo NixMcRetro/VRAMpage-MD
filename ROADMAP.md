@@ -13,6 +13,15 @@
 
 **Acceptance gates:** local clean boot, stereo sound without fault, keyboard input, repeatable active short, restored video after disconnection (except persistence caused by genuine writes), no ROM included, no external runtime dependencies.
 
+## v0.1.4 | Display review candidate
+
+- Implemented: measured window sizing, unchanged native framebuffer recovery,
+  focused-control keyboard activation and synthetic browser regressions.
+- Verified locally: Chromium layout/input/fullscreen/media response at nine sizes.
+- Pending: Firefox/WebKit runs, macOS fullscreen and genuine gameplay/audio checks;
+  see [testing evidence](docs/TESTING.md) and [changelog](CHANGELOG.md).
+- Complete display acceptance before implementing v0.2 hardware changes.
+
 ## v0.2 | Logic-bending experiments
 
 Goal: an **unscripted attract-mode desynchronisation** where Sonic's demo controller playback continues, but faulty RAM or cartridge transactions change the game state. Sonic could collide with scenery, get stuck or crash depending on the hardware fault.
@@ -57,4 +66,7 @@ Goal: an **unscripted attract-mode desynchronisation** where Sonic's demo contro
 - Prepare a self-contained `site/` release including `core/*.js`, `core/*.wasm` and corresponding modified source.
 - Stage into `NixMcRetro/mcretro.net:homepages/vrampage/` **on a review branch only**.
 - Deploy to mcretro.net only on explicit approval. A push to McRetro's main triggers the site's full Jekyll/Pagefind rebuild.
-\n## Documentation and tests\n\nFor documentation milestones, regression coverage and manual acceptance gates, see [the Markdown documentation roadmap](docs/DOCUMENTATION-ROADMAP.md), [testing guide](docs/TESTING.md) and [documentation index](docs/README.md). Document hardware assumptions separately from experimentally verified behaviour.\n
+
+## Documentation and tests
+
+For documentation milestones, regression coverage and manual acceptance gates, see [the Markdown documentation roadmap](docs/DOCUMENTATION-ROADMAP.md), [testing guide](docs/TESTING.md) and [documentation index](docs/README.md). Document hardware assumptions separately from experimentally verified behaviour.

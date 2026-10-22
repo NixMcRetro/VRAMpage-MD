@@ -76,7 +76,8 @@ The objective is to make every version reproducible without relying on chat hist
 
 **New docs as needed:** `CHANGELOG.md`, `docs/CONTROLS.md`, `docs/TROUBLESHOOTING.md`, `docs/RELEASING.md`.
 
-- [ ] Version and date changes, describe user-visible controls, expected behaviour and known limitations.
+- [x] Add the versioned [changelog](../CHANGELOG.md); v0.1.4 remains a review candidate.
+- [ ] Version and date public releases, describe user-visible controls, expected behaviour and known limitations.
 - [ ] Explain browser compatibility (Firefox first, then Chromium/WebKit), keyboard focus, file selection and fullscreen exit.
 - [ ] Provide reproducible troubleshooting paths for missing core, HEAPU8/HEAPF32, CMake/Emscripten, audio unlock and video output.
 - [ ] Audit licence notices and corresponding modified source before packaging WASM.

@@ -4,6 +4,10 @@
 
 **Project status:** v0.1.x is experimental. Local Mac testing confirmed gameplay, controls, sound and VRAM shorts; the v0.1.3 video line recovery remains a display workaround, not a validated VDP fix. No ROM or commercial game files belong in this repository.
 
+The v0.1.4 review candidate improves normal-window sizing and keyboard patching.
+See [CHANGELOG.md](CHANGELOG.md) and the [actual test record](docs/TESTING.md);
+Firefox/macOS and genuine gameplay acceptance remain outstanding.
+
 ## Three planned fault domains
 
 - **VRAM / VDP:** AD0–AD7 physical address-net bridges. Currently a deterministic, frame-scoped approximation; not cycle-accurate and not validated against physical bus contention.

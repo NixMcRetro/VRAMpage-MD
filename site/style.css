@@ -131,7 +131,14 @@ h1 { font-size:28px; letter-spacing:-.8px; }
 .main-grid { grid-template-columns:minmax(0,1.64fr) minmax(310px,.93fr); gap:11px; }
 .section-heading { padding:9px 12px 8px; }
 .screen-well { display:flex; justify-content:center; padding:9px 10px; }
-.screen-frame { width:min(100%, 570px, calc(49dvh * 10 / 7)); max-width:100%; flex:none; border-width:4px; }
+/* Budget the picture after measuring the real heading, controls and help text.
+   Include the border outside the 10:7 canvas so the picture never stretches. */
+.screen-frame {
+  --display-border:4px;
+  width:min(100%, calc((var(--window-display-height, 45dvh) - 2 * var(--display-border)) * 10 / 7 + 2 * var(--display-border)));
+  max-width:100%; flex:none; border-width:var(--display-border); aspect-ratio:auto;
+}
+#screen { height:auto; flex:none; }
 .screen-info { padding:6px 10px; font-size:10px; }
 #romName { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
 #fpsIndicator { flex:none; }
@@ -172,14 +179,13 @@ footer { padding-top:9px; font-size:10px; }
 @media (max-width:840px) {
   .main-grid { grid-template-columns:1fr; }
   .shell { width:min(680px, calc(100% - 20px)); }
-  .screen-frame { width:min(100%,570px,calc(45dvh * 10 / 7)); }
 }
 @media (max-width:540px) {
   .shell { padding-top:10px; }
   .masthead { margin-bottom:8px; }
   h1 { font-size:25px; }
   .screen-well { padding:6px; }
-  .screen-frame { width:100%; border-width:3px; }
+  .screen-frame { --display-border:3px; }
   .toolbar button,.load-btn { flex:1 1 27%; }
   .bottom-grid { grid-template-columns:1fr; }
   .machine-status { font-size:9px; }

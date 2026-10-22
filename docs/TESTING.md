@@ -28,9 +28,9 @@ The script runs Python unit tests, JavaScript syntax checks, framebuffer unit te
 
 Use `python3 -m unittest discover -s tests -p 'test_*.py' -v` for Python tests alone, or `node tests/test_framebuffer_properties.cjs` for the added framebuffer checks.
 
-## Browser acceptance matrix (manual until automated)
+## Genuine-game browser acceptance matrix
 
-Test at a practical window size **and** in browser fullscreen. Record browser version, OS version, game region (without uploading its ROM) and whether a fault is active. Failure results belong in the relevant GitHub issue.
+The Playwright suite below automates synthetic UI checks; it does not run a game. This matrix remains the manual release gate for a genuine local cartridge. “Required” and “Planned” describe release scope, not completed runs. Record browser version, OS version, game region (without uploading its ROM) and whether a fault is active. Failure results belong in the relevant GitHub issue.
 
 | Scenario | Firefox/macOS | Chromium | WebKit/Safari |
 | --- | --- | --- | --- |
@@ -62,3 +62,77 @@ The existing `.github/workflows/source-checks.yml` runs source tests on pushes/P
 - Review licence compatibility and obtain approval before merging into McRetro.net `main`. Expect a full Jekyll/Pagefind rebuild when that merge happens.
 
 If a test documents planned behaviour, mark it skipped or pending rather than pretending a nonexistent feature passes.
+
+## Automated browser display regressions (v0.1.4)
+
+From the repository root, with Python 3.12 (the CI version):
+
+```sh
+python3 -m pip install -r tests/requirements-browser.txt
+python3 -m playwright install --with-deps chromium firefox webkit
+python3 tests/browser_display.py --browser chromium --artifacts /tmp/vrampage-browser
+python3 tests/browser_display.py --browser firefox --artifacts /tmp/vrampage-browser
+python3 tests/browser_display.py --browser webkit --artifacts /tmp/vrampage-browser
+```
+
+The browser runner starts/stops its own loopback static server. Missing browsers
+are errors, not passing/skipped tests. It replaces only `core/genplus.js` with
+`tests/fixtures/mock-core.js`: an original memory/interface stub with coloured
+rows and missing odd rows. The generated 512-byte input is a format stub, **not an
+executable cartridge**. No commercial ROM is read by this suite. No browser
+package or mock is shipped with the static website. The stdlib/C/Node suite stays
+available without Playwright; CI runs the browser suite as a separate job.
+
+Six tests cover nine window sizes (360×640, 390×844, 768×768, 844×390, 1024×600,
+1280×720, **1366×768**, 1440×900, 1920×1080), picture ratio and drawing-buffer size,
+visible game controls, scrolling stability, live Light/Dark/Light, real element
+fullscreen entry/resize/exit, exact synthetic raw/recovered pixels while paused,
+mouse/keyboard patching, momentary/latched shortcuts, controller mapping,
+pause/resume and clean restart. Screenshot artifacts contain synthetic pixels only.
+An old source-text assertion requiring `49dvh`/`570px` was replaced to reflect the
+new measured budget; real geometry assertions now protect the sizing behaviour.
+
+### Local validation record — 22 October 2026
+
+- Baseline: PR #5 tip `63421d9`, which includes PR #4 tip `6b4b88c` as an ancestor.
+  PR review/merge metadata could not be read because GitHub API access was denied.
+- Chromium 154.0.8037.57 on Linux, installed `/usr/bin/chromium`: all six browser
+  tests passed at all nine sizes. Native element fullscreen was exercised, not
+  an emulated `fullscreenElement`. Screenshots were inspected at 1366×768 and
+  844×390; raw/recovery pixels were asserted directly.
+- Reproduce the installed-browser run with
+  `python3 tests/browser_display.py --browser chromium --executable /usr/bin/chromium --artifacts /tmp/vrampage-browser`.
+- Regression sensitivity: the new responsive and keyboard tests were run against
+  a temporary copy of PR #5 source. All nine geometry cases, the desktop-width
+  check and keyboard pin activation failed there, as expected.
+- Firefox and WebKit: not run locally; Playwright downloads were denied by the
+  network proxy. CI configuration is provided; its results remain unverified.
+- Emscripten 4.0.23 installation was denied at `storage.googleapis.com`, so no WASM
+  build, genuine cartridge execution, audio playback or Sonic attract mode was
+  verified. The user's local cartridge backup was kept outside the repository.
+- Native macOS fullscreen/browser chrome, Firefox compositor behaviour, physical
+  hardware and actual OS theme switching remain manual checks. Playwright media
+  emulation verifies the CSS response, not the operating system itself.
+
+### Genuine cartridge / macOS Firefox acceptance procedure
+
+1. On this branch, run `bash scripts/test.sh`. Install Emscripten using the official
+   SDK, activate it (`source /path/to/emsdk/emsdk_env.sh`) and run
+   `bash scripts/build-core.sh`. Check `site/core/genplus.js`,
+   `site/core/genplus.wasm`, `site/source/README.txt` and upstream licence notices.
+2. Run `python3 -m http.server 8080 --directory site`. Open the local page in
+   Firefox on macOS and select the legally usable cartridge **through Load ROM**.
+   Do not copy it into `site/` or the repository. Record cartridge SHA-256 only.
+3. At 1366×768 and 1280×720 CSS viewports, check the full picture and toolbar are
+   visible; resize through 390×844 and 844×390 and back. Check title/demo gameplay,
+   arrows, Z/X/C and Enter. Click away from UI buttons before using Enter as Start.
+4. Pause on a visible scene. Toggle Raw emulator output; compare recovered and raw
+   rows. Resize while paused, enter/exit element fullscreen, then use the macOS
+   green window button to enter/leave browser fullscreen. The picture must remain
+   uncropped, keep its proportions and repaint without restarting the game.
+5. Switch macOS Light → Dark → Light without reloading. Enable sound and verify
+   clean stereo playback, mute/unmute, pause/resume and no growing audio backlog.
+6. Exercise mouse pins, Tab/Enter/Space pin activation, digit presets, Shift+digit
+   momentary contact and 0 disconnect. Check fault effects, then Clean restart:
+   no active short, fresh cartridge boot and normal controls/audio. Record actual
+   results, browser/OS versions and failures before marking a release accepted.

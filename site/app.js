@@ -300,6 +300,10 @@
     document.addEventListener('keydown', event => {
       if (event.target instanceof HTMLInputElement) return;
       const code=event.code;
+      // Let focused UI controls activate normally rather than swallowing their
+      // Enter/Space as controller inputs (notably the keyboard patchbay).
+      if (['Enter','Space'].includes(code) &&
+          event.target.closest('button, a, summary, label')) return;
       if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','Enter'].includes(code))event.preventDefault();
       if (/^Digit[0-8]$/.test(code)) {
         event.preventDefault();
@@ -355,6 +359,17 @@
 
   function updateFullscreenDisplay() {
     const active = document.fullscreenElement === displayViewport;
+    if (!active) {
+      const section = displayViewport.closest('.screen-section').getBoundingClientRect();
+      const frame = displayViewport.getBoundingClientRect();
+      // Measure wrapping controls/help instead of guessing a viewport fraction.
+      // Use document coordinates so scrolling cannot grow/shrink the picture.
+      // Very short windows retain a usable minimum and may scroll vertically.
+      const chrome = section.height - frame.height;
+      const height = Math.max(96, Math.floor(window.innerHeight -
+        (section.top + window.scrollY) - chrome - 12));
+      displayViewport.style.setProperty('--window-display-height', `${height}px`);
+    }
     $('fullscreenBtn').textContent = active ? 'Exit fullscreen' : 'Fullscreen';
     $('fullscreenBtn').setAttribute('aria-pressed', String(active));
     // Firefox can retain a stale canvas backing/compositor surface after a
@@ -419,6 +434,8 @@
     if (typeof ResizeObserver !== 'undefined') {
       const displayObserver = new ResizeObserver(scheduleDisplayRefresh);
       displayObserver.observe(displayViewport);
+      displayObserver.observe(displayViewport.closest('.screen-section'));
+      displayObserver.observe(document.querySelector('.masthead'));
     }
     setRunning(false);
     resetStats();

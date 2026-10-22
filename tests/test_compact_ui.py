@@ -18,8 +18,9 @@ class CompactWorkbenchTests(unittest.TestCase):
         self.assertNotIn('scanline-overlay', JS)
     def test_compact_viewport(self):
         self.assertIn('width:min(1060px', CSS)
-        self.assertIn('width:min(100%, 570px', CSS)
-        self.assertIn('49dvh', CSS)
+        # v0.1.4 uses measured space after controls, not a fixed viewport share.
+        self.assertIn('--window-display-height', CSS)
+        self.assertIn('section.height - frame.height', JS)
         self.assertIn('calc(100vh * 10 / 7)', CSS)
     def test_clean_restart_is_a_real_reset(self):
         self.assertIn('id="resetBtn"',HTML)
