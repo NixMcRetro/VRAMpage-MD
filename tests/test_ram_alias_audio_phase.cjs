@@ -1,6 +1,7 @@
 'use strict';
 const assert = require('node:assert/strict');
-const {hashFloatSamples, readNamedRamScalars, compareAudioPhase, AUDIO, STATE_LAYOUT} =
+const {hashFloatSamples, readNamedRamScalars, compareAudioPhase, AUDIO, STATE_LAYOUT,
+  summarizeAudioRows, selectedSamples, serializeObserverSummary, assertBoundedReport} =
   require('../scripts/observe-ram-alias-audio-phase.cjs');
 
 let cases = 0;
@@ -33,6 +34,9 @@ assert.deepEqual(readNamedRamScalars(ramHeap, ramBase), {
 assert.equal(ramHeap[ramBase + (0xf84a ^ 1)], 0x33);
 assert.deepEqual(STATE_LAYOUT, {vBlankRoutine: 0xf62a,
   sfxFm3TrackAMSFMSPan: 0xf22a, spriteBufferByte: 0xf84a});
+assert.equal(0x40 + 18 * 0x30 + 0x220, 0x5c0);
+assert.equal(0xf000 + 0x5c0 + 0x40, 0xf600);
+assert.equal(0xf600 + 0x2a, 0xf62a);
 cases++;
 
 function row(tick, patch = {}) {
@@ -70,7 +74,26 @@ const emptyRows = Array.from({length: 602}, (_, i) => row(1799 + i,
     rightSHA256: hashFloatSamples(heap, 0, 0, 16)}));
 const emptyComparison = compareAudioPhase(emptyRows, emptyRows, 0);
 assert.equal(emptyComparison.completeSamplePairs, 0);
-assert.equal(emptyComparison.audioMatches, 596);
+assert.equal(emptyComparison.zeroSamplePairs, 596);
+assert.equal(emptyComparison.sampleCountMatches, 596);
+assert.equal(emptyComparison.audioMatches, 0);
+
+for (const offset of [-2, -1, 0, 1, 2]) {
+  const phaseShifted = Array.from({length: 602}, (_, i) => {
+    const tick = 1799 + i;
+    const source = baseline.find(r => r.tick === tick + offset);
+    return row(tick, source ? {...source, tick} : {});
+  });
+  const matched = compareAudioPhase(baseline, phaseShifted, offset);
+  assert.equal(matched.comparedPairs, 596);
+  assert.equal(matched.missingPairs, 0);
+  assert.equal(matched.audioMatches, 596);
+  assert.equal(matched.frameMatches, 596);
+}
+assert.equal(compareAudioPhase(baseline, same.filter(r => r.tick !== 1803), -2).missingPairs, 1);
+assert.equal(compareAudioPhase(baseline.filter(r => r.tick !== 1801), same, -2).missingPairs, 1);
+assert.equal(compareAudioPhase(baseline.filter(r => r.tick !== 2400), same, 2).missingPairs, 1);
+assert.equal(compareAudioPhase(baseline, same.filter(r => r.tick !== 2398), 2).missingPairs, 1);
 const aligned = Array.from({length: 602}, (_, i) => {
   const tick = 1799 + i;
   const source = baseline.find(r => r.tick === tick + 1);
@@ -83,5 +106,19 @@ const incomplete = same.filter(r => r.tick !== 1803);
 const missing = compareAudioPhase(baseline, incomplete, -2);
 assert.equal(missing.comparedPairs + missing.missingPairs, 596);
 assert.equal(missing.missingPairs, 1);
+
+const ticks = [1799, 1800, 1801, 1860, 1920, 2100, 2400];
+const fakeTrial = {scenario: 'fixture', ticks: 2400, samples: ticks.map(tick => row(tick)),
+  timeline: Array.from({length: 602}, (_, i) => row(1799 + i)),
+  audioTimeline: Array.from({length: 2400}, (_, i) => ({...row(i + 1), sampleCount: 2,
+    completePairs: 2, leftSHA256: 'a'.repeat(64), rightSHA256: 'b'.repeat(64)}))};
+const privacyFixture = {summary: serializeObserverSummary(fakeTrial), selected: selectedSamples(fakeTrial),
+  audio: summarizeAudioRows(fakeTrial.audioTimeline)};
+assert.equal(privacyFixture.selected.length, 7);
+assert.equal(privacyFixture.audio.tickCount, 2400);
+assertBoundedReport(privacyFixture);
+assert.throws(() => assertBoundedReport({timeline: [1]}), /forbidden/);
+assert.throws(() => assertBoundedReport({audioTimeline: [1]}), /forbidden/);
+assert.throws(() => assertBoundedReport({data: new Array(8).fill(0)}), /longer/);
 cases++;
 process.stdout.write(`RAM alias audio phase tests passed (${cases} groups).\n`);

@@ -113,7 +113,7 @@ function compareAudioPhase(baseline, candidate, offset) {
   const first = observer.PHASE_WINDOW.candidateTickStart;
   const last = observer.PHASE_WINDOW.candidateTickEnd;
   const result = {offset, candidateTicks: last - first + 1, comparedPairs: 0,
-    missingPairs: 0, completeSamplePairs: 0, sampleCountMatches: 0,
+    missingPairs: 0, completeSamplePairs: 0, zeroSamplePairs: 0, sampleCountMatches: 0,
     leftHashMatches: 0, rightHashMatches: 0, audioMatches: 0,
     vBlankRoutineMatches: 0, sfxFm3TrackAMSFMSPanMatches: 0,
     demoMatches: 0, playerMatches: 0, frameMatches: 0};
@@ -122,11 +122,14 @@ function compareAudioPhase(baseline, candidate, offset) {
     if (!c || !b) { result.missingPairs++; continue; }
     result.comparedPairs++;
     if (c.completePairs > 0 && b.completePairs > 0) result.completeSamplePairs++;
+    if (c.completePairs === 0 && b.completePairs === 0) result.zeroSamplePairs++;
     if (c.sampleCount === b.sampleCount) result.sampleCountMatches++;
     const left = c.leftSHA256 === b.leftSHA256, right = c.rightSHA256 === b.rightSHA256;
-    if (left) result.leftHashMatches++;
-    if (right) result.rightHashMatches++;
-    if (left && right && c.sampleCount === b.sampleCount) result.audioMatches++;
+    if (c.completePairs > 0 && b.completePairs > 0) {
+      if (left) result.leftHashMatches++;
+      if (right) result.rightHashMatches++;
+      if (left && right && c.sampleCount === b.sampleCount) result.audioMatches++;
+    }
     if (c.vBlankRoutine === b.vBlankRoutine) result.vBlankRoutineMatches++;
     if (c.sfxFm3TrackAMSFMSPan === b.sfxFm3TrackAMSFMSPan) result.sfxFm3TrackAMSFMSPanMatches++;
     if (JSON.stringify(observerDemo(c)) === JSON.stringify(observerDemo(b))) result.demoMatches++;
@@ -145,6 +148,56 @@ function prefaultMatches(baseline, candidate) {
 function sameObservation(a, b) {
   return observer.sameTrials({...a, timeline: []}, {...b, timeline: []}) &&
     JSON.stringify(a.timeline) === JSON.stringify(b.timeline);
+}
+function summarizeAudioRows(rows) {
+  if (!Array.isArray(rows) || rows.length !== observer.TRIAL.maxTicks) fail('Audio summary requires a complete bounded run.');
+  let totalSamplePairs = 0, minSampleCount = AUDIO.capacity, maxSampleCount = 0, zeroSampleTicks = 0;
+  const digest = crypto.createHash('sha256');
+  for (const row of rows) {
+    if (!Number.isSafeInteger(row.sampleCount) || row.sampleCount < 0 || row.sampleCount > AUDIO.capacity ||
+        row.completePairs !== row.sampleCount || !/^[0-9a-f]{64}$/.test(row.leftSHA256) ||
+        !/^[0-9a-f]{64}$/.test(row.rightSHA256)) fail('Invalid per-tick audio summary input.');
+    totalSamplePairs += row.completePairs;
+    minSampleCount = Math.min(minSampleCount, row.sampleCount);
+    maxSampleCount = Math.max(maxSampleCount, row.sampleCount);
+    if (row.sampleCount === 0) zeroSampleTicks++;
+    digest.update(JSON.stringify(row));
+    digest.update('\n');
+  }
+  return {tickCount: rows.length, totalSamplePairs, minSampleCount, maxSampleCount,
+    zeroSampleTicks, perTickRecordsSHA256: digest.digest('hex')};
+}
+function selectedSamples(trial) {
+  const audioByTick = new Map(trial.audioTimeline.map(row => [row.tick, row]));
+  const observerByTick = new Map(trial.samples.map(row => [row.tick, row]));
+  return observer.TRIAL.sampleTicks.map(tick => {
+    const state = observerByTick.get(tick), audio = audioByTick.get(tick);
+    if (!state || !audio) fail(`Missing selected observation at tick ${tick}.`);
+    return {...state, sampleCount: audio.sampleCount, completePairs: audio.completePairs,
+      leftSHA256: audio.leftSHA256, rightSHA256: audio.rightSHA256,
+      vBlankRoutine: audio.vBlankRoutine, sfxFm3TrackAMSFMSPan: audio.sfxFm3TrackAMSFMSPan};
+  });
+}
+function serializeObserverSummary(trial) {
+  const {audioTimeline, ...withoutAudioTimeline} = trial;
+  const {samples, ...summary} = observer.serializeTrial(withoutAudioTimeline);
+  return summary;
+}
+function assertBoundedReport(value) {
+  const forbidden = new Set(['timeline', 'audioTimeline', 'audioSamples', 'romBytes', 'ramBytes', 'rawSamples']);
+  function walk(node) {
+    if (Array.isArray(node)) {
+      if (node.length > 7) fail('Report contains an array longer than the seven selected ticks.');
+      for (const item of node) walk(item);
+    } else if (node && typeof node === 'object') {
+      for (const [key, child] of Object.entries(node)) {
+        if (forbidden.has(key)) fail(`Report contains forbidden field ${key}.`);
+        walk(child);
+      }
+    }
+  }
+  walk(value);
+  return value;
 }
 function stripAudioObservation(trial) {
   const {audioTimeline, ...base} = trial;
@@ -193,20 +246,19 @@ async function main(args) {
   const toolBytes = fs.readFileSync(__filename);
   const sourceDirty = execFileSync('git', ['status', '--porcelain', '--untracked-files=all', '--',
     path.relative(repo, __filename)], {cwd: repo, encoding: 'utf8'}).trim().length > 0;
-  const timeline = rowSet => rowSet.map(({tick, sampleCount, completePairs, leftSHA256, rightSHA256,
-    vBlankRoutine, sfxFm3TrackAMSFMSPan}) =>
-    ({tick, sampleCount, completePairs, leftSHA256, rightSHA256, vBlankRoutine, sfxFm3TrackAMSFMSPan}));
+  const observerSHA256 = sha256(fs.readFileSync(path.join(__dirname, 'observe-attract-demo.cjs')));
   const output = {schemaVersion: 1, tool: {version: TOOL_VERSION, sourceCommit,
     sourceDirty, sha256: sha256(toolBytes)}, protocol: {version: PROTOCOL_VERSION,
     name: 'ram-alias-audio-phase-v1', applicationVersion: '0.2.7'},
     runtime: {node: process.versions.node, platform: process.platform, arch: process.arch},
-    package: {sourceCommit: app.manifest.source_commit, javascriptSHA256: app.javascriptSHA256,
-      wasmSHA256: app.wasmSHA256}, cartridge,
+    package: {sourceCommit: app.manifest.source_commit, corePin: observer.APP_PROFILE.corePin,
+      javascriptSHA256: app.javascriptSHA256, wasmSHA256: app.wasmSHA256}, cartridge,
+    dependency: {observerSHA256},
     settings: {ticks: observer.TRIAL.maxTicks, externalInput: 'zero every tick', scenarios: SCENARIOS,
       setterFrame: 1800, effectiveTick: 1801, requestedAffectedWrites: 1, cpuRecovery: 'none',
       soundSampleCapacityPerChannel: AUDIO.capacity, bufferUnit: 'float32 samples',
       audioHashMethod: 'SHA-256 of the returned count of raw Float32 bytes per channel; WebAssembly memory is little-endian; buffers and sample values are never serialized',
-      emptyAudioComparison: 'zero-count channel buffers hash as SHA-256(empty); audioMatches includes equal zero-count pairs, while completeSamplePairs counts only pairs with samples',
+      emptyAudioComparison: 'zero-count channel buffers hash as SHA-256(empty); zeroSamplePairs and sampleCountMatches report these separately, while channel hash matches and audioMatches require samples on both sides',
       stateReadBoundary: 'after sound generation each tick; named work-RAM scalar values only',
       phaseOffsetConvention: observer.PHASE_WINDOW.offsetConvention, phaseOffsets: OFFSETS},
     equivalence: {baselineRepeats: sameObservation(...runs.baseline),
@@ -216,9 +268,13 @@ async function main(args) {
         observer.sameTrials(plain, stripAudioObservation(runs.baseline[i]))),
       instrumentedObservationsMatchUninstrumented: Object.fromEntries(SCENARIOS.map(s => [s,
         plainRuns[s].every((plain, i) => observer.sameTrials(plain, stripAudioObservation(runs[s][i])))]))}, phaseComparisons,
-    audioTimeline: {baseline: timeline(runs.baseline[0].audioTimeline), fault: timeline(runs['A10A11-one-write'][0].audioTimeline)},
+    audioSummary: {baseline: summarizeAudioRows(runs.baseline[0].audioTimeline),
+      fault: summarizeAudioRows(runs['A10A11-one-write'][0].audioTimeline)},
+    selectedSamples: {baseline: selectedSamples(runs.baseline[0]),
+      fault: selectedSamples(runs['A10A11-one-write'][0])},
     stateLayout: {...SOURCE_LAYOUT, addresses: STATE_LAYOUT},
-    observerSummary: Object.fromEntries(SCENARIOS.map(s => [s, runs[s].map(observer.serializeTrial)]))};
+    observerSummary: Object.fromEntries(SCENARIOS.map(s => [s, runs[s].map(serializeObserverSummary)]))};
+  assertBoundedReport(output);
   process.stdout.write(JSON.stringify(output, null, 2) + '\n');
 }
 if (require.main === module) main(process.argv.slice(2)).catch(error => {
@@ -226,4 +282,5 @@ if (require.main === module) main(process.argv.slice(2)).catch(error => {
 });
 module.exports = {APP_PROFILE, AUDIO, TOOL_VERSION, PROTOCOL_VERSION, validateAppDirectory,
   hashFloatSamples, readNamedRamScalars, STATE_LAYOUT, SOURCE_LAYOUT, compareAudioPhase,
-  prefaultMatches, sameObservation, compareTrials, stripAudioObservation};
+  prefaultMatches, sameObservation, compareTrials, stripAudioObservation, summarizeAudioRows,
+  selectedSamples, serializeObserverSummary, assertBoundedReport};
