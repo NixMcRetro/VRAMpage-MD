@@ -22,14 +22,15 @@ and [versioning](VERSIONING.md). Status describes evidence, not promised effects
 | Done | Isolated native transaction helper | Reviewed semantics; exhaustive mapping, byte/word lanes, aliases, bounded cache dependencies, atomic settings and strict/sanitizer tests | Luna High implementation and independent review | Native byte/dependency primitives and focused strict/sanitizer tests passed independent review; no emulator or public API integration at that stage |
 | Done | Integrate VDP port and DMA accessors | Reviewed semantics and native helper; exact pinned patch anchors, idempotence/source-drift checks, no-fault equivalence and actual synthetic-WASM CPU/Z80/DMA coverage before renderer migration | Luna High implementation and independent review | Developer-only hooks and actual-WASM synthetic checks passed independent review; see VRAM-ACCESS-DIAGNOSTIC.md. Renderer and public model selection remain gated |
 | Done (implementation) | Integrate diagnostic renderer and cache reads | Reviewed Mode 5/interlace/alternate routing, literal pixels, name/scroll/SAT fields, alias recovery, whole-state equivalence and fixed performance gate | Luna High implementation and independent review | 91 full local tests, fresh four-core WASM and actual-core Chromium pass. The first failed measurement is preserved; the reviewed guard correction passes the unchanged complete five-pair gate and independent audit. [PR #40](https://github.com/NixMcRetro/VRAMpage-MD/pull/40) records required CI and integration; public milestone remains below |
-| P2 | Public transaction-level VRAM milestone | Approved semantics and bounded architecture/test plan; VDP read/write/cache/timing coverage, normal-output regression, independent specialist review | Luna High | Public selector, exports and milestone acceptance not started; developer groundwork is recorded above; reserve v0.3.0 |
+| P1 | Safe public VRAM model API groundwork | Separate optional runtime from diagnostic bridges; atomic model selection, JS/C type validation, scalar state and last-frame counts, legacy compatibility, runtime export inspection and real-WASM profile tests | Luna High implementation and independent Luna High review; coordinator docs/integration | In progress on isolated feature branch; normal app/release stays v0.2.8 and frame-scoped. Public UI and experiment-export integration remain the next stage |
+| P2 | Public transaction-level VRAM milestone | Approved semantics and bounded architecture/test plan; VDP read/write/cache/timing coverage, normal-output regression, independent specialist review | Luna High | Safe core API groundwork is in progress above; public UI, experiment exports and milestone acceptance remain future work; reserve v0.3.0 |
 | P3 | Hardware-informed audio bending | Earlier milestones, research and clean-audio regression; YM2612/PSG/Z80 bus/register/memory models, no post-mix substitute | Luna High | Not started; reserve v0.4.0 |
 
 ## Continuation procedure
 
 1. Fetch main and open PR/release/CI state; read the linked status and AGENTS.md.
 2. Finish any pending P0 verification/publication before new emulator changes.
-3. Select the first unblocked P1 item. Inspect existing experiment runners before
+3. Select the highest-priority unblocked implementation item. Inspect existing experiment runners before
    adding instrumentation. Use a bounded Luna High assignment and independent
    review for changes to emulator internals.
 4. If no private legal cartridge is available, prepare ROM-free diagnostic tests
