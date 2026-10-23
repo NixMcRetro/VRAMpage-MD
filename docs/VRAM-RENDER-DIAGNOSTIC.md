@@ -74,7 +74,9 @@ reject missing, extra and post-patch raw reads and verify idempotence.
 A separately rebuilt original-renderer baseline, new normal build, diagnostic-off
 and selected identity match the complete visible synthetic framebuffer, audio
 channels/sample count, work RAM, logic frame and CPU flags at fixed ticks. The
-normal JS/WASM hashes also match the public v0.2.7 core. Active cases use literal
+separately rebuilt original-renderer baseline JS/WASM hashes match the public
+v0.2.7 core. The new normal build is checked for observable equivalence, not
+binary identity. Active cases use literal
 CRAM-derived pixel expectations rather than the implementation's address mapper.
 They cover name-table and horizontal-scroll reads; pattern aliases with two
 logical dependents dirtied by a third physical write; reconnect; invalid settings;
