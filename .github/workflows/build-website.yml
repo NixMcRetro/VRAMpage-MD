@@ -66,6 +66,17 @@ jobs:
           )
           node tests/test_store_origin_wasm.cjs "$RUNNER_TEMP/vblank-wait/store-origin/wasm-genplus/src/main/js/genplus.js"
           node tests/test_vblank_wait_wasm.cjs "$RUNNER_TEMP/vblank-wait/store-origin/wasm-genplus/src/main/js/genplus.js"
+      - name: Verify diagnostic VRAM transactions in actual WASM
+        shell: bash
+        run: |
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          test -d vendor/wasm-genplus/.git || { echo "Pinned vendor checkout is required for VRAM transaction tests" >&2; exit 1; }
+          command -v emcmake >/dev/null
+          command -v emmake >/dev/null
+          command -v cmake >/dev/null
+          command -v node >/dev/null
+          VRAMPAGE_WASM_GENPLUS="$GITHUB_WORKSPACE/vendor/wasm-genplus" \
+            python3 -m unittest tests.test_vram_transaction_wasm -v
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

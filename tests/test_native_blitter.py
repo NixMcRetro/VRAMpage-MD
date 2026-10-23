@@ -176,10 +176,10 @@ class NativeBlitterPatchTests(unittest.TestCase):
       data = *(uint16 *)(work_ram + (source & 0xFFFF));
 ''')
 
-            self.assertTrue(patch_core.patch_core(root))
+            self.assertTrue(patch_core.patch_core(root, transaction_adapter=False))
             first_outputs = (wasm.read_text(), config.read_text(), render.read_text(),
                              m68k.read_text(), z80.read_text(), dma.read_text())
-            self.assertFalse(patch_core.patch_core(root))
+            self.assertFalse(patch_core.patch_core(root, transaction_adapter=False))
             self.assertIn('set_vram_address_mask', wasm.read_text())
             self.assertIn('    bend_reset();', wasm.read_text())
             self.assertEqual(first_outputs, (wasm.read_text(), config.read_text(), render.read_text(),
