@@ -8,16 +8,26 @@ const origin=require('./run-store-origin-diagnostic.cjs');
 const audio=require('./observe-ram-alias-audio-phase.cjs');
 const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
 const START_TICK=1800,END_TICK=1803,CPU_TARGET=0xfff62a,LOGICAL_TARGET=0xf62a;
-const SOURCE_SETTERS=[0x3a90,0x3ae2,0x3b94];
-const FIXED_BUS_PCS=[0x29a4,0xb14,0xb46];
-const PROBE_PCS=[0x29aa,0x3aec];
+const SOURCE_SETTERS=[0x3a94,0x3ae6,0x3b98];
+const FIXED_BUS_PCS=[0x29ac,0xb14,0xb42,0xb46];
+const PROBE_PCS=[0x29b2,0x3af0];
+const SOURCE_IDENTITY={repository:'sonicretro/s1disasm',commit:'15dfa3a6ee4c53aeb482233e493755c84b4f3479',
+  revision:0,fixBugs:0,cheatsEnabled:0,allOptimizations:0,skipChecksumCheck:0,zeroOffsetOptimization:0,paddingOptimization:0,unusedOptimization:0,
+  builtRomSHA256:'46160baa06362c711c9f1a5017cb7371026444936c8af5e93a78996cf32ff2a6'};
 const BUS_KIND=2,WRITE_KIND=3,PROBE_KIND=1;
 
 function fail(s){throw new Error(s);}
+function validateBusProfile(busPCs){
+  const locked=new Set([...FIXED_BUS_PCS,...SOURCE_SETTERS]);
+  if(busPCs.length>8||new Set(busPCs).size!==busPCs.length||!FIXED_BUS_PCS.every(pc=>busPCs.includes(pc))||
+    busPCs.some(pc=>!locked.has(pc))||busPCs.includes(0x29a4))
+    fail('Bus profile does not match the locked Rev00 listing or omits a required wait/VBlank access.');
+}
 function profile(core,busPCs,enabled=true){
   const fn=core._set_waitdiag_profile;
   if(typeof fn!=='function')fail('Custom core is missing the private wait-sequence profile API.');
-  if(busPCs.length>8||PROBE_PCS.length>4)fail('Wait-sequence allowlist exceeds the profile bound.');
+  validateBusProfile(busPCs);
+  if(PROBE_PCS.length>4)fail('Wait-sequence allowlist exceeds the profile bound.');
   const bus=[...busPCs,...Array(8-busPCs.length).fill(0)];
   const probes=[...PROBE_PCS,...Array(4-PROBE_PCS.length).fill(0)];
   if(fn(enabled?1:0,START_TICK,END_TICK,CPU_TARGET,LOGICAL_TARGET,busPCs.length,...bus,PROBE_PCS.length,...probes)!==0)
@@ -74,7 +84,7 @@ function milestone(events,predicate,label){
 }
 function sequenceSummary(events,storeRecord,setPC,scenario){
   if(events.length===0)fail('Wait-sequence record is empty.');
-  const pollPC=0x29a4, clearPC=0xb46;
+  const pollPC=0x29ac, clearPC=0xb46;
   let affectedClear=null,releaseClear=null;
   if(scenario==='A10A11-one-write'){
     affectedClear=milestone(events,e=>e.kind===WRITE_KIND&&e.pc===clearPC&&e.before===2&&e.after===2&&e.tick===1801,'affected VBlank clear');
@@ -89,8 +99,8 @@ function sequenceSummary(events,storeRecord,setPC,scenario){
   const pollAfter=affectedClear?milestone(events,e=>e.kind===BUS_KIND&&e.pc===pollPC&&e.before===2&&
     e.firstOrder>affectedClear.order&&e.firstOrder<releaseClear.order,'continued nonzero wait poll after affected clear'):null;
   const pollZero=milestone(events,e=>e.kind===BUS_KIND&&e.pc===pollPC&&e.before===1&&e.firstOrder>releaseClear.order,'zero poll after clear');
-  const exit=milestone(events,e=>e.kind===PROBE_KIND&&e.pc===0x29aa&&e.firstOrder>pollZero.order,'WaitForVBlank return');
-  const successor=milestone(events,e=>e.kind===PROBE_KIND&&e.pc===0x3aec&&e.firstOrder>exit.order,'caller successor');
+  const exit=milestone(events,e=>e.kind===PROBE_KIND&&e.pc===0x29b2&&e.firstOrder>pollZero.order,'WaitForVBlank return');
+  const successor=milestone(events,e=>e.kind===PROBE_KIND&&e.pc===0x3af0&&e.firstOrder>exit.order,'caller successor');
   const setup=milestone(events,e=>e.kind===WRITE_KIND&&e.pc===setPC&&e.after===2&&e.firstOrder>successor.order,'next nonzero setup store');
   return {pollBefore,pollAfter,affectedClear,releaseClear,pollZero,exit,successor,nextSetup:setup};
 }
@@ -106,7 +116,8 @@ function assembleAcceptance(runs,publicEquivalent,publicRuns,sequences,setterPC)
   const sequenceRepeats=Object.keys(sequences).every(s=>same(sequences[s].enabled,sequences[s].repeated));
   const sequenceAcceptance={scoutFoundOneSetter:SOURCE_SETTERS.includes(setterPC),sequenceRepeats,
     baselineSequenceComplete:Boolean(sequences.baseline.enabled.nextSetup),faultSequenceComplete:Boolean(sequences['A10A11-one-write'].enabled.nextSetup),
-    passes:originAcceptance.passes&&sequenceRepeats&&Boolean(sequences.baseline.enabled.nextSetup)&&Boolean(sequences['A10A11-one-write'].enabled.nextSetup)};
+    passes:originAcceptance.passes&&SOURCE_SETTERS.includes(setterPC)&&sequenceRepeats&&
+      Boolean(sequences.baseline.enabled.nextSetup)&&Boolean(sequences['A10A11-one-write'].enabled.nextSetup)};
   return {originAcceptance,sequenceAcceptance};
 }
 function assembleReport({p1,p2,customCore,publicCore,cartridge,profile:profileData,settings,
@@ -164,6 +175,7 @@ function verifyStage(stage,repo,{requireCore=true}={}){
 async function main(args){
   if(args.length!==3)fail('Usage: node scripts/run-vblank-wait-sequence.cjs /private/path/sonic.md EMPTY_WAIT_STAGE /path/to/extracted-public-v0.2.7');
   const repo=path.resolve(__dirname,'..'),rom=fs.readFileSync(args[0]),cartridge=observer.validateRomBuffer(rom);
+  if(sha(rom)!==SOURCE_IDENTITY.builtRomSHA256)fail('Cartridge image does not match the locked Rev00 source build.');
   const stage=verifyStage(path.resolve(args[1]),repo),publicPackage=audio.validateAppDirectory(path.resolve(args[2]));
   if(stage.p1.toolSourcesDirty||stage.p2.toolSourcesDirty)
     fail('Private cartridge runs require a clean committed source stage.');
@@ -194,6 +206,7 @@ async function main(args){
   const output=assembleReport({p1:stage.p1,p2:stage.p2,customCore:stage.customCore,
     publicCore:{sourceCommit:publicPackage.manifest.source_commit,javascriptSHA256:publicPackage.javascriptSHA256,wasmSHA256:publicPackage.wasmSHA256},
     cartridge,profile:{effectiveTicks:[START_TICK,END_TICK],cpuTarget:CPU_TARGET,logicalTarget:LOGICAL_TARGET,
+      sourceIdentity:SOURCE_IDENTITY,
       busPCs:busPCs.map(x=>x.toString(16).toUpperCase()),probePCs:PROBE_PCS.map(x=>x.toString(16).toUpperCase()),
       setterPC:setterPC.toString(16).toUpperCase(),eventCapacity:64},
     settings:{ticks:2400,externalInput:'zero every tick',faultTick:1801,pulse:'A10/A11 one affected write',recovery:'none'},
@@ -204,4 +217,4 @@ async function main(args){
   if(!sequenceAcceptance.passes)process.exitCode=1;
 }
 if(require.main===module)main(process.argv.slice(2)).catch(e=>{process.stderr.write(`${e.message}\n`);process.exitCode=1;});
-module.exports={profile,getWait,candidateSetter,sequenceSummary,summarizeScenario,assembleAcceptance,assembleReport,verifyStage};
+module.exports={profile,getWait,candidateSetter,sequenceSummary,summarizeScenario,assembleAcceptance,assembleReport,verifyStage,validateBusProfile,SOURCE_IDENTITY};
