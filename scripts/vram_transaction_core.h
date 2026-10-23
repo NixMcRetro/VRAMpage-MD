@@ -4,7 +4,7 @@
 #include "vram_transaction.h"
 #include "vram_transaction_runtime.h"
 
-#ifdef VRAM_TX_DIAGNOSTIC
+#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)
 static int vram_tx_core_mode5_supported(void) {
   return (system_hw & SYSTEM_MD) && (reg[1] & 0x04);
 }
