@@ -230,7 +230,6 @@ class VramTransactionWasm(unittest.TestCase):
             self.assertFalse((fixture / "build").exists(), "invalid profile must not create build output")
 
         env = os.environ.copy()
-        env["VRAM_RUNTIME_OUTPUT_DIR"] = str(runtime_output)
         env["VRAMPAGE_WASM_GENPLUS"] = str(fixture_vendor)
         command(["bash", str(build_script)], cwd=fixture, env=env, stdout=subprocess.DEVNULL)
         normal_paths = (fixture / "site/core/genplus.js", fixture / "site/core/genplus.wasm")
