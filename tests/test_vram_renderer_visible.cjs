@@ -191,6 +191,15 @@ async function main() {
   assert.deepEqual(pixel(changed.frame, 0, 0), pixel(changed.frame, 8, 0),
     'both aliased visible patterns converge on the changed shared physical bytes');
 
+  assert.equal(alias.c._run_vram_tx_test(11, 0, 0x00, 0, 0), 0,
+    'leave Mode 5 while the transaction selection remains configured');
+  nextFrame(alias.c);
+  assert.equal(alias.c._run_vram_tx_test(11, 0, 0x74, 0, 0), 0,
+    're-enter Mode 5 without changing the selected transaction settings');
+  const reentered = nextFrame(alias.c);
+  assert.deepEqual(pixel(reentered.frame, 0, 0), pixel(reentered.frame, 8, 0),
+    'Mode 5 re-entry rebuilds aliases and refreshes both visible pattern keys');
+
   assert.equal(alias.c._set_vram_transaction_diagnostic(0, 0, -1, -1), 0,
     'disabling the transaction mapping restores direct renderer reads');
   const restored = nextFrame(alias.c);
