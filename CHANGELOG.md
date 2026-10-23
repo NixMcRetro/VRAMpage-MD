@@ -1,5 +1,12 @@
 # Changelog
 
+## Post-v0.2.8 renderer diagnostic groundwork
+
+- Route all pinned Mode 5 renderer/cache reads in the separately compiled diagnostic, preserving original normal-build loads.
+- Add strict source-drift rejection, endian/wrap helper tests and four-core visible/cache/SAT/lifecycle fixtures with independent pixel oracles.
+- Add a fixed, provenance-checked recurring-DMA performance protocol; final performance and CI acceptance remain separate gates.
+- Keep the public frame-scoped VRAM model and v0.2.8 release unchanged.
+
 ## v0.2.8 CI provisioning repair
 
 - Use the standard signed Ubuntu package mirror for browser system libraries after repeated slow Azure-mirror downloads.

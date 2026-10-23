@@ -56,7 +56,7 @@ sanitizer run required a local ptrace workaround; the coordinator's verification
 used normal LeakSanitizer without suppression. The full local regression suite also passed 83 Python tests with no skips,
 fresh normal/diagnostic WASM builds, existing JavaScript/native suites and normal
 LeakSanitizer enabled. This verifies existing CPU/DMA behavior, not renderer
-routing. The next routing checkpoints `d74b930` and `1bbdd1a` now cover the pinned Mode 5 inventory and reject missing/unrouted reads. Independent source review approved progression to visible fixtures; the rebased integration passed 89 full Python tests, normal/diagnostic/alternate WASM builds and existing native/JavaScript checks. Actual-core renderer lifecycle, visible output and performance gates remain unfinished. This checkpoint is not on
+routing. The next routing checkpoints `d74b930` and `1bbdd1a` now cover the pinned Mode 5 inventory and reject missing/unrouted reads. Independent source review approved progression to visible fixtures; the integrated routing checkpoint passed 89 full Python tests, normal/diagnostic/alternate WASM builds and existing native/JavaScript checks. Later committed four-core fixtures now cover visible output, cache aliases, lifecycle transitions and mixed SAT behavior. Independent review approved the source and literal pixel oracles. The VS/interlace active checks cover line zero, not full-field timing. Fixed-tick DMA preflight passed independently; final integrated regression, the fixed five-pair timing gate and CI remain unfinished. This checkpoint is not on
 main and is not renderer acceptance.
 
 ## Verified baseline

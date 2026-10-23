@@ -777,3 +777,14 @@ build, checking SDK/vendor prerequisites before invocation. Source-only checkout
 without these prerequisites may skip the optional Python-discovered WASM case;
 that skip is not actual-WASM acceptance. Renderer mapping, mixed-field sprite
 rendering, complete raster output and native Mac/physical fidelity remain open.
+
+## Mode 5 renderer diagnostic checkpoint
+
+The [renderer verification record](VRAM-RENDER-DIAGNOSTIC.md) distinguishes the
+89-test routing run from later fresh four-core visible/SAT fixtures and from
+unmeasured performance. Exact no-fault whole-state comparison, literal active
+pixels, alias invalidation/recovery and mixed SAT policy have passed locally and
+received independent specialist review. VS/interlace cases cover active line-zero
+pixels and function selection, not full-field timing. Final integrated regression,
+performance and CI remain required before merge. No public transaction selector,
+commercial-game, physical or native Mac acceptance is implied.

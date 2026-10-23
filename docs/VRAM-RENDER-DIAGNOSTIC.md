@@ -63,17 +63,66 @@ checks do not establish beam-timed external bus fetches, contention, floating
 voltages, physical pin mapping, commercial-game results, audible acceptance or
 native macOS Firefox behavior.
 
-## Current result
+## Correctness checkpoint
 
-The reconstructed read helper passed independent specialist review and six
-focused strict/sanitizer tests covering both host-layout configurations. The full
-existing suite passed 83 Python tests with no skips, plus JavaScript/native
-regressions and fresh normal/diagnostic WASM builds. The next routing checkpoint covers all eight Mode 5 background variants,
-pattern-cache source reads and mapped SAT attr/X. Independent source review
-approved strict pinned-load coverage and source-drift rejection. A fresh full
-local suite passed 89 Python tests without skips, including normal, diagnostic
-and alternate-renderer WASM builds and existing CPU/DMA integration. These
-checks do not establish visible renderer acceptance or performance. The earlier temporary renderer source was
-lost before it was committed, so its observations cannot certify this rebuild. Public model identity,
-browser controls, complete transaction exports and milestone packaging remain
-separate gates in the [architecture plan](TRANSACTION-VRAM-PLAN.md).
+The helper and pinned source routing passed independent specialist review. Six
+focused strict/sanitizer tests cover both host-layout configurations, literal
+packing, wrap and inactive direct loads. All eight Mode 5 background variants,
+pattern decoding and SAT attribute/X reads are routed. Six pinned-source tests
+reject missing, extra and post-patch raw reads and verify idempotence.
+
+A separately rebuilt original-renderer baseline, new normal build, diagnostic-off
+and selected identity match the complete visible synthetic framebuffer, audio
+channels/sample count, work RAM, logic frame and CPU flags at fixed ticks. The
+normal JS/WASM hashes also match the public v0.2.7 core. Active cases use literal
+CRAM-derived pixel expectations rather than the implementation's address mapper.
+They cover name-table and horizontal-scroll reads; pattern aliases with two
+logical dependents dirtied by a third physical write; reconnect; invalid settings;
+identity transitions; unsupported-mode exit/reentry; and clean restart.
+
+All four standard and alternate Mode 5 render paths have active pixel assertions.
+The vertical-scroll/interlace cases assert line-zero results and actual renderer
+function selection; they do not establish full-field vertical-scroll timing. The
+mixed SAT fixture independently separates internal Y/size/link from mapped VRAM
+attribute/X, checking sprite position, height, hidden Y and link termination in
+standard and alternate builds. This validates the selected software policy only.
+
+The full routing checkpoint passed 89 Python tests without skips and the existing
+JavaScript/native suites with normal leak detection. Later visible and SAT
+fixtures passed fresh normal, diagnostic, alternate and original-renderer WASM
+builds. Final integrated regression and the fixed performance gate remain required
+before merge. A preliminary fixed-tick benchmark preflight independently passed
+whole-state equivalence, CPU-loop progress and active mapped DMA writes. A
+preflight is not a timing result.
+
+## Reproduce
+
+After the pinned SDK and vendor setup in [deployment](DEPLOYMENT.md), run
+`bash scripts/test.sh`. The actual-WASM test also invokes the six pinned-renderer
+patch tests with the vendor prerequisite, then the visible four-core matrix. A
+source-only run that skips missing SDK/vendor prerequisites is not acceptance.
+Set `VRAM_TX_WASM_BUILD_ROOT` to an empty persistent directory to retain builds.
+
+For a separate quiet-host performance run, use:
+
+```sh
+node scripts/benchmark-vram-renderer.cjs \
+  --baseline /path/to/baseline/src/main/js/genplus.js \
+  --normal /path/to/normal/src/main/js/genplus.js \
+  --diagnostic /path/to/diagnostic/src/main/js/genplus.js \
+  --out /path/to/new-benchmark-record.json
+```
+
+`--preflight-only` runs fixed-tick checks without timing. The full run fixes five
+paired blocks and 30 seconds per variant, alternating forward/reverse order. It
+uses a visible synthetic cartridge with a recurring 32-word VRAM DMA loop. For
+normal, diagnostic-off and identity, both the median of paired median ratios and
+the median of paired per-run p95 ratios must be at most 1.05. Active AD3 is
+descriptive only. Every raw frame duration is retained. Do not exclude or rerun
+samples based on results. Source HEAD/tree, clean tracked state, runtime/host
+metadata and core hashes are recorded before and checked after measurement.
+The report is saved before a failed performance/provenance gate exits nonzero.
+
+Public model identity, browser controls, complete transaction exports and
+milestone packaging remain separate gates in the
+[architecture plan](TRANSACTION-VRAM-PLAN.md).
