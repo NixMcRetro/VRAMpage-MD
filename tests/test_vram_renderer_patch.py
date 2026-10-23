@@ -3,13 +3,14 @@ from pathlib import Path
 import importlib.util
 import os
 import re
+import subprocess
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PINNED_RENDER = (Path(os.environ.get(
-    "VRAMPAGE_WASM_GENPLUS", ROOT / "vendor/wasm-genplus")) /
-    "src/main/c/core/vdp_render.c")
+PIN = "6090aff9e9b2f578cd28882bd4571d2e35b1d674"
+VENDOR = Path(os.environ.get("VRAMPAGE_WASM_GENPLUS", ROOT / "vendor/wasm-genplus"))
+PINNED_RENDER = VENDOR / "src/main/c/core/vdp_render.c"
 SPEC = importlib.util.spec_from_file_location(
     "patch_core", ROOT / "scripts/patch_core.py")
 patch_core = importlib.util.module_from_spec(SPEC)
@@ -21,7 +22,16 @@ class VramRendererPatch(unittest.TestCase):
     def setUpClass(cls):
         if not PINNED_RENDER.is_file():
             raise unittest.SkipTest("Pinned wasm-genplus source is required")
-        cls.source = PINNED_RENDER.read_text()
+        # CI builds the ordinary core first, so the vendor working tree may
+        # already contain these patches. Mutate the immutable pinned original
+        # in each test, not whichever patched state a prior build left behind.
+        commit = subprocess.check_output(
+            ["git", "-C", str(VENDOR), "rev-parse", "HEAD"], text=True).strip()
+        if commit != PIN:
+            raise AssertionError(f"Expected pinned core {PIN}, got {commit}")
+        cls.source = subprocess.check_output(
+            ["git", "-C", str(VENDOR), "show",
+             f"{PIN}:src/main/c/core/vdp_render.c"], text=True)
 
     def test_routes_all_standard_and_alt_mode5_sources_idempotently(self):
         patched = patch_core.patch_mode5_render_reads(self.source)
