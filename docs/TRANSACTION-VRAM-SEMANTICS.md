@@ -267,6 +267,12 @@ reset, then invalidates derived caches. Model selection clears only the new
 model's last-frame counters and invalidates caches as needed; it never rewrites
 VRAM. Preserve current RAM/VRAM mutual exclusion and failed-takeover behavior.
 
+Selecting `logical-byte-transaction-v1` with mask `0` and bridge arguments
+`-1, -1` is an explicit identity configuration. Export it as `effective: false`
+with `reason: no-fault`; use the original direct path, allocate no reverse
+index, and report zero transaction counters. It does not activate a dormant
+fault or select the frame-projection model.
+
 Exports retain legacy frame-projection fields and their existing meanings.
 Add a separate object with `modelId`, `modelVersion`, `effective`, `reason`,
 mask/pair settings, and last-frame `logicalByteReads`, `logicalByteWrites`,
