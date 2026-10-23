@@ -218,6 +218,19 @@ async function main() {
   assert.deepEqual(pixel(restored.frame, 16, 0), [34, 34, 34, 255],
     'unaliased raw tile258 remains independently visible');
 
+  const restarted = await runScene(diagnosticEntry, rom, 5);
+  assert.equal(restarted.c._set_vram_transaction_diagnostic(2, 8, -1, -1), 0);
+  restarted.c._start();
+  assert.equal(restarted.c._get_vram_tx_counter(1), 0n,
+    'clean start resets transaction counters');
+  let restartedState;
+  for (let t = 0; t < 5; t++) {
+    restarted.c._wasm_input_update(); restarted.c._tick();
+    restartedState = observable(restarted.c, restarted.c._sound());
+  }
+  equivalent(restartedState, baseline.state,
+    'clean start clears selected faults and restores the initial visible scene');
+
   const names = await runScene(diagnosticEntry, rom, 5);
   assert.equal(names.c._set_vram_transaction_diagnostic(2, 1, -1, -1), 0,
     'AD0 selection succeeds for the name-table alias fixture');
