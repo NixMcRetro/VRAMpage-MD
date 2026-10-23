@@ -37,10 +37,16 @@ function visibleCartridge(scrollPixels = 0, options = {}) {
   words.push(...vdpData(0x2000, Array(16).fill(0x1111)));
   words.push(...vdpData(0x2020, Array(16).fill(0x2222)));
   words.push(...vdpData(0x2040, Array(16).fill(0x3333)));
+  // Interlace-2 Mode 5 consumes doubled cache names: names 256/257 read cache
+  // keys 512/514, backed by source pattern rows at 0x4000/0x4040.
+  words.push(...vdpData(0x4000, Array(32).fill(0x1111)));
+  words.push(...vdpData(0x4040, Array(32).fill(0x2222)));
+  words.push(...vdpData(0x4080, Array(32).fill(0x3333)));
   words.push(...vdpData(0xe000, [0x0100, 0x0101, 0x0102, ...Array(29).fill(0x0100)]));
   const scrollTable = Array(40).fill(0x0000);
   if (scrollPixels) scrollTable[0] = 0x0003;
   words.push(...vdpData(0xfc00, scrollTable));
+  words.push(...vdpData(0xec00, Array(40).fill(0)));
   words.push(...vdpRegister(1, 0x74)); // Display enable after scene setup.
   words.push(0x4e72, 0x2700, 0x60fe); // STOP, then remain stopped.
   words.forEach((w, i) => view.setUint16(0x200 + i * 2, w));
@@ -110,10 +116,43 @@ async function main() {
   const vsScene = await runScene(diagnosticEntry, visibleCartridge(0, {vscroll: true}));
   assert.equal(vsScene.c._get_vram_tx_test_render_path(), 2,
     'register 11 selects the real Mode 5 vertical-scroll renderer');
+  const vsFault = await runScene(diagnosticEntry, visibleCartridge(0, {vscroll: true}), 5);
+  assert.equal(vsFault.c._set_vram_transaction_diagnostic(2, 8, -1, -1), 0);
+  const vsMapped = nextFrame(vsFault.c);
+  assert.deepEqual(pixel(vsMapped.frame, 0, 0), [0, 34, 0, 255]);
+  assert.deepEqual(pixel(vsMapped.frame, 8, 0), [0, 34, 0, 255],
+    'Mode 5 VS path uses mapped and aliased pattern-cache reads');
   const interlaceVsScene = await runScene(diagnosticEntry,
     visibleCartridge(0, {vscroll: true, interlace2: true}), 8);
   assert.equal(interlaceVsScene.c._get_vram_tx_test_render_path(), 4,
     'registers 11 and 12 select the real Mode 5 interlace-2 vertical-scroll renderer');
+  const im2Scene = await runScene(diagnosticEntry,
+    visibleCartridge(0, {interlace2: true}), 8);
+  assert.equal(im2Scene.c._get_vram_tx_test_render_path(), 3,
+    'register 12 selects the real Mode 5 interlace-2 renderer without VS');
+  for (const [entry, vscroll] of [[diagnosticEntry, false], [diagnosticEntry, true],
+                                  [altEntry, false], [altEntry, true]]) {
+    if (!entry) continue;
+    const im2Fault = await runScene(entry,
+      visibleCartridge(0, {interlace2: true, vscroll}), 8);
+    assert.equal(im2Fault.c._set_vram_transaction_diagnostic(2, 16, -1, -1), 0,
+      'AD4 selection succeeds for interlace-2 doubled-cache keys');
+    const im2Mapped = nextFrame(im2Fault.c);
+    assert.deepEqual(pixel(im2Mapped.frame, 0, 0), [0, 34, 0, 255]);
+    assert.deepEqual(pixel(im2Mapped.frame, 8, 0), [0, 34, 0, 255],
+      'AD4 maps interlace-2 cache keys512 and514 to the same visible pattern');
+    im2Fault.c._clear_vram_tx_test_cache();
+    assert.equal(im2Fault.c._run_vram_tx_test(0, 0x5040, 0x0000, 0, 1), 0,
+      'third logical alias writes the interlace-2 shared pattern bytes');
+    assert.notEqual(im2Fault.c._get_vram_tx_test_cache_dirty(512), 0,
+      'interlace-2 changed write invalidates doubled cache key512');
+    assert.notEqual(im2Fault.c._get_vram_tx_test_cache_dirty(514), 0,
+      'interlace-2 changed write invalidates doubled cache key514');
+    const im2Changed = nextFrame(im2Fault.c);
+    assert.deepEqual(pixel(im2Changed.frame, 0, 0), [34, 0, 0, 255]);
+    assert.deepEqual(pixel(im2Changed.frame, 8, 0), [34, 0, 0, 255],
+      'both interlace-2 cache aliases refresh from the changed physical bytes');
+  }
   const normal = await runScene(normalEntry, rom);
   const diagnosticOff = await runScene(diagnosticEntry, rom);
   equivalent(normal.state, baseline.state, 'current normal vs pinned PR36 renderer');
