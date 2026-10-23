@@ -3,6 +3,19 @@
 Verified on 23 October 2026. Read [work queue](WORK-QUEUE.md),
 [versioning](VERSIONING.md), [testing](TESTING.md) and [roadmap](../ROADMAP.md).
 
+## Current checkpoint
+
+Verified integration base: `81095ad0b3c9f66642ff577e9287524eee2ab472`.
+[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39877939952)
+passed source, Chromium, Firefox, WebKit and actual-core/package checks.
+Playwright caches are primed on main; normal application/release remains v0.2.7.
+The first affected write is identified at PC `$B46`; bounded actual-bus evidence
+now shows wait/caller release one tick later. Genuine sustained gameplay
+divergence remains the next uncompleted acceptance criterion. Read the first unfinished
+[work-queue](WORK-QUEUE.md) item and relevant protocol before older history.
+Reuse unchanged passing evidence; new diagnostic code needs focused tests,
+independent specialist review, final regression and CI before merge.
+
 ## Verified baseline
 
 - Main contains the complete stacked development history through v0.2.7,
@@ -236,3 +249,23 @@ new isolated diagnostic CPU tests. Independent specialist review reproduced
 the private eight-core evidence byte for byte. The normal v0.2.7 application,
 public download, runtime API and historical evidence remain unchanged. Continue
 with the bounded wait/release sequence in the work queue.
+
+
+## Bounded VBlank wait/release verified
+
+The [wait-sequence protocol](VBLANK-WAIT-SEQUENCE.md) records a matched Revision 0
+source build and nine fresh-core trials including the baseline scout. A10/A11
+redirects the tick-1801 zero-write at `$B46`, leaving the native flag nonzero.
+Polling continues until the ordinary tick-1802 clear; the wait return, caller
+successor and next setup then execute. Baseline reaches those milestones at
+1801. All origin, repeat, prefault, exact-budget, zero-host-input and public-core
+equivalence gates passed. Earlier JSON and public v0.2.7 are unchanged.
+
+Local checks passed: 76 Python tests with strict native/sanitizer coverage,
+existing JavaScript/native suites, 27 wait-runner groups, 18 new wait actual-WASM
+and nine existing origin CPU groups on one clean staged compilation. Independent
+Luna High source/profile and evidence review approved the final changes and
+record, including the distinction between listing context and observed milestones.
+This result explains a bounded one-tick wait delay, not sustained gameplay
+divergence. Next: choose a source-backed bounded RAM experiment using the
+existing demo/player observer, with no game-specific edits or silent recovery.

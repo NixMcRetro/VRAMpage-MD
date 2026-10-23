@@ -17,6 +17,9 @@ node tests/test_ram_alias_audio_phase.cjs
 node --check scripts/run-store-origin-diagnostic.cjs
 node --check tests/test_store_origin_wasm.cjs
 node tests/test_store_origin_runner.cjs
+node --check scripts/run-vblank-wait-sequence.cjs
+node --check tests/test_vblank_wait_wasm.cjs
+node tests/test_vblank_wait_runner.cjs
 cc -std=c11 -O2 -Wall -Wextra -Werror tests/fault_engine_smoke.c -o /tmp/vrambender_fault_smoke
 /tmp/vrambender_fault_smoke
 cc -std=c11 -O2 -Wall -Wextra -Werror \

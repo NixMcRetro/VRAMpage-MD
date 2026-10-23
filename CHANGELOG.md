@@ -1,5 +1,13 @@
 # Changelog
 
+## Post-v0.2.7 bounded wait diagnostic
+
+- Add an isolated, default-disabled developer diagnostic for bounded actual-bus flag classes and wait-loop milestones. Keep the normal app, runtime API and public download unchanged.
+- Match the instruction profile to a complete Revision 0 source build with the supported cartridge fingerprint; reject malformed records, wrong profiles, overflow and mismatched provenance.
+- Reuse one staged compilation for existing origin tests and new CPU regressions, including disabled and non-RAM IO paths.
+- Record repeated tick-1801 failed clear and tick-1802 wait/caller release with public-core equivalence; sustained gameplay divergence remains unproven.
+- Record efficient execution rules for checkpoints, bounded worker context, focused iteration checks and one CI watcher.
+
 ## Post-v0.2.7 CI browser reuse
 
 - Cache pinned Playwright browser binaries across eligible GitHub Actions runs and share the Chromium key between UI and actual-core jobs.
