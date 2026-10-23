@@ -1,5 +1,11 @@
 # Changelog
 
+## Post-v0.2.7 transaction-level VRAM planning
+
+- Map the pinned CPU/Z80, DMA, renderer, cache and sprite-table access paths before runtime changes.
+- Define staged semantics, compatibility, cache-alias, boundary, actual-WASM/browser and performance gates.
+- Retain the current frame-scoped app and public v0.2.7 download; v0.3.0 remains a future acceptance milestone.
+
 ## Post-v0.2.7 eight-write follow-up
 
 - Define one separately named A12/A13 eight-write trial with the existing public core, activation timing and trajectory criteria.

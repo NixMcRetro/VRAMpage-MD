@@ -8,7 +8,7 @@ transaction-level VRAM milestone is reserved for `0.3.0` by
 
 ## Purpose and fidelity boundary
 
-The current AD0–AD7 controls use a frame projection. A future transaction model
+The current AD0-AD7 controls use a frame projection. A future transaction model
 should apply the deterministic address fault at each supported VDP VRAM
 operation, with the core's existing FIFO, address increment, byte order, DMA
 schedule, sprite-table mirror, renderer and cache behavior retained around that
@@ -38,10 +38,10 @@ functions, not those local modifications.
 | Path | Pinned source evidence | Design consequence |
 |---|---|---|
 | Main 68000 VDP mapping | [`genesis.c`, Genesis memory map](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/genesis.c#L90-L99) maps `$C0/$C8/$D0/$D8` port windows to `vdp_read_byte/word` and `vdp_write_byte/word`. [`mem68k.c`, handlers](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/mem68k.c#L1132-L1315) distinguish DATA, CTRL, HVC, PSG and TEST ports. | Enter VRAM logic only after the port command selects VRAM. Do not bend register, HVC, CRAM, VSRAM, PSG or invalid-port behavior. Byte writes duplicate the byte across a word in these handlers. |
-| 68000 data reads and writes | [`vdp_ctrl.c`, `vdp_68k_data_w_m5`, `vdp_68k_data_r_m5` and `vdp_bus_w`](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/vdp_ctrl.c#L2124-L2174) use an internal data path, byte swap on odd address, FIFO bookkeeping, SAT interception, VRAM store and `MARK_BG_DIRTY`. The M5 read path reads an aligned word or an undocumented adjacent byte and advances `addr` by register 15: [`vdp_ctrl.c`](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/vdp_ctrl.c#L2369-L2550). | Wrap the VRAM address operation at the byte-lane boundary and retain word/byte ordering, FIFO and address increment behavior. The code comments state that a word write consumes two byte access slots. Test byte and word ports independently. |
+| 68000 data reads and writes | [`vdp_ctrl.c`, `vdp_68k_data_w_m5`, `vdp_68k_data_r_m5` and `vdp_bus_w`](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/vdp_ctrl.c#L2124-L2174) use an internal data path, byte swap on odd address, FIFO bookkeeping, SAT interception, VRAM store and `MARK_BG_DIRTY`. The M5 read path reads an aligned word or an undocumented adjacent byte and advances `addr` by register 15: [`vdp_ctrl.c`](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/vdp_ctrl.c#L2369-L2550). | Wrap the VRAM address operation at the byte-lane boundary and retain word/byte ordering, FIFO and address increment behavior. The [FIFO comment at lines 823-826](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/vdp_ctrl.c#L823-L826) states that a word write consumes two byte access slots. Test byte and word ports independently. |
 | Z80 VDP data port | [`memz80.c`, Z80 memory handlers](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/memz80.c#L100-L200) routes `$7F00-$7FFF` through the VDP map. [`vdp_ctrl.c`, Z80 M5 data handlers](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/vdp_ctrl.c#L2610-L2786) directly reads and writes VRAM bytes and increments the VDP address. | Include Z80-originated VDP reads and writes in the inventory; preserve their byte lane and their distinct address increment. They are separate from the Z80 banked access to 68000 memory. |
 | DMA scheduling and entry | [`vdp_dma_update`](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/vdp_ctrl.c#L575-L686) computes transfer allowance from cycles, active/blank display and width, freezes the 68000 for bus DMA, and dispatches a mode-specific handler. | Never replace the scheduler or turn a scheduled partial transfer into a full-frame loop. The address fault belongs at the VRAM endpoint of each dispatched operation. |
-| DMA sources to VDP | [`vdp_dma_68k_ext`, `vdp_dma_68k_ram`, `vdp_dma_68k_io`](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/vdp_ctrl.c#L2980-L3091) read external, internal and I/O-window source words and pass destination words to `vdp_bus_w`. | Keep the source-side 68000 bus semantics unchanged. Map the destination only when the VDP command selects VRAM. If a source read itself reaches a VDP data port through the bus map, that read naturally enters the data-port path above. |
+| DMA sources to VDP | [`vdp_dma_68k_ext`, `vdp_dma_68k_ram`, `vdp_dma_68k_io`](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/vdp_ctrl.c#L2980-L3091) read external, internal and I/O-window source words and pass destination words to `vdp_bus_w`. | Keep the source-side 68000 bus semantics unchanged. Map the destination only when the VDP command selects VRAM. At this pin, handler dispatch separates external, internal-RAM and I/O sources; the internal-RAM/I/O handlers do not forward VDP source windows to VDP data ports. Preserve that existing source behavior. |
 | VRAM copy and fill DMA | [`vdp_dma_copy` and `vdp_dma_fill`](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/vdp_ctrl.c#L3093-L3175) access `vram[]` directly, maintain the internal SAT copy, mark tile-cache rows dirty and increment addresses per byte. | These direct paths bypass `vdp_bus_w`; add explicit source and destination VRAM accessors. Copy source reads and destination writes are separate operations. Do not apply the mask to DMA source addresses outside VRAM. |
 | Renderer and pattern cache | [`render_line`](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/vdp_render.c#L4107-L4135) updates dirty patterns before rendering BG and sprites. [`update_bg_pattern_cache_m5`](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/vdp_render.c#L3940-L3997) reads pattern bytes from VRAM; Mode 5 renderers also directly read name tables and scroll tables, for example [`render_bg_m5`](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/vdp_render.c#L1509-L1660). Sprite parsing uses VRAM and an internal SAT mirror. | Audit every direct `vram[]` read in `vdp_render.c` and the VDP control code before claiming render-read coverage. Route the chosen logical table, pattern and sprite reads through accessors, invalidate decoded cache entries after mapped writes or mask changes, and make the SAT mirror follow the mapped physical destination. Validate this policy with synthetic cases. Batched line rendering remains batched and is not a beam-timed fetch model. |
 
@@ -92,8 +92,8 @@ RAM/VRAM exclusivity and failed-takeover behavior.
 2. Route 68000 and Z80 data-port reads/writes through the helper only for VRAM
    command codes. Preserve port behavior, address progression, status/FIFO
    timing, mode-specific byte ordering and existing VDP bus cycle bookkeeping.
-   The current model is low-dominant: paired nets map a high/high address pair
-   to low; a mask clears the modeled row and column address bits. It does not
+   The current model is low-dominant: paired nets preserve high/high and low/low; if either net is low,
+   both mapped bits become low; a mask clears the modeled row and column address bits. It does not
    model contention strength, floating lines, open bus, data-line faults or
    analog voltages. The row/column mapping follows the current logical model in
    `bend_map`, not a new physical measurement.
@@ -105,9 +105,12 @@ RAM/VRAM exclusivity and failed-takeover behavior.
    not invoke a second memory access.
 4. Route renderer VRAM reads at the existing logical access sites, including
    Mode 5 pattern decode, name/scroll table loads, sprite-table accesses and
-   other audited direct reads. Associate `MARK_BG_DIRTY` and pattern-cache
-   refresh with the mapped physical address, not merely the pre-map requested
-   address. On mask change, invalidate the affected patterns at minimum; a
+   other audited direct reads. Define cache keys and invalidation together: if decoded tiles remain keyed
+   by logical addresses, invalidate every logical tile/row whose mapped source
+   includes a written physical byte. Marking only the physical pattern dirty is
+   insufficient when multiple logical tiles alias that byte. Alternatively,
+   prove a canonical physical-key cache design preserves all mapped reads.
+   Resolve this choice before implementation and test reverse dependencies. On mask change, invalidate the affected patterns at minimum; a
    full invalidation is acceptable for a setting transition but not every
    frame. Keep line rendering and pixel fetch timing limitations visible in
    the model label.
@@ -140,8 +143,9 @@ RAM/VRAM exclusivity and failed-takeover behavior.
 
 - Exercise 68000 byte and word port reads/writes, odd/even lane ordering,
   address-increment register values, VRAM and non-VRAM command codes, and
-  mirrored VDP port windows. Assert exact physical bytes and readback, not only
-  an access counter.
+  mirrored VDP port windows. Explicitly cover M5 undocumented byte-read
+  command `0x0c`, including its `READ_BYTE(vram, addr ^ 1)` lane at odd and even
+  addresses. Assert exact physical bytes and readback, not only an access counter.
 - Exercise Z80 byte port reads/writes and the `$7F00-$7FFF` VDP forwarding
   path. Verify CPU-side Z80 RAM/banked-memory behavior remains unchanged.
 - Exercise each DMA handler: 68K external, internal RAM and I/O source, VRAM
@@ -150,11 +154,20 @@ RAM/VRAM exclusivity and failed-takeover behavior.
   whose alias is also in the SAT range. Assert source bytes are unchanged,
   mapped destination bytes/readback are correct, programmed counters advance
   exactly as before, and CPU freeze or busy-state behavior matches the pinned
-  core.
+  core. Separately test 128-KiB 68K-source DMA window wrap: initialize
+  `source = (reg[23] << 17) | (dma_src << 1)`, then preserve the high window
+  while wrapping the low 17 bits. This is distinct from 64-KiB VRAM destination
+  wrap; an address fault must never remap a non-VRAM source read. Test fill
+  arming and the triggering data-port write, its destination increment, the
+  prelatched FIFO high byte used by `vdp_dma_fill`, and the exact first fill
+  destination/lane. Assert no duplicate trigger write, skipped first fill or
+  additional count caused by instrumentation.
 - Exercise renderer reads for pattern data, Plane A/B and Window names, scroll
   tables, and sprite attributes through an actual render. Force a tile to be
   cached, change an aliased source byte, render again, and assert the next frame
-  contains the updated expected pixels. Toggle mask on/off between frames and
+  contains the updated expected pixels. Cache two distinct logical tiles that
+  alias the same physical pattern, update it through a third alias, and require
+  both displayed tiles to refresh. Toggle mask on/off between frames and
   verify stale decoded data is not reused. These are logical-render tests, not
   claims about the physical fetch dot.
 - Exercise cache saturation and dirty-list capacity under broad changes. The

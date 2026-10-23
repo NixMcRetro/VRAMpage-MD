@@ -5,13 +5,16 @@ Verified on 23 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
-Verified integration base: `f18b1b2f698b5ca39ab686fb7f4eefb58e7d5b3c` (PR #32).
-[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39908628359)
+Verified integration base: `99c549797e308b963553085def1e069864bf3436` (PR #33).
+[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39915571668)
 passed source, Chromium, Firefox, WebKit and actual-core/package checks.
 Playwright caches are primed on main; normal application/release remains v0.2.7.
 The first affected write is identified at PC `$B46`; bounded actual-bus evidence
 now shows wait/caller release one tick later. The eight-write follow-up now meets the bounded same-input-phase trajectory
-criterion; transaction-level VRAM architecture is the next unfinished item. Read the first unfinished
+criterion. The [transaction-level VRAM plan](TRANSACTION-VRAM-PLAN.md) maps
+CPU/Z80 ports, DMA, renderer/cache and sprite-table paths. Implementation has not
+started. Next: resolve its staged semantics and compatibility decisions before
+writing runtime hooks. Read the first unfinished
 [work-queue](WORK-QUEUE.md) item and relevant protocol before older history.
 Reuse unchanged passing evidence; new diagnostic code needs focused tests,
 independent specialist review, final regression and CI before merge.
