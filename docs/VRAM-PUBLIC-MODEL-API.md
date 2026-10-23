@@ -9,7 +9,7 @@ build and immutable v0.2.8 Mac download retain frame-projection controls. The
 defines IDs, errors and model behavior; the
 [renderer record](VRAM-RENDER-DIAGNOSTIC.md) contains prior verification.
 
-An optional runtime build will expose model selection and read-only scalar state
+The optional developer/test runtime profile exposes model selection and read-only scalar state
 and last-frame counters, without diagnostic memory accessors, handler invocation
 bridges, cache setters or renderer probes. A diagnostic profile adds those
 test-only exports; the default profile exposes neither new runtime API nor test
@@ -60,7 +60,10 @@ The ordinary `scripts/build-core.sh` remains the normal profile.
 The generated runtime factory installs these JavaScript-facing methods:
 
 - `_set_vram_fault_model(modelId, mask, bridgeA, bridgeB)`: four integer arguments;
-  returns 0 for success, 1 for invalid arguments or 2 for an unsupported mode.
+  returns 0 for success, 1 for invalid arguments, 2 for an unsupported mode or
+  4 if reverse-index allocation fails. Returned errors preserve the prior
+  configuration, memory, counters and cache state. Forced allocation failure
+  has not been exercised in the WebAssembly tests.
 - `_get_vram_fault_model_state()`: current configuration, semantics identifier,
   effectiveness/reason, support mask and completed-frame transaction counts.
 - `_get_vram_supported_model_mask()`: a read-only capability probe; bit 0 is OFF,
