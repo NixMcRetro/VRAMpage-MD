@@ -19,7 +19,7 @@ separate future milestones. Historical milestones below retain their original
 research context.
 
 
-## Next integration: public transaction-model selection
+## Next integration: application transaction-model controls and exports
 
 The developer-only Mode 5 CPU/DMA and renderer/cache integration has passed
 independent source/fixture review, 91 local tests, fresh real WASM, actual-core
@@ -28,8 +28,14 @@ Both the initial failed and corrected passing measurements are preserved.
 [PR #40](https://github.com/NixMcRetro/VRAMpage-MD/pull/40) carries the integration
 and required CI; see [renderer evidence](docs/VRAM-RENDER-DIAGNOSTIC.md).
 
-Next, implement the reviewed public model/API selection and separate transaction
-exports with compatibility, browser and milestone acceptance. The public app
+The safe core selector, read-only model/support state and completed-frame counts
+are now implemented in an optional harness-built runtime profile, separately
+from diagnostic test bridges. [API verification](docs/VRAM-PUBLIC-MODEL-API.md)
+records independent review and local acceptance. Required CI precedes merge.
+
+Next, add the production runtime build, explicit application model selection and
+separate transaction experiment exports, with compatibility, browser, current
+runtime performance and milestone acceptance. The public app
 still uses frame-scoped VRAM. This diagnostic checkpoint does not complete
 v0.3.0 or establish full-field interlace timing or physical hardware fidelity.
 Audio bending remains the later v0.4.0 milestone.

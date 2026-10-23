@@ -1,5 +1,12 @@
 # Changelog
 
+## Post-v0.2.8 safe VRAM model API groundwork
+
+- Separate an optional runtime API from diagnostic handler/memory/cache test exports. Preserve the normal build and immutable v0.2.8 download.
+- Validate public JavaScript arguments before WASM coercion and numeric C arguments before narrowing; reject invalid/unsupported changes atomically.
+- Expose model/support metadata and completed-frame byte counts, preserving legacy controls and application-owned RAM/VRAM orchestration.
+- Cover real five-profile WASM, module callbacks, counter snapshots and strict previous-vendor guard upgrades. The production runtime builder, UI and experiment-export integration remain future work.
+
 ## Post-v0.2.8 renderer diagnostic groundwork
 
 - Preserve the complete failed first performance record and independent audit. Skip redundant inactive CPU/DMA mode synchronization with a reviewed cached flag and focused strict/sanitizer coverage; the corrected 91-test integration and separate fixed-protocol performance run pass, with both measurement records retained.

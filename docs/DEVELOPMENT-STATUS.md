@@ -29,10 +29,12 @@ explicit model compatibility. An isolated native helper implements those byte-ac
 primitives. Diagnostic core hooks preserve the normal access path by default;
 renderer/cache reads are now implemented and locally verified in the separately
 compiled diagnostic. [PR #40](https://github.com/NixMcRetro/VRAMpage-MD/pull/40)
-merged after all required CI passed, and merged-main CI passed too. The next
-bounded task is a safe core model API in an optional runtime build, separating
-shared transaction behavior from diagnostic test exports. The normal app/release
-remains v0.2.8; UI selection, experiment exports and milestone acceptance follow. Read the first unfinished
+merged after all required CI passed, and merged-main CI passed too. The [safe core model API](VRAM-PUBLIC-MODEL-API.md) is now implemented in a
+harness-built runtime profile with separate diagnostic exports. Independent
+review and the integrated 91-test suite, normal leak checking, five real-WASM
+profiles, normal Chromium and real packaging passed locally. Required CI
+precedes merge. The normal app/release remains v0.2.8; production runtime
+build, UI selection, experiment exports and milestone acceptance follow. Read the first unfinished
 [work-queue](WORK-QUEUE.md) item and relevant protocol before older history.
 Reuse unchanged passing evidence; new diagnostic code needs focused tests,
 independent specialist review, final regression and CI before merge.

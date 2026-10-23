@@ -1,9 +1,11 @@
 # Transaction-level VRAM semantics
 
-**Status:** implementable protocol, documentation only. Base commit:
-`97964a06adaf2668acbe975998d30b53dd121ddc`. The application remains at
-`0.2.7`; this protocol defines a possible `0.3.0` model and does not alter the
-runtime. It refines [the architecture and test plan](TRANSACTION-VRAM-PLAN.md).
+**Status:** reviewed implementation contract. Originally written as documentation
+at base `97964a06adaf2668acbe975998d30b53dd121ddc` for application v0.2.7.
+Current version follows root `VERSION`. Native/diagnostic integration and
+[optional core API groundwork](VRAM-PUBLIC-MODEL-API.md) implement stages of this
+contract; public application and v0.3.0 milestone acceptance remain future work.
+It refines [the architecture and test plan](TRANSACTION-VRAM-PLAN.md).
 
 Source evidence is the pinned `h1romas4/wasm-genplus` revision
 [`6090aff9e9b2f578cd28882bd4571d2e35b1d674`](https://github.com/h1romas4/wasm-genplus/tree/6090aff9e9b2f578cd28882bd4571d2e35b1d674).
@@ -290,9 +292,9 @@ also zero them so counts cannot mix effective and bypassed periods. A
 suspended or non-selected transaction model reports zero effective
 transaction counts.
 Model metadata must be included in diagnostic snapshots so frame-projection
-and transaction results cannot be mistaken for one another. The application
-version stays `0.2.7` until all
-acceptance gates and independent review are complete.
+and transaction results cannot be mistaken for one another. Application version follows root `VERSION`; optional API groundwork does not
+publish v0.3.0. Complete milestone acceptance and independent review before
+releasing that version.
 
 ## Native helper acceptance before core integration
 
