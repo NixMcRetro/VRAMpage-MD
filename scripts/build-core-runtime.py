@@ -60,6 +60,18 @@ def runtime_output(root: Path) -> Path:
     return Path(configured).absolute() if configured else root / "build/runtime-profile"
 
 
+def validate_output_path(root: Path, vendor: Path, output: Path) -> None:
+    normalized_output = output.resolve(strict=False)
+    normalized_root = root.resolve(strict=False)
+    protected = (root / "site", root / "vendor", vendor)
+    normalized_protected = tuple(path.resolve(strict=False) for path in protected)
+    if normalized_output == normalized_root or any(
+        normalized_output == path or path in normalized_output.parents
+        for path in normalized_protected
+    ):
+        raise RuntimeError(f"Runtime output must stay separate from site and vendor: {output}")
+
+
 def verify_inputs(root: Path, vendor: Path, output: Path) -> bytes:
     required = ("git", "python3", "emcmake", "emmake", "cmake", "make")
     missing = [tool for tool in required if shutil.which(tool) is None]
@@ -75,16 +87,7 @@ def verify_inputs(root: Path, vendor: Path, output: Path) -> bytes:
     if commit != PINNED_COMMIT:
         raise RuntimeError(f"Expected pinned core {PINNED_COMMIT}, got {commit}")
 
-    normalized_output = output.resolve(strict=False)
-    protected = (root / "site", root / "vendor", vendor)
-    normalized_protected = (root.resolve(),) + tuple(
-        path.resolve(strict=False) for path in protected
-    )
-    if any(
-        normalized_output == path or path in normalized_output.parents
-        for path in normalized_protected
-    ):
-        raise RuntimeError(f"Runtime output must stay separate from site and vendor: {output}")
+    validate_output_path(root, vendor, output)
     archive = subprocess.check_output(
         ["git", "-C", str(vendor), "archive", "--format=tar", PINNED_COMMIT]
     )
