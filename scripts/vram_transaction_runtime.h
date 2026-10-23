@@ -8,6 +8,7 @@ int vram_tx_diagnostic_configure(int model, int mask, int bridge_a,
                                  int bridge_b, int mode5_supported);
 int vram_tx_diagnostic_selected(void);
 int vram_tx_diagnostic_effective(void);
+int vram_tx_diagnostic_render_enabled(void);
 void vram_tx_diagnostic_mode_changed(int mode5_supported);
 void vram_tx_diagnostic_reset(void);
 void vram_tx_diagnostic_legacy_override(void);

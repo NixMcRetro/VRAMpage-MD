@@ -21,6 +21,7 @@
 static vram_tx_state_t vram_tx_diagnostic_state;
 static int vram_tx_diagnostic_initialized;
 static int vram_tx_diagnostic_is_selected;
+int vram_tx_diagnostic_render_active;
 #endif
 
 extern uint8 vram[0x10000];
@@ -105,6 +106,14 @@ static void vram_tx_apply_cache_invalidation(void) {
     }
 }
 
+static void vram_tx_update_render_fast_flag(void) {
+    vram_tx_diagnostic_render_active =
+        vram_tx_diagnostic_is_selected &&
+        vram_tx_diagnostic_state.model == VRAM_TX_MODEL_LOGICAL_BYTE_TRANSACTION_V1 &&
+        vram_tx_diagnostic_state.supported_mode &&
+        vram_tx_diagnostic_state.has_fault;
+}
+
 int vram_tx_diagnostic_selected(void) {
     return vram_tx_diagnostic_is_selected;
 }
@@ -116,6 +125,10 @@ int vram_tx_diagnostic_effective(void) {
         vram_tx_diagnostic_state.has_fault;
 }
 
+int vram_tx_diagnostic_render_enabled(void) {
+    return vram_tx_diagnostic_render_active;
+}
+
 void vram_tx_diagnostic_reset(void) {
     if (!vram_tx_diagnostic_initialized) {
         vram_tx_init(&vram_tx_diagnostic_state);
@@ -124,6 +137,7 @@ void vram_tx_diagnostic_reset(void) {
         vram_tx_reconnect(&vram_tx_diagnostic_state);
     }
     vram_tx_diagnostic_is_selected = 0;
+    vram_tx_update_render_fast_flag();
     bend_a = bend_b = -1;
     bend_address_mask = 0;
     bend_changed_reads = bend_changed_writes = 0;
@@ -135,6 +149,7 @@ void vram_tx_diagnostic_legacy_override(void) {
     (void)vram_tx_configure(&vram_tx_diagnostic_state, VRAM_TX_MODEL_OFF,
                             0, -1, -1, vram_tx_diagnostic_state.supported_mode);
     vram_tx_diagnostic_is_selected = 0;
+    vram_tx_update_render_fast_flag();
     vram_tx_apply_cache_invalidation();
 }
 
@@ -154,6 +169,7 @@ int vram_tx_diagnostic_configure(int model, int mask, int bridge_a,
     if (status != VRAM_TX_OK) return status;
     vram_tx_diagnostic_is_selected =
         model == VRAM_TX_MODEL_LOGICAL_BYTE_TRANSACTION_V1;
+    vram_tx_update_render_fast_flag();
     bend_a = bend_b = -1;
     bend_address_mask = 0;
     bend_changed_reads = bend_changed_writes = 0;
@@ -166,6 +182,7 @@ void vram_tx_diagnostic_mode_changed(int mode5_supported) {
     if (!vram_tx_diagnostic_is_selected) return;
     (void)vram_tx_set_supported_mode(&vram_tx_diagnostic_state,
                                      mode5_supported);
+    vram_tx_update_render_fast_flag();
     vram_tx_apply_cache_invalidation();
 }
 
