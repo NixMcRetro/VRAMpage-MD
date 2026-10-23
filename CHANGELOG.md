@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.2.8 release inventory
+
+- Record the verified public package and exact source commit in the release catalog.
+- Direct new users from older editorial release notes to v0.2.8 while preserving original notes, tags, binaries and checksums.
+
 ## v0.2.8 CI provisioning repair
 
 - Use the standard signed Ubuntu package mirror for browser system libraries after repeated slow Azure-mirror downloads.

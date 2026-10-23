@@ -1,7 +1,16 @@
 {
-  "current": "v0.2.7",
+  "current": "v0.2.8",
   "repository": "NixMcRetro/VRAMpage-MD",
   "releases": [
+    {
+      "tag": "v0.2.8",
+      "title": "VRAMpage MD v0.2.8",
+      "source_commit": "f1aad11f331e772e6ec786be020d54b36905c7ba",
+      "assets": [
+        "VRAMpage-MD-v0.2.8-macos.zip",
+        "SHA256SUMS.txt"
+      ]
+    },
     {
       "tag": "v0.2.7",
       "title": "VRAMpage MD v0.2.7",
