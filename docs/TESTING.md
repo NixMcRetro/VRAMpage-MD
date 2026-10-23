@@ -795,7 +795,7 @@ JavaScript/native/default-leak-detection suites. An ordinary production build,
 six patch tests against its already-patched vendor and actual-core Chromium also
 passed. The fixed performance gate nevertheless failed: see the immutable
 [raw measurements and exact failing statistics](VRAM-RENDER-DIAGNOSTIC.md#first-measured-performance-result-failed).
-No renderer merge or performance acceptance is claimed.
+At that point, no renderer merge or performance acceptance was claimed.
 
 After the reviewed inactive-guard correction, all 91 tests and fresh normal
 actual-core Chromium passed. A separate second complete 25-run benchmark passed

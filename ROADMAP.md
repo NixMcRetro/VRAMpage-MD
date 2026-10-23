@@ -1,12 +1,13 @@
 # VRAMpage MD roadmap
 
-## Current delivery: v0.2.7 optional RAM write diagnostics
+## Current delivery: v0.2.8 compact Work RAM interface
 
 The source import, display fixes and work-RAM development through v0.2.4 are
 consolidated into one runnable application. v0.2.5 adds independent VRAM leg
 switches while retaining that foundation. v0.2.6 adds source-commit identification
 to experiment exports without changing the fault models. v0.2.7 adds an optional,
-default-disabled first-affected-write diagnostic. The complete versioned Mac ZIP
+default-disabled first-affected-write diagnostic. v0.2.8 makes the Work RAM chip
+25% shorter for smaller laptop windows. The complete versioned Mac ZIP
 includes the compiled core, source/notices and launcher; see
 [Run locally](docs/RUNNING-LOCALLY.md). The immediate goal is reliable launching
 and acceptance on the user's Mac. The user reports that v0.2.5 appears to work
@@ -16,6 +17,22 @@ restart or clean restart is required. Physical gamepad acceptance remains open.
 Per-access VRAM and audio bending remain
 separate future milestones. Historical milestones below retain their original
 research context.
+
+
+## Next integration: public transaction-model selection
+
+The developer-only Mode 5 CPU/DMA and renderer/cache integration has passed
+independent source/fixture review, 91 local tests, fresh real WASM, actual-core
+Chromium and the fixed five-pair performance gate after a reviewed guard fix.
+Both the initial failed and corrected passing measurements are preserved.
+[PR #40](https://github.com/NixMcRetro/VRAMpage-MD/pull/40) carries the integration
+and required CI; see [renderer evidence](docs/VRAM-RENDER-DIAGNOSTIC.md).
+
+Next, implement the reviewed public model/API selection and separate transaction
+exports with compatibility, browser and milestone acceptance. The public app
+still uses frame-scoped VRAM. This diagnostic checkpoint does not complete
+v0.3.0 or establish full-field interlace timing or physical hardware fidelity.
+Audio bending remains the later v0.4.0 milestone.
 
 
 ## v0.1 | NTSC hardware-mode foundation

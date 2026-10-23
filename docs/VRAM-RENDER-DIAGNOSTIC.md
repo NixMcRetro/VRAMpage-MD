@@ -145,8 +145,8 @@ gates, verified stable source/artifact provenance and found no exclusions.
 
 The threshold remains 1.05 for both statistics. Active AD3 is descriptive only.
 The observed host load is recorded, but does not excuse the failure. No timing
-was repeated or excluded to obtain a passing result. Renderer integration must
-remain unmerged until a reviewed correction passes fresh acceptance.
+was repeated or excluded to obtain a passing result. At that point, renderer integration had to
+remain unmerged until a reviewed correction passed fresh acceptance.
 
 Compressed SHA-256: `7494bd6470f3306b2c9ae1f391ef6ddf29b2367f7644b1fd2e902d24f28c00bc`.
 Uncompressed SHA-256: `9bee24513cffc6d5ef414d17d2100a18851d6c02300f647c0c2a7a8913260bee`
