@@ -788,3 +788,11 @@ received independent specialist review. VS/interlace cases cover active line-zer
 pixels and function selection, not full-field timing. Final integrated regression,
 performance and CI remain required before merge. No public transaction selector,
 commercial-game, physical or native Mac acceptance is implied.
+
+The final integrated renderer correctness run passed all 89 Python tests without
+skips, nested six pinned-source checks, fresh four-core WASM and existing
+JavaScript/native/default-leak-detection suites. An ordinary production build,
+six patch tests against its already-patched vendor and actual-core Chromium also
+passed. The fixed performance gate nevertheless failed: see the immutable
+[raw measurements and exact failing statistics](VRAM-RENDER-DIAGNOSTIC.md#first-measured-performance-result-failed).
+No renderer merge or performance acceptance is claimed.

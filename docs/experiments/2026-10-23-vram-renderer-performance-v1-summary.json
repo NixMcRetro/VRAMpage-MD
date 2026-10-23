@@ -1,0 +1,595 @@
+{
+  "artifact": {
+    "filename": "renderer-benchmark-0.2.8-5pairs.json",
+    "bytes": 34543556,
+    "sha256": "9bee24513cffc6d5ef414d17d2100a18851d6c02300f647c0c2a7a8913260bee"
+  },
+  "recordedAt": "2026-10-23T15:14:01.681Z",
+  "protocol": {
+    "name": "visible-mode5-recurring-32-word-dma-paired-v1",
+    "mode": "timed-benchmark",
+    "measured": true,
+    "fixedPairs": 5,
+    "fixedDurationMsPerRun": 30000,
+    "warmupTicks": 120,
+    "preflight": "one common first Mode 5 tick, then diagnostic selection where applicable, then exactly 120 fixed ticks; recurring CPU loop counter must advance; baseline, normal, diagnostic-off, and identity must match full frame/audio/RAM/CPU-flag observations",
+    "timedUnit": "one input-update + emulator tick + audio render; per-frame hrtime duration in milliseconds",
+    "pairOrder": "pairs 1,3,5 forward; pairs 2,4 reverse; no result-based reordering or exclusion",
+    "percentile": "nearest-rank: sorted[Math.ceil(p*n)-1]; median is nearest-rank p=0.50; p95 is per-run frame p=0.95",
+    "statisticUse": "report raw five per-run medians and p95s; do not pool frame samples across runs",
+    "performanceGate": "For normal, diagnostic-off, and identity, median of five paired run ratios to baseline must be <=1.05 for both per-run median frame duration and per-run p95 frame duration. Active AD3 is descriptive and does not determine the no-fault gate.",
+    "workload": "visible synthetic Mode 5 tile scene plus original 68K ROM loop issuing recurring 32-word VRAM DMA from ROM byte 0x4000 to VRAM 0x6000",
+    "variants": [
+      "baseline",
+      "normal",
+      "diagnostic-off",
+      "identity",
+      "active-ad3"
+    ],
+    "quietPeriodRequired": true,
+    "noisePolicy": "retain every sample; do not retime, rerun, or exclude based on results; record host load before and after; the fixed 1.05 threshold still applies"
+  },
+  "source": {
+    "commit": "41140b41851c1877e6901a3aeebbb5d501d2598c",
+    "tree": "088d36cef3aef4857f03879161dfb228f1b96eba",
+    "provenanceStable": true,
+    "artifactsUnchanged": {
+      "baseline": true,
+      "normal": true,
+      "diagnostic": true
+    }
+  },
+  "host": {
+    "before": {
+      "loadAverage": [
+        0,
+        0.05,
+        0.13
+      ],
+      "node": "v24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "cpuModel": "AMD EPYC 9V74 80-Core Processor",
+      "logicalCpus": 5,
+      "totalMemoryBytes": 35743760384,
+      "emscripten": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 4.0.23 (7a5d93b50f6a3a35e85a0d2fc9e667b8498e6aed)",
+      "cmake": "cmake version 4.1.3"
+    },
+    "after": {
+      "loadAverage": [
+        1,
+        0.94,
+        0.65
+      ]
+    }
+  },
+  "pairs": [
+    {
+      "pair": 1,
+      "order": [
+        "baseline",
+        "normal",
+        "diagnostic-off",
+        "identity",
+        "active-ad3"
+      ],
+      "runs": [
+        {
+          "variant": "baseline",
+          "elapsedMs": 30000.091722,
+          "frameCount": 73479,
+          "medianFrameMs": 0.368298,
+          "p95FrameMs": 0.557775,
+          "audioSamples": 736,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "normal",
+          "elapsedMs": 30000.203073,
+          "frameCount": 74411,
+          "medianFrameMs": 0.366436,
+          "p95FrameMs": 0.546328,
+          "audioSamples": 736,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "diagnostic-off",
+          "elapsedMs": 30000.154695,
+          "frameCount": 69009,
+          "medianFrameMs": 0.388479,
+          "p95FrameMs": 0.608763,
+          "audioSamples": 736,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "identity",
+          "elapsedMs": 30000.318678,
+          "frameCount": 68283,
+          "medianFrameMs": 0.414798,
+          "p95FrameMs": 0.550284,
+          "audioSamples": 736,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "active-ad3",
+          "elapsedMs": 30000.360356,
+          "frameCount": 30991,
+          "medianFrameMs": 0.908728,
+          "p95FrameMs": 1.257987,
+          "audioSamples": 736,
+          "frameSha256": "9fc09750aa6916ed25344a59e962d16ffe745eb423c18bc777ff770a0d903d83",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        }
+      ]
+    },
+    {
+      "pair": 2,
+      "order": [
+        "active-ad3",
+        "identity",
+        "diagnostic-off",
+        "normal",
+        "baseline"
+      ],
+      "runs": [
+        {
+          "variant": "active-ad3",
+          "elapsedMs": 30000.248137,
+          "frameCount": 32241,
+          "medianFrameMs": 0.868357,
+          "p95FrameMs": 1.158186,
+          "audioSamples": 736,
+          "frameSha256": "9fc09750aa6916ed25344a59e962d16ffe745eb423c18bc777ff770a0d903d83",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "identity",
+          "elapsedMs": 30000.228134,
+          "frameCount": 65284,
+          "medianFrameMs": 0.417413,
+          "p95FrameMs": 0.616725,
+          "audioSamples": 736,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "diagnostic-off",
+          "elapsedMs": 30000.329422,
+          "frameCount": 70881,
+          "medianFrameMs": 0.385735,
+          "p95FrameMs": 0.559268,
+          "audioSamples": 736,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "normal",
+          "elapsedMs": 30000.306257,
+          "frameCount": 74148,
+          "medianFrameMs": 0.366846,
+          "p95FrameMs": 0.545357,
+          "audioSamples": 736,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "baseline",
+          "elapsedMs": 30000.348102,
+          "frameCount": 76634,
+          "medianFrameMs": 0.366075,
+          "p95FrameMs": 0.506778,
+          "audioSamples": 736,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        }
+      ]
+    },
+    {
+      "pair": 3,
+      "order": [
+        "baseline",
+        "normal",
+        "diagnostic-off",
+        "identity",
+        "active-ad3"
+      ],
+      "runs": [
+        {
+          "variant": "baseline",
+          "elapsedMs": 30000.01554,
+          "frameCount": 71285,
+          "medianFrameMs": 0.377402,
+          "p95FrameMs": 0.571046,
+          "audioSamples": 736,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "normal",
+          "elapsedMs": 30000.342004,
+          "frameCount": 72644,
+          "medianFrameMs": 0.374498,
+          "p95FrameMs": 0.566469,
+          "audioSamples": 736,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "diagnostic-off",
+          "elapsedMs": 30000.341144,
+          "frameCount": 68786,
+          "medianFrameMs": 0.390062,
+          "p95FrameMs": 0.610646,
+          "audioSamples": 736,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "identity",
+          "elapsedMs": 30000.231947,
+          "frameCount": 66725,
+          "medianFrameMs": 0.417663,
+          "p95FrameMs": 0.583305,
+          "audioSamples": 736,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "active-ad3",
+          "elapsedMs": 30001.045801,
+          "frameCount": 28595,
+          "medianFrameMs": 0.912353,
+          "p95FrameMs": 1.706527,
+          "audioSamples": 736,
+          "frameSha256": "9fc09750aa6916ed25344a59e962d16ffe745eb423c18bc777ff770a0d903d83",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        }
+      ]
+    },
+    {
+      "pair": 4,
+      "order": [
+        "active-ad3",
+        "identity",
+        "diagnostic-off",
+        "normal",
+        "baseline"
+      ],
+      "runs": [
+        {
+          "variant": "active-ad3",
+          "elapsedMs": 30000.370841,
+          "frameCount": 31530,
+          "medianFrameMs": 0.885122,
+          "p95FrameMs": 1.218628,
+          "audioSamples": 736,
+          "frameSha256": "9fc09750aa6916ed25344a59e962d16ffe745eb423c18bc777ff770a0d903d83",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "identity",
+          "elapsedMs": 30000.079526,
+          "frameCount": 63324,
+          "medianFrameMs": 0.425095,
+          "p95FrameMs": 0.650506,
+          "audioSamples": 736,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "diagnostic-off",
+          "elapsedMs": 30000.981547,
+          "frameCount": 70512,
+          "medianFrameMs": 0.385975,
+          "p95FrameMs": 0.58039,
+          "audioSamples": 736,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "normal",
+          "elapsedMs": 30000.328862,
+          "frameCount": 69945,
+          "medianFrameMs": 0.37639,
+          "p95FrameMs": 0.611517,
+          "audioSamples": 736,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "baseline",
+          "elapsedMs": 30000.010593,
+          "frameCount": 68714,
+          "medianFrameMs": 0.380006,
+          "p95FrameMs": 0.658819,
+          "audioSamples": 735,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "f245942364afb415ea6ad18219deb50faf117504c6e6a0bde047d23b12ff6431"
+        }
+      ]
+    },
+    {
+      "pair": 5,
+      "order": [
+        "baseline",
+        "normal",
+        "diagnostic-off",
+        "identity",
+        "active-ad3"
+      ],
+      "runs": [
+        {
+          "variant": "baseline",
+          "elapsedMs": 30000.228783,
+          "frameCount": 73119,
+          "medianFrameMs": 0.379535,
+          "p95FrameMs": 0.546308,
+          "audioSamples": 736,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "normal",
+          "elapsedMs": 30000.228746,
+          "frameCount": 74318,
+          "medianFrameMs": 0.367948,
+          "p95FrameMs": 0.5572,
+          "audioSamples": 736,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "diagnostic-off",
+          "elapsedMs": 30000.080015,
+          "frameCount": 70603,
+          "medianFrameMs": 0.391233,
+          "p95FrameMs": 0.569574,
+          "audioSamples": 736,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "identity",
+          "elapsedMs": 30000.072205,
+          "frameCount": 63003,
+          "medianFrameMs": 0.432977,
+          "p95FrameMs": 0.65306,
+          "audioSamples": 736,
+          "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        },
+        {
+          "variant": "active-ad3",
+          "elapsedMs": 30000.029683,
+          "frameCount": 47897,
+          "medianFrameMs": 0.58023,
+          "p95FrameMs": 0.82427,
+          "audioSamples": 736,
+          "frameSha256": "9fc09750aa6916ed25344a59e962d16ffe745eb423c18bc777ff770a0d903d83",
+          "finalAudioSha256": "2cc2784c0ddcd0769b915ab468a65b378a10302cf058230ac75c9735750559d8"
+        }
+      ]
+    }
+  ],
+  "pairedSummary": {
+    "baseline": [
+      {
+        "pair": 1,
+        "medianFrameMs": 0.368298,
+        "p95FrameMs": 0.557775,
+        "medianRatioToBaseline": 1,
+        "p95RatioToBaseline": 1
+      },
+      {
+        "pair": 2,
+        "medianFrameMs": 0.366075,
+        "p95FrameMs": 0.506778,
+        "medianRatioToBaseline": 1,
+        "p95RatioToBaseline": 1
+      },
+      {
+        "pair": 3,
+        "medianFrameMs": 0.377402,
+        "p95FrameMs": 0.571046,
+        "medianRatioToBaseline": 1,
+        "p95RatioToBaseline": 1
+      },
+      {
+        "pair": 4,
+        "medianFrameMs": 0.380006,
+        "p95FrameMs": 0.658819,
+        "medianRatioToBaseline": 1,
+        "p95RatioToBaseline": 1
+      },
+      {
+        "pair": 5,
+        "medianFrameMs": 0.379535,
+        "p95FrameMs": 0.546308,
+        "medianRatioToBaseline": 1,
+        "p95RatioToBaseline": 1
+      }
+    ],
+    "normal": [
+      {
+        "pair": 1,
+        "medianFrameMs": 0.366436,
+        "p95FrameMs": 0.546328,
+        "medianRatioToBaseline": 0.9949443114000075,
+        "p95RatioToBaseline": 0.9794773878355968
+      },
+      {
+        "pair": 2,
+        "medianFrameMs": 0.366846,
+        "p95FrameMs": 0.545357,
+        "medianRatioToBaseline": 1.0021061257938948,
+        "p95RatioToBaseline": 1.07612603546326
+      },
+      {
+        "pair": 3,
+        "medianFrameMs": 0.374498,
+        "p95FrameMs": 0.566469,
+        "medianRatioToBaseline": 0.9923052872003858,
+        "p95RatioToBaseline": 0.9919848838797574
+      },
+      {
+        "pair": 4,
+        "medianFrameMs": 0.37639,
+        "p95FrameMs": 0.611517,
+        "medianRatioToBaseline": 0.990484360773251,
+        "p95RatioToBaseline": 0.9282018278161376
+      },
+      {
+        "pair": 5,
+        "medianFrameMs": 0.367948,
+        "p95FrameMs": 0.5572,
+        "medianRatioToBaseline": 0.9694705363141739,
+        "p95RatioToBaseline": 1.0199374711701092
+      }
+    ],
+    "diagnostic-off": [
+      {
+        "pair": 1,
+        "medianFrameMs": 0.388479,
+        "p95FrameMs": 0.608763,
+        "medianRatioToBaseline": 1.0547953016307448,
+        "p95RatioToBaseline": 1.0914132042490252
+      },
+      {
+        "pair": 2,
+        "medianFrameMs": 0.385735,
+        "p95FrameMs": 0.559268,
+        "medianRatioToBaseline": 1.0537048419039814,
+        "p95RatioToBaseline": 1.1035759247639005
+      },
+      {
+        "pair": 3,
+        "medianFrameMs": 0.390062,
+        "p95FrameMs": 0.610646,
+        "medianRatioToBaseline": 1.033545132246252,
+        "p95RatioToBaseline": 1.0693464274331665
+      },
+      {
+        "pair": 4,
+        "medianFrameMs": 0.385975,
+        "p95FrameMs": 0.58039,
+        "medianRatioToBaseline": 1.0157076467213675,
+        "p95RatioToBaseline": 0.8809551637096076
+      },
+      {
+        "pair": 5,
+        "medianFrameMs": 0.391233,
+        "p95FrameMs": 0.569574,
+        "medianRatioToBaseline": 1.0308219268315175,
+        "p95RatioToBaseline": 1.0425876977822035
+      }
+    ],
+    "identity": [
+      {
+        "pair": 1,
+        "medianFrameMs": 0.414798,
+        "p95FrameMs": 0.550284,
+        "medianRatioToBaseline": 1.1262564553703793,
+        "p95RatioToBaseline": 0.9865698534355251
+      },
+      {
+        "pair": 2,
+        "medianFrameMs": 0.417413,
+        "p95FrameMs": 0.616725,
+        "medianRatioToBaseline": 1.1402390220583214,
+        "p95RatioToBaseline": 1.216952985330855
+      },
+      {
+        "pair": 3,
+        "medianFrameMs": 0.417663,
+        "p95FrameMs": 0.583305,
+        "medianRatioToBaseline": 1.10667934987096,
+        "p95RatioToBaseline": 1.0214676225733126
+      },
+      {
+        "pair": 4,
+        "medianFrameMs": 0.425095,
+        "p95FrameMs": 0.650506,
+        "medianRatioToBaseline": 1.1186533896833208,
+        "p95RatioToBaseline": 0.9873819668224505
+      },
+      {
+        "pair": 5,
+        "medianFrameMs": 0.432977,
+        "p95FrameMs": 0.65306,
+        "medianRatioToBaseline": 1.1408091480364129,
+        "p95RatioToBaseline": 1.1954062543473645
+      }
+    ],
+    "active-ad3": [
+      {
+        "pair": 1,
+        "medianFrameMs": 0.908728,
+        "p95FrameMs": 1.257987,
+        "medianRatioToBaseline": 2.46737153066267,
+        "p95RatioToBaseline": 2.2553664111873064
+      },
+      {
+        "pair": 2,
+        "medianFrameMs": 0.868357,
+        "p95FrameMs": 1.158186,
+        "medianRatioToBaseline": 2.3720740285460633,
+        "p95RatioToBaseline": 2.28539123639937
+      },
+      {
+        "pair": 3,
+        "medianFrameMs": 0.912353,
+        "p95FrameMs": 1.706527,
+        "medianRatioToBaseline": 2.417456717240502,
+        "p95RatioToBaseline": 2.9884229991979625
+      },
+      {
+        "pair": 4,
+        "medianFrameMs": 0.885122,
+        "p95FrameMs": 1.218628,
+        "medianRatioToBaseline": 2.3292316437108886,
+        "p95RatioToBaseline": 1.8497159310827405
+      },
+      {
+        "pair": 5,
+        "medianFrameMs": 0.58023,
+        "p95FrameMs": 0.82427,
+        "medianRatioToBaseline": 1.5287918110319207,
+        "p95RatioToBaseline": 1.508800896197749
+      }
+    ]
+  },
+  "performanceGate": {
+    "thresholdRatio": 1.05,
+    "aggregation": "median of five paired ratios; per-run p95 is nearest-rank frame p95 within that run",
+    "noFaultVariants": [
+      "normal",
+      "diagnostic-off",
+      "identity"
+    ],
+    "details": {
+      "normal": {
+        "medianOfFivePairedMedianRatios": 0.9923052872003858,
+        "medianOfFivePairedP95Ratios": 0.9919848838797574,
+        "pass": true
+      },
+      "diagnostic-off": {
+        "medianOfFivePairedMedianRatios": 1.033545132246252,
+        "medianOfFivePairedP95Ratios": 1.0693464274331665,
+        "pass": false
+      },
+      "identity": {
+        "medianOfFivePairedMedianRatios": 1.1262564553703793,
+        "medianOfFivePairedP95Ratios": 1.0214676225733126,
+        "pass": false
+      }
+    },
+    "pass": false,
+    "failureExitCode": 2,
+    "provenanceFailureExitCode": 3
+  },
+  "interpretation": "All five pairs and all 25 runs are retained. No reruns or exclusions. The preregistered gate failed: diagnostic-off p95 ratio and identity median ratio exceeded 1.05. Host load average rose from the recorded before values to the after values; no performance pass is claimed."
+}

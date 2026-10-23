@@ -128,3 +128,34 @@ The report is saved before a failed performance/provenance gate exits nonzero.
 Public model identity, browser controls, complete transaction exports and
 milestone packaging remain separate gates in the
 [architecture plan](TRANSACTION-VRAM-PLAN.md).
+
+## First measured performance result: failed
+
+The immutable [summary](experiments/2026-10-23-vram-renderer-performance-v1-summary.json)
+and [losslessly compressed complete raw record](experiments/2026-10-23-vram-renderer-performance-v1.json.gz)
+retain all five pairs and 25 runs from source `41140b4`. Each run measured 30
+seconds. Independent review recomputed every per-run median/p95 and the paired
+gates, verified stable source/artifact provenance and found no exclusions.
+
+| Variant | Median of paired median ratios | Median of paired p95 ratios | Gate |
+|---|---:|---:|---|
+| New normal | 0.992305 | 0.991985 | Pass |
+| Diagnostic off | 1.033545 | 1.069346 | Fail: p95 |
+| Selected identity | 1.126256 | 1.021468 | Fail: median |
+
+The threshold remains 1.05 for both statistics. Active AD3 is descriptive only.
+The observed host load is recorded, but does not excuse the failure. No timing
+was repeated or excluded to obtain a passing result. Renderer integration must
+remain unmerged until a reviewed correction passes fresh acceptance.
+
+Compressed SHA-256: `7494bd6470f3306b2c9ae1f391ef6ddf29b2367f7644b1fd2e902d24f28c00bc`.
+Uncompressed SHA-256: `9bee24513cffc6d5ef414d17d2100a18851d6c02300f647c0c2a7a8913260bee`
+(34,543,556 bytes). Decompressing the gzip reproduces the complete JSON exactly;
+the summary is a reading aid and does not replace the raw record.
+
+The integrated correctness suite subsequently passed 89 Python tests with no
+skips, six required pinned-source patch checks, fresh four-core WASM builds and
+all existing JavaScript/native suites with normal leak detection. The production
+core build, actual-core Chromium and all six patch tests on the already-patched
+vendor working tree also passed. Correctness success does not override the
+performance failure.
