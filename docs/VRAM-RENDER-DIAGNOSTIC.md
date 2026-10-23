@@ -4,7 +4,7 @@
 
 This stage extends the developer-only [access diagnostic](VRAM-ACCESS-DIAGNOSTIC.md)
 to the pinned core's Mode 5 renderer. It is not a public model selector or a
-v0.3.0 release. The normal application and downloadable v0.2.7 package retain
+v0.3.0 release. The normal application and downloadable v0.2.8 package retain
 the existing frame-scoped model.
 
 The source inventory includes all eight standard/alternate Mode 5 background
@@ -68,9 +68,12 @@ native macOS Firefox behavior.
 The reconstructed read helper passed independent specialist review and six
 focused strict/sanitizer tests covering both host-layout configurations. The full
 existing suite passed 83 Python tests with no skips, plus JavaScript/native
-regressions and fresh normal/diagnostic WASM builds. Renderer routing is still
-unimplemented in this checkpoint; these results do not establish visible
-renderer acceptance or performance. The earlier temporary renderer source was
+regressions and fresh normal/diagnostic WASM builds. The next routing checkpoint covers all eight Mode 5 background variants,
+pattern-cache source reads and mapped SAT attr/X. Independent source review
+approved strict pinned-load coverage and source-drift rejection. A fresh full
+local suite passed 89 Python tests without skips, including normal, diagnostic
+and alternate-renderer WASM builds and existing CPU/DMA integration. These
+checks do not establish visible renderer acceptance or performance. The earlier temporary renderer source was
 lost before it was committed, so its observations cannot certify this rebuild. Public model identity,
 browser controls, complete transaction exports and milestone packaging remain
 separate gates in the [architecture plan](TRANSACTION-VRAM-PLAN.md).
