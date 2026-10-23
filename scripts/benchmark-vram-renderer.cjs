@@ -175,6 +175,7 @@ async function main() {
   const factories = {
     baseline: entry(args.baseline),
     normal: entry(args.normal),
+    diagnostic: entry(args.diagnostic),
     'diagnostic-off': entry(args.diagnostic),
     identity: entry(args.diagnostic),
     'active-ad3': entry(args.diagnostic)
@@ -276,8 +277,9 @@ async function main() {
     protocol: {
       name: 'visible-mode5-recurring-32-word-dma-paired-v1',
       mode: args.preflightOnly ? 'preflight-only' : 'timed-benchmark',
-      fixedPairs: 5,
-      fixedDurationMsPerRun: 30000,
+      measured: !args.preflightOnly,
+      fixedPairs: args.preflightOnly ? null : 5,
+      fixedDurationMsPerRun: args.preflightOnly ? null : 30000,
       warmupTicks: 120,
       preflight: 'one common first Mode 5 tick, then diagnostic selection where applicable, then exactly 120 fixed ticks; recurring CPU loop counter must advance; baseline, normal, diagnostic-off, and identity must match full frame/audio/RAM/CPU-flag observations',
       timedUnit: 'one input-update + emulator tick + audio render; per-frame hrtime duration in milliseconds',
