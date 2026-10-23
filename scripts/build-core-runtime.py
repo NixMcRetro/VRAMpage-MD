@@ -75,8 +75,15 @@ def verify_inputs(root: Path, vendor: Path, output: Path) -> bytes:
     if commit != PINNED_COMMIT:
         raise RuntimeError(f"Expected pinned core {PINNED_COMMIT}, got {commit}")
 
-    protected = (root / "site", root / "vendor")
-    if output == root or any(path == output or path in output.parents for path in protected):
+    normalized_output = output.resolve(strict=False)
+    protected = (root / "site", root / "vendor", vendor)
+    normalized_protected = (root.resolve(),) + tuple(
+        path.resolve(strict=False) for path in protected
+    )
+    if any(
+        normalized_output == path or path in normalized_output.parents
+        for path in normalized_protected
+    ):
         raise RuntimeError(f"Runtime output must stay separate from site and vendor: {output}")
     archive = subprocess.check_output(
         ["git", "-C", str(vendor), "archive", "--format=tar", PINNED_COMMIT]
