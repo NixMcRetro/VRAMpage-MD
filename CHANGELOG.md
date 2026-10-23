@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.2.8 - compact work-RAM chip layout
+
+- Reduce the work-RAM chip height to fit more comfortably in a 13-inch MacBook
+  Air browser window. Keep labels inside the body, short legs, crosses and
+  keyboard operation intact. The VRAM chip keeps its existing dimensions.
+- Add synthetic browser layout checks at 1280×720 and 1280×800 alongside the
+  existing 1366×768 viewport. These checks do not represent native Mac testing.
+
 ## Post-v0.2.7 renderer helper checkpoint
 
 - Add ordered, wrapped renderer byte-read helpers with host-layout packing and an inactive direct-load path, ready for separately reviewed renderer routing.
