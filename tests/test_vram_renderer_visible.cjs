@@ -18,7 +18,7 @@ function vdpCram(address, words) {
   for (const w of words) code.push(...absWord(0xc00000, w));
   return code;
 }
-function visibleCartridge() {
+function visibleCartridge(scrollPixels = 0) {
   const rom = new Uint8Array(0x80000), view = new DataView(rom.buffer);
   for (let o = 0; o < 0x100; o += 4) view.setUint32(o, 0x300);
   view.setUint32(0, 0xffff00); view.setUint32(4, 0x200);
@@ -36,7 +36,9 @@ function visibleCartridge() {
   words.push(...vdpData(0x2020, Array(16).fill(0x2222)));
   words.push(...vdpData(0x2040, Array(16).fill(0x3333)));
   words.push(...vdpData(0xe000, [0x0100, 0x0101, 0x0102, ...Array(29).fill(0x0100)]));
-  words.push(...vdpData(0xfc00, Array(40).fill(0x0000)));
+  const scrollTable = Array(40).fill(0x0000);
+  if (scrollPixels) scrollTable[0] = 0x0003;
+  words.push(...vdpData(0xfc00, scrollTable));
   words.push(...vdpRegister(1, 0x74)); // Display enable after scene setup.
   words.push(0x4e72, 0x2700, 0x60fe); // STOP, then remain stopped.
   words.forEach((w, i) => view.setUint16(0x200 + i * 2, w));
@@ -96,6 +98,13 @@ async function main() {
     p: path.resolve(altDiagnosticPath), f: require(path.resolve(altDiagnosticPath))};
   const rom = visibleCartridge();
   const baseline = await runScene(baselineEntry, rom);
+  const scrollBaseline = await runScene(baselineEntry, visibleCartridge(3));
+  const scrollDiagnostic = await runScene(diagnosticEntry, visibleCartridge(3));
+  assert.deepEqual(pixel(scrollBaseline.state.frame, 8, 0), [0, 34, 0, 255],
+    'independent hscroll ROM moves the first tile boundary three pixels right');
+  assert.equal(scrollDiagnostic.c._get_vram_tx_test_hscroll_base(), 0xfc00);
+  assert.deepEqual([0,1,2,3].map(i=>scrollDiagnostic.c._get_vram_tx_test_byte(0xfc00+i)),
+    [0,3,0,0], 'ROM initializes the distinct logical hscroll bytes for row zero');
   const normal = await runScene(normalEntry, rom);
   const diagnosticOff = await runScene(diagnosticEntry, rom);
   equivalent(normal.state, baseline.state, 'current normal vs pinned PR36 renderer');
@@ -103,6 +112,23 @@ async function main() {
   if (altEntry) {
     const alt = await runScene(altEntry, rom);
     equivalent(alt.state, baseline.state, 'ALT_RENDERER diagnostic off vs pinned PR36 renderer');
+    const altAlias = await runScene(altEntry, rom, 5);
+    assert.equal(altAlias.c._set_vram_transaction_diagnostic(2, 8, -1, -1), 0,
+      'ALT_RENDERER AD3 selection succeeds for active visible cache fixture');
+    const altMapped = nextFrame(altAlias.c);
+    assert.deepEqual(pixel(altMapped.frame, 0, 0), [0, 34, 0, 255]);
+    assert.deepEqual(pixel(altMapped.frame, 8, 0), [0, 34, 0, 255],
+      'ALT_RENDERER pattern-cache read aliases the second visible logical tile');
+    altAlias.c._clear_vram_tx_test_cache();
+    assert.equal(altAlias.c._run_vram_tx_test(0, 0x2820, 0x0000, 0, 1), 0,
+      'ALT_RENDERER third logical alias writes shared pattern data');
+    assert.notEqual(altAlias.c._get_vram_tx_test_cache_dirty(256), 0,
+      'ALT_RENDERER write invalidates logical pattern key256');
+    assert.notEqual(altAlias.c._get_vram_tx_test_cache_dirty(257), 0,
+      'ALT_RENDERER write invalidates logical pattern key257');
+    const altChanged = nextFrame(altAlias.c);
+    assert.deepEqual(pixel(altChanged.frame, 0, 0), pixel(altChanged.frame, 8, 0),
+      'ALT_RENDERER refreshes both aliased visible pattern keys');
   }
   assert.deepEqual(pixel(baseline.state.frame, 0, 0), [0, 34, 0, 255],
     'independent expected first tile pixel (palette entry 1)');
@@ -131,6 +157,16 @@ async function main() {
     'logical pattern key257 reads the same mapped bytes as key256');
   assert.deepEqual(pixel(aliased.frame, 16, 0), [34, 34, 34, 255],
     'logical pattern key258 remains a distinct visible cache key');
+  assert.deepEqual(pixel(aliased.frame, 16, 0), [34, 34, 34, 255],
+    'zero hscroll keeps the third tile at its original visible boundary');
+  const hscrollAlias = await runScene(diagnosticEntry, rom, 5);
+  assert.equal(hscrollAlias.c._set_vram_transaction_diagnostic(2, 8, -1, -1), 0,
+    'AD3 selection succeeds for the visible hscroll fixture');
+  assert.equal(hscrollAlias.c._run_vram_tx_test(0, 0xfc00, 0x0003, 0, 1), 0,
+    'AD3-alias write targets the mapped row-zero horizontal-scroll bytes');
+  const scrolled = nextFrame(hscrollAlias.c);
+  assert.deepEqual(pixel(scrolled.frame, 16, 0), [0, 34, 0, 255],
+    'mapped hscroll u32 read moves the third-tile boundary by three pixels');
   alias.c._clear_vram_tx_test_cache();
   assert.equal(alias.c._run_vram_tx_test(0, 0x2820, 0x0000, 0, 1), 0,
     'a third logical alias writes the shared pattern bytes through the real VDP handler');

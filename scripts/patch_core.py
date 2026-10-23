@@ -484,6 +484,11 @@ unsigned EMSCRIPTEN_KEEPALIVE get_vram_tx_test_addr(void) { return addr; }
 unsigned EMSCRIPTEN_KEEPALIVE get_vram_tx_test_dma_source(void) { return dma_src; }
 unsigned EMSCRIPTEN_KEEPALIVE get_vram_tx_test_dma_region(void) { return reg[23] & 0x7f; }
 unsigned EMSCRIPTEN_KEEPALIVE get_vram_tx_test_dma_remaining(void) { return dma_length; }
+unsigned EMSCRIPTEN_KEEPALIVE get_vram_tx_test_hscroll_base(void) { return hscb; }
+unsigned EMSCRIPTEN_KEEPALIVE get_vram_tx_test_byte(unsigned address)
+{
+  return READ_BYTE(vram, address & 0xffffu);
+}
 
 void EMSCRIPTEN_KEEPALIVE set_vram_tx_test_sat_physical_byte(unsigned address,
                                                              unsigned value)
