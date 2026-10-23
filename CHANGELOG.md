@@ -1,5 +1,11 @@
 # Changelog
 
+## Post-v0.2.7 renderer helper checkpoint
+
+- Add ordered, wrapped renderer byte-read helpers with host-layout packing and an inactive direct-load path, ready for separately reviewed renderer routing.
+- Test literal endian expectations and host-lane conversion with strict and sanitizer builds.
+- Preserve worktrees and source checkpoints under `/workspace` after temporary uncommitted renderer work was lost. Public renderer behavior and release remain unchanged.
+
 ## Post-v0.2.7 VDP access integration
 
 - Add a developer-only transaction path for Mode 5 CPU/Z80 ports and VRAM DMA endpoints, preserving legacy frame-scoped behavior by default.

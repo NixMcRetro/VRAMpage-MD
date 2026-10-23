@@ -65,7 +65,12 @@ native macOS Firefox behavior.
 
 ## Current result
 
-Implementation and verification are in progress. No renderer acceptance or
-performance result is claimed by this checkpoint. Public model identity,
+The reconstructed read helper passed independent specialist review and six
+focused strict/sanitizer tests covering both host-layout configurations. The full
+existing suite passed 83 Python tests with no skips, plus JavaScript/native
+regressions and fresh normal/diagnostic WASM builds. Renderer routing is still
+unimplemented in this checkpoint; these results do not establish visible
+renderer acceptance or performance. The earlier temporary renderer source was
+lost before it was committed, so its observations cannot certify this rebuild. Public model identity,
 browser controls, complete transaction exports and milestone packaging remain
 separate gates in the [architecture plan](TRANSACTION-VRAM-PLAN.md).

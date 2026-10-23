@@ -45,8 +45,10 @@ strict and ASan/UBSan builds, both host-layout branches, literal packing oracles
 ordered mapped reads, wrap and inactive direct loads. Independent specialist
 source review approved progression to renderer routing. Its separate restricted
 sanitizer run required a local ptrace workaround; the coordinator's verification
-used normal LeakSanitizer without suppression. Actual-core lifecycle, visible
-renderer and performance gates remain unfinished. This checkpoint is not on
+used normal LeakSanitizer without suppression. The full local regression suite also passed 83 Python tests with no skips,
+fresh normal/diagnostic WASM builds, existing JavaScript/native suites and normal
+LeakSanitizer enabled. This verifies existing CPU/DMA behavior, not renderer
+routing. Actual-core renderer lifecycle, visible output and performance gates remain unfinished. This checkpoint is not on
 main and is not renderer acceptance.
 
 ## Verified baseline
