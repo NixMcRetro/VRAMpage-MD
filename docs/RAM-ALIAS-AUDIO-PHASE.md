@@ -67,11 +67,10 @@ does not imply matching audio. Selected VBlank flag and FM3 target values remain
 
 This reproduces a one-tick game-state shift without an audio-byte phase match
 within the tested window. Boundary samples do not reveal an intermediate flag
-write. The exact executed instruction and an audible effect remain unproven.
-The next bounded investigation should distinguish VBlank flag set versus clear
-using generic instruction/write-value metadata, only if existing hooks cannot
-answer that question. It must preserve the fault model and repeat the same
-observational-equivalence and pulse-budget checks.
+write. This protocol alone does not identify the executed instruction or an audible
+effect. The subsequent [isolated store-origin diagnostic](VBLANK-STORE-ORIGIN.md)
+identifies a zero-write at PC `$B46`, with observational-equivalence and
+pulse-budget checks. Full wait/release progression remains unobserved.
 
 ## Evidence limits
 

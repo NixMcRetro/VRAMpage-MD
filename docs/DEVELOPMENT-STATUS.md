@@ -170,10 +170,10 @@ whole-game equivalence, native Mac/Firefox, audible output, other revisions and
 physical hardware are not validated. The RAM-stage acceptance remains open.
 
 The first affected generic write is now identified; its causal effect remains
-unknown. The named-state/audio comparison is now recorded below. Next assignment:
-Luna High should distinguish the VBlank flag set/clear candidates. Inspect existing
-hooks and reuse diagnostics where possible. If additional passive instruction/
-write-value metadata is needed, define a
+partially localized. The named-state/audio comparison and instruction-origin
+result are now recorded below. Next assignment: Luna High should verify the
+bounded wait/release sequence using existing diagnostic hooks first. If
+additional passive instruction/state metadata is needed, define a
 bounded implementation in the generic RAM access layer, with no game-specific
 writes, no silent recovery and no ROM/RAM byte output. Require independent
 specialist review and strict native/sanitizer, actual-WASM, no-fault and exact
@@ -199,7 +199,28 @@ fresh-core trials against the unchanged public v0.2.7 package. Repeats,
 prefault and observational noninterference passed. Demo/player observations
 match lag -1 for 596/596 pairs; audio hashes match none of five tested lags.
 The corrected source mapping identifies the VBlank routine flag, not a sprite
-buffer. Exact instruction, intermediate write value, audible effect and genuine
-sustained trajectory divergence remain unproven. Next: a bounded generic
-instruction/write-value investigation with specialist implementation and review.
+buffer. The diagnostic below now identifies the instruction and zero-write class.
+Intermediate flag progression, audible effect and genuine sustained trajectory
+divergence remain unproven.
 No runtime version or published package changes are required for this tooling.
+
+## PR #28 integration verified
+
+[PR #28](https://github.com/NixMcRetro/VRAMpage-MD/pull/28) merged as
+`eaf7c271ff6f054642e637098429d1173bee3c82`. The merged tree matches the reviewed
+branch. [PR CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39867309696)
+and [main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39868043581)
+passed source, Chromium, Firefox, WebKit and actual-core/package checks. The
+post-merge WebKit installation delay completed successfully without a retry.
+The public application remains the unchanged v0.2.7 download.
+
+## VBlank store origin localized
+
+The [isolated diagnostic](VBLANK-STORE-ORIGIN.md) records a repeated zero-write
+at instruction-start PC `$B46` for byte address `$FFF62A` remapped to `$F22A`
+during tick 1801. Six custom-core and two public-core trials pass all acceptance
+gates; nine synthetic actual-WASM CPU groups validate PC/classification and
+lifecycle. The public runtime, app version and download are unchanged. The
+result identifies the clear candidate; the complete delayed wait/release
+sequence is the next bounded question. No sustained gameplay divergence or
+new audible/native Mac/physical acceptance is claimed.

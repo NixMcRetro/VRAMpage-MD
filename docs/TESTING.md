@@ -601,3 +601,13 @@ Local full-suite result: 73 Python tests passed, including strict native and
 sanitizer coverage; framebuffer tests, pulse protocol (9 groups), demo observer
 (9 groups), write-trace runner (5 groups), alias/audio observer (2 groups), and
 both native C smoke programs passed. PR CI supplies fresh browser/build checks.
+
+## Isolated instruction-origin diagnostic
+
+The source suite includes three hermetic Python staging/patch safety tests and
+eight runner classification/acceptance groups. The build workflow separately
+stages and compiles the diagnostic in runner temporary storage and runs nine
+actual-WASM synthetic CPU groups. Normal application assets are not replaced.
+See [the procedure and bounded evidence](VBLANK-STORE-ORIGIN.md) for exact scope.
+The private experiment compares six custom-core trials with two public-core
+trials; its results do not establish native Mac, audible or physical behaviour.

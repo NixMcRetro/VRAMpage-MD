@@ -40,6 +40,18 @@ jobs:
           test -s site/core/genplus.wasm
           test -f site/source/README.txt
           node tests/test_wasm_logic.cjs site/core/genplus.js
+      - name: Verify isolated instruction-origin diagnostic with synthetic CPU tests
+        shell: bash
+        run: |
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          python3 scripts/build-store-origin-diagnostic.py "$RUNNER_TEMP/store-origin"
+          mkdir -p "$RUNNER_TEMP/store-origin/wasm-genplus/build"
+          (
+            cd "$RUNNER_TEMP/store-origin/wasm-genplus/build"
+            emcmake cmake .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+            emmake make -j2
+          )
+          node tests/test_store_origin_wasm.cjs "$RUNNER_TEMP/store-origin/wasm-genplus/src/main/js/genplus.js"
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
