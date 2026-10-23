@@ -24,6 +24,21 @@ stages. The next task is [renderer integration](VRAM-RENDER-DIAGNOSTIC.md), not 
 Reuse unchanged passing evidence; new diagnostic code needs focused tests,
 independent specialist review, final regression and CI before merge.
 
+## Renderer continuation recovery
+
+On resumption, the temporary renderer worktree and its uncommitted source were
+missing. Its branch and Git index still identified the PR #36 base; no renderer
+source checkpoint was recoverable. The committed scope document remains, but
+previous temporary renderer test observations cannot certify rebuilt code.
+No renderer change was merged or released.
+
+Reconstruct the reviewed design in a persistent `/workspace` worktree, commit
+bounded source/test checkpoints, and repeat focused and final acceptance on
+those commits. First checkpoint: renderer byte-read helper, cached lifecycle
+gate, literal endian/wrap oracles and strict/sanitizer checks. Then route the
+pinned renderer and restore the full visible/cache/SAT/performance matrix.
+Independent specialist review is required again.
+
 ## Verified baseline
 
 - Main contains the complete stacked development history through v0.2.7,

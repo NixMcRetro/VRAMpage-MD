@@ -35,6 +35,12 @@ consult `.github/workflows/source-checks.yml` and `build-website.yml` for pinned
 CI commands. Preserve static hosting and avoid unnecessary dependencies,
 telemetry, frameworks and rewrites.
 
+Keep isolated worktrees and uncommitted source under `/workspace`, not `/tmp`.
+Temporary directories can disappear between sessions. Commit bounded, reviewable
+source/test checkpoints before long verification work; keep logs and recovery
+notes under `/workspace/scratch`. A branch alone does not preserve uncommitted
+files. Do not report vanished temporary test artifacts as newly verified.
+
 Use an isolated feature branch and focused PR. Required GitHub Actions checks
 must pass before merging. Completed verified work is authorised for merge into
 this repository's main; do not force-push. Verify merged source and CI, and
