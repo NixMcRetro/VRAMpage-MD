@@ -38,10 +38,19 @@ function installMode5Rom(core) {
   assert.equal(typeof core._set_vram_fault_model_c, 'undefined');
   assert.equal(typeof core._get_vram_fault_model_state, 'function');
   assert.equal(typeof core._get_vram_supported_model_mask, 'function');
-  assert.equal(typeof core._run_vram_tx_test, 'undefined',
-    'production runtime profile excludes diagnostic handler bridges');
-  assert.equal(typeof core._get_vram_tx_test_physical_byte, 'undefined',
-    'production runtime profile excludes diagnostic memory accessors');
+  const diagnosticOnly = [
+    '_run_vram_tx_test', '_get_vram_tx_counter', '_set_vram_transaction_diagnostic',
+    '_get_vram_tx_test_physical_byte', '_get_vram_tx_test_sat_byte',
+    '_get_vram_tx_test_cache_dirty', '_get_vram_tx_test_addr',
+    '_get_vram_tx_test_dma_source', '_get_vram_tx_test_dma_region',
+    '_get_vram_tx_test_dma_remaining', '_get_vram_tx_test_hscroll_base',
+    '_get_vram_tx_test_render_path', '_get_vram_tx_test_byte',
+    '_set_vram_tx_test_sat_physical_byte', '_clear_vram_tx_test_cache'
+  ];
+  for (const name of diagnosticOnly) {
+    assert.equal(typeof core[name], 'undefined',
+      `production runtime profile excludes ${name}`);
+  }
   core._init();
   assert.equal(core._get_vram_supported_model_mask(), 3);
   installMode5Rom(core);

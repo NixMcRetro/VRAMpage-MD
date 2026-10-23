@@ -57,11 +57,11 @@ def vendor_checkout(root: Path) -> Path:
 
 def runtime_output(root: Path) -> Path:
     configured = os.environ.get("VRAM_RUNTIME_OUTPUT_DIR")
-    return Path(configured).resolve() if configured else root / "build/runtime-profile"
+    return Path(configured).absolute() if configured else root / "build/runtime-profile"
 
 
 def verify_inputs(root: Path, vendor: Path, output: Path) -> bytes:
-    required = ("git", "python3", "emcmake", "emmake", "cmake")
+    required = ("git", "python3", "emcmake", "emmake", "cmake", "make")
     missing = [tool for tool in required if shutil.which(tool) is None]
     if missing:
         raise RuntimeError("Missing build tools: " + ", ".join(missing))
@@ -85,8 +85,13 @@ def verify_inputs(root: Path, vendor: Path, output: Path) -> bytes:
 
 
 def prepare_output(output: Path) -> None:
-    if output.is_symlink():
-        raise RuntimeError(f"Refusing a symlink runtime output directory: {output}")
+    current = output
+    while True:
+        if current.is_symlink():
+            raise RuntimeError(f"Refusing a symlink runtime output path: {current}")
+        if current.parent == current:
+            break
+        current = current.parent
     if output.exists():
         if not output.is_dir():
             raise RuntimeError(f"Runtime output path is not a directory: {output}")
@@ -94,7 +99,7 @@ def prepare_output(output: Path) -> None:
         if marker.exists():
             if marker.is_symlink() or marker.read_text() != MARKER_TEXT:
                 raise RuntimeError(f"Runtime output marker is invalid: {marker}")
-            for name in (".work", "core", "source", "BUILDING.txt"):
+            for name in (".work", "core", "source", "BUILDING.txt", "THIRD-PARTY-NOTICES.md"):
                 child = output / name
                 if child.is_symlink():
                     raise RuntimeError(f"Refusing to remove symlink in runtime output: {child}")
@@ -149,7 +154,7 @@ def stage_source(root: Path, work: Path, archive: bytes) -> Path:
     return upstream
 
 
-def copy_package(upstream: Path, work: Path, output: Path) -> None:
+def copy_package(root: Path, upstream: Path, work: Path, output: Path) -> None:
     scripts_source = work / "scripts"
     source_dir = output / "source"
     source_dir.mkdir()
@@ -159,6 +164,8 @@ def copy_package(upstream: Path, work: Path, output: Path) -> None:
         ignore=shutil.ignore_patterns("build", "*.o", "*.a", "*.wasm.map", "*.dbg"),
     )
     shutil.copytree(scripts_source, source_dir / "scripts")
+    shutil.copy2(root / "THIRD-PARTY-NOTICES.md", source_dir / "THIRD-PARTY-NOTICES.md")
+    shutil.copy2(root / "THIRD-PARTY-NOTICES.md", output / "THIRD-PARTY-NOTICES.md")
     core_dir = output / "core"
     core_dir.mkdir()
     generated = upstream / "src/main/js"
@@ -202,7 +209,7 @@ def main() -> int:
             "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
         ])
         run(["emmake", "make", "-C", str(build_dir), f"-j{jobs}"])
-        copy_package(upstream, work, output)
+        copy_package(root, upstream, work, output)
     except Exception:
         print(f"Runtime profile build failed. Staging is retained under {output / '.work'}.", file=sys.stderr)
         raise
