@@ -116,6 +116,11 @@ class VramTransactionWasm(unittest.TestCase):
             cls.temp.cleanup()
 
     def test_transaction_diagnostic_and_default_exports(self):
+        env = os.environ.copy()
+        env["VRAMPAGE_WASM_GENPLUS"] = str(
+            Path(os.environ.get("VRAMPAGE_WASM_GENPLUS", ROOT / "vendor/wasm-genplus")))
+        command([os.environ.get("PYTHON", "python3"), "-m", "unittest",
+                 "tests.test_vram_renderer_patch", "-v"], env=env)
         command(["node", str(ROOT / "tests/test_vram_transaction_wasm.cjs"),
                  str(self.diagnostic_js), str(self.normal_js)])
 
