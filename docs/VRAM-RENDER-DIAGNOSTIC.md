@@ -159,3 +159,27 @@ all existing JavaScript/native suites with normal leak detection. The production
 core build, actual-core Chromium and all six patch tests on the already-patched
 vendor working tree also passed. Correctness success does not override the
 performance failure.
+
+## Reviewed performance correction
+
+The CPU/DMA predicate previously synchronized mode state, recomputed the renderer
+flag and checked pending cache invalidation on every guarded access, even for
+selected identity. The repeated path is visible in the adapter source; identity
+was slower than diagnostic-off in all five measured pairs.
+
+A minimal correction first checks the existing cached effective-fault flag. OFF,
+identity and suspended settings take the original access path immediately. An
+active fault still synchronizes mode and rechecks effectiveness before mapping.
+The pinned register-1 hook updates the flag after final mode-bit handling;
+configure/reset/legacy override update it as well. Independent specialist review
+approved these lifecycle assumptions and the actual source change.
+
+A strict and ASan/UBSan native harness proves inactive accesses skip both
+callbacks, active accesses call both, and a mode change suspends the active
+path. Existing actual-WASM cases verify real mode exit/re-entry and cache
+recovery. The corrected integrated suite passed all 91 Python tests without
+skips, six required patch checks, fresh four-core WASM and all JavaScript/native
+regressions with normal leak detection. Actual-core Chromium also passed using
+the fresh normal artifact. This establishes correctness checks for the candidate,
+not its performance. A new complete measurement must retain the same fixed
+protocol and threshold, with the failed first record preserved unchanged.

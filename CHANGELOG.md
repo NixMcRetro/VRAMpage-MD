@@ -2,6 +2,8 @@
 
 ## Post-v0.2.8 renderer diagnostic groundwork
 
+- Preserve the complete failed first performance record and independent audit. Skip redundant inactive CPU/DMA mode synchronization with a reviewed cached flag and focused strict/sanitizer coverage; require fresh performance acceptance.
+
 - Route all pinned Mode 5 renderer/cache reads in the separately compiled diagnostic, preserving original normal-build loads.
 - Add strict source-drift rejection, endian/wrap helper tests and four-core visible/cache/SAT/lifecycle fixtures with independent pixel oracles.
 - Add a fixed, provenance-checked recurring-DMA performance protocol; final performance and CI acceptance remain separate gates.
