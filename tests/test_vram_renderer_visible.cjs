@@ -160,6 +160,8 @@ async function main() {
   const alias = await runScene(diagnosticEntry, rom, 5);
   assert.equal(alias.c._set_vram_transaction_diagnostic(2, 8, -1, -1), 0,
     'AD3 selection succeeds for the visible cache-alias fixture');
+  assert.notEqual(alias.c._set_vram_transaction_diagnostic(2, 256, -1, -1), 0,
+    'invalid mask is rejected without replacing active transaction settings');
   const aliased = nextFrame(alias.c);
   assert.deepEqual(pixel(aliased.frame, 0, 0), [0, 34, 0, 255]);
   assert.deepEqual(pixel(aliased.frame, 8, 0), [0, 34, 0, 255],
@@ -199,6 +201,14 @@ async function main() {
   const reentered = nextFrame(alias.c);
   assert.deepEqual(pixel(reentered.frame, 0, 0), pixel(reentered.frame, 8, 0),
     'Mode 5 re-entry rebuilds aliases and refreshes both visible pattern keys');
+
+  assert.equal(alias.c._set_vram_transaction_diagnostic(2, 0, -1, -1), 0,
+    'faulted alias selection can reconnect to a selected identity transaction');
+  const identityRestored = nextFrame(alias.c);
+  assert.deepEqual(pixel(identityRestored.frame, 8, 0), [0, 0, 34, 255],
+    'selected identity clears the prior fault and restores raw tile257 pixels');
+  assert.equal(alias.c._get_vram_tx_counter(1), 0n,
+    'selected identity reports no mapped writes after fault removal');
 
   assert.equal(alias.c._set_vram_transaction_diagnostic(0, 0, -1, -1), 0,
     'disabling the transaction mapping restores direct renderer reads');
