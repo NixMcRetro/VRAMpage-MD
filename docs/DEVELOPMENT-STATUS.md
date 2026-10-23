@@ -5,8 +5,8 @@ Verified on 23 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
-Verified integration base: `9649c592d5a08a23826ad0f0878a69b50d9b91da` (PR #40).
-[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39981553697)
+Verified integration base: `46dcc80a8d561cde4b79453300a2a1bdee3e847c` (PR #41).
+[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40041499264)
 passed source, Chromium, Firefox, WebKit and actual-core/package checks.
 The immutable [v0.2.8 Mac package](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.8/VRAMpage-MD-v0.2.8-macos.zip)
 was published by [workflow 39972454348](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39972454348)
@@ -32,9 +32,11 @@ compiled diagnostic. [PR #40](https://github.com/NixMcRetro/VRAMpage-MD/pull/40)
 merged after all required CI passed, and merged-main CI passed too. The [safe core model API](VRAM-PUBLIC-MODEL-API.md) is now implemented in a
 harness-built runtime profile with separate diagnostic exports. Independent
 review and the integrated 91-test suite, normal leak checking, five real-WASM
-profiles, normal Chromium and real packaging passed locally. Required CI
-precedes merge. The normal app/release remains v0.2.8; production runtime
-build, UI selection, experiment exports and milestone acceptance follow. Read the first unfinished
+profiles, normal Chromium and real packaging passed locally.
+[PR #41](https://github.com/NixMcRetro/VRAMpage-MD/pull/41) merged after all
+required checks passed, and merged-main CI passed too. The normal app/release remains v0.2.8; production runtime
+build is the current [bounded task](VRAM-RUNTIME-BUILD.md); UI selection,
+experiment exports and milestone acceptance follow. Read the first unfinished
 [work-queue](WORK-QUEUE.md) item and relevant protocol before older history.
 Reuse unchanged passing evidence; new diagnostic code needs focused tests,
 independent specialist review, final regression and CI before merge.
