@@ -5,19 +5,21 @@ Verified on 23 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
-Verified integration base: `97964a06adaf2668acbe975998d30b53dd121ddc` (PR #34).
-[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39924013637)
+Verified integration base: `65a7bdd11242eb397ac9de0460b13760d2f9a1f9` (PR #35).
+[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39929062222)
 passed source, Chromium, Firefox, WebKit and actual-core/package checks.
 Playwright caches are primed on main; normal application/release remains v0.2.7.
 The first affected write is identified at PC `$B46`; bounded actual-bus evidence
 now shows wait/caller release one tick later. The eight-write follow-up now meets the bounded same-input-phase trajectory
 criterion. The [transaction-level VRAM plan](TRANSACTION-VRAM-PLAN.md) maps
-CPU/Z80 ports, DMA, renderer/cache and sprite-table paths. Implementation has not
-started. The [semantics protocol](TRANSACTION-VRAM-SEMANTICS.md) now fixes
+CPU/Z80 ports, DMA, renderer/cache and sprite-table paths. The developer-only
+[access diagnostic](VRAM-ACCESS-DIAGNOSTIC.md) now connects CPU/Z80 ports and DMA
+to the helper in a separately compiled test variant. The [semantics protocol](TRANSACTION-VRAM-SEMANTICS.md) now fixes
 byte/lane ordering, cache dependencies, supported modes, sprite-table policy and
 explicit model compatibility. An isolated native helper implements those byte-access and dependency
-primitives without changing emulator execution. Core access hooks, rendering
-adapters, public API selection and release packaging remain future stages. Read the first unfinished
+primitives. Diagnostic core hooks preserve the normal access path by default;
+renderer/cache reads, public API selection and release acceptance remain future
+stages. The next task is renderer integration, not a new public release. Read the first unfinished
 [work-queue](WORK-QUEUE.md) item and relevant protocol before older history.
 Reuse unchanged passing evidence; new diagnostic code needs focused tests,
 independent specialist review, final regression and CI before merge.
@@ -60,7 +62,8 @@ See TESTING.md for the distinct historical real-game observations.
 
 VRAM faults remain frame-scoped. Digital low-dominant and stuck-low approximations
 are not measured electrical models or verified physical package pin mappings.
-Per-access VDP faults and hardware-informed audio bending remain unimplemented.
+A partial transaction access diagnostic exists, but complete per-access
+VDP/render faults and hardware-informed audio bending remain unfinished.
 No new native Mac, audible, commercial-game or physical-hardware test is claimed.
 
 ## Historical v0.2.6 integration and release

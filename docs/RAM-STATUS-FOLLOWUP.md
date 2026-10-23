@@ -114,6 +114,8 @@ native Mac acceptance, visual scene interpretation or behaviour beyond the
 recorded window. No raw ROM/RAM/audio, frames, full timelines or private paths
 are published.
 
-The next roadmap item is a bounded architecture and test plan for transaction-
-level VRAM access. That implementation has not started, and v0.3.0 remains
+At the time of this record, the next item was a bounded transaction-level VRAM
+architecture plan. The [current access diagnostic](VRAM-ACCESS-DIAGNOSTIC.md) now
+implements a developer-only CPU/Z80/DMA path; renderer integration remains open.
+The original experiment evidence is unchanged, and v0.3.0 remains
 reserved for its completed milestone. The runnable app remains v0.2.7.

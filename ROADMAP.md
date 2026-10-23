@@ -77,7 +77,9 @@ available in the [read-only observations](docs/ATTRACT-MODE-OBSERVATIONS.md).
 The [transaction-level VRAM plan](docs/TRANSACTION-VRAM-PLAN.md) records the
 source-backed architecture and test gates. Its [reviewed semantics](docs/TRANSACTION-VRAM-SEMANTICS.md) fix the byte,
 cache, sprite-table and compatibility rules. The isolated native helper supplies tested byte-access and cache-dependency
-primitives; VDP/DMA core integration is next. Runtime integration has not started.
+primitives, and the [developer-only access diagnostic](docs/VRAM-ACCESS-DIAGNOSTIC.md)
+now covers CPU/Z80 ports and DMA. Renderer/cache read integration is next; the
+public app remains frame-scoped.
 
 - Start with 68000 work-RAM address/data short model, focusing on bus read/write integration rather than arbitrary random values.
 - Distinguish read and write faults and persistent emulator-RAM changes; do not

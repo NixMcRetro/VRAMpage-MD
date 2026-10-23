@@ -212,11 +212,14 @@ RAM/VRAM exclusivity and failed-takeover behavior.
 2. **Native primitives completed.** The isolated helper and strict/sanitizer
    tests cover exhaustive maps, byte collisions, boundaries, no-fault bypass,
    reverse cache dependencies and lifecycle state. They use canonical byte-array
-   fixtures; core SAT/parser, cache adaptation and rendering remain integration
-   gates. See [semantics](TRANSACTION-VRAM-SEMANTICS.md) and [testing](TESTING.md).
-3. **Integrate source accessors and DMA.** Patch exact pinned anchors in
-   `scripts/patch_core.py`, test idempotence and source drift, then pass actual
-   synthetic-WASM CPU/Z80/DMA tests. No public package rebuild yet.
+   fixtures. Core SAT parser and renderer integration remain gates; core SAT
+   mirror/cache-dirty bookkeeping is now checked in stage 3. See [semantics](TRANSACTION-VRAM-SEMANTICS.md) and [testing](TESTING.md).
+3. **Diagnostic accessors completed.** Exact pinned anchors, repeated patching
+   and drift rejection are tested. A generated CPU cartridge plus a bounded
+   actual-handler bridge test CPU/Z80/DMA byte operations, fill triggering,
+   boundaries, lifecycle and no-fault equivalence. This is a separately compiled
+   [access diagnostic](VRAM-ACCESS-DIAGNOSTIC.md), not full raster acceptance or
+   public model selection. No public release rebuild yet.
 4. **Integrate render/cache reads.** Route the fully audited renderer reads,
    prove deterministic visible changes for the positive fault case, and pass
    no-fault frame/sound and performance gates. If any direct path remains out
