@@ -29,6 +29,7 @@ def stage_source(vendor: Path, target: Path):
     helpers.mkdir(exist_ok=True)
     names = ("patch_core.py", "vram_fault_patch.c", "vram_transaction.c",
              "vram_transaction.h", "vram_transaction_core.h", "vram_transaction_runtime.h",
+             "vram_transaction_render.h",
              "work_ram_fault.c", "work_ram_fault.h", "work_ram_runtime.c", "work_ram_runtime.h")
     for name in names:
         shutil.copy2(ROOT / "scripts" / name, helpers / name)
@@ -37,6 +38,7 @@ def stage_source(vendor: Path, target: Path):
         "src/main/c/wasm/wasm.c", "src/main/c/wasm/config.c",
         "src/main/c/wasm/vram_transaction.c", "src/main/c/wasm/vram_transaction.h",
         "src/main/c/wasm/vram_transaction_runtime.h", "src/main/c/core/vdp_render.h",
+        "src/main/c/core/vdp_render.c", "src/main/c/core/vram_transaction_render.h",
         "src/main/c/core/m68k/m68kcpu.h", "src/main/c/core/memz80.c",
         "src/main/c/core/vdp_ctrl.c", "src/main/c/core/vram_transaction.h",
         "src/main/c/core/vram_transaction_runtime.h",
@@ -62,13 +64,15 @@ def stage_source(vendor: Path, target: Path):
         raise AssertionError("partial transaction bridge marker was accepted")
 
 
-def build(staged: Path, diagnostic: bool):
+def build(staged: Path, diagnostic: bool, alt_renderer: bool = False):
     cmake = staged / "CMakeLists.txt"
     text = cmake.read_text()
     anchor = "add_executable(${PROJECT_NAME} ${SOURCE_FILES})"
     flags = ['add_compile_flags(LD "-sEXPORTED_RUNTIME_METHODS=HEAPU8,HEAPF32")']
     if diagnostic:
         flags.insert(0, 'add_compile_flags(C "-DVRAM_TX_DIAGNOSTIC")')
+    if alt_renderer:
+        flags.insert(0, 'add_compile_flags(C "-DALT_RENDERER")')
     if all(flag in text for flag in flags):
         pass
     else:
@@ -97,11 +101,14 @@ class VramTransactionWasm(unittest.TestCase):
             raise AssertionError(f"Expected pinned core {PIN}, got {commit}")
         cls.temp = tempfile.TemporaryDirectory(prefix="vram-tx-wasm-")
         root = Path(cls.temp.name)
-        normal_source, diagnostic_source = root / "normal", root / "diagnostic"
+        normal_source, diagnostic_source, alt_source = (
+            root / "normal", root / "diagnostic", root / "diagnostic-alt")
         stage_source(vendor, normal_source)
         stage_source(vendor, diagnostic_source)
+        stage_source(vendor, alt_source)
         cls.normal_js = build(normal_source, diagnostic=False)
         cls.diagnostic_js = build(diagnostic_source, diagnostic=True)
+        cls.diagnostic_alt_js = build(alt_source, diagnostic=True, alt_renderer=True)
 
     @classmethod
     def tearDownClass(cls):

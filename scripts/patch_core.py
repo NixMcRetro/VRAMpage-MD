@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Apply the pinned wasm-genplus patches, failing closed on source drift."""
 from pathlib import Path
+import re
 import sys
 
 
@@ -507,6 +508,161 @@ void EMSCRIPTEN_KEEPALIVE clear_vram_tx_test_cache(void)
     return source
 
 
+VRAM_RENDER_MARKER = 'VRAM TX MODE 5 RENDER READS v1'
+VRAM_RENDER_READS = '''
+#ifdef VRAM_TX_DIAGNOSTIC
+#include "vram_transaction_render.h" /* VRAM TX MODE 5 RENDER READS v1 */
+#define VRAM_TX_RENDER_U16(address) vram_tx_render_read_u16(address)
+#define VRAM_TX_RENDER_U32(address) vram_tx_render_read_u32(address)
+#else
+#define VRAM_TX_RENDER_U16(address) (*(uint16 *)&vram[(address)])
+#define VRAM_TX_RENDER_U32(address) (*(uint32 *)&vram[(address)])
+#endif
+'''
+
+
+def _function_ranges(source: str, name: str, arguments: str,
+                     expected_count: int = 1):
+    """Return ranges for exact pinned function signatures."""
+    signature = f'void {name}({arguments})\n{{'
+    ranges = []
+    offset = 0
+    while True:
+        start = source.find(signature, offset)
+        if start < 0:
+            break
+        end = source.find('\n}\n', start + len(signature))
+        if end < 0:
+            raise SystemExit(f'Expected pinned {name} closing brace missing.')
+        ranges.append((start, end + 2))
+        offset = end + 3
+    if len(ranges) != expected_count:
+        raise SystemExit(f'Expected {expected_count} pinned {name} definition(s).')
+    return ranges
+
+
+def patch_mode5_render_reads(source: str) -> str:
+    """Route pinned M5 VRAM reads through the transaction-aware lane helper."""
+    include_anchor = '#include "shared.h"'
+    already_patched = VRAM_RENDER_MARKER in source
+    if already_patched:
+        if (source.count(VRAM_RENDER_MARKER) != 1 or
+                source.count(VRAM_RENDER_READS) != 1):
+            raise SystemExit('Mode 5 renderer read adapter is partial or ambiguous.')
+    else:
+        if ('vram_transaction_render.h' in source or
+                'VRAM_TX_RENDER_U16(' in source or
+                'VRAM_TX_RENDER_U32(' in source):
+            raise SystemExit('Mode 5 renderer read adapter has partial markers.')
+        if source.count(include_anchor) != 1:
+            raise SystemExit('Expected pinned vdp_render.c include anchor missing.')
+        source = source.replace(include_anchor,
+                               include_anchor + '\n' + VRAM_RENDER_READS, 1)
+
+    names = ('render_bg_m5', 'render_bg_m5_vs',
+             'render_bg_m5_im2', 'render_bg_m5_im2_vs')
+    for name in names:
+        replacements = []
+        for start, end in _function_ranges(source, name, 'int line', 2):
+            body = source[start:end]
+            raw_scroll = re.compile(
+                r'(?m)^(\s*uint32 xscroll\s*=\s*)'
+                r'\*\(uint32 \*\)&vram\[([^\]\n]+)\];$')
+            routed_scroll = re.compile(
+                r'(?m)^\s*uint32 xscroll\s*=\s*VRAM_TX_RENDER_U32\('
+                r'[^\n]+\);$')
+            scroll_count = len(raw_scroll.findall(body))
+            routed_scroll_count = len(routed_scroll.findall(body))
+            if already_patched and scroll_count:
+                raise SystemExit(f'Unrouted raw xscroll read was reintroduced in {name}.')
+            if scroll_count == 1 and routed_scroll_count == 0:
+                body, changed = raw_scroll.subn(
+                    lambda match: match.group(1) +
+                    f'VRAM_TX_RENDER_U32({match.group(2)});', body)
+                if changed != 1:
+                    raise SystemExit(f'Unexpected {name} xscroll anchor count.')
+            elif scroll_count != 0 or routed_scroll_count != 1:
+                raise SystemExit(f'Pinned {name} xscroll read is missing or drifted.')
+
+            raw_table = re.compile(r'(?m)^(\s*)atbuf\s*=\s*nt\[([^\]\n]+)\];$')
+            routed_table = re.compile(
+                r'(?m)^\s*atbuf\s*=\s*VRAM_TX_RENDER_U32\(')
+            table_count = len(raw_table.findall(body))
+            routed_table_count = len(routed_table.findall(body))
+            if already_patched and table_count:
+                raise SystemExit(f'Unrouted name-table read was reintroduced in {name}.')
+            if table_count and routed_table_count == 0:
+                body, changed = raw_table.subn(
+                    lambda match: match.group(1) + 'atbuf = VRAM_TX_RENDER_U32('
+                    '(uint32)((uint8 *)nt - vram) + ((' + match.group(2) +
+                    ') << 2));', body)
+                if changed != table_count:
+                    raise SystemExit(f'Unexpected {name} name-table read count.')
+            elif table_count != 0 or routed_table_count != 6:
+                raise SystemExit(f'Pinned {name} name-table reads are missing or drifted.')
+            if (re.search(r'\*\(uint32 \*\)&vram\[', body) or
+                    raw_table.search(body)):
+                raise SystemExit(f'Unrouted raw M5 VRAM read remains in {name}.')
+            replacements.append((start, end, body))
+        for start, end, body in reversed(replacements):
+            source = source[:start] + body + source[end:]
+
+    def patch_one_function(source: str, name: str, arguments: str,
+                           transform, expected_count: int = 1):
+        ranges = _function_ranges(source, name, arguments, expected_count)
+        changes = []
+        for start, end in ranges:
+            body = source[start:end]
+            changes.append((start, end, transform(body)))
+        for start, end, body in reversed(changes):
+            source = source[:start] + body + source[end:]
+        return source
+
+    def patch_sat_reads(body: str) -> str:
+        routed_count = body.count('object_info->attr  = VRAM_TX_RENDER_U16(') + \
+            body.count('object_info->xpos  = VRAM_TX_RENDER_U16(')
+        if already_patched and (routed_count != 2 or
+                re.search(r'object_info->attr\s*=\s*p\[', body) or
+                re.search(r'object_info->xpos\s*=\s*p\[', body)):
+            raise SystemExit('M5 SAT parser source drifted after patch insertion.')
+        if routed_count:
+            if (routed_count != 2 or
+                    re.search(r'object_info->attr\s*=\s*p\[', body) or
+                    re.search(r'object_info->xpos\s*=\s*p\[', body)):
+                raise SystemExit('Mode 5 SAT parser contains a partial routed read.')
+            return body
+        attr = '        object_info->attr  = p[link + 2];'
+        xpos = '        object_info->xpos  = p[link + 3] & 0x1ff;'
+        if body.count(attr) != 1 or body.count(xpos) != 1:
+            raise SystemExit('Expected pinned M5 SAT attr/X read anchors missing or ambiguous.')
+        body = body.replace(attr,
+            '        object_info->attr  = VRAM_TX_RENDER_U16('
+            '(uint32)((uint8 *)p - vram) + ((link + 2) << 1));', 1)
+        body = body.replace(xpos,
+            '        object_info->xpos  = VRAM_TX_RENDER_U16('
+            '(uint32)((uint8 *)p - vram) + ((link + 3) << 1)) & 0x1ff;', 1)
+        return body
+
+    source = patch_one_function(source, 'parse_satb_m5', 'int line', patch_sat_reads)
+
+    def patch_pattern_cache(body: str) -> str:
+        raw = 'bp = *(uint32 *)&vram[(name << 5) | (y << 2)];'
+        routed = 'bp = VRAM_TX_RENDER_U32((name << 5) | (y << 2));'
+        if already_patched and (body.count(routed) != 1 or raw in body):
+            raise SystemExit('M5 pattern cache source drifted after patch insertion.')
+        if routed in body:
+            if raw in body or body.count(routed) != 1:
+                raise SystemExit('M5 pattern cache has both routed and raw reads.')
+            return body
+        if body.count(raw) != 1:
+            raise SystemExit('Expected pinned M5 pattern-cache read missing or ambiguous.')
+        return body.replace(raw, routed, 1)
+
+    source = patch_one_function(source, 'update_bg_pattern_cache_m5', 'int index',
+                                patch_pattern_cache)
+    return source
+
+
 def patch_vram_fault(wasm: str, patch: str) -> str:
     """Refresh only the uniquely bounded embedded frame fault implementation."""
     tick = 'void EMSCRIPTEN_KEEPALIVE tick(void) {'
@@ -535,6 +691,7 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     wasm_c = root / 'src/main/c/wasm/wasm.c'
     config_c = root / 'src/main/c/wasm/config.c'
     render_h = root / 'src/main/c/core/vdp_render.h'
+    render_c_path = root / 'src/main/c/core/vdp_render.c'
     m68k_h = root / 'src/main/c/core/m68k/m68kcpu.h'
     z80_c = root / 'src/main/c/core/memz80.c'
     dma_c = root / 'src/main/c/core/vdp_ctrl.c'
@@ -542,6 +699,7 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     wasm = wasm_c.read_text()
     config = config_c.read_text()
     render = render_h.read_text()
+    render_c = render_c_path.read_text() if transaction_adapter else None
     m68k = m68k_h.read_text()
     z80 = z80_c.read_text()
     dma = dma_c.read_text()
@@ -615,13 +773,17 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     dma = patch_dma(dma)
     if transaction_adapter:
         dma = patch_vram_transactions(dma)
+        render_c = patch_mode5_render_reads(render_c)
     changed = (wasm != wasm_c.read_text() or config != config_c.read_text() or
                render != render_h.read_text() or m68k != m68k_h.read_text() or
-               z80 != z80_c.read_text() or dma != dma_c.read_text())
+               z80 != z80_c.read_text() or dma != dma_c.read_text() or
+               (transaction_adapter and render_c != render_c_path.read_text()))
     if changed:
         wasm_c.write_text(wasm)
         config_c.write_text(config)
         render_h.write_text(render)
+        if transaction_adapter:
+            render_c_path.write_text(render_c)
         m68k_h.write_text(m68k)
         z80_c.write_text(z80)
         dma_c.write_text(dma)
@@ -634,8 +796,9 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
                 (destination / filename).write_text((scripts / filename).read_text())
             (destination / 'vram_transaction.h').write_text((scripts / 'vram_transaction.h').read_text())
             (destination / 'vram_transaction_runtime.h').write_text((scripts / 'vram_transaction_runtime.h').read_text())
-            if destination.name == 'core':
+            if destination.name == 'core' and transaction_adapter:
                 (destination / 'vram_transaction_core.h').write_text((scripts / 'vram_transaction_core.h').read_text())
+                (destination / 'vram_transaction_render.h').write_text((scripts / 'vram_transaction_render.h').read_text())
         wasm_dir = root / 'src/main/c/wasm'
         for filename in ('work_ram_fault.c', 'work_ram_runtime.c'):
             (wasm_dir / filename).write_text((scripts / filename).read_text())
@@ -653,10 +816,13 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
                 target = destination / filename
                 if not target.exists() or target.read_text() != (scripts / filename).read_text():
                     target.write_text((scripts / filename).read_text())
-            if destination.name == 'core':
+            if destination.name == 'core' and transaction_adapter:
                 target = destination / 'vram_transaction_core.h'
                 if not target.exists() or target.read_text() != (scripts / 'vram_transaction_core.h').read_text():
                     target.write_text((scripts / 'vram_transaction_core.h').read_text())
+                target = destination / 'vram_transaction_render.h'
+                if not target.exists() or target.read_text() != (scripts / 'vram_transaction_render.h').read_text():
+                    target.write_text((scripts / 'vram_transaction_render.h').read_text())
         for filename in ('work_ram_fault.c', 'work_ram_runtime.c'):
             target = root / 'src/main/c/wasm' / filename
             if not target.exists() or target.read_text() != (scripts / filename).read_text():

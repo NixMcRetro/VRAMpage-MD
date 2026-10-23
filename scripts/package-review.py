@@ -41,6 +41,7 @@ REQUIRED_FILES = (
     "site/source/README.txt",
     "site/source/patch_core.py",
     "site/source/vram_fault_patch.c",
+    "site/source/vram_transaction_render.h",
     "site/source/src/main/c/core/vdp_render.h",
     "site/source/src/main/c/core/ntsc/license.txt",
 )
