@@ -30,6 +30,7 @@ def validate_bundle():
         SITE / "source" / "README.txt",
         SITE / "source" / "patch_core.py",
         SITE / "source" / "vram_fault_patch.c",
+        SITE / "source" / "vram_transaction_render.h",
     )
     missing = [path.relative_to(ROOT).as_posix() for path in required_files
                if not path.is_file() or path.stat().st_size == 0]

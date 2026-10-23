@@ -5,12 +5,14 @@ Verified on 23 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
-Verified public main: `f1aad11f331e772e6ec786be020d54b36905c7ba` (PRs #37 and #38).
-[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39971912690)
+Verified integration base: `2b5cb4792e7d89b6ff29865049bf6fe29d9414a4` (PRs #37 through #39).
+[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39975630806)
 passed source, Chromium, Firefox, WebKit and actual-core/package checks.
 The immutable [v0.2.8 Mac package](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.8/VRAMpage-MD-v0.2.8-macos.zip)
 was published by [workflow 39972454348](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39972454348)
-from this exact commit. Its tag, manifests and checksum agree. The downloaded
+from `f1aad11f331e772e6ec786be020d54b36905c7ba`. Its tag, manifests and checksum agree.
+PR #39 subsequently aligned the release catalog and editorial links without
+rebuilding or replacing the public package; the release curator passed. The downloaded
 ZIP passed actual-core Chromium and unmocked local launcher checks, including
 clean Ctrl+C shutdown. No new native macOS validation is claimed.
 Playwright caches remain enabled. Browser OS dependencies use official Ubuntu
@@ -25,8 +27,10 @@ to the helper in a separately compiled test variant. The [semantics protocol](TR
 byte/lane ordering, cache dependencies, supported modes, sprite-table policy and
 explicit model compatibility. An isolated native helper implements those byte-access and dependency
 primitives. Diagnostic core hooks preserve the normal access path by default;
-renderer/cache reads, public API selection and release acceptance remain future
-stages. The next task is renderer integration, not a new public release. Read the first unfinished
+renderer/cache reads are now implemented and locally verified in the separately
+compiled diagnostic. [PR #40](https://github.com/NixMcRetro/VRAMpage-MD/pull/40)
+carries integration and required CI. The next task is public model/API selection
+and milestone acceptance, not a new public release. Read the first unfinished
 [work-queue](WORK-QUEUE.md) item and relevant protocol before older history.
 Reuse unchanged passing evidence; new diagnostic code needs focused tests,
 independent specialist review, final regression and CI before merge.
@@ -38,6 +42,34 @@ CSS pixels with at least 24-pixel pin targets. Local full source/WASM and
 Chromium layout, logic and actual-core checks passed; see [testing](TESTING.md).
 Normal emulator binaries are unchanged. No native Mac check is claimed.
 Renderer integration remains a separate developer task with its own gates.
+
+## Renderer continuation recovery
+
+On resumption, the temporary renderer worktree and its uncommitted source were
+missing. Its branch and Git index still identified the PR #36 base; no renderer
+source checkpoint was recoverable. The committed scope document remains, but
+previous temporary renderer test observations cannot certify rebuilt code.
+At that recovery checkpoint, no reconstructed renderer change had been merged
+or released.
+
+Reconstruct the reviewed design in a persistent `/workspace` worktree, commit
+bounded source/test checkpoints, and repeat focused and final acceptance on
+those commits. First checkpoint: renderer byte-read helper, cached lifecycle
+gate, literal endian/wrap oracles and strict/sanitizer checks. Then route the
+pinned renderer and restore the full visible/cache/SAT/performance matrix.
+The first helper checkpoint is now committed on
+`experiment/vram-render-cache-resume` through
+`1b2fd0d71de0dc2d0a2ab90af130325518e43472` and incorporated into the local
+integration branch. Six focused helper tests passed with normal leak detection:
+strict and ASan/UBSan builds, both host-layout branches, literal packing oracles,
+ordered mapped reads, wrap and inactive direct loads. Independent specialist
+source review approved progression to renderer routing. Its separate restricted
+sanitizer run required a local ptrace workaround; the coordinator's verification
+used normal LeakSanitizer without suppression. The full local regression suite also passed 83 Python tests with no skips,
+fresh normal/diagnostic WASM builds, existing JavaScript/native suites and normal
+LeakSanitizer enabled. This verifies existing CPU/DMA behavior, not renderer
+routing. The next routing checkpoints `d74b930` and `1bbdd1a` now cover the pinned Mode 5 inventory and reject missing/unrouted reads. Independent source review approved progression to visible fixtures; the integrated routing checkpoint passed 89 full Python tests, normal/diagnostic/alternate WASM builds and existing native/JavaScript checks. Later committed four-core fixtures now cover visible output, cache aliases, lifecycle transitions and mixed SAT behavior. Independent review approved the source and literal pixel oracles. The VS/interlace active checks cover line zero, not full-field timing. Fixed-tick DMA preflight passed independently; final integrated correctness and actual-core Chromium now pass. The fixed five-pair gate failed diagnostic-off p95 (1.069346) and identity median (1.126256) against 1.05. Independent review confirmed all measurements and provenance. A reviewed inactive-guard correction now passes the 91-test full suite and fresh actual-core Chromium; the fresh fixed-protocol second run now passes all three no-fault median/p95 gates. Both full raw records are preserved; independent audit passed and required CI remains the merge gate. This diagnostic checkpoint is tracked by PR #40; it does not complete public
+transaction-model or v0.3.0 acceptance.
 
 ## Verified baseline
 

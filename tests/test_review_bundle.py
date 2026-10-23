@@ -29,6 +29,7 @@ def make_checkout(root, *, wasm=True, include_rom=False):
         "site/source/README.txt": b"Corresponding source",
         "site/source/patch_core.py": b"# patch source",
         "site/source/vram_fault_patch.c": b"/* patch source */",
+        "site/source/vram_transaction_render.h": b"/* renderer read adapter */",
         "site/source/src/main/c/core/vdp_render.h": BLITTER_MARKER,
         "site/source/src/main/c/core/ntsc/license.txt": b"Example license notice",
     }

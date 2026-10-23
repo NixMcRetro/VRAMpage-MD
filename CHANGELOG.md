@@ -1,5 +1,15 @@
 # Changelog
 
+## Post-v0.2.8 renderer diagnostic groundwork
+
+- Preserve the complete failed first performance record and independent audit. Skip redundant inactive CPU/DMA mode synchronization with a reviewed cached flag and focused strict/sanitizer coverage; the corrected 91-test integration and separate fixed-protocol performance run pass, with both measurement records retained.
+
+- Route all pinned Mode 5 renderer/cache reads in the separately compiled diagnostic, preserving original normal-build loads.
+- Add strict source-drift rejection, endian/wrap helper tests and four-core visible/cache/SAT/lifecycle fixtures with independent pixel oracles.
+- Add a fixed, provenance-checked recurring-DMA performance protocol; final performance and CI acceptance remain separate gates.
+- Keep full timing archives at an immutable Git commit with linked summaries in the Mac package, preserving nested-archive rejection and every recorded measurement.
+- Keep the public frame-scoped VRAM model and v0.2.8 release unchanged.
+
 ## v0.2.8 release inventory
 
 - Record the verified public package and exact source commit in the release catalog.
@@ -17,6 +27,12 @@
   keyboard operation intact. The VRAM chip keeps its existing dimensions.
 - Add synthetic browser layout checks at 1280×720 and 1280×800 alongside the
   existing 1366×768 viewport. These checks do not represent native Mac testing.
+
+## Post-v0.2.7 renderer helper checkpoint
+
+- Add ordered, wrapped renderer byte-read helpers with host-layout packing and an inactive direct-load path, ready for separately reviewed renderer routing.
+- Test literal endian expectations and host-lane conversion with strict and sanitizer builds.
+- Preserve worktrees and source checkpoints under `/workspace` after temporary uncommitted renderer work was lost. Public renderer behavior and release remain unchanged.
 
 ## Post-v0.2.7 VDP access integration
 

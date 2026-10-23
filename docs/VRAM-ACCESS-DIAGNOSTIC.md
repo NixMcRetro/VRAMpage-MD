@@ -3,7 +3,7 @@
 This developer-only stage connects the reviewed [transaction primitives](TRANSACTION-VRAM-SEMANTICS.md)
 to Mode 5 CPU/Z80 data ports and DMA VRAM endpoints in the pinned Genesis Plus GX
 core. It is a partial digital model, not the v0.3.0 release. The public app remains
-v0.2.7 with its existing frame-scoped VRAM controls.
+v0.2.8 with its existing frame-scoped VRAM controls.
 
 ## Scope
 
@@ -53,12 +53,12 @@ original core access path with no dependency allocation or transaction counts.
 
 ## Remaining gates
 
-Renderer pattern, name, scroll and sprite reads are not mapped in this stage.
-The normal renderer therefore cannot establish a complete transaction-model
-visual result under an active diagnostic fault. Actual SAT parser, interlace,
-render/cache adaptation, public model/API selection, browser controls, performance
-and complete Mac release acceptance remain separate stages in the
-[architecture plan](TRANSACTION-VRAM-PLAN.md).
+The initial access-only checkpoint did not map renderer reads. The separate
+[renderer diagnostic](VRAM-RENDER-DIAGNOSTIC.md) now has locally reviewed routing
+and visible/cache/SAT fixtures. Final integrated regression, performance and CI
+remain gates before that checkpoint can be merged. Public model/API selection,
+browser controls and complete Mac milestone release acceptance remain separate
+stages in the [architecture plan](TRANSACTION-VRAM-PLAN.md).
 
 Synthetic CPU/core checks establish only the specified emulator access behavior.
 They do not establish commercial-game outcomes, audible or native Mac acceptance,

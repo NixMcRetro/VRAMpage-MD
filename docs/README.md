@@ -24,6 +24,7 @@ older standalone-model descriptions are historical development records.
 | [Video output](VIDEO-OUTPUT.md) | 640-pixel source stride, native pixels, missing-line recovery and raw output |
 | [Logic bending](LOGIC-BENDING.md) | v0.2 work-RAM model, runtime scope and known limits |
 | [Byte transactions](WORK-RAM-BYTES.md) | Standalone byte-lane rules and regression coverage |
+| [Renderer diagnostic](VRAM-RENDER-DIAGNOSTIC.md) | Mode 5 read inventory, visible/cache acceptance and performance gates |
 | [VDP access diagnostic](VRAM-ACCESS-DIAGNOSTIC.md) | Developer-only CPU/Z80/DMA hooks, actual-WASM checks and remaining renderer gates |
 | [VRAM transaction semantics](TRANSACTION-VRAM-SEMANTICS.md) | Selected byte, cache, sprite-table, model/API and recovery rules for staged integration |
 | [Transaction-level VRAM plan](TRANSACTION-VRAM-PLAN.md) | Pinned access-path inventory, compatibility decisions, staged test gates and current progress |

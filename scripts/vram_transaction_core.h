@@ -14,6 +14,11 @@ static void vram_tx_core_sync_mode(void) {
 }
 
 static int vram_tx_core_effective(void) {
+  /* Configuration and every Mode 5 transition update this cached effective
+   * flag. In the common off/identity case, avoid repeated mode synchronization
+   * and cache-invalidation checks on each CPU/DMA VRAM transaction. Keep the
+   * mode recheck for an active fault so unsupported-mode accesses fail closed. */
+  if (!vram_tx_diagnostic_render_active) return 0;
   vram_tx_core_sync_mode();
   return vram_tx_diagnostic_effective();
 }

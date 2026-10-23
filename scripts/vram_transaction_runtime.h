@@ -16,5 +16,6 @@ uint16_t vram_tx_diagnostic_resolve_write(uint32_t logical_address);
 void vram_tx_diagnostic_complete_write(uint16_t physical_address,
                                        uint8_t old_value,
                                        uint8_t new_value);
+extern int vram_tx_diagnostic_render_active;
 
 #endif

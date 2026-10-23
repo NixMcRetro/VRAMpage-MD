@@ -777,3 +777,36 @@ build, checking SDK/vendor prerequisites before invocation. Source-only checkout
 without these prerequisites may skip the optional Python-discovered WASM case;
 that skip is not actual-WASM acceptance. Renderer mapping, mixed-field sprite
 rendering, complete raster output and native Mac/physical fidelity remain open.
+
+## Mode 5 renderer diagnostic checkpoint
+
+The [renderer verification record](VRAM-RENDER-DIAGNOSTIC.md) distinguishes the
+89-test routing run from later fresh four-core visible/SAT fixtures and from
+unmeasured performance. Exact no-fault whole-state comparison, literal active
+pixels, alias invalidation/recovery and mixed SAT policy have passed locally and
+received independent specialist review. VS/interlace cases cover active line-zero
+pixels and function selection, not full-field timing. Final integrated regression,
+performance and CI remain required before merge. No public transaction selector,
+commercial-game, physical or native Mac acceptance is implied.
+
+The final integrated renderer correctness run passed all 89 Python tests without
+skips, nested six pinned-source checks, fresh four-core WASM and existing
+JavaScript/native/default-leak-detection suites. An ordinary production build,
+six patch tests against its already-patched vendor and actual-core Chromium also
+passed. The fixed performance gate nevertheless failed: see the immutable
+[raw measurements and exact failing statistics](VRAM-RENDER-DIAGNOSTIC.md#first-measured-performance-result-failed).
+At that point, no renderer merge or performance acceptance was claimed.
+
+After the reviewed inactive-guard correction, all 91 tests and fresh normal
+actual-core Chromium passed. A separate second complete 25-run benchmark passed
+the unchanged five-pair performance gate for normal, diagnostic-off and identity.
+Both complete records and compact summaries are retained in
+[the renderer verification record](VRAM-RENDER-DIAGNOSTIC.md). The first failure
+was not removed or reinterpreted. Independent statistics/provenance audit passed; required CI precedes merge.
+
+The package step initially rejected the committed timing gzip files under its
+existing opaque-archive rule. Full records are now retained at the immutable
+[archive commit](https://github.com/NixMcRetro/VRAMpage-MD/tree/28c42a3a48ac376c893a1cff699d10ab02122668/docs/experiments),
+with summaries and exact archive links in current documentation. The package
+keeps its archive/ROM/secret rejection checks unchanged. A real 381-file package build and all 21 package/version/release tests passed
+before rerunning CI; no runtime source changed for this correction.
