@@ -99,20 +99,33 @@ class VramTransactionWasm(unittest.TestCase):
         commit = subprocess.check_output(["git", "-C", str(vendor), "rev-parse", "HEAD"], text=True).strip()
         if commit != PIN:
             raise AssertionError(f"Expected pinned core {PIN}, got {commit}")
-        cls.temp = tempfile.TemporaryDirectory(prefix="vram-tx-wasm-")
-        root = Path(cls.temp.name)
-        normal_source, diagnostic_source, alt_source = (
-            root / "normal", root / "diagnostic", root / "diagnostic-alt")
+        build_root = os.environ.get("VRAM_TX_WASM_BUILD_ROOT")
+        if build_root:
+            cls.temp = None
+            root = Path(build_root).resolve()
+            root.mkdir(parents=True, exist_ok=True)
+        else:
+            cls.temp = tempfile.TemporaryDirectory(prefix="vram-tx-wasm-")
+            root = Path(cls.temp.name)
+        normal_source, diagnostic_source, alt_source, baseline_source = (
+            root / "normal", root / "diagnostic", root / "diagnostic-alt",
+            root / "baseline")
         stage_source(vendor, normal_source)
         stage_source(vendor, diagnostic_source)
         stage_source(vendor, alt_source)
+        stage_source(vendor, baseline_source)
+        original_render = subprocess.check_output([
+            "git", "-C", str(vendor), "show",
+            f"{PIN}:src/main/c/core/vdp_render.c"])
+        (baseline_source / "src/main/c/core/vdp_render.c").write_bytes(original_render)
         cls.normal_js = build(normal_source, diagnostic=False)
         cls.diagnostic_js = build(diagnostic_source, diagnostic=True)
         cls.diagnostic_alt_js = build(alt_source, diagnostic=True, alt_renderer=True)
+        cls.baseline_js = build(baseline_source, diagnostic=False)
 
     @classmethod
     def tearDownClass(cls):
-        if hasattr(cls, "temp"):
+        if getattr(cls, "temp", None) is not None:
             cls.temp.cleanup()
 
     def test_transaction_diagnostic_and_default_exports(self):
@@ -123,6 +136,9 @@ class VramTransactionWasm(unittest.TestCase):
                  "tests.test_vram_renderer_patch", "-v"], env=env)
         command(["node", str(ROOT / "tests/test_vram_transaction_wasm.cjs"),
                  str(self.diagnostic_js), str(self.normal_js)])
+        command(["node", str(ROOT / "tests/test_vram_renderer_visible.cjs"),
+                 str(self.baseline_js), str(self.normal_js), str(self.diagnostic_js),
+                 str(self.diagnostic_alt_js)])
 
 
 if __name__ == "__main__":
