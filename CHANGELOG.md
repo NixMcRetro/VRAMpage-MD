@@ -7,6 +7,11 @@
 - Add a fixed, provenance-checked recurring-DMA performance protocol; final performance and CI acceptance remain separate gates.
 - Keep the public frame-scoped VRAM model and v0.2.8 release unchanged.
 
+## v0.2.8 release inventory
+
+- Record the verified public package and exact source commit in the release catalog.
+- Direct new users from older editorial release notes to v0.2.8 while preserving original notes, tags, binaries and checksums.
+
 ## v0.2.8 CI provisioning repair
 
 - Use the standard signed Ubuntu package mirror for browser system libraries after repeated slow Azure-mirror downloads.

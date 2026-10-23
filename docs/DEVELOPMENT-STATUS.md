@@ -5,10 +5,17 @@ Verified on 23 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
-Verified integration base: `d209e5ffb60aa41bf164dc32d1eef2aaa9e0500f` (PR #36).
-[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39945966074)
+Verified public main: `f1aad11f331e772e6ec786be020d54b36905c7ba` (PRs #37 and #38).
+[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39971912690)
 passed source, Chromium, Firefox, WebKit and actual-core/package checks.
-Playwright caches are primed on main; the compact-chip build is v0.2.8 and retains the existing frame-scoped model.
+The immutable [v0.2.8 Mac package](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.8/VRAMpage-MD-v0.2.8-macos.zip)
+was published by [workflow 39972454348](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39972454348)
+from this exact commit. Its tag, manifests and checksum agree. The downloaded
+ZIP passed actual-core Chromium and unmocked local launcher checks, including
+clean Ctrl+C shutdown. No new native macOS validation is claimed.
+Playwright caches remain enabled. Browser OS dependencies use official Ubuntu
+mirrors with bounded retries; no tests or pinned browser versions were removed.
+The public app retains the existing frame-scoped VRAM model.
 The first affected write is identified at PC `$B46`; bounded actual-bus evidence
 now shows wait/caller release one tick later. The eight-write follow-up now meets the bounded same-input-phase trajectory
 criterion. The [transaction-level VRAM plan](TRANSACTION-VRAM-PLAN.md) maps
