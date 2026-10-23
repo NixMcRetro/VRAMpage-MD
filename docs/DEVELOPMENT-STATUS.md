@@ -5,10 +5,10 @@ Verified on 23 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
-Verified integration base: `65a7bdd11242eb397ac9de0460b13760d2f9a1f9` (PR #35).
-[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39929062222)
+Verified integration base: `d209e5ffb60aa41bf164dc32d1eef2aaa9e0500f` (PR #36).
+[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39945966074)
 passed source, Chromium, Firefox, WebKit and actual-core/package checks.
-Playwright caches are primed on main; normal application/release remains v0.2.7.
+Playwright caches are primed on main; the compact-chip build is v0.2.8 and retains the existing frame-scoped model.
 The first affected write is identified at PC `$B46`; bounded actual-bus evidence
 now shows wait/caller release one tick later. The eight-write follow-up now meets the bounded same-input-phase trajectory
 criterion. The [transaction-level VRAM plan](TRANSACTION-VRAM-PLAN.md) maps
@@ -23,6 +23,14 @@ stages. The next task is renderer integration, not a new public release. Read th
 [work-queue](WORK-QUEUE.md) item and relevant protocol before older history.
 Reuse unchanged passing evidence; new diagnostic code needs focused tests,
 independent specialist review, final regression and CI before merge.
+
+## Compact Work RAM interface
+
+The v0.2.8 cosmetic update reduces the diagram from 300 by 256 to 260 by 192
+CSS pixels with at least 24-pixel pin targets. Local full source/WASM and
+Chromium layout, logic and actual-core checks passed; see [testing](TESTING.md).
+Normal emulator binaries are unchanged. No native Mac check is claimed.
+Renderer integration remains a separate developer task with its own gates.
 
 ## Verified baseline
 

@@ -1,3 +1,18 @@
+# v0.2.8 compact work-RAM verification
+
+Linux Chromium measured the Work RAM diagram at 260 by 192 CSS pixels, down
+from 300 by 256. Its pin buttons remain at least 24 by 24 pixels. Geometry
+checks cover 1280 by 720, 1280 by 800 and the existing desktop/mobile viewports,
+with labels inside the body, short legs, crosses and keyboard operation retained.
+The VRAM diagram dimensions are unchanged.
+
+Local validation passed 79 Python tests without skips, strict/sanitizer and
+JavaScript/native suites, fresh normal/diagnostic WASM checks, 28 Chromium logic
+cases, six display cases and the actual-core browser smoke. The normal JS/WASM
+binaries match the immutable public v0.2.7 core byte for byte. A 367-file review
+ZIP passed manifest/version, executable launcher and required-source validation.
+These are Linux synthetic/core checks, not native macOS Firefox acceptance.
+
 # v0.2.8 layout regression scope
 
 The work-RAM chip layout regression covers synthetic browser viewports of
