@@ -1,6 +1,6 @@
 # Transaction-level VRAM architecture and test plan
 
-**Status:** design only. No VDP runtime or application changes are part of this
+**Status:** architecture plan with [reviewed semantics](TRANSACTION-VRAM-SEMANTICS.md). No VDP runtime or application changes are part of this
 plan. The reviewed base is `2fa2845c99941ecefcbd1de598eab25391b411fb`, after
 the bounded RAM trajectory acceptance. `VERSION` remains `0.2.7`; a completed
 transaction-level VRAM milestone is reserved for `0.3.0` by
@@ -73,7 +73,7 @@ an explicit model/capability identifier. Do not silently reinterpret the
 existing `_set_vram_short` or `_set_vram_address_mask` controls or the old
 projection counters. Keep the frame model available behind an explicitly named
 legacy mode for comparison during migration, or document and version an
-intentional removal in `0.3.0`; the choice must be settled before coding. Name
+intentional removal in `0.3.0`; the reviewed semantics retain legacy controls and require explicit selection of the new model. Name
 new diagnostics as transaction counts or mapped-operation counts, and keep
 legacy frame-difference counters distinct. In all modes, disconnecting a fault
 restores normal address lookup but does not undo VRAM mutations. Clean restart
@@ -207,10 +207,13 @@ RAM/VRAM exclusivity and failed-takeover behavior.
 1. **Close the semantics first.** Decide byte-lane mapping for word data-port
    operations, mapped SAT mirror behavior, render-read access inventory,
    supported modes, API migration and diagnostic counter names. Record these
-   decisions in a reviewed protocol before runtime changes.
-2. **Implement the isolated native helper and unit tests.** Pass exhaustive map,
-   collision, boundary, no-fault, cache and sanitizer checks before touching
-   core access paths.
+   decisions in a reviewed protocol before runtime changes. This gate is now
+   recorded in [VRAM transaction semantics](TRANSACTION-VRAM-SEMANTICS.md).
+2. **Native primitives completed.** The isolated helper and strict/sanitizer
+   tests cover exhaustive maps, byte collisions, boundaries, no-fault bypass,
+   reverse cache dependencies and lifecycle state. They use canonical byte-array
+   fixtures; core SAT/parser, cache adaptation and rendering remain integration
+   gates. See [semantics](TRANSACTION-VRAM-SEMANTICS.md) and [testing](TESTING.md).
 3. **Integrate source accessors and DMA.** Patch exact pinned anchors in
    `scripts/patch_core.py`, test idempotence and source drift, then pass actual
    synthetic-WASM CPU/Z80/DMA tests. No public package rebuild yet.

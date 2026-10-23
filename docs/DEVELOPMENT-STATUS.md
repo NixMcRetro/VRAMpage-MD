@@ -5,16 +5,19 @@ Verified on 23 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
-Verified integration base: `99c549797e308b963553085def1e069864bf3436` (PR #33).
-[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39915571668)
+Verified integration base: `97964a06adaf2668acbe975998d30b53dd121ddc` (PR #34).
+[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39924013637)
 passed source, Chromium, Firefox, WebKit and actual-core/package checks.
 Playwright caches are primed on main; normal application/release remains v0.2.7.
 The first affected write is identified at PC `$B46`; bounded actual-bus evidence
 now shows wait/caller release one tick later. The eight-write follow-up now meets the bounded same-input-phase trajectory
 criterion. The [transaction-level VRAM plan](TRANSACTION-VRAM-PLAN.md) maps
 CPU/Z80 ports, DMA, renderer/cache and sprite-table paths. Implementation has not
-started. Next: resolve its staged semantics and compatibility decisions before
-writing runtime hooks. Read the first unfinished
+started. The [semantics protocol](TRANSACTION-VRAM-SEMANTICS.md) now fixes
+byte/lane ordering, cache dependencies, supported modes, sprite-table policy and
+explicit model compatibility. An isolated native helper implements those byte-access and dependency
+primitives without changing emulator execution. Core access hooks, rendering
+adapters, public API selection and release packaging remain future stages. Read the first unfinished
 [work-queue](WORK-QUEUE.md) item and relevant protocol before older history.
 Reuse unchanged passing evidence; new diagnostic code needs focused tests,
 independent specialist review, final regression and CI before merge.

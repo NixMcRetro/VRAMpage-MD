@@ -704,3 +704,23 @@ renderer/cache, DMA, browser and performance acceptance. These are planned check
 not newly executed transaction-model tests. The current runtime remains frame-scoped.
 Before runtime changes, resolve stage 1 semantics and independently review cache
 alias invalidation, byte lanes, DMA source/destination boundaries and compatibility.
+
+## Transaction-level VRAM semantics
+
+[The semantics protocol](TRANSACTION-VRAM-SEMANTICS.md) fixes the rules for the
+implemented native helper and gives independently checked mapping/ordering examples.
+The isolated native helper now has two Python-driven strict/sanitizer build tests
+covering exhaustive address transforms, ordered byte collisions, host-lane
+conversion, reverse cache dependencies, invalid configuration, reconnect and
+mode-transition state. This tests canonical byte-array primitives, not emulator
+VDP execution, renderer output or the proposed public API. DMA, mixed-field
+sprite rendering, actual-core cache adaptation and browser transaction-mode
+acceptance remain future integration gates.
+
+The full local `bash scripts/test.sh` run passed all 78 Python tests and existing
+JavaScript/native suites outside the restricted executor, with normal leak
+checking and fatal sanitizer errors. Initial restricted runs could not bind
+localhost for launcher tests, and the worker's LeakSanitizer inspection failed
+under ptrace. These environment limitations were resolved by running the unchanged
+suite outside those restrictions. The checked-in harness has no leak suppression.
+Native SAT tests use a byte-array policy fixture, not the real parser.

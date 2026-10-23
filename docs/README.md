@@ -24,6 +24,7 @@ older standalone-model descriptions are historical development records.
 | [Video output](VIDEO-OUTPUT.md) | 640-pixel source stride, native pixels, missing-line recovery and raw output |
 | [Logic bending](LOGIC-BENDING.md) | v0.2 work-RAM model, runtime scope and known limits |
 | [Byte transactions](WORK-RAM-BYTES.md) | Standalone byte-lane rules and regression coverage |
+| [VRAM transaction semantics](TRANSACTION-VRAM-SEMANTICS.md) | Selected byte, cache, sprite-table, model/API and recovery rules before native-helper implementation |
 | [Transaction-level VRAM plan](TRANSACTION-VRAM-PLAN.md) | Pinned access-path inventory, compatibility decisions and staged test gates; design only |
 | [VRAM leg switches](VRAM-LEG-SWITCHES.md) | v0.2.6 AD0-AD7 toggles, crosses and bridge selection |
 | [Address-line chip](ADDRESS-LINE-CHIP.md) | v0.2.6 crossed-wire controls, stuck-low assumptions and logical bus mapping |
