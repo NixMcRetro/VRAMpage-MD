@@ -529,11 +529,11 @@ class BrowserLogicTests(unittest.TestCase):
         self.load_rom()
         for scheme in ('light', 'dark'):
             self.page.emulate_media(color_scheme=scheme)
-            for width, height in ((1366, 768), (390, 844), (844, 390)):
+            for width, height in ((1366, 768), (1280, 720), (1280, 800), (390, 844), (844, 390)):
                 self.page.set_viewport_size({'width': width, 'height': height})
                 for container, body, pins, max_height in (
                     ('#pinGrid', '.chip-middle', '.pin', 132),
-                    ('#ramChip', '.ram-chip-body', '[data-chip-line]', 260),
+                    ('#ramChip', '.ram-chip-body', '[data-chip-line]', 194),
                 ):
                     geometry = self.page.locator(container).evaluate("""(chip, args) => {
                         const body = chip.querySelector(args.body).getBoundingClientRect();
@@ -546,12 +546,17 @@ class BrowserLogicTests(unittest.TestCase):
                             }),
                             shortLegs: [...chip.querySelectorAll('.chip-wire')].every(e =>
                                 e.getBoundingClientRect().width <= 20),
+                            targets: [...chip.querySelectorAll(args.pins)].every(e => {
+                                const r = e.getBoundingClientRect();
+                                return r.width >= 24 && r.height >= 24;
+                            }),
                             count: chip.querySelectorAll(args.pins).length
                         };
                     }""", {'body': body, 'pins': pins})
                     self.assertLessEqual(geometry['height'], max_height)
                     self.assertTrue(geometry['labelsInside'], (scheme, width, container))
                     self.assertTrue(geometry['shortLegs'])
+                    self.assertTrue(geometry['targets'], (scheme, width, container))
                     self.assertEqual(geometry['count'], 8 if container == '#pinGrid' else 15)
         self.page.locator('#vramMode').select_option('bridge')
         self.page.locator('.pin').nth(0).click()
@@ -664,7 +669,7 @@ class BrowserLogicTests(unittest.TestCase):
         payload=self.export_payload()
         self.assertEqual(payload['schemaVersion'],1)
         self.assertEqual(payload['build'],expected)
-        self.assertEqual(payload['modelVersion'],'0.2.7-experimental')
+        self.assertEqual(payload['modelVersion'],'0.2.8-experimental')
         self.assertEqual(payload['rom']['sha256'],hashlib.sha256(rom).hexdigest())
         self.assertEqual(payload['logicFault']['kind'],'address')
         self.assertTrue(payload['faultActive'])
@@ -673,21 +678,21 @@ class BrowserLogicTests(unittest.TestCase):
 
     @staticmethod
     def valid_build_info():
-        return {'application':'VRAMpage MD','application_version':'0.2.7',
+        return {'application':'VRAMpage MD','application_version':'0.2.8',
                 'source_commit':'a'*40,'package_format':1}
 
     def test_export_provenance_valid_and_filters_unknown_fields(self):
         info=self.valid_build_info()
         info.update({'token':'must-not-be-exported','private':{'secret':'ignore'}})
         self.page=self.new_page(build_info=info)
-        payload=self.assert_build_export({'status':'available','applicationVersion':'0.2.7','sourceCommit':'a'*40})
+        payload=self.assert_build_export({'status':'available','applicationVersion':'0.2.8','sourceCommit':'a'*40})
         self.assertNotIn('must-not-be-exported',json.dumps(payload))
         self.assertNotIn('private',payload['build'])
         self.page.locator('#resetBtn').click()
         self.assertEqual(self.export_payload()['build']['sourceCommit'],'a'*40)
 
     def test_export_provenance_missing(self):
-        self.assert_build_export({'status':'unavailable','applicationVersion':'0.2.7','sourceCommit':None})
+        self.assert_build_export({'status':'unavailable','applicationVersion':'0.2.8','sourceCommit':None})
 
     def test_export_provenance_malformed(self):
         for malformed in ('{broken', 'null', [], self.valid_build_info() | {'source_commit':'A'*40},
@@ -695,18 +700,18 @@ class BrowserLogicTests(unittest.TestCase):
                           self.valid_build_info() | {'package_format':'1'}):
             with self.subTest(metadata=malformed):
                 self.page=self.new_page(build_info=malformed)
-                self.assert_build_export({'status':'unavailable','applicationVersion':'0.2.7','sourceCommit':None})
+                self.assert_build_export({'status':'unavailable','applicationVersion':'0.2.8','sourceCommit':None})
 
     def test_export_provenance_mismatched_application_or_version(self):
         for mismatch in ({'application':'Other app'},{'application_version':'0.2.5'},
                          {'package_format':2}):
             with self.subTest(metadata=mismatch):
                 self.page=self.new_page(build_info=self.valid_build_info() | mismatch)
-                self.assert_build_export({'status':'unavailable','applicationVersion':'0.2.7','sourceCommit':None})
+                self.assert_build_export({'status':'unavailable','applicationVersion':'0.2.8','sourceCommit':None})
 
     def test_export_provenance_timeout_never_blocks_play_or_export(self):
         self.page=self.new_page(stalled_build_info=True)
-        self.assert_build_export({'status':'unavailable','applicationVersion':'0.2.7','sourceCommit':None})
+        self.assert_build_export({'status':'unavailable','applicationVersion':'0.2.8','sourceCommit':None})
         self.assertEqual(self.page.evaluate('window.__buildInfoRequests'),1)
         self.assertEqual(self.page.evaluate('window.__buildInfoOptions'),{'credentials':'omit','cache':'no-store'})
         self.assertGreater(self.page.evaluate('mockCore.ticks'),0)
@@ -724,7 +729,7 @@ class BrowserLogicTests(unittest.TestCase):
             self.page.locator("#logicExperimentBtn").click()
         download = download_info.value
         payload = json.loads(Path(download.path()).read_text())
-        self.assertEqual(payload["modelVersion"], "0.2.7-experimental")
+        self.assertEqual(payload["modelVersion"], "0.2.8-experimental")
         self.assertEqual(payload["rom"]["name"], "synthetic-test.bin")
         self.assertEqual(payload["rom"]["sha256"], hashlib.sha256(rom).hexdigest())
         self.assertNotIn("bytes", payload["rom"])

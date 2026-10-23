@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.2.8 CI provisioning repair
+
+- Use the standard signed Ubuntu package mirror for browser system libraries after repeated slow Azure-mirror downloads.
+- Bound idle transfers, retries and setup time while retaining pinned browsers, dependency lists and all required tests.
+
+## v0.2.8 - compact work-RAM chip layout
+
+- Reduce the work-RAM chip height to fit more comfortably in a 13-inch MacBook
+  Air browser window. Keep labels inside the body, short legs, crosses and
+  keyboard operation intact. The VRAM chip keeps its existing dimensions.
+- Add synthetic browser layout checks at 1280×720 and 1280×800 alongside the
+  existing 1366×768 viewport. These checks do not represent native Mac testing.
+
 ## Post-v0.2.7 VDP access integration
 
 - Add a developer-only transaction path for Mode 5 CPU/Z80 ports and VRAM DMA endpoints, preserving legacy frame-scoped behavior by default.

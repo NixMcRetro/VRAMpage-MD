@@ -4,7 +4,7 @@ VRAMpage MD is a browser-based NTSC Mega Drive/Genesis experiment. It runs a loc
 
 ## Start here
 
-**[Download the complete v0.2.7 Mac app](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.7/VRAMpage-MD-v0.2.7-macos.zip)**,
+**[Download the complete v0.2.8 Mac app](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.8/VRAMpage-MD-v0.2.8-macos.zip)**,
 extract it and open START.command. See [Run locally](RUNNING-LOCALLY.md) for Python
 and macOS launch help. The work-RAM controls are implemented and experimental;
 older standalone-model descriptions are historical development records.

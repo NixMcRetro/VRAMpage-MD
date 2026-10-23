@@ -91,7 +91,10 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-v1-ubuntu-24.04-${{ runner.os }}-${{ runner.arch }}-chromium-${{ hashFiles('tests/requirements-browser.txt') }}
       - name: Install system dependencies
-        run: python3 -m playwright install-deps chromium
+        timeout-minutes: 6
+        run: |
+          bash scripts/prepare-browser-deps.sh
+          python3 -m playwright install-deps chromium
       - name: Ensure pinned browser binaries
         run: python3 -m playwright install chromium
       - name: Save pinned browser binaries
@@ -111,13 +114,13 @@ jobs:
           find release/vrampage -type d -name '__pycache__' -prune -exec rm -rf '{}' +
           tar -czf release/VRAMpage-MD-static-site.tar.gz -C release vrampage
       - name: Package local review app with launcher
-        run: python3 scripts/package-review.py --output release/VRAMpage-MD-v0.2.7-macos.zip
+        run: python3 scripts/package-review.py --output release/VRAMpage-MD-v0.2.8-macos.zip
       - name: Upload ready-to-run local review app
         uses: actions/upload-artifact@v4
         with:
           name: VRAMpage-MD-local-review
           retention-days: 30
-          path: release/VRAMpage-MD-v0.2.7-macos.zip
+          path: release/VRAMpage-MD-v0.2.8-macos.zip
           if-no-files-found: error
       - name: Upload release bundle for manual McRetro staging
         uses: actions/upload-artifact@v4
