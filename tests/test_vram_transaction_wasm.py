@@ -64,13 +64,18 @@ def stage_source(vendor: Path, target: Path):
         raise AssertionError("partial transaction bridge marker was accepted")
 
 
-def build(staged: Path, diagnostic: bool, alt_renderer: bool = False):
+def build(staged: Path, diagnostic: bool, alt_renderer: bool = False, runtime: bool = False):
     cmake = staged / "CMakeLists.txt"
     text = cmake.read_text()
     anchor = "add_executable(${PROJECT_NAME} ${SOURCE_FILES})"
     flags = ['add_compile_flags(LD "-sEXPORTED_RUNTIME_METHODS=HEAPU8,HEAPF32")']
     if diagnostic:
         flags.insert(0, 'add_compile_flags(C "-DVRAM_TX_DIAGNOSTIC")')
+        runtime = True
+    if runtime:
+        flags.insert(0, 'add_compile_flags(C "-DVRAM_TX_RUNTIME")')
+        api_js = ROOT / "scripts/vram_transaction_api.js"
+        flags.insert(0, f'add_compile_flags(LD "--pre-js={api_js}")')
     if alt_renderer:
         flags.insert(0, 'add_compile_flags(C "-DALT_RENDERER")')
     if all(flag in text for flag in flags):
@@ -85,6 +90,40 @@ def build(staged: Path, diagnostic: bool, alt_renderer: bool = False):
              "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"], stdout=subprocess.DEVNULL)
     command(["emmake", "make", "-C", str(build_dir), "-j2"], stdout=subprocess.DEVNULL)
     return staged / "src/main/js/genplus.js"
+
+
+def test_previous_diagnostic_build_upgrades(vendor: Path, target: Path):
+    stage_source(vendor, target)
+    expected = {}
+    touched = (
+        "src/main/c/wasm/wasm.c", "src/main/c/core/vdp_ctrl.c",
+        "src/main/c/core/vdp_render.c",
+    )
+    for name in touched:
+        expected[name] = (target / name).read_bytes()
+
+    dma = target / "src/main/c/core/vdp_ctrl.c"
+    source = dma.read_text()
+    new_guard = "#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)"
+    old_guard = "#ifdef VRAM_TX_DIAGNOSTIC"
+    source = source.replace(new_guard, old_guard)
+    dma.write_text(source)
+    wasm = target / "src/main/c/wasm/wasm.c"
+    source = wasm.read_text().replace(
+        new_guard + '\n#include "vram_transaction.c"\n#endif',
+        old_guard + '\n#include "vram_transaction.c"\n#endif')
+    wasm.write_text(source)
+    render = target / "src/main/c/core/vdp_render.c"
+    source = render.read_text().replace(new_guard + "\n#include \"vram_transaction_render.h\"",
+                                        old_guard + "\n#include \"vram_transaction_render.h\"")
+    render.write_text(source)
+
+    command([os.environ.get("PYTHON", "python3"), str(ROOT / "scripts/patch_core.py"), str(target)])
+    if expected != {name: (target / name).read_bytes() for name in touched}:
+        raise AssertionError("prior diagnostic-only patched source did not upgrade to runtime guards")
+    command([os.environ.get("PYTHON", "python3"), str(ROOT / "scripts/patch_core.py"), str(target)])
+    if expected != {name: (target / name).read_bytes() for name in touched}:
+        raise AssertionError("upgraded prior patched source is not idempotent")
 
 
 class VramTransactionWasm(unittest.TestCase):
@@ -107,18 +146,21 @@ class VramTransactionWasm(unittest.TestCase):
         else:
             cls.temp = tempfile.TemporaryDirectory(prefix="vram-tx-wasm-")
             root = Path(cls.temp.name)
-        normal_source, diagnostic_source, alt_source, baseline_source = (
-            root / "normal", root / "diagnostic", root / "diagnostic-alt",
-            root / "baseline")
+        normal_source, runtime_source, diagnostic_source, alt_source, baseline_source = (
+            root / "normal", root / "runtime", root / "diagnostic",
+            root / "diagnostic-alt", root / "baseline")
         stage_source(vendor, normal_source)
+        stage_source(vendor, runtime_source)
         stage_source(vendor, diagnostic_source)
         stage_source(vendor, alt_source)
         stage_source(vendor, baseline_source)
+        test_previous_diagnostic_build_upgrades(vendor, root / "previous-diagnostic")
         original_render = subprocess.check_output([
             "git", "-C", str(vendor), "show",
             f"{PIN}:src/main/c/core/vdp_render.c"])
         (baseline_source / "src/main/c/core/vdp_render.c").write_bytes(original_render)
         cls.normal_js = build(normal_source, diagnostic=False)
+        cls.runtime_js = build(runtime_source, diagnostic=False, runtime=True)
         cls.diagnostic_js = build(diagnostic_source, diagnostic=True)
         cls.diagnostic_alt_js = build(alt_source, diagnostic=True, alt_renderer=True)
         cls.baseline_js = build(baseline_source, diagnostic=False)
@@ -136,6 +178,8 @@ class VramTransactionWasm(unittest.TestCase):
                  "tests.test_vram_renderer_patch", "-v"], env=env)
         command(["node", str(ROOT / "tests/test_vram_transaction_wasm.cjs"),
                  str(self.diagnostic_js), str(self.normal_js)])
+        command(["node", str(ROOT / "tests/test_vram_transaction_public_api.cjs"),
+                 str(self.runtime_js), str(self.normal_js), str(self.diagnostic_js)])
         command(["node", str(ROOT / "tests/test_vram_renderer_visible.cjs"),
                  str(self.baseline_js), str(self.normal_js), str(self.diagnostic_js),
                  str(self.diagnostic_alt_js)])
