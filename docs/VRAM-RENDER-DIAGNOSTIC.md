@@ -92,8 +92,8 @@ standard and alternate builds. This validates the selected software policy only.
 The full routing checkpoint passed 89 Python tests without skips and the existing
 JavaScript/native suites with normal leak detection. Later visible and SAT
 fixtures passed fresh normal, diagnostic, alternate and original-renderer WASM
-builds. Final integrated regression and the fixed performance gate remain required
-before merge. A preliminary fixed-tick benchmark preflight independently passed
+builds. The final corrected integration passes the 91-test suite and fixed performance
+gate recorded below; required PR CI still precedes merge. A preliminary fixed-tick benchmark preflight independently passed
 whole-state equivalence, CPU-loop progress and active mapped DMA writes. A
 preflight is not a timing result.
 
@@ -183,3 +183,31 @@ regressions with normal leak detection. Actual-core Chromium also passed using
 the fresh normal artifact. This establishes correctness checks for the candidate,
 not its performance. A new complete measurement must retain the same fixed
 protocol and threshold, with the failed first record preserved unchanged.
+
+## Corrected measured performance result: passed
+
+The separately recorded [second summary](experiments/2026-10-23-vram-renderer-performance-v2-summary.json)
+and [complete compressed raw record](experiments/2026-10-23-vram-renderer-performance-v2.json.gz)
+measure corrected integrated source `10ad51265d500af2f8286343b8a00ebd53af9a47`.
+The protocol, workload, five pairs, 30-second duration, order and threshold are
+unchanged. This is a fresh measurement after the reviewed code correction, not
+a retry of unchanged code. All 25 runs and every raw frame duration are retained;
+the failed first record remains unchanged. Source/tree and artifact hashes stayed
+stable across measurement. Fixed-tick whole-state equivalence and DMA progress
+also passed.
+
+| Variant | Median of paired median ratios | Median of paired p95 ratios | Gate |
+|---|---:|---:|---|
+| New normal | 0.97916 | 1.02621 | Pass |
+| Diagnostic off | 1.01238 | 1.02881 | Pass |
+| Selected identity | 1.00991 | 1.03866 | Pass |
+
+Both statistics are below 1.05 for every no-fault variant. Active AD3 is
+descriptive only, approximately 2.32 times baseline median and 2.20 times p95
+on this synthetic workload; it is not a no-overhead fault guarantee.
+
+The uncompressed second record is 33,043,267 bytes with SHA-256
+`b680ec95b6046f244703aa09022332953a366e176b3622eb8318d61b367ab057`.
+The compressed file is a lossless representation. Independent statistics and
+provenance review and required CI remain explicit merge gates. These results
+apply to this cloud host and synthetic workload, not native Mac performance.

@@ -796,3 +796,10 @@ six patch tests against its already-patched vendor and actual-core Chromium also
 passed. The fixed performance gate nevertheless failed: see the immutable
 [raw measurements and exact failing statistics](VRAM-RENDER-DIAGNOSTIC.md#first-measured-performance-result-failed).
 No renderer merge or performance acceptance is claimed.
+
+After the reviewed inactive-guard correction, all 91 tests and fresh normal
+actual-core Chromium passed. A separate second complete 25-run benchmark passed
+the unchanged five-pair performance gate for normal, diagnostic-off and identity.
+Both complete records and compact summaries are retained in
+[the renderer verification record](VRAM-RENDER-DIAGNOSTIC.md). The first failure
+was not removed or reinterpreted. Required CI and independent audit precede merge.
