@@ -626,6 +626,10 @@ command still runs to ensure the requested revision is present; a cache hit
 normally makes this a local check. System dependencies install in a separate
 step on every fresh runner and are not persisted by this browser cache.
 
+The package job also checks CMake, Python, Git and Make before invoking apt.
+If all four are present, it reports their versions and uses them; otherwise it
+installs the missing tools. This avoids a redundant apt update on prepared runners.
+
 No browser tests or system dependency checks are skipped. Python package caches
 also cover both workflows. GitHub cache scope/eviction rules still apply:
 pull-request caches are scoped to their merge ref, and main fills its own cache

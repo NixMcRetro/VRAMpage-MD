@@ -17,10 +17,23 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
-      - name: Install build dependencies
+      - name: Ensure build dependencies
+        shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake python3 git make
+          task_missing_packages=()
+          for task_tool in cmake python3 git make; do
+            if ! command -v "$task_tool" >/dev/null 2>&1; then
+              task_missing_packages+=("$task_tool")
+            fi
+          done
+          if ((${#task_missing_packages[@]})); then
+            sudo apt-get update
+            sudo apt-get install -y "${task_missing_packages[@]}"
+          fi
+          cmake --version
+          python3 --version
+          git --version
+          make --version
       - name: Install Emscripten
         shell: bash
         run: |
