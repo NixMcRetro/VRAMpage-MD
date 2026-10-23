@@ -72,6 +72,30 @@ function visibleCartridge(scrollPixels = 0, options = {}) {
   words.forEach((w, i) => view.setUint16(0x200 + i * 2, w));
   return rom;
 }
+function satCartridge() {
+  const rom = new Uint8Array(0x80000), view = new DataView(rom.buffer);
+  for (let o = 0; o < 0x100; o += 4) view.setUint32(o, 0x300);
+  view.setUint32(0, 0xffff00); view.setUint32(4, 0x200);
+  rom.set(Buffer.from('SEGA MEGA DRIVE '), 0x100);
+  view.setUint32(0x1a4, rom.length - 1); view.setUint32(0x1a8, 0xff0000); view.setUint32(0x1ac, 0xffffff);
+  const words = [];
+  words.push(...vdpRegister(1, 0x34), ...vdpRegister(2, 0x38), ...vdpRegister(4, 7),
+    ...vdpRegister(5, 0x44), ...vdpRegister(7, 0), ...vdpRegister(11, 0),
+    ...vdpRegister(12, 0x81), ...vdpRegister(13, 0x3f), ...vdpRegister(15, 2));
+  words.push(...vdpCram(0, [0x000e, 0x00e0, 0x0e00, 0x0eee]));
+  words.push(...vdpData(0x0000, Array(16).fill(0)));
+  words.push(...vdpData(0x2000, Array(16).fill(0x1111)));
+  words.push(...vdpData(0x2020, Array(16).fill(0x1111)));
+  words.push(...vdpData(0x2040, Array(16).fill(0x3333)));
+  words.push(...vdpData(0xe000, [0x0100, 0x0101, 0x0102, ...Array(29).fill(0)]));
+  // Raw VRAM entry 0 deliberately conflicts with the internal SAT values set
+  // by the diagnostic bridge: Y=511, height=32/link=1, attr=tile256, X=288.
+  words.push(...vdpData(0x8800, [0x01ff, 0x0301, 0x0100, 0x0120,
+    0x01ff, 0x0000, 0x0102, 0x0140, ...Array(24).fill(0)]));
+  words.push(...vdpRegister(1, 0x74), 0x4e72, 0x2700, 0x60fe);
+  words.forEach((word, i) => view.setUint16(0x200 + i * 2, word));
+  return rom;
+}
 async function makeCore({p, f}, rom) {
   const c = await f({locateFile: name => path.join(path.dirname(p), name)});
   c._init(); c.HEAPU8.set(rom, c._get_rom_buffer_ref(rom.length)); c._start();
@@ -116,6 +140,21 @@ function equivalent(actual, expected, label) {
   assert.equal(actual.cpuFlags, expected.cpuFlags, `${label}: CPU flags`);
 }
 function nextFrame(c) { c._wasm_input_update(); c._tick(); return observable(c, c._sound()); }
+async function satFrame(entry, mask, y = 0x00a0, sizeLink = 0, secondY = 0x01ff) {
+  const c = await makeCore(entry, satCartridge());
+  for (let t = 0; t < 5; t++) nextFrame(c);
+  const model = mask === 0 ? 0 : 2;
+  assert.equal(c._set_vram_transaction_diagnostic(model, mask, -1, -1), 0,
+    'SAT fixture transaction selection succeeds');
+  // Logical writes set q[0]=Y, q[1]=size/link and a second-entry Y. The SAT
+  // mixed-source policy keeps these fields internal while attr/X route VRAM.
+  const setSatWord = (address, value) => {
+    c._set_vram_tx_test_sat_physical_byte(address, (value >>> 8) & 0xff);
+    c._set_vram_tx_test_sat_physical_byte(address + 1, value & 0xff);
+  };
+  setSatWord(0, y); setSatWord(2, sizeLink); setSatWord(8, secondY); setSatWord(10, 0);
+  return nextFrame(c).frame;
+}
 async function main() {
   const [baselinePath, normalPath, diagnosticPath, altDiagnosticPath] = process.argv.slice(2);
   if (!diagnosticPath) throw new Error('Pass PR36 baseline, current normal, and diagnostic core paths.');
@@ -207,6 +246,38 @@ async function main() {
   const opaquePixels = Array.from({length: 640 * 480}, (_, i) => baseline.state.frame[i * 4 + 3])
     .filter(alpha => alpha === 255).length;
   assert.ok(opaquePixels > 70000, 'display-enabled scene produces a full visible plane');
+
+  // Bounded digital SAT policy check: internal Y/size/link feed q[], while
+  // attr/X are read from mapped VRAM. This does not claim electrical SAT
+  // capture ordering on physical hardware.
+  for (const entry of [diagnosticEntry, altEntry]) {
+    if (!entry) continue;
+    const rawX = await satFrame(entry, 0);
+    assert.deepEqual(pixel(rawX, 160, 32), [0, 34, 0, 255],
+      'internal Y schedules the sprite and unmapped VRAM X=0x120 renders at x=160');
+    assert.deepEqual(pixel(rawX, 128, 32), [34, 0, 0, 255]);
+
+    const mappedX = await satFrame(entry, 2);
+    assert.deepEqual(pixel(mappedX, 128, 32), [0, 34, 0, 255],
+      'AD1 aliases X word 0x8806 to mapped attr word 0x8804, producing X=0x100');
+    assert.deepEqual(pixel(mappedX, 160, 32), [34, 0, 0, 255]);
+    assert.deepEqual(pixel(mappedX, 128, 31), [34, 0, 0, 255],
+      'internal Y=0xa0 begins output on line32');
+    assert.deepEqual(pixel(mappedX, 128, 40), [34, 0, 0, 255],
+      'internal size/link word zero limits sprite height to eight pixels');
+
+    const internalYOffscreen = await satFrame(entry, 2, 0x01ff);
+    assert.deepEqual(pixel(internalYOffscreen, 128, 32), [34, 0, 0, 255],
+      'internal Y overrides raw VRAM Y=0x1ff and suppresses the candidate sprite');
+
+    const internalLink = await satFrame(entry, 2, 0x00a0, 0, 0x00a0);
+    assert.deepEqual(pixel(internalLink, 192, 32), [34, 0, 0, 255],
+      'internal link zero terminates before raw VRAM entry1 at x=192');
+
+    const internalHeight = await satFrame(entry, 2, 0x00a0, 0x0300);
+    assert.deepEqual(pixel(internalHeight, 128, 40), [0, 34, 0, 255],
+      'internal size bits extend the mapped sprite to height32');
+  }
 
   const identity = await runScene(diagnosticEntry, rom, 4);
   assert.equal(identity.c._set_vram_transaction_diagnostic(2, 0, -1, -1), 0,
