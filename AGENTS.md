@@ -47,6 +47,8 @@ commit before repeating an investigation. Read relevant sections of long history
 and logs; do not repeatedly dump unchanged documents or tool instructions.
 Give workers bounded objectives, files and acceptance criteria with only the
 context they need. Avoid duplicated investigation and unnecessary workers.
+Use `followup_task` to restart a completed worker; `send_message` alone only
+queues context and does not start another turn.
 
 Batch related source, test and Markdown edits before pushing. Use focused checks
 while iterating, then run the full applicable suite on the final source. Repeat

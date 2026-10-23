@@ -66,3 +66,4 @@ v0.2.7 includes an optional, default-disabled metadata-only RAM write trace for 
 - [VBlank store origin](VBLANK-STORE-ORIGIN.md): isolated diagnostic build, CPU provenance tests and bounded write classification.
 - [VBlank wait/release sequence](VBLANK-WAIT-SEQUENCE.md): bounded actual-bus flag and instruction observations following the one-write alias.
 - [Object-memory alias candidate](RAM-GAMEPLAY-CANDIDATE.md): predefined phase-aligned gameplay experiment, outcomes and limits.
+- [Eight-write status follow-up](RAM-STATUS-FOLLOWUP.md): separately predefined object-memory trial using the same core, timing and success criteria.

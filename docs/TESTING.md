@@ -676,3 +676,15 @@ for portable positive and separate hash-rejection cases. The candidate wrapper
 still rejects those files against its strict real public pin. Clean-tree tests
 require no ignored emulator assets. This test-only correction does not alter
 the executed observer sources or rewrite the historical experiment record.
+
+
+## Eight-write status follow-up
+
+The [separately defined follow-up](RAM-STATUS-FOLLOWUP.md) reuses the tested
+comparison/report driver. New tests lock the eight-write settings and six-trial
+order, distinguish a valid negative from a bounded positive, independently reject
+a one-write release under the eight-write protocol, and check output excludes
+full timelines. Source-identity tests use an isolated temporary Git repository
+to test both clean and dirty dependency scopes without relying on the current
+checkout state or generated emulator assets. The CLI entry point also checks
+invalid arguments. Actual cartridge results are recorded separately.

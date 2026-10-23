@@ -5,8 +5,8 @@ Verified on 23 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
-Verified integration base: `f4cf8d279c92df4d55266cc0c63d4dc958513230` (PR #31).
-[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39898869974)
+Verified integration base: `f18b1b2f698b5ca39ab686fb7f4eefb58e7d5b3c` (PR #32).
+[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39908628359)
 passed source, Chromium, Firefox, WebKit and actual-core/package checks.
 Playwright caches are primed on main; normal application/release remains v0.2.7.
 The first affected write is identified at PC `$B46`; bounded actual-bus evidence

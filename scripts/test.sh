@@ -22,6 +22,8 @@ node --check tests/test_vblank_wait_wasm.cjs
 node tests/test_vblank_wait_runner.cjs
 node --check scripts/observe-ram-gameplay-candidate.cjs
 node tests/test_ram_gameplay_candidate.cjs
+node --check scripts/observe-ram-status-followup.cjs
+node tests/test_ram_status_followup.cjs
 cc -std=c11 -O2 -Wall -Wextra -Werror tests/fault_engine_smoke.c -o /tmp/vrambender_fault_smoke
 /tmp/vrambender_fault_smoke
 cc -std=c11 -O2 -Wall -Wextra -Werror \
