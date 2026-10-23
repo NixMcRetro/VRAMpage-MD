@@ -49,9 +49,7 @@ function classifyFirstWrite(record, candidate = CANDIDATE) {
     originalEnd <= SOURCE_LAYOUT.objectEndExclusive;
   const expectedMappedRegion = record.mapped_offset >= SOURCE_LAYOUT.preObjectBufferStart &&
     mappedEnd <= SOURCE_LAYOUT.preObjectBufferEndExclusive;
-  const sourceTraceValid = record.reason === 1 && record.frame === CANDIDATE.faultTick - 1 &&
-    [1, 2].includes(width) && record.cpu_address >= 0xe00000 && record.cpu_address <= 0xffffff &&
-    record.ram_offset === (record.cpu_address & 0xffff);
+  const sourceTraceValid = validTraceMetadata(record, candidate);
   const accepted = sourceTraceValid && objectWrite && expectedMappedRegion && exactMap;
   return {accepted, reason: accepted ? null : 'first-write-outside-source-backed-object-alias',
     objectWrite, originalObjectOverlap, mappedObjectOverlap,
@@ -68,9 +66,16 @@ function classifyFirstWrite(record, candidate = CANDIDATE) {
 }
 
 function validTraceMetadata(record, candidate = CANDIDATE) {
-  return Boolean(record && record.reason === 1 && record.frame === candidate.faultTick - 1 &&
-    [1, 2].includes(record.width) && record.cpu_address >= 0xe00000 && record.cpu_address <= 0xffffff &&
-    record.ram_offset === (record.cpu_address & 0xffff) && record.mapped_offset <= 0xffff);
+  if (!record || !['cpu_address', 'ram_offset', 'mapped_offset', 'width', 'frame', 'reason']
+    .every(key => Number.isInteger(record[key]))) return false;
+  const {cpu_address: cpuAddress, ram_offset: original, mapped_offset: mapped, width} = record;
+  if (record.reason !== 1 || record.frame !== candidate.faultTick - 1 || ![1, 2].includes(width) ||
+      cpuAddress < 0xe00000 || cpuAddress > 0xffffff || original < 0 || original > 0xffff ||
+      mapped < 0 || mapped > 0xffff || original !== (cpuAddress & 0xffff) ||
+      original + width > 0x10000 || mapped + width > 0x10000 ||
+      mapped === original ||
+      (width === 2 && ((original | mapped) & 1) !== 0)) return false;
+  return mapped === mapWordAddressPair(original, candidate.lineA, candidate.lineB);
 }
 
 function positionDivergenceByLag(baselineTimeline, candidateTimeline, phaseRows) {
@@ -317,6 +322,6 @@ if (require.main === module) main(process.argv.slice(2)).catch(error => {
   process.stderr.write(`${error.message}\n`); process.exitCode = 1;
 });
 
-module.exports = {CANDIDATE, SOURCE_LAYOUT, mapWordAddressPair, classifyFirstWrite,
+module.exports = {CANDIDATE, SOURCE_LAYOUT, mapWordAddressPair, validTraceMetadata, classifyFirstWrite,
   positionDivergenceByLag, hasBoundedTrajectoryDivergence, compareCandidateRuns,
   protocolAcceptance, serializeCandidateRuns, buildCandidateReport, verifyPackage, sourceIdentity};

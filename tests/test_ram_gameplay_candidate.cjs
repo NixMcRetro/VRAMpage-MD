@@ -89,6 +89,17 @@ function makeCore() {
   assert.equal(candidate.mapWordAddressPair(0xd008, 11, 12), 0xc008);
   assert.equal(candidate.mapWordAddressPair(0xf62a, 11, 12), 0xf62a);
   assert.equal(candidate.mapWordAddressPair(0xfffe, 11, 12), 0xfffe);
+  assert.equal(candidate.validTraceMetadata(writeTrace()), true);
+  const unrelatedGenericWrite = writeTrace({cpu_address: 0xff9000, ram_offset: 0x9000, mapped_offset: 0x8000});
+  assert.equal(candidate.validTraceMetadata(unrelatedGenericWrite), true);
+  for (const invalidTrace of [
+    writeTrace({mapped_offset: 0xd008}),
+    writeTrace({mapped_offset: 0xd008, width: 1}),
+    writeTrace({cpu_address: 0xffd009, ram_offset: 0xd009, mapped_offset: 0xc009}),
+    writeTrace({cpu_address: 0xffffff, ram_offset: 0xffff, mapped_offset: 0xffff, width: 2}),
+    writeTrace({mapped_offset: 0x10000}),
+    writeTrace({cpu_address: 0xffd008 + 0.5})
+  ]) assert.equal(candidate.validTraceMetadata(invalidTrace), false);
   const classified = candidate.classifyFirstWrite(writeTrace());
   assert.equal(classified.accepted, true);
   assert.equal(classified.originalPlayerKinematicFieldOverlap, true);
@@ -117,6 +128,9 @@ function makeCore() {
   assert.equal(trial.safety.cpuNonzeroTicks, 0);
   assert.equal(trial.safety.demoActiveTicks, 599);
   assert.equal(trial.safety.postFaultCursorValueChanges, 598);
+  const legacyCore = makeCore().core;
+  await assert.rejects(observer.runTrial(async () => legacyCore, Buffer.from([1]), 'A10A11-one-write'),
+    /Core API missing _set_logic_fault/);
   tests++;
 
   const ticks = [];
@@ -222,8 +236,20 @@ function makeCore() {
     assert.equal(report.protocolAcceptance.accepted, true, testCase.name);
     assert.equal(report.scientificOutcome.boundedTrajectoryDivergenceObserved, false, testCase.name);
     if (testCase.name === 'hypothesis-miss') assert.equal(report.scientificOutcome.sourceHypothesisMatches, false);
+    if (testCase.name === 'hypothesis-miss') {
+      assert.equal(candidate.validTraceMetadata(testCase.write), true);
+      assert.equal(report.protocolAcceptance.checks.candidateTraceMetadataValid, true);
+    }
     if (testCase.name === 'freeze') assert.equal(report.scientificOutcome.safety.accepted, false);
   }
+  const wrongMapRuns = await candidate.compareCandidateRuns(null, null, spec,
+    async (_factory, _rom, scenario, enabled) => ({
+      trial: createTrial(scenario, scenario !== 'baseline'),
+      firstAffectedWrite: enabled && scenario !== 'baseline' ? writeTrace({mapped_offset: 0xd008}) : null
+    }));
+  const wrongMapReport = candidate.buildCandidateReport(wrongMapRuns, sourceCheck);
+  assert.equal(wrongMapReport.protocolAcceptance.accepted, false);
+  assert.equal(wrongMapReport.scientificOutcome.boundedTrajectoryDivergenceObserved, false);
   const invalidRuns = await candidate.compareCandidateRuns(null, null, spec,
     async (_factory, _rom, scenario, enabled) => ({
       trial: createTrial(scenario, scenario !== 'baseline'),

@@ -245,13 +245,15 @@ function comparePhases(baselineTimeline, candidateTimeline) {
   return results;
 }
 
-function requireCoreAPI(core, scenario, configuredWritePulse = false) {
+function requireCoreAPI(core, scenario, {configuredEntry = false, faultKind = null} = {}) {
   const names = ['_init', '_start', '_tick', '_sound', '_wasm_input_update',
     '_get_rom_buffer_ref', '_get_input_buffer_ref', '_get_frame_buffer_ref',
     '_get_logic_ram_ref', '_get_logic_frame', '_get_logic_reads', '_get_logic_writes',
     '_get_logic_cpu_flags', '_get_logic_activation_frame', '_get_logic_pulse_state'];
-  if (scenario !== 'baseline' && !configuredWritePulse) names.push('_set_logic_fault');
-  if (scenario === 'A10A11-one-write' || configuredWritePulse) names.push('_arm_logic_write_pulse');
+  if (scenario !== 'baseline' && (!configuredEntry || faultKind !== 'writePulse')) names.push('_set_logic_fault');
+  if (scenario === 'A10A11-one-write' || (configuredEntry && faultKind === 'writePulse')) {
+    names.push('_arm_logic_write_pulse');
+  }
   for (const name of names) if (typeof core[name] !== 'function') fail(`Core API missing ${name}.`);
   if (!(core.HEAPU8 instanceof Uint8Array)) fail('Core API missing HEAPU8.');
 }
@@ -282,7 +284,7 @@ async function executeTrial(coreFactory, rom, scenario, faultConfig,
                             {onTimelineSample, collectSafety = false} = {}) {
   const core = await coreFactory();
   const isWritePulse = faultConfig?.type === 'writePulse';
-  requireCoreAPI(core, scenario, isWritePulse);
+  requireCoreAPI(core, scenario, {configuredEntry: Boolean(faultConfig?.name), faultKind: faultConfig?.type});
   core._init();
   const romPointer = core._get_rom_buffer_ref(rom.length);
   if (!Number.isSafeInteger(romPointer) || romPointer <= 0 || romPointer + rom.length > core.HEAPU8.length) {
