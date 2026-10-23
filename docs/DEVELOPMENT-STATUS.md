@@ -5,12 +5,14 @@ Verified on 23 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
-Verified public main: `f1aad11f331e772e6ec786be020d54b36905c7ba` (PRs #37 and #38).
-[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39971912690)
+Verified integration base: `2b5cb4792e7d89b6ff29865049bf6fe29d9414a4` (PRs #37 through #39).
+[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39975630806)
 passed source, Chromium, Firefox, WebKit and actual-core/package checks.
 The immutable [v0.2.8 Mac package](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.8/VRAMpage-MD-v0.2.8-macos.zip)
 was published by [workflow 39972454348](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39972454348)
-from this exact commit. Its tag, manifests and checksum agree. The downloaded
+from `f1aad11f331e772e6ec786be020d54b36905c7ba`. Its tag, manifests and checksum agree.
+PR #39 subsequently aligned the release catalog and editorial links without
+rebuilding or replacing the public package; the release curator passed. The downloaded
 ZIP passed actual-core Chromium and unmocked local launcher checks, including
 clean Ctrl+C shutdown. No new native macOS validation is claimed.
 Playwright caches remain enabled. Browser OS dependencies use official Ubuntu
