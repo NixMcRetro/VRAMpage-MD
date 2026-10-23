@@ -1,0 +1,40 @@
+"""Strict and sanitizer builds for the isolated transaction helper."""
+from pathlib import Path
+import subprocess
+import tempfile
+import unittest
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+class VramTransactionHelper(unittest.TestCase):
+    def build_and_run(self, flags, prefix):
+        with tempfile.TemporaryDirectory(prefix=prefix) as temp:
+            executable = Path(temp) / "vram-transaction-smoke"
+            subprocess.run(
+                [
+                    "cc", "-std=c11", "-Wall", "-Wextra", "-Werror",
+                    "-pedantic", *flags, "-Iscripts",
+                    "scripts/vram_transaction.c",
+                    "tests/vram_transaction_smoke.c",
+                    "-o", str(executable),
+                ],
+                cwd=ROOT,
+                check=True,
+            )
+            subprocess.run([str(executable)], cwd=ROOT, check=True)
+
+    def test_strict_native_helper(self):
+        self.build_and_run(["-O2"], "vram-transaction-strict-")
+
+    def test_address_and_undefined_sanitizers(self):
+        self.build_and_run(
+            ["-O1", "-g", "-fsanitize=address,undefined",
+             "-fno-sanitize-recover=all", "-fno-omit-frame-pointer"],
+            "vram-transaction-sanitized-",
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()
