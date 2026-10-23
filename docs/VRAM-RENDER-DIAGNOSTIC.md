@@ -209,5 +209,5 @@ on this synthetic workload; it is not a no-overhead fault guarantee.
 The uncompressed second record is 33,043,267 bytes with SHA-256
 `b680ec95b6046f244703aa09022332953a366e176b3622eb8318d61b367ab057`.
 The compressed file is a lossless representation. Independent statistics and
-provenance review and required CI remain explicit merge gates. These results
+provenance review passed; required CI remains the merge gate. These results
 apply to this cloud host and synthetic workload, not native Mac performance.

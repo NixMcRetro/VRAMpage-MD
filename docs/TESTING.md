@@ -802,4 +802,4 @@ actual-core Chromium passed. A separate second complete 25-run benchmark passed
 the unchanged five-pair performance gate for normal, diagnostic-off and identity.
 Both complete records and compact summaries are retained in
 [the renderer verification record](VRAM-RENDER-DIAGNOSTIC.md). The first failure
-was not removed or reinterpreted. Required CI and independent audit precede merge.
+was not removed or reinterpreted. Independent statistics/provenance audit passed; required CI precedes merge.
