@@ -132,7 +132,7 @@ milestone packaging remain separate gates in the
 ## First measured performance result: failed
 
 The immutable [summary](experiments/2026-10-23-vram-renderer-performance-v1-summary.json)
-and [losslessly compressed complete raw record](experiments/2026-10-23-vram-renderer-performance-v1.json.gz)
+and [losslessly compressed complete raw record](https://github.com/NixMcRetro/VRAMpage-MD/blob/28c42a3a48ac376c893a1cff699d10ab02122668/docs/experiments/2026-10-23-vram-renderer-performance-v1.json.gz)
 retain all five pairs and 25 runs from source `41140b4`. Each run measured 30
 seconds. Independent review recomputed every per-run median/p95 and the paired
 gates, verified stable source/artifact provenance and found no exclusions.
@@ -187,7 +187,7 @@ protocol and threshold, with the failed first record preserved unchanged.
 ## Corrected measured performance result: passed
 
 The separately recorded [second summary](experiments/2026-10-23-vram-renderer-performance-v2-summary.json)
-and [complete compressed raw record](experiments/2026-10-23-vram-renderer-performance-v2.json.gz)
+and [complete compressed raw record](https://github.com/NixMcRetro/VRAMpage-MD/blob/28c42a3a48ac376c893a1cff699d10ab02122668/docs/experiments/2026-10-23-vram-renderer-performance-v2.json.gz)
 measure corrected integrated source `10ad51265d500af2f8286343b8a00ebd53af9a47`.
 The protocol, workload, five pairs, 30-second duration, order and threshold are
 unchanged. This is a fresh measurement after the reviewed code correction, not
@@ -211,3 +211,15 @@ The uncompressed second record is 33,043,267 bytes with SHA-256
 The compressed file is a lossless representation. Independent statistics and
 provenance review passed; required CI remains the merge gate. These results
 apply to this cloud host and synthetic workload, not native Mac performance.
+
+## Complete raw-record archive and local packages
+
+Both complete gzip records are preserved byte-for-byte at immutable commit
+`28c42a3a48ac376c893a1cff699d10ab02122668`, also retained by branch
+`evidence/vram-renderer-performance-v2`. The links above target that exact commit.
+Their recorded checksums are unchanged. They are repository evidence, not runtime
+assets. The current tree and Mac package include the readable summaries and
+these archive links rather than nested gzip files. This preserves the existing
+packager rule rejecting opaque nested archives; no archive, ROM or secret check
+was weakened. The full raw timing data remains available in the archived Git
+commit and ordinary repository history.

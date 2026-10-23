@@ -803,3 +803,10 @@ the unchanged five-pair performance gate for normal, diagnostic-off and identity
 Both complete records and compact summaries are retained in
 [the renderer verification record](VRAM-RENDER-DIAGNOSTIC.md). The first failure
 was not removed or reinterpreted. Independent statistics/provenance audit passed; required CI precedes merge.
+
+The package step initially rejected the committed timing gzip files under its
+existing opaque-archive rule. Full records are now retained at the immutable
+[archive commit](https://github.com/NixMcRetro/VRAMpage-MD/tree/28c42a3a48ac376c893a1cff699d10ab02122668/docs/experiments),
+with summaries and exact archive links in current documentation. The package
+keeps its archive/ROM/secret rejection checks unchanged. A real package build is
+required before rerunning CI; no runtime source changed for this correction.
