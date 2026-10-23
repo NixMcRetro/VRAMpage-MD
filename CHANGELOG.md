@@ -1,5 +1,11 @@
 # Changelog
 
+## Post-v0.2.7 VDP access integration
+
+- Add a developer-only transaction path for Mode 5 CPU/Z80 ports and VRAM DMA endpoints, preserving legacy frame-scoped behavior by default.
+- Access the real core VRAM store through logical-byte mapping and host-lane conversion, with bounded reverse cache bookkeeping.
+- Keep renderer mapping, public model selection, release acceptance and physical fidelity as separate unfinished work.
+
 ## Post-v0.2.7 native VRAM transaction groundwork
 
 - Define logical-byte mapping, supported-mode gating, DMA lanes and mapped sprite-table policy with explicit fidelity limits.

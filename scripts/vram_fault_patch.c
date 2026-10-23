@@ -14,6 +14,15 @@
 #include <stdint.h>
 #include <string.h>
 
+#ifdef VRAM_TX_DIAGNOSTIC
+#include "vram_transaction.h"
+#include "vram_transaction_runtime.h"
+
+static vram_tx_state_t vram_tx_diagnostic_state;
+static int vram_tx_diagnostic_initialized;
+static int vram_tx_diagnostic_is_selected;
+#endif
+
 extern uint8 vram[0x10000];
 extern uint8 bg_name_dirty[0x800];
 extern uint16 bg_name_list[0x800];
@@ -75,10 +84,147 @@ static void bend_reset(void) {
     bend_address_mask = 0;
     bend_changed_reads = bend_changed_writes = 0;
     bend_restore_cache = 1;
+#ifdef VRAM_TX_DIAGNOSTIC
+    vram_tx_diagnostic_reset();
+#endif
 }
+
+#ifdef VRAM_TX_DIAGNOSTIC
+static void vram_tx_mark_row(void *context, uint16_t row_key) {
+    unsigned pattern = row_key >> 3;
+    unsigned row = row_key & 7;
+    (void)context;
+    if (bg_name_dirty[pattern] == 0) bg_name_list[bg_list_index++] = pattern;
+    bg_name_dirty[pattern] |= (uint8)(1u << row);
+}
+
+static void vram_tx_apply_cache_invalidation(void) {
+    if (vram_tx_diagnostic_initialized &&
+        vram_tx_take_cache_invalidation(&vram_tx_diagnostic_state)) {
+        bend_force_pattern_decode();
+    }
+}
+
+int vram_tx_diagnostic_selected(void) {
+    return vram_tx_diagnostic_is_selected;
+}
+
+int vram_tx_diagnostic_effective(void) {
+    return vram_tx_diagnostic_is_selected &&
+        vram_tx_diagnostic_state.model == VRAM_TX_MODEL_LOGICAL_BYTE_TRANSACTION_V1 &&
+        vram_tx_diagnostic_state.supported_mode &&
+        vram_tx_diagnostic_state.has_fault;
+}
+
+void vram_tx_diagnostic_reset(void) {
+    if (!vram_tx_diagnostic_initialized) {
+        vram_tx_init(&vram_tx_diagnostic_state);
+        vram_tx_diagnostic_initialized = 1;
+    } else {
+        vram_tx_reconnect(&vram_tx_diagnostic_state);
+    }
+    vram_tx_diagnostic_is_selected = 0;
+    bend_a = bend_b = -1;
+    bend_address_mask = 0;
+    bend_changed_reads = bend_changed_writes = 0;
+    vram_tx_apply_cache_invalidation();
+}
+
+void vram_tx_diagnostic_legacy_override(void) {
+    if (!vram_tx_diagnostic_initialized || !vram_tx_diagnostic_is_selected) return;
+    (void)vram_tx_configure(&vram_tx_diagnostic_state, VRAM_TX_MODEL_OFF,
+                            0, -1, -1, vram_tx_diagnostic_state.supported_mode);
+    vram_tx_diagnostic_is_selected = 0;
+    vram_tx_apply_cache_invalidation();
+}
+
+int vram_tx_diagnostic_configure(int model, int mask, int bridge_a,
+                                 int bridge_b, int mode5_supported) {
+    vram_tx_status_t status;
+    if (!vram_tx_diagnostic_initialized) {
+        vram_tx_init(&vram_tx_diagnostic_state);
+        vram_tx_diagnostic_initialized = 1;
+    }
+    if (model != VRAM_TX_MODEL_OFF &&
+        model != VRAM_TX_MODEL_LOGICAL_BYTE_TRANSACTION_V1) {
+        return VRAM_TX_INVALID_ARGUMENT;
+    }
+    status = vram_tx_configure(&vram_tx_diagnostic_state,
+        (vram_tx_model_t)model, mask, bridge_a, bridge_b, mode5_supported);
+    if (status != VRAM_TX_OK) return status;
+    vram_tx_diagnostic_is_selected =
+        model == VRAM_TX_MODEL_LOGICAL_BYTE_TRANSACTION_V1;
+    bend_a = bend_b = -1;
+    bend_address_mask = 0;
+    bend_changed_reads = bend_changed_writes = 0;
+    bend_restore_cache = 1;
+    vram_tx_apply_cache_invalidation();
+    return VRAM_TX_OK;
+}
+
+void vram_tx_diagnostic_mode_changed(int mode5_supported) {
+    if (!vram_tx_diagnostic_is_selected) return;
+    (void)vram_tx_set_supported_mode(&vram_tx_diagnostic_state,
+                                     mode5_supported);
+    vram_tx_apply_cache_invalidation();
+}
+
+uint16_t vram_tx_diagnostic_resolve_read(uint32_t logical_address) {
+    if (!vram_tx_diagnostic_is_selected) return (uint16_t)logical_address;
+    return vram_tx_resolve_read(&vram_tx_diagnostic_state, logical_address, NULL);
+}
+
+uint16_t vram_tx_diagnostic_resolve_write(uint32_t logical_address) {
+    if (!vram_tx_diagnostic_is_selected) return (uint16_t)logical_address;
+    return vram_tx_resolve_write(&vram_tx_diagnostic_state, logical_address, NULL);
+}
+
+void vram_tx_diagnostic_complete_write(uint16_t physical_address,
+                                       uint8_t old_value,
+                                       uint8_t new_value) {
+    if (!vram_tx_diagnostic_is_selected) return;
+    vram_tx_complete_write(&vram_tx_diagnostic_state, physical_address,
+                           old_value, new_value);
+    if (old_value != new_value) {
+        (void)vram_tx_visit_dependencies(&vram_tx_diagnostic_state,
+            physical_address, vram_tx_mark_row, NULL);
+    }
+}
+
+uint64_t EMSCRIPTEN_KEEPALIVE get_vram_tx_counter(unsigned counter) {
+    if (!vram_tx_diagnostic_initialized || counter > 4) return 0;
+    switch (counter) {
+      case 0: return vram_tx_diagnostic_state.counters.logical_byte_reads;
+      case 1: return vram_tx_diagnostic_state.counters.logical_byte_writes;
+      case 2: return vram_tx_diagnostic_state.counters.redirected_byte_reads;
+      case 3: return vram_tx_diagnostic_state.counters.redirected_byte_writes;
+      default: return vram_tx_diagnostic_state.counters.changed_physical_byte_writes;
+    }
+}
+
+int EMSCRIPTEN_KEEPALIVE set_vram_transaction_diagnostic(
+    int model, int mask, int bridge_a, int bridge_b) {
+    int supported = (system_hw & SYSTEM_MD) && (reg[1] & 0x04);
+    return vram_tx_diagnostic_configure(model, mask, bridge_a, bridge_b,
+                                         supported);
+}
+
+/* Reads one physical VRAM offset in core byte-lane order, without remapping. */
+uint8 EMSCRIPTEN_KEEPALIVE get_vram_tx_test_physical_byte(unsigned address) {
+    return READ_BYTE(vram, address & 0xffffu);
+}
+
+uint8 EMSCRIPTEN_KEEPALIVE get_vram_tx_test_sat_byte(unsigned address) {
+    extern uint8 sat[0x400];
+    return READ_BYTE(sat, address & 0x3ffu);
+}
+#endif
 
 int EMSCRIPTEN_KEEPALIVE set_vram_address_mask(int mask) {
     if (mask < 0 || mask > 255) return 1;
+#ifdef VRAM_TX_DIAGNOSTIC
+    vram_tx_diagnostic_legacy_override();
+#endif
     bend_a = bend_b = -1;
     bend_address_mask = (unsigned int)mask;
     bend_restore_cache = 1;
@@ -90,6 +236,9 @@ unsigned int EMSCRIPTEN_KEEPALIVE get_vram_address_mask(void) {
 }
 
 void EMSCRIPTEN_KEEPALIVE set_vram_short(int a, int b) {
+#ifdef VRAM_TX_DIAGNOSTIC
+    vram_tx_diagnostic_legacy_override();
+#endif
     bend_address_mask = 0;
     if (a == b || a < 0 || b < 0 || a > 7 || b > 7) {
         bend_a = bend_b = -1;
@@ -108,6 +257,12 @@ unsigned int EMSCRIPTEN_KEEPALIVE get_vram_changed_writes(void) { return bend_ch
 static void bend_before_frame(void) {
     bend_changed_reads = 0;
     bend_changed_writes = 0;
+#ifdef VRAM_TX_DIAGNOSTIC
+    if (vram_tx_diagnostic_initialized) {
+        vram_tx_reset_frame_counters(&vram_tx_diagnostic_state);
+    }
+    if (vram_tx_diagnostic_is_selected) return;
+#endif
     if (!bend_active()) {
         if (bend_restore_cache) {
             bend_force_pattern_decode();
@@ -127,6 +282,9 @@ static void bend_before_frame(void) {
 }
 
 static void bend_after_frame(void) {
+#ifdef VRAM_TX_DIAGNOSTIC
+    if (vram_tx_diagnostic_is_selected) return;
+#endif
     if (!bend_active()) return;
     /* Reconcile changed logical bytes into the physical VRAM snapshot.
        This detects net changes, not exact individual write transactions.

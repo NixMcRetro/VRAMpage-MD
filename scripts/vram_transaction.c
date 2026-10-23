@@ -321,17 +321,78 @@ static int effective(const vram_tx_state_t *state) {
          state->supported_mode && state->has_fault;
 }
 
-uint8_t vram_tx_read_byte(vram_tx_state_t *state,
-                          uint8_t physical_bytes[VRAM_TX_BYTES],
-                          uint32_t logical_address) {
+static uint16_t resolve_address(vram_tx_state_t *state,
+                                uint32_t logical_address,
+                                int *redirected) {
   uint16_t logical = (uint16_t)(logical_address & 0xffffu);
   uint16_t physical = logical;
+  int was_redirected = 0;
   if (effective(state)) {
     physical = map_with_config(logical, state->mask,
                                state->bridge_a, state->bridge_b);
-    ++state->counters.logical_byte_reads;
-    if (physical != logical) ++state->counters.redirected_byte_reads;
+    was_redirected = physical != logical;
   }
+  if (redirected != NULL) *redirected = was_redirected;
+  return physical;
+}
+
+uint16_t vram_tx_resolve_read(vram_tx_state_t *state,
+                              uint32_t logical_address,
+                              int *redirected) {
+  uint16_t physical = resolve_address(state, logical_address, redirected);
+  if (effective(state)) {
+    ++state->counters.logical_byte_reads;
+    if (physical != (uint16_t)(logical_address & 0xffffu))
+      ++state->counters.redirected_byte_reads;
+  }
+  return physical;
+}
+
+uint16_t vram_tx_resolve_write(vram_tx_state_t *state,
+                               uint32_t logical_address,
+                               int *redirected) {
+  uint16_t physical = resolve_address(state, logical_address, redirected);
+  if (effective(state)) {
+    ++state->counters.logical_byte_writes;
+    if (physical != (uint16_t)(logical_address & 0xffffu))
+      ++state->counters.redirected_byte_writes;
+  }
+  return physical;
+}
+
+void vram_tx_complete_write(vram_tx_state_t *state,
+                            uint16_t physical_offset,
+                            uint8_t old_value,
+                            uint8_t new_value) {
+  uint32_t i;
+  if (!effective(state) || old_value == new_value) return;
+  ++state->counters.changed_physical_byte_writes;
+  for (i = state->offsets[physical_offset];
+       i < state->offsets[(uint32_t)physical_offset + 1u]; ++i) {
+    state->dirty_rows[state->row_keys[i]] = 1;
+  }
+}
+
+size_t vram_tx_visit_dependencies(vram_tx_state_t *state,
+                                  uint16_t physical_offset,
+                                  vram_tx_dependency_callback_t callback,
+                                  void *context) {
+  uint32_t i;
+  size_t count = 0;
+  if (!effective(state) || callback == NULL) return 0;
+  for (i = state->offsets[physical_offset];
+       i < state->offsets[(uint32_t)physical_offset + 1u]; ++i) {
+    uint16_t key = state->row_keys[i];
+    callback(context, key);
+    ++count;
+  }
+  return count;
+}
+
+uint8_t vram_tx_read_byte(vram_tx_state_t *state,
+                          uint8_t physical_bytes[VRAM_TX_BYTES],
+                          uint32_t logical_address) {
+  uint16_t physical = vram_tx_resolve_read(state, logical_address, NULL);
   return physical_bytes[physical];
 }
 
@@ -341,30 +402,17 @@ vram_tx_write_result_t vram_tx_write_byte(
     uint32_t logical_address,
     uint8_t value) {
   vram_tx_write_result_t result;
-  uint16_t logical = (uint16_t)(logical_address & 0xffffu);
-  result.physical_offset = logical;
-  result.redirected = 0;
-  if (effective(state)) {
-    result.physical_offset = map_with_config(logical, state->mask,
-                                             state->bridge_a, state->bridge_b);
-    result.redirected = result.physical_offset != logical;
-    ++state->counters.logical_byte_writes;
-    if (result.redirected) ++state->counters.redirected_byte_writes;
-  }
+  int redirected = 0;
+  result.physical_offset = vram_tx_resolve_write(
+      state, logical_address, &redirected);
+  result.redirected = (uint8_t)redirected;
   result.old_value = physical_bytes[result.physical_offset];
   result.new_value = value;
   result.changed = result.old_value != value;
   if (result.changed) {
     physical_bytes[result.physical_offset] = value;
-    if (effective(state)) {
-      uint32_t i;
-      ++state->counters.changed_physical_byte_writes;
-      for (i = state->offsets[result.physical_offset];
-           i < state->offsets[(uint32_t)result.physical_offset + 1u]; ++i) {
-        uint16_t key = state->row_keys[i];
-        state->dirty_rows[key] = 1;
-      }
-    }
+    vram_tx_complete_write(state, result.physical_offset,
+                           result.old_value, result.new_value);
   }
   return result;
 }

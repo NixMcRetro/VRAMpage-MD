@@ -40,6 +40,8 @@ typedef struct {
   uint8_t redirected;
 } vram_tx_write_result_t;
 
+typedef void (*vram_tx_dependency_callback_t)(void *context, uint16_t row_key);
+
 /*
  * physical_bytes passed to accessors is caller-owned canonical logical byte
  * order. The core adapter applies READ_BYTE/WRITE_BYTE host-lane conversion
@@ -94,6 +96,24 @@ vram_tx_write_result_t vram_tx_write_byte(
     uint8_t physical_bytes[VRAM_TX_BYTES],
     uint32_t logical_address,
     uint8_t value);
+
+/* Runtime adapter operations for caller-owned storage. These resolve/count
+ * an access without reading or writing storage; complete_write records the
+ * actual old/new values after the caller's single core byte-macro access. */
+uint16_t vram_tx_resolve_read(vram_tx_state_t *state,
+                              uint32_t logical_address,
+                              int *redirected);
+uint16_t vram_tx_resolve_write(vram_tx_state_t *state,
+                               uint32_t logical_address,
+                               int *redirected);
+void vram_tx_complete_write(vram_tx_state_t *state,
+                            uint16_t physical_offset,
+                            uint8_t old_value,
+                            uint8_t new_value);
+size_t vram_tx_visit_dependencies(vram_tx_state_t *state,
+                                  uint16_t physical_offset,
+                                  vram_tx_dependency_callback_t callback,
+                                  void *context);
 
 /* Returns and clears the full decoded-cache invalidation request. */
 int vram_tx_take_cache_invalidation(vram_tx_state_t *state);

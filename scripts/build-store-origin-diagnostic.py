@@ -52,7 +52,9 @@ def main():
         tar.extractall(staged, filter="data")
     helper = out / "scripts"
     helper.mkdir()
-    for name in ("patch_core.py", "vram_fault_patch.c", "work_ram_fault.c", "work_ram_fault.h", "work_ram_runtime.c", "work_ram_runtime.h"):
+    for name in ("patch_core.py", "vram_fault_patch.c", "vram_transaction.c", "vram_transaction.h",
+                 "vram_transaction_core.h", "vram_transaction_runtime.h", "work_ram_fault.c",
+                 "work_ram_fault.h", "work_ram_runtime.c", "work_ram_runtime.h"):
         shutil.copy2(repo / "scripts" / name, helper / name)
     subprocess.run([sys.executable, str(helper / "patch_core.py"), str(staged)], check=True)
 
@@ -118,7 +120,9 @@ WORK_RAM_KEEPALIVE uint32_t get_store_diag_width(void) {{ return diag_width; }}
         digest.update(file.relative_to(staged).as_posix().encode())
         digest.update(bytes.fromhex(sha(file)))
     tool_paths = ("scripts/build-store-origin-diagnostic.py", "scripts/run-store-origin-diagnostic.cjs",
-                  "scripts/patch_core.py", "scripts/vram_fault_patch.c", "scripts/work_ram_fault.c",
+                  "scripts/patch_core.py", "scripts/vram_fault_patch.c", "scripts/vram_transaction.c",
+                  "scripts/vram_transaction.h", "scripts/vram_transaction_core.h",
+                  "scripts/vram_transaction_runtime.h", "scripts/work_ram_fault.c",
                   "scripts/work_ram_fault.h", "scripts/work_ram_runtime.c", "scripts/work_ram_runtime.h",
                   "scripts/observe-attract-demo.cjs", "scripts/observe-ram-alias-audio-phase.cjs",
                   "tests/test_store_origin_diagnostic.py", "tests/test_store_origin_runner.cjs",

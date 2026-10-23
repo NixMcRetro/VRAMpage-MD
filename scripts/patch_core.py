@@ -75,6 +75,19 @@ def replace_pinned(source: str, before: str, after: str, label: str) -> str:
     return source.replace(before, after, 1)
 
 
+def replace_in_function(source: str, start: str, end: str,
+                        before: str, after: str, label: str) -> str:
+    if source.count(start) != 1 or source.count(end) != 1:
+        raise SystemExit(f'Expected pinned {label} function boundary missing or ambiguous.')
+    first = source.index(start)
+    last = source.index(end, first + len(start))
+    if last <= first:
+        raise SystemExit(f'Expected pinned {label} function range invalid.')
+    body = source[first:last]
+    body = replace_pinned(body, before, after, label)
+    return source[:first] + body + source[last:]
+
+
 def patch_m68k_cpu(source: str) -> str:
     source = replace_pinned(
         source,
@@ -181,6 +194,319 @@ def patch_dma(source: str) -> str:
         'VDP DMA work-RAM IO-window read')
 
 
+def patch_vram_transactions(source: str) -> str:
+    """Add opt-in, diagnostic-only VRAM transaction accessors to pinned VDP paths."""
+    if 'static uint16 sat_addr_mask;  /* Index bits of SAT */' not in source:
+        raise SystemExit('Expected pinned VRAM transaction adapter source anchor missing.')
+    source = replace_pinned(
+        source,
+        'static uint16 sat_addr_mask;  /* Index bits of SAT */',
+        'static uint16 sat_addr_mask;  /* Index bits of SAT */\n'
+        '#include "vram_transaction_core.h" /* diagnostic byte transaction adapter */',
+        'VRAM transaction adapter include')
+
+    before = ('      /* VRAM address */\n'
+              '      int index = addr & 0xFFFE;\n\n'
+              '      /* Pointer to VRAM */\n'
+              '      uint16 *p = (uint16 *)&vram[index];\n\n'
+              '      /* Byte-swap data if A0 is set */\n'
+              '      if (addr & 1)\n'
+              '      {\n'
+              '        data = ((data >> 8) | (data << 8)) & 0xFFFF;\n'
+              '      }\n\n'
+              '      /* Intercept writes to Sprite Attribute Table */\n'
+              '      if ((index & sat_base_mask) == satb)\n'
+              '      {\n'
+              '        /* Update internal SAT */\n'
+              '        *(uint16 *) &sat[index & sat_addr_mask] = data;\n'
+              '      }\n\n'
+              '      /* Only write unique data to VRAM */\n'
+              '      if (data != *p)\n'
+              '      {\n'
+              '        int name;\n\n'
+              '        /* Write data to VRAM */\n'
+              '        *p = data;\n\n'
+              '        /* Update pattern cache */\n'
+              '        MARK_BG_DIRTY (index);\n'
+              '      }')
+    after = ('#ifdef VRAM_TX_DIAGNOSTIC\n'
+             '      if (vram_tx_core_effective())\n'
+             '      {\n'
+             '        uint16 lanes[2];\n'
+             '        uint8 values[2];\n'
+             '        int lane;\n'
+             '        int index = addr & 0xFFFE;\n'
+             '        if (addr & 1) data = ((data >> 8) | (data << 8)) & 0xFFFF;\n'
+             '        vram_tx_word_write_lanes(index, (uint16)data, lanes, values);\n'
+             '        for (lane = 0; lane < 2; lane++)\n'
+             '        {\n'
+             '          uint16 physical = vram_tx_core_write_lane(lanes[lane], values[lane]);\n'
+             '          vram_tx_core_mirror_sat(physical, values[lane]);\n'
+             '        }\n'
+             '      }\n'
+             '      else\n'
+             '      {\n' + before + '\n'
+             '      }\n'
+             '#else\n' + before + '\n'
+             '#endif')
+    source = replace_pinned(source, before, after, '68K VDP word VRAM write')
+
+    source = replace_pinned(
+        source,
+        '      data = *(uint16 *)&vram[addr & 0xFFFE];',
+        '#ifdef VRAM_TX_DIAGNOSTIC\n'
+        '      if (vram_tx_core_effective())\n'
+        '      {\n'
+        '        uint16 index = addr & 0xFFFE;\n'
+        '        uint8 high = READ_BYTE(vram, vram_tx_core_read_address(index));\n'
+        '        uint8 low = READ_BYTE(vram, vram_tx_core_read_address(index + 1));\n'
+        '        data = vram_tx_pack_u16(high, low);\n'
+        '      }\n'
+        '      else data = *(uint16 *)&vram[addr & 0xFFFE];\n'
+        '#else\n'
+        '      data = *(uint16 *)&vram[addr & 0xFFFE];\n'
+        '#endif',
+        '68K VDP word VRAM read')
+    source = replace_in_function(
+        source,
+        'static unsigned int vdp_68k_data_r_m5(void)\n{',
+        'static void vdp_z80_data_w_m4(unsigned int data)\n{',
+        '      data = READ_BYTE(vram, addr ^ 1);',
+        '#ifdef VRAM_TX_DIAGNOSTIC\n'
+        '      data = vram_tx_core_effective() ?\n'
+        '        READ_BYTE(vram, vram_tx_core_read_address(addr ^ 1)) :\n'
+        '        READ_BYTE(vram, addr ^ 1);\n'
+        '#else\n'
+        '      data = READ_BYTE(vram, addr ^ 1);\n'
+        '#endif',
+        '68K undocumented VRAM byte read')
+
+    before = ('      /* VRAM address (write low byte to even address & high byte to odd address) */\n'
+              '      int index = addr ^ 1;\n\n'
+              '      /* Intercept writes to Sprite Attribute Table */\n'
+              '      if ((index & sat_base_mask) == satb)\n'
+              '      {\n'
+              '        /* Update internal SAT */\n'
+              '        WRITE_BYTE(sat, index & sat_addr_mask, data);\n'
+              '      }\n\n'
+              '      /* Only write unique data to VRAM */\n'
+              '      if (data != READ_BYTE(vram, index))\n'
+              '      {\n'
+              '        int name;\n\n'
+              '        /* Write data */\n'
+              '        WRITE_BYTE(vram, index, data);\n\n'
+              '        /* Update pattern cache */\n'
+              '        MARK_BG_DIRTY (index);\n'
+              '      }')
+    after = ('#ifdef VRAM_TX_DIAGNOSTIC\n'
+             '      if (vram_tx_core_effective())\n'
+             '      {\n'
+             '        uint16 index = addr ^ 1;\n'
+             '        uint16 physical = vram_tx_core_write_lane(index, (uint8)data);\n'
+             '        vram_tx_core_mirror_sat(physical, (uint8)data);\n'
+             '      }\n'
+             '      else\n'
+             '      {\n' + before + '\n'
+             '      }\n'
+             '#else\n' + before + '\n'
+             '#endif')
+    source = replace_pinned(source, before, after, 'Z80 VRAM byte write')
+    source = replace_in_function(
+        source,
+        'static unsigned int vdp_z80_data_r_m5(void)\n{',
+        'static void vdp_z80_data_w_ms(unsigned int data)\n{',
+        '      data = READ_BYTE(vram, addr ^ 1);',
+        '#ifdef VRAM_TX_DIAGNOSTIC\n'
+        '      data = vram_tx_core_effective() ?\n'
+        '        READ_BYTE(vram, vram_tx_core_read_address(addr ^ 1)) :\n'
+        '        READ_BYTE(vram, addr ^ 1);\n'
+        '#else\n'
+        '      data = READ_BYTE(vram, addr ^ 1);\n'
+        '#endif',
+        'Z80 VRAM byte read')
+
+    # Copy source lane XOR occurs before mapping. Destination XOR likewise
+    # occurs before the helper, while the host lane XOR stays in READ/WRITE_BYTE.
+    source = replace_pinned(
+        source,
+        '      data = READ_BYTE(vram, source ^ 1);',
+        '#ifdef VRAM_TX_DIAGNOSTIC\n'
+        '      data = vram_tx_core_effective() ?\n'
+        '        READ_BYTE(vram, vram_tx_core_read_address(source ^ 1)) :\n'
+        '        READ_BYTE(vram, source ^ 1);\n'
+        '#else\n'
+        '      data = READ_BYTE(vram, source ^ 1);\n'
+        '#endif',
+        'VRAM copy source read')
+    for old_expr, label in (('addr ^ 1', 'VRAM copy destination write'),
+                            ('addr ^ 1', 'VRAM fill destination write')):
+        if label == 'VRAM copy destination write':
+            before = ('      /* Intercept writes to Sprite Attribute Table */\n'
+                      '      if ((addr & sat_base_mask) == satb)\n'
+                      '      {\n'
+                      '        /* Update internal SAT */\n'
+                      '        WRITE_BYTE(sat, (addr & sat_addr_mask) ^ 1, data);\n'
+                      '      }\n\n'
+                      '      /* Write byte to adjacent VRAM destination address */\n'
+                      '      WRITE_BYTE(vram, addr ^ 1, data);\n\n'
+                      '      /* Update pattern cache */\n'
+                      '      MARK_BG_DIRTY(addr);')
+        else:
+            before = ('        /* Intercept writes to Sprite Attribute Table */\n'
+                      '        if ((addr & sat_base_mask) == satb)\n'
+                      '        {\n'
+                      '          /* Update internal SAT */\n'
+                      '          WRITE_BYTE(sat, (addr & sat_addr_mask) ^ 1, data);\n'
+                      '        }\n\n'
+                      '        /* Write byte to adjacent VRAM address */\n'
+                      '        WRITE_BYTE(vram, addr ^ 1, data);\n\n'
+                      '        /* Update pattern cache */\n'
+                      '        MARK_BG_DIRTY (addr);')
+        indent = '      ' if label.startswith('VRAM copy') else '        '
+        after = (indent + '#ifdef VRAM_TX_DIAGNOSTIC\n'
+                 + indent + 'if (vram_tx_core_effective())\n'
+                 + indent + '{\n'
+                 + indent + '  uint16 physical = vram_tx_core_write_lane(addr ^ 1, data);\n'
+                 + indent + '  vram_tx_core_mirror_sat(physical, data);\n'
+                 + indent + '}\n'
+                 + indent + 'else\n'
+                 + indent + '{\n' + before + '\n'
+                 + indent + '}\n'
+                 + indent + '#else\n' + before + '\n'
+                 + indent + '#endif')
+        source = replace_pinned(source, before, after, label)
+
+    # Mode transitions are observed at the register-write point, not just at a
+    # later access, so suspend/re-entry within one tick is handled immediately.
+    source = replace_pinned(
+        source,
+        '      }\n      break;\n    }\n\n    case 2: /* Plane A Name Table Base */',
+        '      }\n#ifdef VRAM_TX_DIAGNOSTIC\n'
+        '        vram_tx_diagnostic_mode_changed(vram_tx_core_mode5_supported());\n'
+        '#endif\n      break;\n    }\n\n    case 2: /* Plane A Name Table Base */',
+        'VDP Mode 5 support transition')
+    bridge_marker = 'VRAM TX HANDLER TEST BRIDGE v1'
+    bridge = r'''
+
+#ifdef VRAM_TX_DIAGNOSTIC
+#include <emscripten/emscripten.h>
+/* VRAM TX HANDLER TEST BRIDGE v1: diagnostic-only calls into real VDP paths. */
+int EMSCRIPTEN_KEEPALIVE run_vram_tx_test(unsigned operation, unsigned address,
+                                          unsigned data, unsigned source,
+                                          unsigned length)
+{
+  uint32 result = 0;
+  if (operation == 11) { vdp_reg_w(1, data, 0); return 0; }
+  if (operation == 17)
+  {
+    if (source > 0xffffff) return -5;
+    return io_68k_read((source >> 1) & 0x0f);
+  }
+  if (operation > 15) return -2;
+  if (operation != 15 && address > 0xffff) return -4;
+  if ((operation >= 5 && operation <= 9) || operation == 13 || operation == 14)
+  {
+    if (!length || length > 0x10000) return -3;
+  }
+  if ((operation >= 5 && operation <= 7) && source > 0xffffff) return -5;
+  if (operation == 8 && source > 0xffff) return -5;
+  if ((operation == 13 || operation == 14) && source > 0xffffff) return -5;
+  if ((operation == 0 || operation == 9 || operation == 10) && data > 0xffff)
+    return -6;
+  if (operation == 1 && data > 0xff) return -6;
+  vram_tx_core_sync_mode();
+  if (!vram_tx_diagnostic_selected() || !vram_tx_core_mode5_supported()) return -1;
+  if (operation != 15) addr = address;
+  reg[15] = 1;
+  switch (operation)
+  {
+    case 0: code = 0x01; vdp_bus_w(data); break;
+    case 1: code = 0x01; vdp_z80_data_w_m5(data); break;
+    case 2: code = 0x00; result = vdp_z80_data_r_m5(); break;
+    case 3: code = 0x00; result = vdp_68k_data_r_m5(); break;
+    case 4: code = 0x0c; result = vdp_68k_data_r_m5(); break;
+    case 5:
+      code = 0x01; reg[23] = (source >> 17) & 0x7f;
+      dma_src = (source >> 1) & 0xffff; vdp_dma_68k_ext(length); break;
+    case 6:
+      code = 0x01; reg[23] = (source >> 17) & 0x7f;
+      dma_src = (source >> 1) & 0xffff; vdp_dma_68k_ram(length); break;
+    case 7:
+      code = 0x01; reg[23] = (source >> 17) & 0x7f;
+      dma_src = (source >> 1) & 0xffff; vdp_dma_68k_io(length); break;
+    case 8:
+      code = 0x11; dma_src = source & 0xffff; vdp_dma_copy(length); break;
+    case 9:
+      /* Arm fill through the real two-word VDP control command, then trigger
+         it with the real 68K data-port write. Preserve a distinct prior FIFO
+         high byte so this checks the pre-latched fill source. */
+      reg[1] |= 0x10; reg[23] = (reg[23] & 0x3f) | 0x80;
+      reg[19] = length & 0xff; reg[20] = (length >> 8) & 0xff;
+      status |= 8; fifo[(fifo_idx + 3) & 3] = (source & 0xff) << 8;
+      vdp_68k_ctrl_w(0x4000 | (address & 0x3fff));
+      vdp_68k_ctrl_w(0x0080 | ((address >> 14) & 3));
+      vdp_68k_data_w_m5(data);
+      result = ((uint32)(code & 0xff) << 24) |
+        ((uint32)(dmafill & 0xff) << 16) |
+        ((uint32)(dma_length & 0xff) << 8) | (addr & 0xff);
+      break;
+    case 10:
+      code = 0x01; satb = 0; sat_base_mask = 0xfe00; sat_addr_mask = 0x01ff;
+      vdp_bus_w(data); break;
+    case 13:
+      code = 0x01; reg[23] = (source >> 17) & 0x7f;
+      dma_src = (source >> 1) & 0xffff; reg[15] = data & 0xff;
+      vdp_dma_68k_ext(length);
+      result = ((uint32)(dma_src & 0xffff) << 16) | addr; break;
+    case 14:
+      code = 0x01; reg[23] = (source >> 17) & 0x7f;
+      dma_src = (source >> 1) & 0xffff; reg[15] = 1;
+      reg[19] = length & 0xff; reg[20] = (length >> 8) & 0xff;
+      dma_length = length; dma_type = 0; addr = address;
+      reg[1] &= ~0x40; status &= ~8;
+      vdp_dma_update(mcycles_vdp + MCYCLES_PER_LINE - 22);
+      result = ((uint32)(dma_length & 0xffff) << 16) | addr; break;
+    case 15:
+      vdp_dma_update(mcycles_vdp);
+      result = ((uint32)(dma_length & 0xffff) << 16) | addr; break;
+    default: return -2;
+  }
+  return result;
+}
+
+uint8 EMSCRIPTEN_KEEPALIVE get_vram_tx_test_cache_dirty(unsigned pattern)
+{
+  return bg_name_dirty[pattern & 0x7ff];
+}
+
+unsigned EMSCRIPTEN_KEEPALIVE get_vram_tx_test_addr(void) { return addr; }
+unsigned EMSCRIPTEN_KEEPALIVE get_vram_tx_test_dma_source(void) { return dma_src; }
+unsigned EMSCRIPTEN_KEEPALIVE get_vram_tx_test_dma_region(void) { return reg[23] & 0x7f; }
+unsigned EMSCRIPTEN_KEEPALIVE get_vram_tx_test_dma_remaining(void) { return dma_length; }
+
+void EMSCRIPTEN_KEEPALIVE set_vram_tx_test_sat_physical_byte(unsigned address,
+                                                             unsigned value)
+{
+  WRITE_BYTE(sat, address & 0x3ffu, value);
+}
+
+void EMSCRIPTEN_KEEPALIVE clear_vram_tx_test_cache(void)
+{
+  memset(bg_name_dirty, 0, sizeof(bg_name_dirty));
+  memset(bg_name_list, 0, sizeof(bg_name_list));
+  bg_list_index = 0;
+}
+#endif
+'''
+    if bridge_marker not in source:
+        if 'VRAM TX HANDLER TEST BRIDGE' in source:
+            raise SystemExit('VRAM diagnostic handler bridge has a partial marker.')
+        source += bridge
+    elif source.count(bridge_marker) != 1 or not source.endswith(bridge):
+        raise SystemExit('VRAM diagnostic handler bridge is ambiguous.')
+    return source
+
+
 def patch_vram_fault(wasm: str, patch: str) -> str:
     """Refresh only the uniquely bounded embedded frame fault implementation."""
     tick = 'void EMSCRIPTEN_KEEPALIVE tick(void) {'
@@ -203,7 +529,7 @@ def patch_vram_fault(wasm: str, patch: str) -> str:
                         '    bend_after_frame();\n}', 1)
 
 
-def patch_core(root: Path) -> bool:
+def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     """Patch a clean or previously patched pinned source tree; return changed."""
     patch = Path(__file__).with_name('vram_fault_patch.c').read_text()
     wasm_c = root / 'src/main/c/wasm/wasm.c'
@@ -235,6 +561,17 @@ def patch_core(root: Path) -> bool:
         if wasm.count(include_anchor) != 1:
             raise SystemExit('Expected wasm.c include anchor missing; upstream changed. No modifications made.')
         wasm = wasm.replace(include_anchor, include_anchor + '\n' + runtime_includes, 1)
+
+    tx_include = ('#ifdef VRAM_TX_DIAGNOSTIC\n'
+                  '#include "vram_transaction.c"\n'
+                  '#endif')
+    work_ram_include = '#include "work_ram_runtime.c" /* ' + WORK_RAM_MARKER + ' */'
+    if tx_include not in wasm:
+        if wasm.count(work_ram_include) != 1:
+            raise SystemExit('Expected transaction helper include anchor missing or ambiguous.')
+        wasm = wasm.replace(work_ram_include, work_ram_include + '\n' + tx_include, 1)
+    elif wasm.count(tx_include) != 1:
+        raise SystemExit('Diagnostic transaction helper include is ambiguous.')
 
     # start() precedes the embedded VRAM block, requiring a forward declaration.
     declaration = 'static void bend_reset(void);\n'
@@ -276,6 +613,8 @@ def patch_core(root: Path) -> bool:
     m68k = patch_m68k_cpu(m68k)
     z80 = patch_z80(z80)
     dma = patch_dma(dma)
+    if transaction_adapter:
+        dma = patch_vram_transactions(dma)
     changed = (wasm != wasm_c.read_text() or config != config_c.read_text() or
                render != render_h.read_text() or m68k != m68k_h.read_text() or
                z80 != z80_c.read_text() or dma != dma_c.read_text())
@@ -293,9 +632,14 @@ def patch_core(root: Path) -> bool:
             destination.mkdir(parents=True, exist_ok=True)
             for filename in ('work_ram_fault.h', 'work_ram_runtime.h'):
                 (destination / filename).write_text((scripts / filename).read_text())
+            (destination / 'vram_transaction.h').write_text((scripts / 'vram_transaction.h').read_text())
+            (destination / 'vram_transaction_runtime.h').write_text((scripts / 'vram_transaction_runtime.h').read_text())
+            if destination.name == 'core':
+                (destination / 'vram_transaction_core.h').write_text((scripts / 'vram_transaction_core.h').read_text())
         wasm_dir = root / 'src/main/c/wasm'
         for filename in ('work_ram_fault.c', 'work_ram_runtime.c'):
             (wasm_dir / filename).write_text((scripts / filename).read_text())
+        (wasm_dir / 'vram_transaction.c').write_text((scripts / 'vram_transaction.c').read_text())
     else:
         # A no-op patch still checks that the helper source copies match the
         # repository files. Updating only these generated copies is safe.
@@ -305,10 +649,22 @@ def patch_core(root: Path) -> bool:
                 target = destination / filename
                 if not target.exists() or target.read_text() != (scripts / filename).read_text():
                     target.write_text((scripts / filename).read_text())
+            for filename in ('vram_transaction.h', 'vram_transaction_runtime.h'):
+                target = destination / filename
+                if not target.exists() or target.read_text() != (scripts / filename).read_text():
+                    target.write_text((scripts / filename).read_text())
+            if destination.name == 'core':
+                target = destination / 'vram_transaction_core.h'
+                if not target.exists() or target.read_text() != (scripts / 'vram_transaction_core.h').read_text():
+                    target.write_text((scripts / 'vram_transaction_core.h').read_text())
         for filename in ('work_ram_fault.c', 'work_ram_runtime.c'):
             target = root / 'src/main/c/wasm' / filename
             if not target.exists() or target.read_text() != (scripts / filename).read_text():
                 target.write_text((scripts / filename).read_text())
+        target = root / 'src/main/c/wasm/vram_transaction.c'
+        transaction_c = (scripts / 'vram_transaction.c').read_text()
+        if not target.exists() or target.read_text() != transaction_c:
+            target.write_text(transaction_c)
     return changed
 
 

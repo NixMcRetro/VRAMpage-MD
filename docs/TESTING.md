@@ -369,8 +369,8 @@ read/write/both directions, no-fault identity, deterministic aliasing, fault
 removal, persistent stored writes, invalid configurations, alignment, bounds and
 unused memory tails. The C checks enumerate every word address for each address
 pair and every 16-bit value for each data pair. They do not run emulated 68000
-instructions or prove physical pin behavior. Runtime integration remains planned
-in [Logic bending](LOGIC-BENDING.md).
+instructions or prove physical pin behavior. These standalone checks predate the runtime integration documented in
+[Logic bending](LOGIC-BENDING.md); they do not replace its core-level tests.
 
 Three subprocess tests in `tests/test_local_launcher.py` exercise the standalone
 launcher: missing-build diagnostics, ephemeral loopback port with an actual HTTP
@@ -724,3 +724,23 @@ localhost for launcher tests, and the worker's LeakSanitizer inspection failed
 under ptrace. These environment limitations were resolved by running the unchanged
 suite outside those restrictions. The checked-in harness has no leak suppression.
 Native SAT tests use a byte-array policy fixture, not the real parser.
+
+## Diagnostic VRAM core access verification
+
+The [access diagnostic](VRAM-ACCESS-DIAGNOSTIC.md) is compiled separately with
+`VRAM_TX_DIAGNOSTIC`; ordinary builds expose neither its selector nor test bridge.
+The actual-WASM test builds pinned normal and diagnostic variants in temporary
+directories. A generated original cartridge exercises 68000 word stores; the
+bounded bridge invokes real 68000/Z80 data-port and five DMA handlers. Tests
+cover odd-word aliasing, byte-lane conversion, fill arm/trigger/FIFO progression,
+source-window and destination wrap with distinct ROM sentinels, partial DMA
+progress, mapped SAT same-value writes, cache dirties, invalid input and mode
+transitions. No-fault and identity runs compare framebuffer, audio channels/count,
+work RAM, frame count and STOP/HALT flags with the normal variant.
+
+The reviewer independently rebuilt and ran the actual-WASM test and six focused
+helper/patcher tests. CI explicitly runs the WASM gate after the ordinary core
+build, checking SDK/vendor prerequisites before invocation. Source-only checkouts
+without these prerequisites may skip the optional Python-discovered WASM case;
+that skip is not actual-WASM acceptance. Renderer mapping, mixed-field sprite
+rendering, complete raster output and native Mac/physical fidelity remain open.
