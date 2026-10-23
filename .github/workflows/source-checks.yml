@@ -66,7 +66,10 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-v1-ubuntu-24.04-${{ runner.os }}-${{ runner.arch }}-${{ matrix.browser }}-${{ hashFiles('tests/requirements-browser.txt') }}
       - name: Install system dependencies
-        run: python -m playwright install-deps ${{ matrix.browser }}
+        timeout-minutes: 6
+        run: |
+          bash scripts/prepare-browser-deps.sh
+          python -m playwright install-deps ${{ matrix.browser }}
       - name: Ensure pinned browser binaries
         run: python -m playwright install ${{ matrix.browser }}
       - name: Save pinned browser binaries

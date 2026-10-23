@@ -91,7 +91,10 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-v1-ubuntu-24.04-${{ runner.os }}-${{ runner.arch }}-chromium-${{ hashFiles('tests/requirements-browser.txt') }}
       - name: Install system dependencies
-        run: python3 -m playwright install-deps chromium
+        timeout-minutes: 6
+        run: |
+          bash scripts/prepare-browser-deps.sh
+          python3 -m playwright install-deps chromium
       - name: Ensure pinned browser binaries
         run: python3 -m playwright install chromium
       - name: Save pinned browser binaries

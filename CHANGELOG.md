@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.2.8 CI provisioning repair
+
+- Use the standard signed Ubuntu package mirror for browser system libraries after repeated slow Azure-mirror downloads.
+- Bound idle transfers, retries and setup time while retaining pinned browsers, dependency lists and all required tests.
+
 ## v0.2.8 - compact work-RAM chip layout
 
 - Reduce the work-RAM chip height to fit more comfortably in a 13-inch MacBook
