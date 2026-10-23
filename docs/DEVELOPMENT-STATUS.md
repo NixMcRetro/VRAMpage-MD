@@ -37,7 +37,17 @@ bounded source/test checkpoints, and repeat focused and final acceptance on
 those commits. First checkpoint: renderer byte-read helper, cached lifecycle
 gate, literal endian/wrap oracles and strict/sanitizer checks. Then route the
 pinned renderer and restore the full visible/cache/SAT/performance matrix.
-Independent specialist review is required again.
+The first helper checkpoint is now committed on
+`experiment/vram-render-cache-resume` through
+`1b2fd0d71de0dc2d0a2ab90af130325518e43472` and incorporated into the local
+integration branch. Six focused helper tests passed with normal leak detection:
+strict and ASan/UBSan builds, both host-layout branches, literal packing oracles,
+ordered mapped reads, wrap and inactive direct loads. Independent specialist
+source review approved progression to renderer routing. Its separate restricted
+sanitizer run required a local ptrace workaround; the coordinator's verification
+used normal LeakSanitizer without suppression. Actual-core lifecycle, visible
+renderer and performance gates remain unfinished. This checkpoint is not on
+main and is not renderer acceptance.
 
 ## Verified baseline
 
