@@ -1,5 +1,10 @@
 # Changelog
 
+## Post-v0.2.7 CI browser reuse
+
+- Cache pinned Playwright browser binaries across eligible GitHub Actions runs and share the Chromium key between UI and actual-core jobs.
+- Save browser downloads before tests, cache build-job Python dependencies, and separate OS dependency installation from binary verification without skipping checks.
+
 ## Post-v0.2.7 instruction-origin diagnostic
 
 - Add isolated developer-only staging and scalar instruction-origin diagnostics without changing the normal emulator, runtime API, app version or public package.
