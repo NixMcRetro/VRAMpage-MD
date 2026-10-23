@@ -533,7 +533,7 @@ class BrowserLogicTests(unittest.TestCase):
                 self.page.set_viewport_size({'width': width, 'height': height})
                 for container, body, pins, max_height in (
                     ('#pinGrid', '.chip-middle', '.pin', 132),
-                    ('#ramChip', '.ram-chip-body', '[data-chip-line]', 226),
+                    ('#ramChip', '.ram-chip-body', '[data-chip-line]', 194),
                 ):
                     geometry = self.page.locator(container).evaluate("""(chip, args) => {
                         const body = chip.querySelector(args.body).getBoundingClientRect();
@@ -546,12 +546,17 @@ class BrowserLogicTests(unittest.TestCase):
                             }),
                             shortLegs: [...chip.querySelectorAll('.chip-wire')].every(e =>
                                 e.getBoundingClientRect().width <= 20),
+                            targets: [...chip.querySelectorAll(args.pins)].every(e => {
+                                const r = e.getBoundingClientRect();
+                                return r.width >= 24 && r.height >= 24;
+                            }),
                             count: chip.querySelectorAll(args.pins).length
                         };
                     }""", {'body': body, 'pins': pins})
                     self.assertLessEqual(geometry['height'], max_height)
                     self.assertTrue(geometry['labelsInside'], (scheme, width, container))
                     self.assertTrue(geometry['shortLegs'])
+                    self.assertTrue(geometry['targets'], (scheme, width, container))
                     self.assertEqual(geometry['count'], 8 if container == '#pinGrid' else 15)
         self.page.locator('#vramMode').select_option('bridge')
         self.page.locator('.pin').nth(0).click()
