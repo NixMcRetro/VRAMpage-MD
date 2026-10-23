@@ -529,11 +529,11 @@ class BrowserLogicTests(unittest.TestCase):
         self.load_rom()
         for scheme in ('light', 'dark'):
             self.page.emulate_media(color_scheme=scheme)
-            for width, height in ((1366, 768), (390, 844), (844, 390)):
+            for width, height in ((1366, 768), (1280, 720), (1280, 800), (390, 844), (844, 390)):
                 self.page.set_viewport_size({'width': width, 'height': height})
                 for container, body, pins, max_height in (
                     ('#pinGrid', '.chip-middle', '.pin', 132),
-                    ('#ramChip', '.ram-chip-body', '[data-chip-line]', 260),
+                    ('#ramChip', '.ram-chip-body', '[data-chip-line]', 226),
                 ):
                     geometry = self.page.locator(container).evaluate("""(chip, args) => {
                         const body = chip.querySelector(args.body).getBoundingClientRect();

@@ -1,5 +1,8 @@
 # Changelog
 
+- Reduce the work-RAM chip height while keeping its address labels inside the
+  body, short legs, disabled-line crosses, and keyboard controls intact.
+
 ## Post-v0.2.7 VDP access integration
 
 - Add a developer-only transaction path for Mode 5 CPU/Z80 ports and VRAM DMA endpoints, preserving legacy frame-scoped behavior by default.
