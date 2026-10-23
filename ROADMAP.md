@@ -74,7 +74,9 @@ integrity and safety gates. See [protocol and limitations](docs/RAM-STATUS-FOLLO
 This does not establish physical electrical fidelity or native Mac/visual/audible
 acceptance. Earlier one-write negative and whole-demo-delay evidence remains
 available in the [read-only observations](docs/ATTRACT-MODE-OBSERVATIONS.md).
-Transaction-level VRAM architecture is next; implementation has not started.
+The [transaction-level VRAM plan](docs/TRANSACTION-VRAM-PLAN.md) records the
+source-backed architecture and test gates. Resolve its semantics and compatibility
+decisions next; runtime implementation has not started.
 
 - Start with 68000 work-RAM address/data short model, focusing on bus read/write integration rather than arbitrary random values.
 - Distinguish read and write faults and persistent emulator-RAM changes; do not

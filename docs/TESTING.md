@@ -696,3 +696,11 @@ by at least one pixel on 594 ticks (longest consecutive run 432). The baseline
 matches the prior immutable public-core observation. Only the first affected
 write is traced; do not claim the next seven write locations. No native Mac,
 audible, physical or private visual-scene acceptance is inferred.
+
+## Transaction-level VRAM planning gates
+
+[The reviewed design](TRANSACTION-VRAM-PLAN.md) defines future native, actual-WASM,
+renderer/cache, DMA, browser and performance acceptance. These are planned checks,
+not newly executed transaction-model tests. The current runtime remains frame-scoped.
+Before runtime changes, resolve stage 1 semantics and independently review cache
+alias invalidation, byte lanes, DMA source/destination boundaries and compatibility.
