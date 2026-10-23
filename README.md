@@ -6,7 +6,7 @@
 
 ## Download and play on your Mac
 
-**[Download VRAMpage MD v0.2.7 - complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.7/VRAMpage-MD-v0.2.7-macos.zip)**
+**[Download VRAMpage MD v0.2.8 - complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.8/VRAMpage-MD-v0.2.8-macos.zip)**
 
 1. Download the ZIP and double-click it in Finder to extract it.
 2. Open the **VRAMpage-MD** folder and double-click **START.command**.
@@ -19,9 +19,9 @@ If your Mac blocks `START.command`, right-click it and choose **Open**, or follo
 
 **Important:** GitHub's green **Code → Download ZIP** gives you a *source-only* archive, not the ready-to-run application. Use the **complete Mac ZIP** above.
 
-[Latest release and checksum](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.7) · [Other runnable versions and historical source releases](docs/RELEASE-HISTORY.md)
+[Latest release and checksum](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.8) · [Other runnable versions and historical source releases](docs/RELEASE-HISTORY.md)
 
-**Current release:** v0.2.7 includes optional, default-disabled RAM write tracing for developer experiments. Normal play needs no tracing setup. See the [RAM write trace guide](docs/RAM-WRITE-TRACE.md).
+**v0.2.8 update:** the work-RAM chip is more compact, with synthetic layout checks at laptop-sized browser viewports. The previous v0.2.7 release includes optional, default-disabled RAM write tracing for developer experiments. See the [RAM write trace guide](docs/RAM-WRITE-TRACE.md).
 
 **RAM research:** a [reproducible bounded experiment](docs/RAM-STATUS-FOLLOWUP.md) now shows player-trajectory divergence while recorded demo inputs continue at the same phase. This uses the existing public core and does not establish physical electrical accuracy.
 

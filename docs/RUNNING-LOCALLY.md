@@ -2,7 +2,7 @@
 
 ## Download once, then launch
 
-1. [Download VRAMpage-MD-v0.2.7-macos.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.7/VRAMpage-MD-v0.2.7-macos.zip).
+1. [Download VRAMpage-MD-v0.2.8-macos.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.8/VRAMpage-MD-v0.2.8-macos.zip).
 2. Double-click the ZIP in Finder to extract it. Open the **VRAMpage-MD** folder.
 3. Double-click **START.command**. It starts a local server and opens your default browser.
 4. Click **Load ROM** and select your own legally usable Mega Drive cartridge.

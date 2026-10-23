@@ -1,3 +1,11 @@
+# v0.2.8 layout regression scope
+
+The work-RAM chip layout regression covers synthetic browser viewports of
+1280×720, 1280×800 and the existing 1366×768 case, in light and dark appearance.
+It checks that signal labels remain inside the chip body, legs stay short, and
+all expected controls remain present. Standard macOS browsers have not been
+tested for this change.
+
 # v0.2.7 public package and final verification
 
 Fixed main CI [39863314204](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39863314204)

@@ -1,7 +1,12 @@
 # Changelog
 
-- Reduce the work-RAM chip height while keeping its address labels inside the
-  body, short legs, disabled-line crosses, and keyboard controls intact.
+## v0.2.8 - compact work-RAM chip layout
+
+- Reduce the work-RAM chip height to fit more comfortably in a 13-inch MacBook
+  Air browser window. Keep labels inside the body, short legs, crosses and
+  keyboard operation intact. The VRAM chip keeps its existing dimensions.
+- Add synthetic browser layout checks at 1280×720 and 1280×800 alongside the
+  existing 1366×768 viewport. These checks do not represent native Mac testing.
 
 ## Post-v0.2.7 VDP access integration
 
