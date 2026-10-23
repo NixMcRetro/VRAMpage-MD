@@ -117,3 +117,10 @@ additional fresh actual-core trial, separate from the six candidate trials.
 The next RAM-stage task is a separately defined, source-backed follow-up using
 the observed status-write location and the generic pulse semantics. No larger
 budget or different activation time was tried in this record.
+
+
+## Subsequent follow-up
+
+The separately predefined [eight-write follow-up](RAM-STATUS-FOLLOWUP.md) now
+meets the bounded same-input-phase trajectory criterion. That positive result
+does not change this one-write negative record or its original settings.

@@ -23,6 +23,8 @@ If your Mac blocks `START.command`, right-click it and choose **Open**, or follo
 
 **Current release:** v0.2.7 includes optional, default-disabled RAM write tracing for developer experiments. Normal play needs no tracing setup. See the [RAM write trace guide](docs/RAM-WRITE-TRACE.md).
 
+**RAM research:** a [reproducible bounded experiment](docs/RAM-STATUS-FOLLOWUP.md) now shows player-trajectory divergence while recorded demo inputs continue at the same phase. This uses the existing public core and does not establish physical electrical accuracy.
+
 ## What can it do?
 
 - **Play:** Load a cartridge from your computer, use keyboard/gamepad controls, enable sound, pause, reset or go fullscreen.

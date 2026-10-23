@@ -118,7 +118,17 @@ This Node protocol makes no post-fault CPU intervention. Earlier UI/survey
 protocols recorded force-resume operations, so this is not a silent replacement
 of those experiments. Historical JSON and release artifacts remain unchanged.
 
-Next: identify the first affected generic RAM write behind the one-tick delay
+Historical next step: identify the first affected generic RAM write behind the one-tick delay
 with passive access diagnostics, then choose a bounded follow-up. Do not turn
 same-tick hash differences into an acceptance claim or edit Sonic variables to
-produce an effect. The RAM milestone remains open before transaction-level VRAM.
+produce an effect. That protocol left the RAM milestone open; see the subsequent acceptance result below.
+
+
+## Subsequent bounded acceptance result
+
+This document retains the earlier one-write phase-delay observations. The later
+[eight-write follow-up](RAM-STATUS-FOLLOWUP.md), using the unchanged public
+v0.2.7 core, meets the separately predefined bounded trajectory criterion while
+monitored demo-state/input tuples stay aligned. Its positive record and the
+earlier negative/delay records are separate immutable evidence; physical,
+audible and native Mac claims remain outside these Node experiments.

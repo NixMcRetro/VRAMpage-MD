@@ -5,13 +5,13 @@ Verified on 23 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
-Verified integration base: `f4cf8d279c92df4d55266cc0c63d4dc958513230` (PR #31).
-[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39898869974)
+Verified integration base: `f18b1b2f698b5ca39ab686fb7f4eefb58e7d5b3c` (PR #32).
+[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39908628359)
 passed source, Chromium, Firefox, WebKit and actual-core/package checks.
 Playwright caches are primed on main; normal application/release remains v0.2.7.
 The first affected write is identified at PC `$B46`; bounded actual-bus evidence
-now shows wait/caller release one tick later. Genuine sustained gameplay
-divergence remains the next uncompleted acceptance criterion. Read the first unfinished
+now shows wait/caller release one tick later. The eight-write follow-up now meets the bounded same-input-phase trajectory
+criterion; transaction-level VRAM architecture is the next unfinished item. Read the first unfinished
 [work-queue](WORK-QUEUE.md) item and relevant protocol before older history.
 Reuse unchanged passing evidence; new diagnostic code needs focused tests,
 independent specialist review, final regression and CI before merge.
@@ -290,3 +290,24 @@ approved the helper, trace invariants and positive/negative report assembly.
 Genuine trajectory divergence remains unproven. Next: a separately defined
 source-backed follow-up using the observed status-write location, with no
 post-hoc changes to this experiment or silent CPU recovery.
+
+
+## Bounded RAM trajectory criterion verified
+
+The [eight-write follow-up](RAM-STATUS-FOLLOWUP.md) passes the predefined criterion
+on the exact public v0.2.7 core and supported ROM. All 596 demo-state/input tuples
+match baseline at the unique zero-tick offset, while player position differs by
+at least one pixel on 594 ticks, with a longest consecutive run of 432. The pulse
+released after exactly eight writes at tick 1801; all prefault, repeat,
+noninterference, host-input and recorded CPU/demo/player safety gates passed.
+An independent specialist repeated all six fresh-core trials and reproduced the
+JSON byte for byte. The baseline matches the prior immutable public observation.
+
+The first trace is still the status-byte alias D022 to C022; later seven addresses
+and exact downstream causality are not recorded. No game code/variables were
+edited directly and no CPU recovery was applied. Physical, audible, native Mac
+and visual-scene interpretation are not established. All prior negative and
+phase-delay records remain unchanged. App/runtime/API/version/download remain
+v0.2.7. Local full source/native/sanitizer/JavaScript tests passed, including six
+new wrapper groups and independent clean-archive verification. Next: a bounded
+transaction-level VRAM architecture/test plan, before any v0.3 implementation.
