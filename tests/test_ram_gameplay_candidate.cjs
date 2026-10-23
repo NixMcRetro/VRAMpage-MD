@@ -1,6 +1,7 @@
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const crypto = require('node:crypto');
 const os = require('node:os');
 const path = require('node:path');
 const {spawnSync} = require('node:child_process');
@@ -278,15 +279,23 @@ function makeCore() {
     fs.writeFileSync(path.join(temp, 'VERSION'), '0.2.7\n');
     const jsPath = path.join(temp, 'site/core/genplus.js');
     const wasmPath = path.join(temp, 'site/core/genplus.wasm');
-    fs.copyFileSync(path.resolve(__dirname, '../site/core/genplus.js'), jsPath);
-    fs.copyFileSync(path.resolve(__dirname, '../site/core/genplus.wasm'), wasmPath);
-    assert.equal(candidate.verifyPackage(temp).manifest.source_commit,
+    // A synthetic profile tests positive validation and each hash independently.
+    // The candidate wrapper keeps the real public pin and must reject these files.
+    const fixtureJs = Buffer.from('synthetic JavaScript fixture');
+    const fixtureWasm = Buffer.from([0, 97, 115, 109, 1, 0, 0, 0]);
+    const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+    const fixtureProfile = {...pinnedPackage.APP_PROFILE,
+      javascriptSHA256: digest(fixtureJs), wasmSHA256: digest(fixtureWasm)};
+    fs.writeFileSync(jsPath, fixtureJs);
+    fs.writeFileSync(wasmPath, fixtureWasm);
+    assert.equal(pinnedPackage.validateAppDirectory(temp, fixtureProfile).manifest.source_commit,
       pinnedPackage.APP_PROFILE.packageSourceCommit);
-    fs.writeFileSync(jsPath, Buffer.concat([fs.readFileSync(jsPath), Buffer.from([0])]));
     assert.throws(() => candidate.verifyPackage(temp), /core hashes\/signature/);
-    fs.copyFileSync(path.resolve(__dirname, '../site/core/genplus.js'), jsPath);
-    fs.writeFileSync(wasmPath, Buffer.concat([fs.readFileSync(wasmPath), Buffer.from([0])]));
-    assert.throws(() => candidate.verifyPackage(temp), /core hashes\/signature/);
+    fs.writeFileSync(jsPath, Buffer.concat([fixtureJs, Buffer.from([0])]));
+    assert.throws(() => pinnedPackage.validateAppDirectory(temp, fixtureProfile), /core hashes\/signature/);
+    fs.writeFileSync(jsPath, fixtureJs);
+    fs.writeFileSync(wasmPath, Buffer.concat([fixtureWasm, Buffer.from([0])]));
+    assert.throws(() => pinnedPackage.validateAppDirectory(temp, fixtureProfile), /core hashes\/signature/);
     const wrongSource = {...manifest, source_commit: 'f'.repeat(40)};
     fs.writeFileSync(path.join(temp, 'BUILD-INFO.json'), JSON.stringify(wrongSource));
     fs.writeFileSync(path.join(temp, 'site/build-info.json'), JSON.stringify(wrongSource));

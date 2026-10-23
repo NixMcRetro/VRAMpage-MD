@@ -669,3 +669,10 @@ candidate baseline and one additional actual-core legacy A10/A11 trial match
 the earlier immutable public observations exactly. These are bounded Linux Node
 observations, not native Mac, audible or physical-hardware tests. See the
 [protocol and record](RAM-GAMEPLAY-CANDIDATE.md).
+
+The first PR CI attempt exposed a generated-core dependency in the new package
+fixture. The corrected source tests use synthetic JS/WASM and a fixture profile
+for portable positive and separate hash-rejection cases. The candidate wrapper
+still rejects those files against its strict real public pin. Clean-tree tests
+require no ignored emulator assets. This test-only correction does not alter
+the executed observer sources or rewrite the historical experiment record.
