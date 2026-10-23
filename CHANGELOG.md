@@ -1,5 +1,12 @@
 # Changelog
 
+## Post-v0.2.7 native VRAM transaction groundwork
+
+- Define logical-byte mapping, supported-mode gating, DMA lanes and mapped sprite-table policy with explicit fidelity limits.
+- Specify reverse tile-cache dependencies, model/API compatibility, counter meanings and lifecycle rules before native-helper implementation.
+- Add an isolated native helper for ordered byte access, bounded reverse cache dependencies, lifecycle state and per-frame counters, with exhaustive mapping and strict/sanitizer tests.
+- Record independent source/code review and scalar examples; preserve the frame-scoped runtime and public v0.2.7 package.
+
 ## Post-v0.2.7 transaction-level VRAM planning
 
 - Map the pinned CPU/Z80, DMA, renderer, cache and sprite-table access paths before runtime changes.

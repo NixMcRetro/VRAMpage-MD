@@ -75,8 +75,9 @@ This does not establish physical electrical fidelity or native Mac/visual/audibl
 acceptance. Earlier one-write negative and whole-demo-delay evidence remains
 available in the [read-only observations](docs/ATTRACT-MODE-OBSERVATIONS.md).
 The [transaction-level VRAM plan](docs/TRANSACTION-VRAM-PLAN.md) records the
-source-backed architecture and test gates. Resolve its semantics and compatibility
-decisions next; runtime implementation has not started.
+source-backed architecture and test gates. Its [reviewed semantics](docs/TRANSACTION-VRAM-SEMANTICS.md) fix the byte,
+cache, sprite-table and compatibility rules. The isolated native helper supplies tested byte-access and cache-dependency
+primitives; VDP/DMA core integration is next. Runtime integration has not started.
 
 - Start with 68000 work-RAM address/data short model, focusing on bus read/write integration rather than arbitrary random values.
 - Distinguish read and write faults and persistent emulator-RAM changes; do not
