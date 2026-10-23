@@ -66,3 +66,54 @@ This threshold supports a bounded observation on one cartridge/core revision.
 It does not establish physical electrical accuracy, whole-game equivalence,
 audible differences or native Mac Firefox acceptance. No application version,
 normal emulator API or downloadable package change is planned.
+
+## Developer procedure
+
+Use a clean committed checkout and the unchanged complete public v0.2.7 package.
+The runner rejects mismatched source/version/core hashes before loading its JS.
+Only the supported private cartridge fingerprint is accepted. No SDK or browser
+installation is needed for this developer Node experiment.
+
+```sh
+node scripts/observe-ram-gameplay-candidate.cjs /private/path/sonic.md --app /path/to/extracted-public-v0.2.7 > /tmp/object-alias-result.json
+```
+
+An exit status of zero means the protocol integrity checks passed. Consult
+`scientificOutcome.boundedTrajectoryDivergenceObserved` separately. A correctly
+executed negative result must not be described as a positive experiment.
+The JSON includes scoped tool hashes, commit identity, package/ROM fingerprints,
+trace metadata, selected samples and phase summaries. Full timelines stay in
+memory and are not serialized.
+
+## Recorded negative result
+
+The [immutable record](experiments/2026-10-23-object-alias-candidate-v1.json)
+was collected from clean commit `f24697efb074dd598246425c4049903ae1b55de7`.
+All six fresh-core execution, trace noninterference, repeat, prefault, zero-input
+and exact one-write pulse gates passed. Independent specialist review approved the observer, trace invariants and
+recorded evidence before integration.
+
+| Observation | Measured result |
+| --- | --- |
+| First affected access | Byte write at CPU `$FFD022`, logical `$D022` to `$C022`, completed frame 1800 / effective tick 1801 |
+| Source interpretation | Object alias, specifically the player slot's `obStatus` field at offset `$22`; not a position or velocity field |
+| Pulse | Released after exactly one affected write at tick 1801 |
+| Demo and CPU safety | Active demo and internal cursor/pad progression; zero CPU flags in the recorded 1802 through 2400 scope; player ID 1 throughout 1799 through 2400 |
+| Unique demo-aligned offset | 0 ticks in both repeats |
+| Compared frame/demo/player pairs | All 596 match baseline at offset 0 |
+| One-pixel position difference | 0 ticks; longest qualifying run 0 |
+| Bounded trajectory divergence | Not observed |
+
+The object-region hypothesis was reached, but its predicted trajectory effect
+was not. Do not infer an instruction or bit operation from the address-only
+trace. This result does not exclude a transient effect before tick 1803, a later
+effect after tick 2398, or an effect under different predetermined settings.
+No raw frames, audible output, native Mac behaviour or physical hardware were
+verified by this experiment.
+
+The shared driver was also checked against the earlier immutable public-core
+baseline and A10/A11 observations; both match exactly. The latter check used one
+additional fresh actual-core trial, separate from the six candidate trials.
+The next RAM-stage task is a separately defined, source-backed follow-up using
+the observed status-write location and the generic pulse semantics. No larger
+budget or different activation time was tried in this record.

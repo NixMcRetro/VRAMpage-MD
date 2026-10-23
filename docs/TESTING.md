@@ -653,3 +653,19 @@ noninterference acceptance and the locked source-revision profile.
 Private-cartridge results require a clean committed tool stage, whole-source
 hash verification, the matching Revision 0 source build and unchanged public
 v0.2.7 equivalence. Synthetic results alone do not satisfy those experiment gates.
+
+
+## Configured object-alias candidate
+
+The candidate suite covers the shared helper's kind/line/timing/budget bounds,
+legacy API guards, malformed trace metadata and mapping invariants, signed
+wrap-aware position differences, unique phase alignment, frozen and unrelated
+write negatives, failed-integrity rejection, six-trial report assembly and
+strict public-package pin failures. Full timelines are stripped from reports.
+
+Six fresh actual public-core trials passed the defined protocol. The outcome is
+negative: all 596 monitored frame/demo/player pairs match at offset zero. The
+candidate baseline and one additional actual-core legacy A10/A11 trial match
+the earlier immutable public observations exactly. These are bounded Linux Node
+observations, not native Mac, audible or physical-hardware tests. See the
+[protocol and record](RAM-GAMEPLAY-CANDIDATE.md).

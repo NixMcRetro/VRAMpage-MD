@@ -4,6 +4,7 @@
 
 - Reuse the bounded observer driver for separately named, validated write-pulse experiments while preserving its default scenarios and historical records.
 - Define one A12/A13 object-memory alias candidate with separate protocol integrity, source hypothesis and phase-aligned trajectory criteria; retain negative outcomes honestly.
+- Record a repeated D022-to-C022 status-byte alias with continuing demo input and no monitored trajectory divergence; preserve actual legacy baseline/A10/A11 observations exactly.
 - Keep the normal emulator, public v0.2.7 package, fault models and runtime API unchanged.
 
 ## Post-v0.2.7 bounded wait diagnostic
