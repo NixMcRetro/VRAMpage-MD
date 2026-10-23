@@ -107,11 +107,7 @@ static void vram_tx_apply_cache_invalidation(void) {
 }
 
 static void vram_tx_update_render_fast_flag(void) {
-    vram_tx_diagnostic_render_active =
-        vram_tx_diagnostic_is_selected &&
-        vram_tx_diagnostic_state.model == VRAM_TX_MODEL_LOGICAL_BYTE_TRANSACTION_V1 &&
-        vram_tx_diagnostic_state.supported_mode &&
-        vram_tx_diagnostic_state.has_fault;
+    vram_tx_diagnostic_render_active = vram_tx_diagnostic_effective();
 }
 
 int vram_tx_diagnostic_selected(void) {
@@ -123,10 +119,6 @@ int vram_tx_diagnostic_effective(void) {
         vram_tx_diagnostic_state.model == VRAM_TX_MODEL_LOGICAL_BYTE_TRANSACTION_V1 &&
         vram_tx_diagnostic_state.supported_mode &&
         vram_tx_diagnostic_state.has_fault;
-}
-
-int vram_tx_diagnostic_render_enabled(void) {
-    return vram_tx_diagnostic_render_active;
 }
 
 void vram_tx_diagnostic_reset(void) {
