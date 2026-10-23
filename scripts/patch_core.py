@@ -485,6 +485,15 @@ unsigned EMSCRIPTEN_KEEPALIVE get_vram_tx_test_dma_source(void) { return dma_src
 unsigned EMSCRIPTEN_KEEPALIVE get_vram_tx_test_dma_region(void) { return reg[23] & 0x7f; }
 unsigned EMSCRIPTEN_KEEPALIVE get_vram_tx_test_dma_remaining(void) { return dma_length; }
 unsigned EMSCRIPTEN_KEEPALIVE get_vram_tx_test_hscroll_base(void) { return hscb; }
+extern void (*render_bg)(int);
+unsigned EMSCRIPTEN_KEEPALIVE get_vram_tx_test_render_path(void)
+{
+  if (render_bg == render_bg_m5) return 1;
+  if (render_bg == render_bg_m5_vs) return 2;
+  if (render_bg == render_bg_m5_im2) return 3;
+  if (render_bg == render_bg_m5_im2_vs) return 4;
+  return 0;
+}
 unsigned EMSCRIPTEN_KEEPALIVE get_vram_tx_test_byte(unsigned address)
 {
   return READ_BYTE(vram, address & 0xffffu);

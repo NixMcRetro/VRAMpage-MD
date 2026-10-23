@@ -18,7 +18,7 @@ function vdpCram(address, words) {
   for (const w of words) code.push(...absWord(0xc00000, w));
   return code;
 }
-function visibleCartridge(scrollPixels = 0) {
+function visibleCartridge(scrollPixels = 0, options = {}) {
   const rom = new Uint8Array(0x80000), view = new DataView(rom.buffer);
   for (let o = 0; o < 0x100; o += 4) view.setUint32(o, 0x300);
   view.setUint32(0, 0xffff00); view.setUint32(4, 0x200);
@@ -28,7 +28,9 @@ function visibleCartridge(scrollPixels = 0) {
   let words = [];
   // Select Mode 5 and table layout while display is still off.
   words.push(...vdpRegister(1, 0x34), ...vdpRegister(2, 0x38),
-    ...vdpRegister(4, 0x07), ...vdpRegister(7, 0), ...vdpRegister(12, 0x81),
+    ...vdpRegister(4, 0x07), ...vdpRegister(7, 0),
+    ...vdpRegister(11, options.vscroll ? 0x04 : 0),
+    ...vdpRegister(12, options.interlace2 ? 0x87 : 0x81),
     ...vdpRegister(13, 0x3f), ...vdpRegister(15, 2));
   // Colors 0..3 and two visibly different repeated-pixel pattern tiles.
   words.push(...vdpCram(0, [0x000e, 0x00e0, 0x0e00, 0x0eee]));
@@ -105,6 +107,13 @@ async function main() {
   assert.equal(scrollDiagnostic.c._get_vram_tx_test_hscroll_base(), 0xfc00);
   assert.deepEqual([0,1,2,3].map(i=>scrollDiagnostic.c._get_vram_tx_test_byte(0xfc00+i)),
     [0,3,0,0], 'ROM initializes the distinct logical hscroll bytes for row zero');
+  const vsScene = await runScene(diagnosticEntry, visibleCartridge(0, {vscroll: true}));
+  assert.equal(vsScene.c._get_vram_tx_test_render_path(), 2,
+    'register 11 selects the real Mode 5 vertical-scroll renderer');
+  const interlaceVsScene = await runScene(diagnosticEntry,
+    visibleCartridge(0, {vscroll: true, interlace2: true}), 8);
+  assert.equal(interlaceVsScene.c._get_vram_tx_test_render_path(), 4,
+    'registers 11 and 12 select the real Mode 5 interlace-2 vertical-scroll renderer');
   const normal = await runScene(normalEntry, rom);
   const diagnosticOff = await runScene(diagnosticEntry, rom);
   equivalent(normal.state, baseline.state, 'current normal vs pinned PR36 renderer');
