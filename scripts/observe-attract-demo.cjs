@@ -64,6 +64,7 @@ const TRIAL = Object.freeze({
     'A10A11-one-write': Object.freeze({type: 'writePulse', args: Object.freeze([1, 9, 10, 1])})
   })
 });
+const CONFIGURED_WRITE_PULSE_LIMITS = Object.freeze({faultTick: 1801, maxTicks: 2400});
 
 function sha256(bytes) {
   return crypto.createHash('sha256').update(bytes).digest('hex');
@@ -244,22 +245,46 @@ function comparePhases(baselineTimeline, candidateTimeline) {
   return results;
 }
 
-function requireCoreAPI(core, scenario) {
+function requireCoreAPI(core, scenario, {configuredEntry = false, faultKind = null} = {}) {
   const names = ['_init', '_start', '_tick', '_sound', '_wasm_input_update',
     '_get_rom_buffer_ref', '_get_input_buffer_ref', '_get_frame_buffer_ref',
     '_get_logic_ram_ref', '_get_logic_frame', '_get_logic_reads', '_get_logic_writes',
     '_get_logic_cpu_flags', '_get_logic_activation_frame', '_get_logic_pulse_state'];
-  if (scenario !== 'baseline') names.push('_set_logic_fault');
-  if (scenario === 'A10A11-one-write') names.push('_arm_logic_write_pulse');
+  if (scenario !== 'baseline' && (!configuredEntry || faultKind !== 'writePulse')) names.push('_set_logic_fault');
+  if (scenario === 'A10A11-one-write' || (configuredEntry && faultKind === 'writePulse')) {
+    names.push('_arm_logic_write_pulse');
+  }
   for (const name of names) if (typeof core[name] !== 'function') fail(`Core API missing ${name}.`);
   if (!(core.HEAPU8 instanceof Uint8Array)) fail('Core API missing HEAPU8.');
 }
 
-async function runTrial(coreFactory, rom, scenario, {onTimelineSample} = {}) {
-  if (!Object.hasOwn(TRIAL.scenarios, scenario)) fail(`Unknown trial scenario: ${scenario}`);
-  const faultConfig = TRIAL.scenarios[scenario];
+function validateConfiguredWritePulse(spec) {
+  if (!spec || typeof spec !== 'object' || Array.isArray(spec)) fail('A named write-pulse specification is required.');
+  const {name, kind, lineA, lineB, affectedWrites, faultTick, maxTicks} = spec;
+  if (typeof name !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(name)) fail('Invalid configured trial name.');
+  if (['baseline', 'D0D1-read', 'A10A11-one-write'].includes(name)) fail('Configured trial name is reserved.');
+  if (kind !== 1 && kind !== 2) fail('Configured write-pulse kind must be address (1) or data (2).');
+  const lineLimit = kind === 1 ? 15 : 16;
+  if (!Number.isInteger(lineA) || lineA < 0 || lineA >= lineLimit ||
+      !Number.isInteger(lineB) || lineB < 0 || lineB >= lineLimit || lineA === lineB) {
+    fail('Configured write-pulse lines are invalid for their fault kind.');
+  }
+  if (!Number.isSafeInteger(affectedWrites) || affectedWrites < 1 || affectedWrites > 1024) {
+    fail('Configured write-pulse budget must be an integer from 1 through 1024.');
+  }
+  if (faultTick !== CONFIGURED_WRITE_PULSE_LIMITS.faultTick ||
+      maxTicks !== CONFIGURED_WRITE_PULSE_LIMITS.maxTicks) {
+    fail('Configured write-pulse timing must use tick 1801 and a 2400 tick bound.');
+  }
+  return Object.freeze({name, kind, lineA, lineB, affectedWrites, faultTick, maxTicks,
+    type: 'writePulse', args: Object.freeze([kind, lineA, lineB, affectedWrites])});
+}
+
+async function executeTrial(coreFactory, rom, scenario, faultConfig,
+                            {onTimelineSample, collectSafety = false} = {}) {
   const core = await coreFactory();
-  requireCoreAPI(core, scenario);
+  const isWritePulse = faultConfig?.type === 'writePulse';
+  requireCoreAPI(core, scenario, {configuredEntry: Boolean(faultConfig?.name), faultKind: faultConfig?.type});
   core._init();
   const romPointer = core._get_rom_buffer_ref(rom.length);
   if (!Number.isSafeInteger(romPointer) || romPointer <= 0 || romPointer + rom.length > core.HEAPU8.length) {
@@ -286,11 +311,20 @@ async function runTrial(coreFactory, rom, scenario, {onTimelineSample} = {}) {
   let pulseStateAtEnd = null;
   let pulseReleaseTick = null;
   let affectedWritesAtRelease = null;
+  let cpuStopTicks = 0;
+  let cpuHaltTicks = 0;
+  let cpuNonzeroTicks = 0;
+  let demoActiveTicks = 0;
+  let postFaultCursorValueChanges = 0;
+  let postFaultHeldPadValueChanges = 0;
+  let postFaultPressedPadValueChanges = 0;
+  let playerObjectIdOneTimelineTicks = 0;
+  let postFaultPrevious = null;
   for (let tick = 1; tick <= TRIAL.maxTicks; tick++) {
-    if (faultConfig && tick === TRIAL.faultTick) {
+    if (faultConfig && tick === (faultConfig.faultTick ?? TRIAL.faultTick)) {
       faultSetterFrame = core._get_logic_frame();
       if (faultSetterFrame !== 1800) fail(`Fault timing expected core frame 1800, got ${faultSetterFrame}.`);
-      const status = faultConfig.type === 'writePulse'
+      const status = isWritePulse
         ? core._arm_logic_write_pulse(...faultConfig.args)
         : core._set_logic_fault(...faultConfig.args);
       if (status !== 0) fail(`Core rejected ${scenario} with status ${status}.`);
@@ -308,6 +342,22 @@ async function runTrial(coreFactory, rom, scenario, {onTimelineSample} = {}) {
     if (!Number.isSafeInteger(audioSamples) || audioSamples < 0) fail('Invalid audio sample count.');
 
     const fields = readAttractFields(core.HEAPU8, core._get_logic_ram_ref());
+    if (collectSafety && tick >= 1799 && tick <= 2400 && fields.playerObjectId === 1) {
+      playerObjectIdOneTimelineTicks++;
+    }
+    if (collectSafety && tick > TRIAL.faultTick) {
+      const flags = core._get_logic_cpu_flags();
+      if (flags !== 0) cpuNonzeroTicks++;
+      if (flags & 1) cpuStopTicks++;
+      if (flags & 2) cpuHaltTicks++;
+      if (fields.gameMode === 8 && fields.demoFlag === 1) demoActiveTicks++;
+      if (postFaultPrevious) {
+        if (fields.demoCursor !== postFaultPrevious.demoCursor) postFaultCursorValueChanges++;
+        if (fields.heldPad !== postFaultPrevious.heldPad) postFaultHeldPadValueChanges++;
+        if (fields.pressedPad !== postFaultPrevious.pressedPad) postFaultPressedPadValueChanges++;
+      }
+      postFaultPrevious = fields;
+    }
     updateAggregate(streamHash, fields);
     if (tick < TRIAL.faultTick) updateAggregate(preFaultHash, fields);
     if (previous) {
@@ -316,7 +366,7 @@ async function runTrial(coreFactory, rom, scenario, {onTimelineSample} = {}) {
     }
     previous = fields;
     const corePulseState = core._get_logic_pulse_state();
-    if (scenario === 'A10A11-one-write') {
+    if (isWritePulse) {
       pulseStateAtEnd = corePulseState;
       if (pulseReleaseTick === null && (corePulseState === 2 || corePulseState === 3)) {
         pulseReleaseTick = tick;
@@ -345,15 +395,15 @@ async function runTrial(coreFactory, rom, scenario, {onTimelineSample} = {}) {
       }
     }
   }
-  return {
+  const result = {
     scenario, ticks: TRIAL.maxTicks,
     faultSetterFrame, effectiveFaultTick, reportedActivationFrame,
     externalInputZeroTicks, cursorValueChanges, heldPadValueChanges,
     streamSHA256: streamHash.digest('hex'),
     preFaultStreamSHA256: preFaultHash.digest('hex'),
     timelineSHA256: timelineHash.digest('hex'),
-    pulse: scenario === 'A10A11-one-write' ? {
-      requestedAffectedWrites: 1, finalCoreState: pulseStateAtEnd, releaseTick: pulseReleaseTick,
+    pulse: isWritePulse ? {
+      requestedAffectedWrites: faultConfig.args[3], finalCoreState: pulseStateAtEnd, releaseTick: pulseReleaseTick,
       affectedWritesAtRelease,
       releaseReason: pulseStateAtEnd === 2 ? 'affected-write-limit' :
         pulseStateAtEnd === 3 ? 'frame-limit' : 'still-active-or-unknown'
@@ -361,6 +411,20 @@ async function runTrial(coreFactory, rom, scenario, {onTimelineSample} = {}) {
     samples,
     timeline
   };
+  if (collectSafety) result.safety = {cpuStopTicks, cpuHaltTicks, cpuNonzeroTicks, demoActiveTicks,
+    postFaultCursorValueChanges, postFaultHeldPadValueChanges, postFaultPressedPadValueChanges,
+    playerObjectIdOneTimelineTicks};
+  return result;
+}
+
+async function runTrial(coreFactory, rom, scenario, options = {}) {
+  if (!Object.hasOwn(TRIAL.scenarios, scenario)) fail(`Unknown trial scenario: ${scenario}`);
+  return executeTrial(coreFactory, rom, scenario, TRIAL.scenarios[scenario], options);
+}
+
+async function runConfiguredWritePulseTrial(coreFactory, rom, spec, options = {}) {
+  const config = validateConfiguredWritePulse(spec);
+  return executeTrial(coreFactory, rom, config.name, config, options);
 }
 
 function sameTrials(left, right) {
@@ -506,6 +570,7 @@ if (require.main === module) {
 module.exports = {
   TOOL_VERSION, PROTOCOL_VERSION, APP_PROFILE, SONIC1_LAYOUT, PLAYER_LAYOUT, PHASE_WINDOW, TRIAL,
   inputBufferIsZero, readAttractFields, readLogicalByte, readLogicalWord, readLogicalLong, readLogicalSignedWord,
-  comparePhases, serializeTrial, prefaultMatches, runTrial, sameTrials,
+  comparePhases, serializeTrial, prefaultMatches, runTrial, runConfiguredWritePulseTrial,
+  validateConfiguredWritePulse, sameTrials, CONFIGURED_WRITE_PULSE_LIMITS,
   validateAppDirectory, validateManifest, validateRomBuffer, loadVerified
 };

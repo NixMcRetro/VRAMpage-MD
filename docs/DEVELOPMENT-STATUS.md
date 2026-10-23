@@ -5,8 +5,8 @@ Verified on 23 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
-Verified integration base: `81095ad0b3c9f66642ff577e9287524eee2ab472`.
-[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39877939952)
+Verified integration base: `f4cf8d279c92df4d55266cc0c63d4dc958513230` (PR #31).
+[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39898869974)
 passed source, Chromium, Firefox, WebKit and actual-core/package checks.
 Playwright caches are primed on main; normal application/release remains v0.2.7.
 The first affected write is identified at PC `$B46`; bounded actual-bus evidence
@@ -269,3 +269,24 @@ record, including the distinction between listing context and observed milestone
 This result explains a bounded one-tick wait delay, not sustained gameplay
 divergence. Next: choose a source-backed bounded RAM experiment using the
 existing demo/player observer, with no game-specific edits or silent recovery.
+
+
+## A12/A13 object-alias candidate evaluated
+
+The [bounded candidate](RAM-GAMEPLAY-CANDIDATE.md) produced a valid negative.
+Six public v0.2.7 fresh-core trials passed protocol, repeats, prefault,
+noninterference, zero-input and exact one-write release checks. The first affected
+byte write was `$FFD022` to `$C022`, the player object's status field rather than
+its position or velocity. Demo progression and the recorded CPU/player safety
+checks passed. All 596 frame/demo/player pairs match baseline at the unique
+zero-tick offset; no qualifying position difference was observed.
+
+The normal app, public download, runtime API and version remain unchanged.
+The shared observer preserves the old default scenarios and API guards; actual
+baseline and A10/A11 observations match their previous immutable public-core
+records exactly. Local source, native/sanitizer and JavaScript suites passed,
+including nine new candidate groups. Independent specialist source review
+approved the helper, trace invariants and positive/negative report assembly.
+Genuine trajectory divergence remains unproven. Next: a separately defined
+source-backed follow-up using the observed status-write location, with no
+post-hoc changes to this experiment or silent CPU recovery.
