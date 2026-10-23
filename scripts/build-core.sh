@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PROFILE="${1:-normal}"
+PROFILE="${1-normal}"
 if [[ $# -gt 1 || ( "$PROFILE" != normal && "$PROFILE" != runtime ) ]]; then
   echo "Usage: $0 [normal|runtime]" >&2
   exit 2
