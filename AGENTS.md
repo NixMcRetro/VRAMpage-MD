@@ -40,6 +40,25 @@ must pass before merging. Completed verified work is authorised for merge into
 this repository's main; do not force-push. Verify merged source and CI, and
 record the final state in the queue/status. Never claim an unexecuted check.
 
+## Efficient execution
+
+Reuse the latest verified checkpoint and inspect changes since its recorded
+commit before repeating an investigation. Read relevant sections of long history
+and logs; do not repeatedly dump unchanged documents or tool instructions.
+Give workers bounded objectives, files and acceptance criteria with only the
+context they need. Avoid duplicated investigation and unnecessary workers.
+
+Batch related source, test and Markdown edits before pushing. Use focused checks
+while iterating, then run the full applicable suite on the final source. Repeat
+checks only for changed code, failures or unresolved concerns. Preserve all
+required coverage and independent specialist review.
+
+Use one native CI watcher per run, with output captured locally. Avoid duplicate
+API polls and repetitive waiting messages; report meaningful results or blockers.
+Inspect failed steps before retrying. Finish related documentation before
+triggering another full CI run. Keep the current continuation checkpoint short,
+with exact commits/checks, evidence links, blockers and the next bounded task.
+
 ## Versions, releases and evidence
 
 `VERSION` and `docs/VERSIONING.md` are authoritative. Use 0.2.x for incremental

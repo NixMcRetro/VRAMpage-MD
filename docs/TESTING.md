@@ -637,3 +637,19 @@ if none is eligible. A cache miss or eviction triggers a normal download.
 Cache keys change with the pinned requirements or runner image; no broad fallback
 key restores binaries from a different version. This is CI reuse, separate from
 the already persistent tools in the development workspace or the user's Mac.
+
+## Isolated VBlank wait/release diagnostic
+
+The [bounded wait protocol](VBLANK-WAIT-SEQUENCE.md) layers passive target-byte
+bus classes and instruction milestones onto the isolated origin diagnostic.
+The build workflow compiles this staged core once and runs both old origin and
+new wait suites against it; normal production/package checks remain separate.
+New actual-WASM cases cover poll compression, clear and setup writes, exact
+pulse cutoff, post-release tracing, disabled/non-target/window behaviour,
+unexpected PC, unknown attribution, ordering, overflow and non-RAM IO writes.
+The runner tests malformed records, baseline tick pairing, report construction,
+noninterference acceptance and the locked source-revision profile.
+
+Private-cartridge results require a clean committed tool stage, whole-source
+hash verification, the matching Revision 0 source build and unchanged public
+v0.2.7 equivalence. Synthetic results alone do not satisfy those experiment gates.

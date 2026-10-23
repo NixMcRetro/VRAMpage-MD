@@ -64,3 +64,4 @@ v0.2.7 includes an optional, default-disabled metadata-only RAM write trace for 
 - [VBlank/RAM alias and audio phase protocol](RAM-ALIAS-AUDIO-PHASE.md): read-only developer experiment with corrected source interpretation.
 
 - [VBlank store origin](VBLANK-STORE-ORIGIN.md): isolated diagnostic build, CPU provenance tests and bounded write classification.
+- [VBlank wait/release sequence](VBLANK-WAIT-SEQUENCE.md): bounded actual-bus flag and instruction observations following the one-write alias.
