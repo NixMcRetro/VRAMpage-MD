@@ -39,8 +39,9 @@
       return {
         modelId: id,
         modelVersion: version,
+        supportedModelsMask: Module["_get_vram_supported_model_mask"](),
         effective: Module["_get_vram_fault_model_effective"]() !== 0,
-        reason: ["none", "no-fault", "unsupported-mode"][reasonCode] || "none",
+        reason: ["none", "no-fault", "unsupported-mode", "off"][reasonCode] || "none",
         mask: Module["_get_vram_fault_model_mask"](),
         bridgeA: Module["_get_vram_fault_model_bridge_a"](),
         bridgeB: Module["_get_vram_fault_model_bridge_b"](),
