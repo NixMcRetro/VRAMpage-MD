@@ -118,6 +118,16 @@ def test_previous_diagnostic_build_upgrades(vendor: Path, target: Path):
                                         old_guard + "\n#include \"vram_transaction_render.h\"")
     render.write_text(source)
 
+    damaged = source = dma.read_text().replace(old_guard, new_guard, 1)
+    dma.write_text(damaged)
+    result = subprocess.run(
+        [os.environ.get("PYTHON", "python3"), str(ROOT / "scripts/patch_core.py"), str(target)],
+        text=True, capture_output=True,
+    )
+    if result.returncode == 0:
+        raise AssertionError("partial prior VRAM guard layout was accepted")
+    dma.write_text(damaged.replace(new_guard, old_guard, 1))
+
     command([os.environ.get("PYTHON", "python3"), str(ROOT / "scripts/patch_core.py"), str(target)])
     if expected != {name: (target / name).read_bytes() for name in touched}:
         raise AssertionError("prior diagnostic-only patched source did not upgrade to runtime guards")
