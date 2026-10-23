@@ -808,5 +808,5 @@ The package step initially rejected the committed timing gzip files under its
 existing opaque-archive rule. Full records are now retained at the immutable
 [archive commit](https://github.com/NixMcRetro/VRAMpage-MD/tree/28c42a3a48ac376c893a1cff699d10ab02122668/docs/experiments),
 with summaries and exact archive links in current documentation. The package
-keeps its archive/ROM/secret rejection checks unchanged. A real package build is
-required before rerunning CI; no runtime source changed for this correction.
+keeps its archive/ROM/secret rejection checks unchanged. A real 381-file package build and all 21 package/version/release tests passed
+before rerunning CI; no runtime source changed for this correction.

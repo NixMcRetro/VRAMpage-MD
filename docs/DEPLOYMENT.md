@@ -120,3 +120,12 @@ existing titles, note bodies and the Latest pointer. It does not compile,
 replace, upload or delete binaries. See [release presentation](RELEASE-CURATION.md)
 for the original-description archive and future-update procedure. New runnable
 versions still require the separate reviewed release-build workflow above.
+
+### Repository-only timing archives
+
+The local ZIP rejects opaque nested archives, including tracked gzip files. Keep
+complete compressed renderer measurements at the immutable Git commit linked
+from [renderer evidence](VRAM-RENDER-DIAGNOSTIC.md), and include readable summaries
+and archive links in the current tree. Do not loosen ROM, secret or archive
+rejection to include research blobs. Reproduce `scripts/package-review.py` locally
+after adding package inputs, as source/core tests alone do not validate the ZIP.

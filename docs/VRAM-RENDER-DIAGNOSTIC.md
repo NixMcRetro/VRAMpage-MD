@@ -223,3 +223,9 @@ these archive links rather than nested gzip files. This preserves the existing
 packager rule rejecting opaque nested archives; no archive, ROM or secret check
 was weakened. The full raw timing data remains available in the archived Git
 commit and ordinary repository history.
+
+The v1 compressed archive is 5,336,253 bytes with SHA-256
+`7494bd6470f3306b2c9ae1f391ef6ddf29b2367f7644b1fd2e902d24f28c00bc`.
+The v2 compressed archive is 5,306,133 bytes with SHA-256
+`e5413263fe427a56cead4c8995a9169701549c605579d62d68e722c90835c8a4`.
+Both decompress to the full raw hashes and byte counts recorded above.
