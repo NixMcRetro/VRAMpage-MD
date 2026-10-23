@@ -47,6 +47,22 @@ class VramRendererPatch(unittest.TestCase):
         with self.assertRaises(SystemExit):
             patch_core.patch_mode5_render_reads(drifted)
 
+    def test_fresh_source_missing_name_load_or_new_raw_byte_load_fails_closed(self):
+        raw = re.compile(r"(?m)^\s*atbuf = nt\[[^\n]+\];$")
+        drifted, count = raw.subn("", self.source, count=1)
+        self.assertEqual(count, 1)
+        with self.assertRaises(SystemExit):
+            patch_core.patch_mode5_render_reads(drifted)
+
+        patched = patch_core.patch_mode5_render_reads(self.source)
+        name = "void render_bg_m5(int line"
+        start = patched.index(name)
+        raw_read = "  uint8 unexpected_read = vram[0x1234];\n"
+        drifted = patched[:start] + patched[start:].replace(
+            "  uint32 *nt =", raw_read + "  uint32 *nt =", 1)
+        with self.assertRaises(SystemExit):
+            patch_core.patch_mode5_render_reads(drifted)
+
     def test_raw_scroll_and_pattern_reads_reintroduced_after_marker_fail(self):
         patched = patch_core.patch_mode5_render_reads(self.source)
         drifted_scroll = patched.replace(

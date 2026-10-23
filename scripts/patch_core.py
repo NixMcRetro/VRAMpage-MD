@@ -591,7 +591,9 @@ def patch_mode5_render_reads(source: str) -> str:
             routed_table_count = len(routed_table.findall(body))
             if already_patched and table_count:
                 raise SystemExit(f'Unrouted name-table read was reintroduced in {name}.')
-            if table_count and routed_table_count == 0:
+            if not already_patched and table_count != 6:
+                raise SystemExit(f'Pinned {name} requires exactly six raw name-table reads.')
+            if table_count == 6 and routed_table_count == 0:
                 body, changed = raw_table.subn(
                     lambda match: match.group(1) + 'atbuf = VRAM_TX_RENDER_U32('
                     '(uint32)((uint8 *)nt - vram) + ((' + match.group(2) +
@@ -600,7 +602,12 @@ def patch_mode5_render_reads(source: str) -> str:
                     raise SystemExit(f'Unexpected {name} name-table read count.')
             elif table_count != 0 or routed_table_count != 6:
                 raise SystemExit(f'Pinned {name} name-table reads are missing or drifted.')
-            if (re.search(r'\*\(uint32 \*\)&vram\[', body) or
+            vram_ref_lines = re.findall(r'(?m)^.*\bvram\s*\[[^\n]*$', body)
+            expected_base_refs = 5 if name.endswith('_vs') else 3
+            if (len(vram_ref_lines) != expected_base_refs or
+                    any(not re.match(r'\s*(?:uint32 \*nt|nt)\s*=\s*'
+                                     r'\(uint32 \*\)&vram\[', line)
+                        for line in vram_ref_lines) or
                     raw_table.search(body)):
                 raise SystemExit(f'Unrouted raw M5 VRAM read remains in {name}.')
             replacements.append((start, end, body))
