@@ -19,6 +19,8 @@ If your Mac blocks `START.command`, right-click it and choose **Open**, or follo
 
 **Important:** GitHub's green **Code → Download ZIP** gives you a *source-only* archive, not the ready-to-run application. Use the **complete Mac ZIP** above.
 
+[Previous v0.2.7 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.7/VRAMpage-MD-v0.2.7-macos.zip) remains available for reproducing earlier experiments.
+
 [Latest release and checksum](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.8) · [Other runnable versions and historical source releases](docs/RELEASE-HISTORY.md)
 
 **v0.2.8 update:** the work-RAM chip is more compact, with synthetic layout checks at laptop-sized browser viewports. The previous v0.2.7 release includes optional, default-disabled RAM write tracing for developer experiments. See the [RAM write trace guide](docs/RAM-WRITE-TRACE.md).
