@@ -1,3 +1,13 @@
+# Browser CI provisioning
+
+Browser binaries use the existing pinned Playwright cache. OS libraries are still
+installed on fresh runners. Repeated Firefox setup delays were traced to slow
+Ubuntu Azure-mirror package transfers before any browser tests began. CI now
+switches that runner mirror to the standard Ubuntu archive, retaining suites,
+components and signing keys. Idle downloads have a 30-second timeout and one
+retry; the dependency step has a six-minute total limit. Package lists, browser
+versions and all test assertions are unchanged. Setup failure still fails CI.
+
 # v0.2.8 compact work-RAM verification
 
 Linux Chromium measured the Work RAM diagram at 260 by 192 CSS pixels, down
