@@ -712,12 +712,20 @@ def upgrade_vram_runtime_guards(wasm: str, dma: str, render_c: str):
     new = '#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)'
     if 'VRAM TX HANDLER TEST BRIDGE v1' in dma and old in dma:
         positions = [match.start() for match in re.finditer(re.escape(old), dma)]
-        if len(positions) != 10:
-            raise SystemExit('Prior VRAM transaction guard layout changed; refusing partial upgrade.')
+        runtime_guard_count = dma.count(new)
         bridge_positions = [position for position in positions
                             if 'VRAM TX HANDLER TEST BRIDGE v1' in dma[position:position + 160]]
         if len(bridge_positions) != 1:
             raise SystemExit('Prior VRAM diagnostic bridge guard is ambiguous.')
+        if len(positions) == 10 and runtime_guard_count == 0:
+            pass
+        elif (len(positions) == 1 and runtime_guard_count == 9 and
+              dma.count('vram_tx_core_effective(') == 8 and
+              dma.count('vram_tx_core_read_address(') == 5 and
+              dma.count('vram_tx_core_write_lane(') == 4):
+            pass
+        else:
+            raise SystemExit('Prior VRAM transaction guard layout changed; refusing partial upgrade.')
         for position in reversed(positions):
             if position not in bridge_positions:
                 dma = dma[:position] + new + dma[position + len(old):]

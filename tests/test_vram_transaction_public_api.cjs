@@ -100,6 +100,13 @@ function makeMode5Rom(core) {
   assert.equal(runtime._set_vram_address_mask(0), 0);
   assert.equal(runtime._get_vram_fault_model_state().modelId, 1,
     'legacy setter continues selecting frame projection');
+  runtime._set_vram_short(0, 1);
+  state = runtime._get_vram_fault_model_state();
+  assert.equal(state.modelId, 1, 'legacy pair setter continues selecting frame projection');
+  assert.equal(state.mask, 0);
+  assert.equal(state.bridgeA, 0);
+  assert.equal(state.bridgeB, 1);
+  assert.equal(state.effective, true, 'frame-projection effectiveness reflects an active legacy fault');
 
   const callbackOrder = [];
   const callbacks = await require(runtimePath)({
