@@ -130,12 +130,13 @@ and archive links in the current tree. Do not loosen ROM, secret or archive
 rejection to include research blobs. Reproduce `scripts/package-review.py` locally
 after adding package inputs, as source/core tests alone do not validate the ZIP.
 
-### Optional model API test profile
+### Optional transaction runtime core
 
-The [safe model API](VRAM-PUBLIC-MODEL-API.md#reproduce-the-optional-developer-build)
-is currently built by the five-profile actual-WASM harness, not by a production
-runtime-profile command or the public website build. Its pre-JavaScript shim and
-`VRAM_TX_RUNTIME` enablement are isolated from diagnostic bridges.
-`scripts/build-core.sh` still builds the normal app. Do not enable all diagnostic
-exports to ship transaction controls; production build, UI and release acceptance
-are the next stage.
+`bash scripts/build-core.sh` (or explicit `normal`) still builds the normal app.
+The opt-in `bash scripts/build-core.sh runtime` builds the reviewed
+[model API](VRAM-PUBLIC-MODEL-API.md) in isolated `build/runtime-profile`, with
+matching source, shim and rebuild instructions. See [runtime build instructions](VRAM-RUNTIME-BUILD.md).
+No diagnostic bridges are enabled and the public website/release workflows
+continue using the normal profile. Application controls, experiment exports,
+performance and release acceptance remain future work. Do not enable diagnostic
+exports to ship transaction controls or silently replace an existing release.
