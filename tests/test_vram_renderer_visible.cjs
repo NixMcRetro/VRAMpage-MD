@@ -2,7 +2,6 @@
 'use strict';
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const factories = process.argv.slice(2).map(p => ({p, f: require(path.resolve(p))}));
 const FRAME_BYTES = 640 * 480 * 4;
 function absWord(address, value) { return [0x33fc, value & 0xffff, address >>> 16, address & 0xffff]; }
 function vdpRegister(reg, value) { return absWord(0xc00004, 0x8000 | ((reg & 0x1f) << 8) | (value & 0xff)); }
@@ -48,7 +47,28 @@ function visibleCartridge(scrollPixels = 0, options = {}) {
   words.push(...vdpData(0xfc00, scrollTable));
   words.push(...vdpData(0xec00, Array(40).fill(0)));
   words.push(...vdpRegister(1, 0x74)); // Display enable after scene setup.
-  words.push(0x4e72, 0x2700, 0x60fe); // STOP, then remain stopped.
+  if (options.recurringDma) {
+    words.push(...absWord(0xff0000, 0)); // Synthetic loop counter in work RAM.
+    const loopWord = words.length;
+    for (const [reg, value] of [[19,32], [20,0], [21,0], [22,0x20], [23,0]]) {
+      words.push(...vdpRegister(reg, value));
+    }
+    // VRAM write DMA to 0x6000, 32 words from the ROM fixture at byte 0x4000.
+    words.push(...absWord(0xc00004, 0x6000), ...absWord(0xc00004, 0x0081));
+    // ADDQ.W #1, ($FF0000).L proves the DMA loop keeps advancing after warmup.
+    words.push(0x5279, 0x00ff, 0x0000);
+    const branchAfter = words.length + 1;
+    const displacement = (loopWord - branchAfter) * 2;
+    if (displacement < -128 || displacement > 127) throw new Error('DMA loop branch out of range');
+    if (branchAfter + (displacement / 2) !== loopWord)
+      throw new Error('DMA loop branch target does not match setup start');
+    words.push(0x60fe & 0xff00 | (displacement & 0xff));
+    if (0x200 + words.length * 2 > 0x4000)
+      throw new Error('DMA loop overlaps its ROM source block');
+    for (let i = 0; i < 32; i++) view.setUint16(0x4000 + i * 2, 0x5a5a);
+  } else {
+    words.push(0x4e72, 0x2700, 0x60fe); // STOP, then remain stopped.
+  }
   words.forEach((w, i) => view.setUint16(0x200 + i * 2, w));
   return rom;
 }
@@ -278,6 +298,23 @@ async function main() {
     'the third name-table cell changes when its logical word aliases e000');
   assert.deepEqual(pixel(nameAliased.frame, 0, 0), pixel(nameAliased.frame, 16, 0),
     'name cells zero and two resolve through the same mapped name-table bytes');
+
+  const dmaScene = await runScene(diagnosticEntry,
+    visibleCartridge(0, {recurringDma: true}), 5);
+  assert.notDeepEqual(dmaScene.state.ram.subarray(0, 2), Buffer.from([0, 0]),
+    'original 68K ROM loop counter advances in work RAM during setup/warmup');
+  assert.equal(dmaScene.c._set_vram_transaction_diagnostic(2, 8, -1, -1), 0);
+  nextFrame(dmaScene.c);
+  const dmaWritesAfterFrame1 = dmaScene.c._get_vram_tx_counter(1);
+  nextFrame(dmaScene.c);
+  const dmaWritesAfterFrame2 = dmaScene.c._get_vram_tx_counter(1);
+  // The runtime resets counters at tick start; both consecutive-frame counts
+  // therefore prove DMA continues after warmup rather than running only once.
+  assert.ok(dmaWritesAfterFrame1 >= 64n && dmaWritesAfterFrame2 >= 64n,
+    'original 68K ROM loop performs a recurring 32-word DMA in consecutive frames');
   console.log('VRAM visible renderer fixture passed: baseline equivalence, visible aliases, cache refresh, reconnect.');
 }
-main().catch(error => { process.stderr.write(error.stack + '\n'); process.exitCode = 1; });
+if (require.main === module) {
+  main().catch(error => { process.stderr.write(error.stack + '\n'); process.exitCode = 1; });
+}
+module.exports = {visibleCartridge, makeCore, observable};
