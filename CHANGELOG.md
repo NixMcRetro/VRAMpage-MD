@@ -1,5 +1,11 @@
 # Changelog
 
+## Post-v0.2.7 configured object-alias experiment
+
+- Reuse the bounded observer driver for separately named, validated write-pulse experiments while preserving its default scenarios and historical records.
+- Define one A12/A13 object-memory alias candidate with separate protocol integrity, source hypothesis and phase-aligned trajectory criteria; retain negative outcomes honestly.
+- Keep the normal emulator, public v0.2.7 package, fault models and runtime API unchanged.
+
 ## Post-v0.2.7 bounded wait diagnostic
 
 - Add an isolated, default-disabled developer diagnostic for bounded actual-bus flag classes and wait-loop milestones. Keep the normal app, runtime API and public download unchanged.
