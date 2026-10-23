@@ -19,6 +19,7 @@
 #include "vram_transaction_runtime.h"
 
 static vram_tx_state_t vram_tx_diagnostic_state;
+static vram_tx_counters_t vram_tx_last_frame_counters;
 static int vram_tx_diagnostic_initialized;
 static int vram_tx_diagnostic_is_selected;
 static int vram_public_model_id = 1;
@@ -111,6 +112,17 @@ static void vram_tx_update_render_fast_flag(void) {
     vram_tx_diagnostic_render_active = vram_tx_diagnostic_effective();
 }
 
+static void vram_tx_clear_last_frame_counters(void) {
+    memset(&vram_tx_last_frame_counters, 0, sizeof(vram_tx_last_frame_counters));
+}
+
+static void vram_tx_publish_last_frame_counters(void) {
+    if (vram_tx_diagnostic_initialized)
+        vram_tx_last_frame_counters = vram_tx_diagnostic_state.counters;
+    else
+        vram_tx_clear_last_frame_counters();
+}
+
 int vram_tx_diagnostic_selected(void) {
     return vram_tx_diagnostic_is_selected;
 }
@@ -131,6 +143,7 @@ void vram_tx_diagnostic_reset(void) {
     }
     vram_tx_diagnostic_is_selected = 0;
     vram_public_model_id = 1;
+    vram_tx_clear_last_frame_counters();
     vram_tx_update_render_fast_flag();
     bend_a = bend_b = -1;
     bend_address_mask = 0;
@@ -140,7 +153,9 @@ void vram_tx_diagnostic_reset(void) {
 
 void vram_tx_diagnostic_legacy_override(void) {
     vram_public_model_id = 1;
+    vram_tx_clear_last_frame_counters();
     if (!vram_tx_diagnostic_initialized || !vram_tx_diagnostic_is_selected) return;
+    vram_tx_reset_frame_counters(&vram_tx_diagnostic_state);
     (void)vram_tx_configure(&vram_tx_diagnostic_state, VRAM_TX_MODEL_OFF,
                             0, -1, -1, vram_tx_diagnostic_state.supported_mode);
     vram_tx_diagnostic_is_selected = 0;
@@ -165,6 +180,8 @@ int vram_tx_diagnostic_configure(int model, int mask, int bridge_a,
     vram_tx_diagnostic_is_selected =
         model == VRAM_TX_MODEL_LOGICAL_BYTE_TRANSACTION_V1;
     vram_public_model_id = model;
+    vram_tx_reset_frame_counters(&vram_tx_diagnostic_state);
+    vram_tx_clear_last_frame_counters();
     vram_tx_update_render_fast_flag();
     bend_a = bend_b = -1;
     bend_address_mask = 0;
@@ -176,8 +193,11 @@ int vram_tx_diagnostic_configure(int model, int mask, int bridge_a,
 
 void vram_tx_diagnostic_mode_changed(int mode5_supported) {
     if (!vram_tx_diagnostic_is_selected) return;
+    int was_supported = vram_tx_diagnostic_state.supported_mode;
     (void)vram_tx_set_supported_mode(&vram_tx_diagnostic_state,
                                      mode5_supported);
+    if (was_supported != (mode5_supported != 0))
+        vram_tx_clear_last_frame_counters();
     vram_tx_update_render_fast_flag();
     vram_tx_apply_cache_invalidation();
 }
@@ -277,6 +297,8 @@ int EMSCRIPTEN_KEEPALIVE set_vram_fault_model_c(double model_value,
         vram_tx_diagnostic_initialized = 1;
         vram_tx_diagnostic_is_selected = 0;
         vram_public_model_id = 0;
+        vram_tx_reset_frame_counters(&vram_tx_diagnostic_state);
+        vram_tx_clear_last_frame_counters();
         bend_a = bend_b = -1; bend_address_mask = 0; bend_restore_cache = 1;
         vram_tx_update_render_fast_flag(); vram_tx_apply_cache_invalidation();
         return 0;
@@ -285,6 +307,13 @@ int EMSCRIPTEN_KEEPALIVE set_vram_fault_model_c(double model_value,
 }
 
 int EMSCRIPTEN_KEEPALIVE get_vram_fault_model_id(void) { return vram_public_model_id; }
+int EMSCRIPTEN_KEEPALIVE get_vram_supported_model_mask(void) {
+    int mask = (1 << VRAM_TX_MODEL_OFF) |
+               (1 << VRAM_TX_MODEL_FRAME_PROJECTION_V1);
+    if ((system_hw & SYSTEM_MD) && (reg[1] & 0x04))
+        mask |= 1 << VRAM_TX_MODEL_LOGICAL_BYTE_TRANSACTION_V1;
+    return mask;
+}
 int EMSCRIPTEN_KEEPALIVE get_vram_fault_model_effective(void) {
     if (vram_public_model_id == VRAM_TX_MODEL_FRAME_PROJECTION_V1) return bend_active();
     if (vram_public_model_id == VRAM_TX_MODEL_LOGICAL_BYTE_TRANSACTION_V1)
@@ -292,7 +321,8 @@ int EMSCRIPTEN_KEEPALIVE get_vram_fault_model_effective(void) {
     return 0;
 }
 int EMSCRIPTEN_KEEPALIVE get_vram_fault_model_reason(void) {
-    if (vram_public_model_id != 2) return 0;
+    if (vram_public_model_id == 0) return 3;
+    if (vram_public_model_id == 1) return bend_active() ? 0 : 1;
     if (!vram_tx_diagnostic_state.supported_mode) return 2;
     if (!vram_tx_diagnostic_state.has_fault) return 1;
     return 0;
@@ -314,11 +344,11 @@ const char * EMSCRIPTEN_KEEPALIVE get_vram_fault_model_version(void) {
 uint64_t EMSCRIPTEN_KEEPALIVE get_vram_fault_model_counter(unsigned counter) {
     if (counter > 4) return 0;
     switch (counter) {
-      case 0: return vram_tx_diagnostic_state.counters.logical_byte_reads;
-      case 1: return vram_tx_diagnostic_state.counters.logical_byte_writes;
-      case 2: return vram_tx_diagnostic_state.counters.redirected_byte_reads;
-      case 3: return vram_tx_diagnostic_state.counters.redirected_byte_writes;
-      default: return vram_tx_diagnostic_state.counters.changed_physical_byte_writes;
+      case 0: return vram_tx_last_frame_counters.logical_byte_reads;
+      case 1: return vram_tx_last_frame_counters.logical_byte_writes;
+      case 2: return vram_tx_last_frame_counters.redirected_byte_reads;
+      case 3: return vram_tx_last_frame_counters.redirected_byte_writes;
+      default: return vram_tx_last_frame_counters.changed_physical_byte_writes;
     }
 }
 uint64_t EMSCRIPTEN_KEEPALIVE get_vram_fault_logical_byte_reads(void) {
@@ -401,9 +431,17 @@ static void bend_before_frame(void) {
 
 static void bend_after_frame(void) {
 #if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)
-    if (vram_tx_diagnostic_is_selected) return;
+    if (vram_tx_diagnostic_is_selected) {
+        vram_tx_publish_last_frame_counters();
+        return;
+    }
 #endif
-    if (!bend_active()) return;
+    if (!bend_active()) {
+#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)
+        vram_tx_publish_last_frame_counters();
+#endif
+        return;
+    }
     /* Reconcile changed logical bytes into the physical VRAM snapshot.
        This detects net changes, not exact individual write transactions.
        Collision resolution follows ascending logical address order. */
@@ -415,4 +453,7 @@ static void bend_after_frame(void) {
     }
     memcpy(vram, bend_snapshot, sizeof(bend_snapshot));
     bend_restore_cache = 1;
+#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)
+    vram_tx_publish_last_frame_counters();
+#endif
 }
