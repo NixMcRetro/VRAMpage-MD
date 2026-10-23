@@ -230,7 +230,7 @@ def patch_vram_transactions(source: str) -> str:
               '        /* Update pattern cache */\n'
               '        MARK_BG_DIRTY (index);\n'
               '      }')
-    after = ('#ifdef VRAM_TX_DIAGNOSTIC\n'
+    after = ('#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)\n'
              '      if (vram_tx_core_effective())\n'
              '      {\n'
              '        uint16 lanes[2];\n'
@@ -255,7 +255,7 @@ def patch_vram_transactions(source: str) -> str:
     source = replace_pinned(
         source,
         '      data = *(uint16 *)&vram[addr & 0xFFFE];',
-        '#ifdef VRAM_TX_DIAGNOSTIC\n'
+        '#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)\n'
         '      if (vram_tx_core_effective())\n'
         '      {\n'
         '        uint16 index = addr & 0xFFFE;\n'
@@ -273,7 +273,7 @@ def patch_vram_transactions(source: str) -> str:
         'static unsigned int vdp_68k_data_r_m5(void)\n{',
         'static void vdp_z80_data_w_m4(unsigned int data)\n{',
         '      data = READ_BYTE(vram, addr ^ 1);',
-        '#ifdef VRAM_TX_DIAGNOSTIC\n'
+        '#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)\n'
         '      data = vram_tx_core_effective() ?\n'
         '        READ_BYTE(vram, vram_tx_core_read_address(addr ^ 1)) :\n'
         '        READ_BYTE(vram, addr ^ 1);\n'
@@ -299,7 +299,7 @@ def patch_vram_transactions(source: str) -> str:
               '        /* Update pattern cache */\n'
               '        MARK_BG_DIRTY (index);\n'
               '      }')
-    after = ('#ifdef VRAM_TX_DIAGNOSTIC\n'
+    after = ('#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)\n'
              '      if (vram_tx_core_effective())\n'
              '      {\n'
              '        uint16 index = addr ^ 1;\n'
@@ -317,7 +317,7 @@ def patch_vram_transactions(source: str) -> str:
         'static unsigned int vdp_z80_data_r_m5(void)\n{',
         'static void vdp_z80_data_w_ms(unsigned int data)\n{',
         '      data = READ_BYTE(vram, addr ^ 1);',
-        '#ifdef VRAM_TX_DIAGNOSTIC\n'
+        '#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)\n'
         '      data = vram_tx_core_effective() ?\n'
         '        READ_BYTE(vram, vram_tx_core_read_address(addr ^ 1)) :\n'
         '        READ_BYTE(vram, addr ^ 1);\n'
@@ -331,7 +331,7 @@ def patch_vram_transactions(source: str) -> str:
     source = replace_pinned(
         source,
         '      data = READ_BYTE(vram, source ^ 1);',
-        '#ifdef VRAM_TX_DIAGNOSTIC\n'
+        '#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)\n'
         '      data = vram_tx_core_effective() ?\n'
         '        READ_BYTE(vram, vram_tx_core_read_address(source ^ 1)) :\n'
         '        READ_BYTE(vram, source ^ 1);\n'
@@ -364,7 +364,7 @@ def patch_vram_transactions(source: str) -> str:
                       '        /* Update pattern cache */\n'
                       '        MARK_BG_DIRTY (addr);')
         indent = '      ' if label.startswith('VRAM copy') else '        '
-        after = (indent + '#ifdef VRAM_TX_DIAGNOSTIC\n'
+        after = (indent + '#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)\n'
                  + indent + 'if (vram_tx_core_effective())\n'
                  + indent + '{\n'
                  + indent + '  uint16 physical = vram_tx_core_write_lane(addr ^ 1, data);\n'
@@ -382,7 +382,7 @@ def patch_vram_transactions(source: str) -> str:
     source = replace_pinned(
         source,
         '      }\n      break;\n    }\n\n    case 2: /* Plane A Name Table Base */',
-        '      }\n#ifdef VRAM_TX_DIAGNOSTIC\n'
+        '      }\n#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)\n'
         '        vram_tx_diagnostic_mode_changed(vram_tx_core_mode5_supported());\n'
         '#endif\n      break;\n    }\n\n    case 2: /* Plane A Name Table Base */',
         'VDP Mode 5 support transition')
@@ -524,7 +524,7 @@ void EMSCRIPTEN_KEEPALIVE clear_vram_tx_test_cache(void)
 
 VRAM_RENDER_MARKER = 'VRAM TX MODE 5 RENDER READS v1'
 VRAM_RENDER_READS = '''
-#ifdef VRAM_TX_DIAGNOSTIC
+#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)
 #include "vram_transaction_render.h" /* VRAM TX MODE 5 RENDER READS v1 */
 #define VRAM_TX_RENDER_U16(address) vram_tx_render_read_u16(address)
 #define VRAM_TX_RENDER_U32(address) vram_tx_render_read_u32(address)
@@ -706,6 +706,43 @@ def patch_vram_fault(wasm: str, patch: str) -> str:
                         '    bend_after_frame();\n}', 1)
 
 
+def upgrade_vram_runtime_guards(wasm: str, dma: str, render_c: str):
+    """Upgrade the exact prior diagnostic-only adapter guards in place."""
+    old = '#ifdef VRAM_TX_DIAGNOSTIC'
+    new = '#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)'
+    if 'VRAM TX HANDLER TEST BRIDGE v1' in dma and old in dma:
+        positions = [match.start() for match in re.finditer(re.escape(old), dma)]
+        runtime_guard_count = dma.count(new)
+        bridge_positions = [position for position in positions
+                            if 'VRAM TX HANDLER TEST BRIDGE v1' in dma[position:position + 160]]
+        if len(bridge_positions) != 1:
+            raise SystemExit('Prior VRAM diagnostic bridge guard is ambiguous.')
+        if len(positions) == 10 and runtime_guard_count == 0:
+            pass
+        elif (len(positions) == 1 and runtime_guard_count == 9 and
+              dma.count('vram_tx_core_effective(') == 8 and
+              dma.count('vram_tx_core_read_address(') == 5 and
+              dma.count('vram_tx_core_write_lane(') == 4):
+            pass
+        else:
+            raise SystemExit('Prior VRAM transaction guard layout changed; refusing partial upgrade.')
+        for position in reversed(positions):
+            if position not in bridge_positions:
+                dma = dma[:position] + new + dma[position + len(old):]
+    old_include = old + '\n#include "vram_transaction.c"\n#endif'
+    new_include = new + '\n#include "vram_transaction.c"\n#endif'
+    if old_include in wasm:
+        if wasm.count(old_include) != 1:
+            raise SystemExit('Prior VRAM runtime include is ambiguous.')
+        wasm = wasm.replace(old_include, new_include, 1)
+    old_render = VRAM_RENDER_READS.replace(new, old)
+    if old_render in render_c:
+        if render_c.count(old_render) != 1:
+            raise SystemExit('Prior Mode 5 renderer guard is ambiguous.')
+        render_c = render_c.replace(old_render, VRAM_RENDER_READS, 1)
+    return wasm, dma, render_c
+
+
 def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     """Patch a clean or previously patched pinned source tree; return changed."""
     patch = Path(__file__).with_name('vram_fault_patch.c').read_text()
@@ -728,6 +765,8 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     if wasm.count('#define SOUND_FREQUENCY 44100') != 1:
         raise SystemExit('Expected wasm.c header missing; upstream changed. No modifications made.')
     wasm = patch_vram_fault(wasm, patch)
+    if transaction_adapter:
+        wasm, dma, render_c = upgrade_vram_runtime_guards(wasm, dma, render_c)
 
     runtime_includes = ('#include "work_ram_fault.c"\n'
                         '#include "work_ram_runtime.c" /* ' + WORK_RAM_MARKER + ' */')
@@ -741,7 +780,7 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
             raise SystemExit('Expected wasm.c include anchor missing; upstream changed. No modifications made.')
         wasm = wasm.replace(include_anchor, include_anchor + '\n' + runtime_includes, 1)
 
-    tx_include = ('#ifdef VRAM_TX_DIAGNOSTIC\n'
+    tx_include = ('#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)\n'
                   '#include "vram_transaction.c"\n'
                   '#endif')
     work_ram_include = '#include "work_ram_runtime.c" /* ' + WORK_RAM_MARKER + ' */'

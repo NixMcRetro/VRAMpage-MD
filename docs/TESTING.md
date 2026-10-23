@@ -810,3 +810,19 @@ existing opaque-archive rule. Full records are now retained at the immutable
 with summaries and exact archive links in current documentation. The package
 keeps its archive/ROM/secret rejection checks unchanged. A real 381-file package build and all 21 package/version/release tests passed
 before rerunning CI; no runtime source changed for this correction.
+
+## Safe core model API verification
+
+The [API record](VRAM-PUBLIC-MODEL-API.md) documents the optional developer/test
+profile, validation matrix, completed-frame counts, supported-mode transitions
+and diagnostic separation. The integrated suite passed 91 Python tests with no
+skips, six nested patch checks, fresh five-profile actual WASM and existing
+JavaScript/native suites. Normal LeakSanitizer passed outside executor
+restrictions, without the worker's local ptrace workaround.
+
+Independent specialist review approved the code and reran the actual API test.
+The normal production build and JS/WASM hashes match previous main; actual-core
+Chromium and a real review package passed. Exact previous-main vendor patching
+upgraded and repeated byte-identically. This is not new runtime performance,
+production transaction-profile, native Mac or physical validation. Required CI
+precedes merge; old experiment data and release binaries remain unchanged.

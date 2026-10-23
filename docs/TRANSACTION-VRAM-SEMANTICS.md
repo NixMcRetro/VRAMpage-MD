@@ -1,9 +1,11 @@
 # Transaction-level VRAM semantics
 
-**Status:** implementable protocol, documentation only. Base commit:
-`97964a06adaf2668acbe975998d30b53dd121ddc`. The application remains at
-`0.2.7`; this protocol defines a possible `0.3.0` model and does not alter the
-runtime. It refines [the architecture and test plan](TRANSACTION-VRAM-PLAN.md).
+**Status:** reviewed implementation contract. Originally written as documentation
+at base `97964a06adaf2668acbe975998d30b53dd121ddc` for application v0.2.7.
+Current version follows root `VERSION`. Native/diagnostic integration and
+[optional core API groundwork](VRAM-PUBLIC-MODEL-API.md) implement stages of this
+contract; public application and v0.3.0 milestone acceptance remain future work.
+It refines [the architecture and test plan](TRANSACTION-VRAM-PLAN.md).
 
 Source evidence is the pinned `h1romas4/wasm-genplus` revision
 [`6090aff9e9b2f578cd28882bd4571d2e35b1d674`](https://github.com/h1romas4/wasm-genplus/tree/6090aff9e9b2f578cd28882bd4571d2e35b1d674).
@@ -244,9 +246,10 @@ IDs `VRAM_MODEL_OFF = 0`, `VRAM_MODEL_FRAME_PROJECTION_V1 = 1`, and
 `VRAM_MODEL_LOGICAL_BYTE_TRANSACTION_V1 = 2`. It returns `VRAM_OK = 0`,
 `VRAM_INVALID_ARGUMENT = 1` for invalid arguments, and
 `VRAM_UNSUPPORTED_MODE = 2` when the requested model is unsupported by the
-active VDP family/mode. All four arguments must be integers; fractional or
+active VDP family/mode, or `VRAM_TX_OUT_OF_MEMORY = 4` if reverse-index
+allocation fails. All four arguments must be integers; fractional or
 non-numeric values return `VRAM_INVALID_ARGUMENT` and do not rely on WASM
-truncation or coercion. On either error, active model, settings, memory,
+truncation or coercion. On any returned error, active model, settings, memory,
 counters and caches are unchanged. IDs 1 and 2 accept exactly one setting
 form: a mask in
 `0..255` with both bridge arguments `-1`, or mask `0` with two distinct bridge
@@ -290,9 +293,9 @@ also zero them so counts cannot mix effective and bypassed periods. A
 suspended or non-selected transaction model reports zero effective
 transaction counts.
 Model metadata must be included in diagnostic snapshots so frame-projection
-and transaction results cannot be mistaken for one another. The application
-version stays `0.2.7` until all
-acceptance gates and independent review are complete.
+and transaction results cannot be mistaken for one another. Application version follows root `VERSION`; optional API groundwork does not
+publish v0.3.0. Complete milestone acceptance and independent review before
+releasing that version.
 
 ## Native helper acceptance before core integration
 

@@ -43,6 +43,7 @@ The interface fits different window sizes, follows your system Light/Dark prefer
 | Topic | Where to start |
 | --- | --- |
 | Source code and contributor build | [Developer build instructions](docs/DEPLOYMENT.md) |
+| Optional core API groundwork | [Safe VRAM model API](docs/VRAM-PUBLIC-MODEL-API.md), developer/test profile only |
 | Technical architecture and fault assumptions | [Logic bending](docs/LOGIC-BENDING.md) · [Video output](docs/VIDEO-OUTPUT.md) |
 | Current verified state and experiments | [Development status](docs/DEVELOPMENT-STATUS.md) · [Experiment records](docs/EXPERIMENTS.md) · [RAM trace](docs/RAM-WRITE-TRACE.md) |
 | Roadmap and next work | [ROADMAP.md](ROADMAP.md) · [Work queue](docs/WORK-QUEUE.md) |
