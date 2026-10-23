@@ -232,7 +232,6 @@ class VramTransactionWasm(unittest.TestCase):
         env = os.environ.copy()
         env["VRAM_RUNTIME_OUTPUT_DIR"] = str(runtime_output)
         env["VRAMPAGE_WASM_GENPLUS"] = str(fixture_vendor)
-        env["VRAMPAGE_WASM_GENPLUS"] = str(fixture_vendor)
         command(["bash", str(build_script)], cwd=fixture, env=env, stdout=subprocess.DEVNULL)
         normal_paths = (fixture / "site/core/genplus.js", fixture / "site/core/genplus.wasm")
         expected_hashes = (
@@ -256,6 +255,26 @@ class VramTransactionWasm(unittest.TestCase):
         self.assertNotEqual(unsafe.returncode, 0)
         self.assertEqual(hashes(normal_paths), expected_hashes,
                          "unsafe output path leaves normal module untouched")
+
+        dotdot_output = fixture / "build/../site/runtime-escape"
+        dotdot_env = env.copy()
+        dotdot_env["VRAM_RUNTIME_OUTPUT_DIR"] = str(dotdot_output)
+        dotdot_result = subprocess.run(["bash", str(build_script), "runtime"],
+                                       cwd=fixture, env=dotdot_env,
+                                       capture_output=True, text=True)
+        self.assertNotEqual(dotdot_result.returncode, 0)
+        self.assertFalse((fixture / "site/runtime-escape").exists(),
+                         "normalized site escape fails before output mutation")
+
+        vendor_child_output = fixture_vendor / "runtime-output"
+        vendor_child_env = env.copy()
+        vendor_child_env["VRAM_RUNTIME_OUTPUT_DIR"] = str(vendor_child_output)
+        vendor_child_result = subprocess.run(["bash", str(build_script), "runtime"],
+                                             cwd=fixture, env=vendor_child_env,
+                                             capture_output=True, text=True)
+        self.assertNotEqual(vendor_child_result.returncode, 0)
+        self.assertFalse(vendor_child_output.exists(),
+                         "configured vendor checkout is protected from output mutation")
 
         symlink_target = fixture / "build/symlink-target"
         symlink_target.mkdir(parents=True)
