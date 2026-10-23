@@ -51,14 +51,25 @@ class VramTransactionHelper(unittest.TestCase):
             "vram-transaction-sanitized-",
         )
 
-    def test_renderer_reads_strict_native(self):
-        self.build_and_run_render(["-O2"], "vram-transaction-render-strict-")
+    def test_renderer_reads_strict_lsb_first(self):
+        self.build_and_run_render(
+            ["-O2", "-DLSB_FIRST"], "vram-transaction-render-lsb-strict-")
 
-    def test_renderer_reads_address_and_undefined_sanitizers(self):
+    def test_renderer_reads_strict_non_lsb(self):
+        self.build_and_run_render(["-O2"], "vram-transaction-render-be-strict-")
+
+    def test_renderer_reads_lsb_address_and_undefined_sanitizers(self):
+        self.build_and_run_render(
+            ["-O1", "-g", "-DLSB_FIRST", "-fsanitize=address,undefined",
+             "-fno-sanitize-recover=all", "-fno-omit-frame-pointer"],
+            "vram-transaction-render-lsb-sanitized-",
+        )
+
+    def test_renderer_reads_non_lsb_address_and_undefined_sanitizers(self):
         self.build_and_run_render(
             ["-O1", "-g", "-fsanitize=address,undefined",
              "-fno-sanitize-recover=all", "-fno-omit-frame-pointer"],
-            "vram-transaction-render-sanitized-",
+            "vram-transaction-render-be-sanitized-",
         )
 
 
