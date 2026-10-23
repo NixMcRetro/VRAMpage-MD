@@ -224,3 +224,15 @@ lifecycle. The public runtime, app version and download are unchanged. The
 result identifies the clear candidate; the complete delayed wait/release
 sequence is the next bounded question. No sustained gameplay divergence or
 new audible/native Mac/physical acceptance is claimed.
+
+## PR #29 integration verified
+
+[PR #29](https://github.com/NixMcRetro/VRAMpage-MD/pull/29) merged as
+`640a22e5da8e13c58bac4f2df3a1433e554f642d`; its tree exactly matches reviewed
+head `c96f256`. [PR CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39874114777)
+and [main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39876027287)
+passed all source, three-browser and actual-core/package checks, including the
+new isolated diagnostic CPU tests. Independent specialist review reproduced
+the private eight-core evidence byte for byte. The normal v0.2.7 application,
+public download, runtime API and historical evidence remain unchanged. Continue
+with the bounded wait/release sequence in the work queue.

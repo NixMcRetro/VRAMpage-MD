@@ -611,3 +611,29 @@ actual-WASM synthetic CPU groups. Normal application assets are not replaced.
 See [the procedure and bounded evidence](VBLANK-STORE-ORIGIN.md) for exact scope.
 The private experiment compares six custom-core trials with two public-core
 trials; its results do not establish native Mac, audible or physical behaviour.
+
+## Persistent CI browser binaries
+
+GitHub-hosted jobs start on fresh Ubuntu 24.04 machines. Both browser workflows
+restore Playwright's `~/.cache/ms-playwright` directory with an exact key made
+from the runner OS/architecture, browser and pinned requirements-file hash.
+The matrix Chromium job and actual-core Chromium job use the same key.
+
+The first run for a key downloads the binaries. Successful installation saves
+them immediately, before the browser tests, so a later test failure does not
+lose that download. Later eligible runs restore the cache. Playwright's install
+command still runs to ensure the requested revision is present; a cache hit
+normally makes this a local check. System dependencies install in a separate
+step on every fresh runner and are not persisted by this browser cache.
+
+The package job also checks CMake, Python, Git and Make before invoking apt.
+If all four are present, it reports their versions and uses them; otherwise it
+installs the missing tools. This avoids a redundant apt update on prepared runners.
+
+No browser tests or system dependency checks are skipped. Python package caches
+also cover both workflows. GitHub cache scope/eviction rules still apply:
+pull-request caches are scoped to their merge ref, and main fills its own cache
+if none is eligible. A cache miss or eviction triggers a normal download.
+Cache keys change with the pinned requirements or runner image; no broad fallback
+key restores binaries from a different version. This is CI reuse, separate from
+the already persistent tools in the development workspace or the user's Mac.
