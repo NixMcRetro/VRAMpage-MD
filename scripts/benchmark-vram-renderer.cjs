@@ -36,6 +36,10 @@ function percentile(samples, fraction) {
   const sorted = [...samples].sort((a, b) => a - b);
   return sorted[Math.max(0, Math.ceil(fraction * sorted.length) - 1)];
 }
+function median(samples) {
+  const sorted = [...samples].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+}
 
 function commandVersion(command, args) {
   try { return execFileSync(command, args, {encoding: 'utf8'}).trim().split('\n')[0]; }
@@ -135,8 +139,21 @@ async function main() {
       };
     });
   }
+  const noFaultVariants = ['normal', 'diagnostic-off', 'identity'];
+  const gateSummary = Object.fromEntries(noFaultVariants.map(name => {
+    const paired = byVariant[name];
+    const medianRatio = median(paired.map(run => run.medianRatioToBaseline));
+    const p95Ratio = median(paired.map(run => run.p95RatioToBaseline));
+    return [name, {
+      medianOfFivePairedMedianRatios: medianRatio,
+      medianOfFivePairedP95Ratios: p95Ratio,
+      pass: medianRatio <= 1.05 && p95Ratio <= 1.05
+    }];
+  }));
+  const performanceGatePass = Object.values(gateSummary).every(value => value.pass);
   const sourceCommit = execFileSync('git', ['rev-parse', 'HEAD'], {cwd: root, encoding: 'utf8'}).trim();
   const report = {
+    recordedAt: new Date().toISOString(),
     protocol: {
       name: 'visible-mode5-recurring-32-word-dma-paired-v1',
       fixedPairs: 5,
@@ -146,6 +163,7 @@ async function main() {
       pairOrder: 'pairs 1,3,5 forward; pairs 2,4 reverse; no result-based reordering or exclusion',
       percentile: 'nearest-rank: sorted[Math.ceil(p*n)-1]; median is nearest-rank p=0.50; p95 is per-run frame p=0.95',
       statisticUse: 'report raw five per-run medians and p95s; do not pool frame samples across runs',
+      performanceGate: 'For normal, diagnostic-off, and identity, median of five paired run ratios to baseline must be <=1.05 for both per-run median frame duration and per-run p95 frame duration. Active AD3 is descriptive and does not determine the no-fault gate.',
       workload: 'visible synthetic Mode 5 tile scene plus original 68K ROM loop issuing recurring 32-word VRAM DMA from ROM byte 0x4000 to VRAM 0x6000',
       variants: forward,
       quietPeriodRequired: true,
@@ -158,6 +176,8 @@ async function main() {
       arch: process.arch,
       cpuModel: os.cpus()[0]?.model || 'unknown',
       logicalCpus: os.cpus().length,
+      totalMemoryBytes: os.totalmem(),
+      loadAverageAtStart: os.loadavg(),
       emscripten: commandVersion('emcc', ['--version']),
       cmake: commandVersion('cmake', ['--version']),
       corePaths,
@@ -166,7 +186,14 @@ async function main() {
       }]))
     },
     pairs,
-    pairedSummary: byVariant
+    pairedSummary: byVariant,
+    performanceGate: {
+      thresholdRatio: 1.05,
+      aggregation: 'median of five paired ratios; per-run p95 is nearest-rank frame p95 within that run',
+      noFaultVariants: noFaultVariants,
+      details: gateSummary,
+      pass: performanceGatePass
+    }
   };
   const output = path.resolve(args.out);
   fs.mkdirSync(path.dirname(output), {recursive: true});
