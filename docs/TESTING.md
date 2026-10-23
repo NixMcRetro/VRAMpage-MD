@@ -688,3 +688,11 @@ full timelines. Source-identity tests use an isolated temporary Git repository
 to test both clean and dirty dependency scopes without relying on the current
 checkout state or generated emulator assets. The CLI entry point also checks
 invalid arguments. Actual cartridge results are recorded separately.
+
+The actual eight-write record passes all six-core gates and the predefined bounded
+trajectory criterion. An independent six-core rerun is byte-identical. At the
+unique demo-aligned offset 0, all 596 demo tuples match and player position differs
+by at least one pixel on 594 ticks (longest consecutive run 432). The baseline
+matches the prior immutable public-core observation. Only the first affected
+write is traced; do not claim the next seven write locations. No native Mac,
+audible, physical or private visual-scene acceptance is inferred.

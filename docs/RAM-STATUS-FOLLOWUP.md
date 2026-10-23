@@ -63,3 +63,57 @@ Do not adjust the budget, activation time, phase range or threshold after seeing
 the result. Preserve the one-write record and all earlier evidence. No normal
 app, emulator API, version, release artifact or Mac download change is planned.
 A bounded result does not establish audible, native Mac or physical behaviour.
+
+## Reproduction
+
+Use a clean committed checkout, the complete unchanged public v0.2.7 package,
+and the private cartridge matching the documented fingerprint:
+
+```sh
+node scripts/observe-ram-status-followup.cjs /private/path/sonic.md --app /path/to/extracted-public-v0.2.7 > /tmp/eight-write-result.json
+```
+
+The runner verifies the ROM, exact package source/version/core hashes and seven
+clean tool/test hashes. Exit zero means protocol integrity passed; scientific
+success is a separate field in the report. No developer SDK or browser install
+is required for this Node experiment.
+
+## Recorded bounded positive result
+
+The [immutable record](experiments/2026-10-23-eight-write-object-alias-v1.json)
+was collected from clean commit `cf25a83f921fc2111b90a1a50796bfbe9535b0bb`.
+Six fresh-core trials passed all integrity gates. An independent specialist
+reran all six trials and obtained byte-identical JSON, SHA-256
+`f91f70220349ff63f54b818886037deec12522cb3cb021b0e31cbbb56013b6e4`.
+
+| Measurement | Result in both enabled repeats |
+| --- | --- |
+| First affected write | CPU `$FFD022`, byte `$D022` to `$C022`, completed frame 1800 |
+| Pulse release | Tick 1801, exactly eight affected writes |
+| Prefault/repeats/trace noninterference | All checks passed |
+| Host input | Zero every tick, all six 2400-tick trials |
+| CPU/demo safety | No CPU flags and active/progressing demo in recorded ticks 1802 through 2400 |
+| Player identity | ID 1 throughout the 602 retained ticks |
+| Unique exact demo alignment | Offset 0, 596/596 demo-state/input tuples match baseline |
+| Exact monitored player-state matches at offset 0 | 0/596 |
+| Position difference of at least one pixel | 594/596 ticks; longest consecutive run 432 |
+| Matching raw frame hashes at offset 0 | 1/596, supporting evidence only |
+| Predefined bounded trajectory criterion | Passed |
+
+The fresh baseline exactly matches the prior one-write experiment's immutable
+public-core baseline. The old one-write result remains negative and unchanged.
+All prior defaults, observer sources, fault model and public binaries are intact.
+
+This satisfies the bounded RAM-stage criterion for this ROM/core/settings:
+recorded demo input progression continues at the same monitored phase while the
+player's trajectory diverges persistently, with no game-code or game-variable edits and no
+CPU intervention. It is not explained by the prior whole-demo
+one-tick delay. It does not establish which subsequent seven bus writes occurred,
+the exact downstream causal path, physical electrical accuracy, audible effects,
+native Mac acceptance, visual scene interpretation or behaviour beyond the
+recorded window. No raw ROM/RAM/audio, frames, full timelines or private paths
+are published.
+
+The next roadmap item is a bounded architecture and test plan for transaction-
+level VRAM access. That implementation has not started, and v0.3.0 remains
+reserved for its completed milestone. The runnable app remains v0.2.7.

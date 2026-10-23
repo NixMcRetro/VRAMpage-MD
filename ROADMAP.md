@@ -56,21 +56,25 @@ review passed. The bounded [audio/state follow-up](docs/RAM-ALIAS-AUDIO-PHASE.md
 reproduces the one-tick player/demo delay without audio hash alignment at five
 tested offsets. Corrected source allocation identifies the VBlank flag. The
 [isolated instruction diagnostic](docs/VBLANK-STORE-ORIGIN.md) identifies a
-zero-write at PC `$B46`, consistent with the clear candidate. Next, verify the
-bounded wait/release sequence without changing game code. The attract-mode
-divergence gate remains open.
+zero-write at PC `$B46`. The [wait-sequence record](docs/VBLANK-WAIT-SEQUENCE.md)
+then verified delayed release. The subsequent [eight-write follow-up](docs/RAM-STATUS-FOLLOWUP.md)
+now verifies bounded same-input-phase player trajectory divergence; no game code
+or variables were edited directly and no CPU intervention was applied.
 
 ## v0.2.0 | Logic-bending experiments
 
 Goal: an **unscripted attract-mode desynchronisation** where Sonic's demo controller playback continues, but faulty RAM or cartridge transactions change the game state. Sonic could collide with scenery, get stuck or crash depending on the hardware fault.
 
 **Current status:** experimental work-RAM integration and UI are implemented.
-Actual-WASM and Chromium checks pass. Read-only repeated cartridge trials now
-confirm internal demo playback in the baseline and after one A10/A11 write.
-Phase alignment shows the monitored player/demo trajectory is delayed one tick,
-so genuine sustained gameplay desynchronisation is not established. The
-attract-mode goal remains incomplete. See [the read-only observations](docs/ATTRACT-MODE-OBSERVATIONS.md),
-[logic-bending model](docs/LOGIC-BENDING.md) and [experiment procedure](docs/EXPERIMENTS.md).
+The predefined A12/A13 eight-write follow-up on the public v0.2.7 core meets the
+bounded attract-mode criterion: all 596 demo-state/input tuples match baseline
+at phase 0 while position differs by at least one pixel for 594 ticks, longest
+run 432. Six fresh-core trials and an independent byte-identical rerun pass the
+integrity and safety gates. See [protocol and limitations](docs/RAM-STATUS-FOLLOWUP.md).
+This does not establish physical electrical fidelity or native Mac/visual/audible
+acceptance. Earlier one-write negative and whole-demo-delay evidence remains
+available in the [read-only observations](docs/ATTRACT-MODE-OBSERVATIONS.md).
+Transaction-level VRAM architecture is next; implementation has not started.
 
 - Start with 68000 work-RAM address/data short model, focusing on bus read/write integration rather than arbitrary random values.
 - Distinguish read and write faults and persistent emulator-RAM changes; do not

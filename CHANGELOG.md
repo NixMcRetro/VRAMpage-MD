@@ -5,6 +5,7 @@
 - Define one separately named A12/A13 eight-write trial with the existing public core, activation timing and trajectory criteria.
 - Reuse the bounded observer and report gates without changing historical defaults, fault models, runtime API or published app.
 - Extend clean-source provenance to the new entry point and its self-contained tests.
+- Record independently reproduced same-input-phase player-position divergence: 594 of 596 ticks differ by at least one pixel, longest run 432; all protocol and recorded safety gates pass.
 
 ## Post-v0.2.7 configured object-alias experiment
 
