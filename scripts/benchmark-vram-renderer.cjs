@@ -128,6 +128,7 @@ function selectProfileModel(core, profile, mask, name) {
     if (result !== 0) throw new Error(`${name}: transaction configuration rejected (${result})`);
     return null;
   }
+  if (!name.startsWith('runtime-')) return null;
 
   for (const method of ['_set_vram_fault_model', '_get_vram_fault_model_state',
     '_get_vram_supported_model_mask']) {
@@ -166,7 +167,8 @@ async function runPreflightVariant(name, factory, rom, mask, ticksAfterSelection
     throw new Error(`${name}: recurring DMA CPU loop did not advance during preflight`);
   const diagnosticCounters = !profile.runtime && typeof core._get_vram_tx_counter === 'function'
     ? [0, 1, 2, 3, 4].map(i => String(core._get_vram_tx_counter(i))) : null;
-  const runtimeState = profile.runtime ? runtimeModelSnapshot(core) : null;
+  const runtimeState = profile.runtime && name.startsWith('runtime-')
+    ? runtimeModelSnapshot(core) : null;
   const counters = runtimeState ? runtimeState.lastFrameCounts : diagnosticCounters;
   const active = name === profile.activeVariant;
   const identity = profile.runtime ? name === 'runtime-identity' : name === 'identity';
@@ -230,7 +232,8 @@ async function runVariant(name, factory, rom, mask, ticksAfterSelection, profile
     .update(Buffer.from(state.audioLeft.buffer, state.audioLeft.byteOffset, state.audioLeft.byteLength))
     .update(Buffer.from(state.audioRight.buffer, state.audioRight.byteOffset, state.audioRight.byteLength))
     .digest('hex');
-  const runtimeState = profile.runtime ? runtimeModelSnapshot(core) : null;
+  const runtimeState = profile.runtime && name.startsWith('runtime-')
+    ? runtimeModelSnapshot(core) : null;
   const counters = runtimeState ? runtimeState.lastFrameCounts :
     typeof core._get_vram_tx_counter === 'function'
       ? [0, 1, 2, 3, 4].map(i => String(core._get_vram_tx_counter(i))) : null;
@@ -437,4 +440,7 @@ if (require.main === module) {
   main().catch(error => { process.stderr.write(`${error.stack}\n`); process.exitCode = 1; });
 }
 
-module.exports = {parseArgs, profileDefinition, runtimeModelSnapshot, selectProfileModel};
+module.exports = {
+  parseArgs, profileDefinition, runtimeModelSnapshot, selectProfileModel,
+  runPreflightVariant, comparePreflightState, entry
+};

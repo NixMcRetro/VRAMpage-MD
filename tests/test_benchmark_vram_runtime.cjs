@@ -52,6 +52,10 @@ function fakeRuntime(supportedModelsMask = 7) {
 }
 
 const runtime = profileDefinition(true);
+assert.equal(selectProfileModel({}, runtime, null, 'baseline'), null,
+  'pinned baseline stays free of the optional runtime API');
+assert.equal(selectProfileModel({}, runtime, null, 'normal'), null,
+  'normal profile stays free of the optional runtime API');
 const core = fakeRuntime();
 const defaultState = selectProfileModel(core, runtime, null, 'runtime-default');
 assert.equal(defaultState.modelId, 1);
