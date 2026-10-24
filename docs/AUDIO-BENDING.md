@@ -31,7 +31,11 @@ bridge affects future writes and does not repair earlier chip state. Clean
 restart/new-ROM initialization clears both bridges and counters. A Z80-only
 partial FM reset preserves the FM bridge and aggregate counters, while native
 chip registers follow their ordinary reset behavior. CPU recovery is not a
-guarantee of restored audio or game state. Export experiments to retain the
+guarantee of restored audio or game state. Both existing CPU recovery actions
+clear memory faults but leave audio fault configurations unchanged. The separate
+development-source **Disconnect all faults** action pauses and attempts every
+domain without resetting the CPU or repairing chip registers; inspect its
+per-domain status and explicitly resume when ready. Export experiments to retain the
 separate settings, exact decimal counters and source identification.
 
 Click **Enable Sound** after loading a cartridge. Browsers require a user

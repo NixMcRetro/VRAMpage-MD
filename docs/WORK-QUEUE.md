@@ -96,3 +96,20 @@ No minor cosmetic/documentation releases or repeated completed research.
    and record the precise remaining actual-game blocker. Never download a
    commercial ROM or claim synthetic tests satisfy the attract-mode milestone.
 5. Record exact tested commits, evidence and limitations. Preserve earlier results.
+
+## Active bounded task: coordinated removal and recovery
+
+Build on verified public v0.4.1/source `e579c57`. Reuse existing setters and
+native fault semantics; no emulator-core rewrite or new hardware model.
+Luna High implements app controls and focused tests; an independent Luna High
+reviewer checks cancellation, partial failures, state reporting and actual-core
+coverage. Coordinator handles docs, integration and required GitHub gates.
+
+Acceptance: one action pauses and best-effort clears each configured domain;
+no late pulse or key release restores a fault or triggers CPU recovery; failures
+retain successful clears and remain paused; optional legacy APIs are reported
+truthfully; CPU-only controls retain RAM/VRAM clearing and audio preservation;
+exported metadata does not confuse fault removal with a CPU intervention.
+Preserve the small-screen chip budget and existing strict configuration import.
+Run full applicable regression and compiled-core browser checks before merge.
+No public release or version bump for this intermediate workbench slice.

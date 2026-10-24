@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased workbench improvements
+
+- Add a distinct pause-and-disconnect action for all fault domains, with pulse/held-action cancellation and per-domain partial-failure reporting.
+- Clarify that CPU recovery clears RAM/VRAM faults while leaving audio faults unchanged. Preserve explicit resume and clean restart as separate actions.
+- Keep the public v0.4.1 package and historical evidence unchanged.
+
 ## v0.4.1 - compact chip workbench
 
 - Bring the four modeled circuits into a compact chip-local workbench, retaining VRAM/Work RAM controls and adding FM/PSG leg controls.
