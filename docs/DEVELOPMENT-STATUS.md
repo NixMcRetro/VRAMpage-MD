@@ -1,5 +1,35 @@
 # Development status and continuation checkpoint
 
+## PR #50 integration checkpoint — 25 October 2026
+
+[PR #50](https://github.com/NixMcRetro/VRAMpage-MD/pull/50) merged as
+`f59f2122a277cca7b12300863e893d42520412f1` after all seven
+[final PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40108624863)
+passed on `7fb89d76c02f16c25a86e358fcd3196c4f7a7ad9`.
+All seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40109011904)
+pass. The merged tree exactly matches the reviewed head. Independent Luna High
+review approved comparison `64ae7a3` and keyboard fix `2d29d0a`.
+
+Saved-export comparison is complete in source: bounded local imports, explicit
+unknown metadata, recorded settings/results, text-only rendering, canceled-read
+protection and keyboard scrolling without game hotkeys. Schema versions remain
+unchanged with additive `logic.available` metadata. Local evidence: native/SDK107,
+Chromium60 before the final keyboard fix, final comparison3/3 in Chromium and
+WebKit, display6/6, actual-core4/4 and transaction3/3. Final CI runs the complete
+61-case interfaces in all three browsers and extracted Firefox/WebKit packages.
+The 683-entry local review package matches source `7fb89d7` and its manifests.
+The public v0.4.1 release, original tag and asset digests remain unchanged;
+McRetro.net was not modified or deployed. No integration blocker remains.
+
+Next bounded task: combined workbench acceptance using existing configuration,
+fault-removal, recovery and comparison flows, then Phase D feature freeze.
+Do not rebuild completed models or publish an intermediate release. Bundle this
+checkpoint with that task rather than opening a documentation-only PR.
+Environment and evidence: `/workspace/scratch/VRAMPAGE-ENVIRONMENT.md` and
+`/workspace/scratch/comparison`; reuse the SDK, core and browser caches.
+No new native macOS, audible, physical-gamepad or electrical evidence is claimed.
+
+
 ## PR #49 integration checkpoint — 25 October 2026
 
 [PR #49](https://github.com/NixMcRetro/VRAMpage-MD/pull/49) merged as
@@ -21,7 +51,7 @@ No additional local/native Mac, audible or physical checks were run.
 Verified on 24 October 2026. Read [work queue](WORK-QUEUE.md),
 [versioning](VERSIONING.md), [testing](TESTING.md) and [roadmap](../ROADMAP.md).
 
-## Current checkpoint
+## Earlier implementation checkpoint
 
 The next source slice adds read-only comparison of two saved experiment exports.
 Implementation is on `experiment/experiment-comparison`, based on merged PR #49

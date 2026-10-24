@@ -13,9 +13,9 @@ Phase C already includes saved configuration preview/apply and the compact
 four-chip workbench in public v0.4.1. The current bounded addition is coordinated
 fault removal with explicit partial-failure status, retaining memory-only CPU
 recovery and clean restart as separate actions. PR #49 completed that slice with
-passing PR/main CI. The next bounded slice compares two saved experiment exports
-read-only, separating identity compatibility from recorded settings and results.
-After comparison acceptance, review the combined workbench flows before the
+passing PR/main CI. PR #50 completed read-only comparison of two saved experiment exports,
+separating identity compatibility from recorded settings and results; all seven
+PR/main checks pass. Next, review the combined workbench flows before the
 Phase D feature freeze.
 Do not repeat the completed configuration or chip integration.
 

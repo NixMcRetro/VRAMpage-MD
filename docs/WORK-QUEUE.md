@@ -1,5 +1,35 @@
 # Development work queue
 
+## PR #50 integration checkpoint — 25 October 2026
+
+[PR #50](https://github.com/NixMcRetro/VRAMpage-MD/pull/50) merged as
+`f59f2122a277cca7b12300863e893d42520412f1` after all seven
+[final PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40108624863)
+passed on `7fb89d76c02f16c25a86e358fcd3196c4f7a7ad9`.
+All seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40109011904)
+pass. The merged tree exactly matches the reviewed head. Independent Luna High
+review approved comparison `64ae7a3` and keyboard fix `2d29d0a`.
+
+Saved-export comparison is complete in source: bounded local imports, explicit
+unknown metadata, recorded settings/results, text-only rendering, canceled-read
+protection and keyboard scrolling without game hotkeys. Schema versions remain
+unchanged with additive `logic.available` metadata. Local evidence: native/SDK107,
+Chromium60 before the final keyboard fix, final comparison3/3 in Chromium and
+WebKit, display6/6, actual-core4/4 and transaction3/3. Final CI runs the complete
+61-case interfaces in all three browsers and extracted Firefox/WebKit packages.
+The 683-entry local review package matches source `7fb89d7` and its manifests.
+The public v0.4.1 release, original tag and asset digests remain unchanged;
+McRetro.net was not modified or deployed. No integration blocker remains.
+
+Next bounded task: combined workbench acceptance using existing configuration,
+fault-removal, recovery and comparison flows, then Phase D feature freeze.
+Do not rebuild completed models or publish an intermediate release. Bundle this
+checkpoint with that task rather than opening a documentation-only PR.
+Environment and evidence: `/workspace/scratch/VRAMPAGE-ENVIRONMENT.md` and
+`/workspace/scratch/comparison`; reuse the SDK, core and browser caches.
+No new native macOS, audible, physical-gamepad or electrical evidence is claimed.
+
+
 ## PR #49 integration checkpoint — 25 October 2026
 
 [PR #49](https://github.com/NixMcRetro/VRAMpage-MD/pull/49) merged as
@@ -49,7 +79,7 @@ and [versioning](VERSIONING.md). Status describes evidence, not promised effects
 | Done B2 | Actual Z80-to-PSG route | Original bootstrap under BUSREQ/RESET, no 68K PSG writes, normal/off equal, active mapping/tone change, reset baseline, independent review | Luna High test author; FM author independent review | Implemented with encoded bootstrap-store validation; independent review and actual FM-enabled runtime pass: exactly three Z80 writes, two changed bytes; included with FM integration |
 
 | Done B3 | Complete audio acceptance | Actual Z80-to-FM and simultaneous FM/PSG traffic; repeated-active determinism, bounded queue/pause behavior and concise audio model overview | Luna High implementation/review; coordinator docs | Implemented and independently reviewed; both FM backend mixed/deterministic tests and Chromium scheduling pass locally; all seven PR/main checks, complete public package and downloaded-core verification passed |
-| Active C | Essential workbench configurations | Versioned save/restore settings with validation, reproducible presets, combined recovery and useful experiment comparison; preserve existing defaults | Luna High architecture/implementation and independent review; basic UI/docs support | Configuration save/preview/apply implemented, including exception-safe pause, unknown-state reporting and normalized pair comparisons. Independent review, full 107-test native/SDK suite, 40 browser logic cases and four actual-core cases pass. GitHub CI is required before merge. Do not add Z80 RAM faults or speculative features first |
+| Active C | Combined workbench acceptance | Versioned save/restore settings with validation, reproducible presets, combined recovery and useful experiment comparison; preserve existing defaults | Luna High architecture/implementation and independent review; basic UI/docs support | Configurations, chip workbench, coordinated removal and saved-export comparison are integrated through PR #50 with passing PR/main CI. Finish combined acceptance, then freeze features; do not add Z80 RAM faults or speculative features |
 
 Configuration slice verified: PR #47 merged `ccc80e12`; PR CI40083076183 and
 main CI40083371467 pass all seven checks. Do not rebuild this completed feature.
@@ -136,7 +166,7 @@ PR #49 and its merged-main run passed all seven checks; the integration
 checkpoint above records the exact source and evidence. Do not repeat that
 implementation.
 
-## Active bounded task: saved experiment comparison
+## Completed bounded task: saved experiment comparison
 
 Build on merged `1bb92a5` and include checkpoint `ec5756e`. Compare two saved
 browser experiment exports without applying settings or calling emulator APIs.
@@ -164,4 +194,15 @@ input validation, explicit unavailable values, a readable scrollable table and
 the additive logic-availability export flag while retaining schema versions.
 Final Chromium60/60 and extracted package core4/4 plus transaction3/3 pass.
 Independent review approves final keyboard fix `2d29d0a`; focused comparison3/3
-passes in both Chromium and WebKit. Required final-head PR/main CI remains.
+passes in both Chromium and WebKit. All seven final-head PR and main checks pass; see the integration checkpoint above.
+
+## Next bounded task: combined workbench acceptance
+
+Reuse the merged implementation and existing original synthetic cartridge tests.
+Exercise configuration save/preview/apply, presets, fault removal, memory-only
+CPU recovery, clean restart, export and comparison as a combined workflow on
+runtime and normal fallback cores. Check active state and retained history,
+truthful partial/unavailable results and keyboard/pulse boundaries without
+adding another fault model or repeating completed RAM research. Reuse valid
+individual-domain and core evidence. Record any concrete acceptance gaps;
+after the essential flows pass, freeze features for Phase D stabilisation.
