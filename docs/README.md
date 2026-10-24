@@ -4,7 +4,7 @@ VRAMpage MD is a browser-based NTSC Mega Drive/Genesis experiment. It runs a loc
 
 ## Start here
 
-**[Download the complete v0.3.0 Mac app](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.3.0/VRAMpage-MD-v0.3.0-macos.zip)**,
+**[Download the complete v0.4.0 Mac app](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.0/VRAMpage-MD-v0.4.0-macos.zip)**,
 extract it and open START.command. See [Run locally](RUNNING-LOCALLY.md) for Python
 and macOS launch help. The work-RAM controls are implemented and experimental;
 older standalone-model descriptions are historical development records.
@@ -39,10 +39,11 @@ older standalone-model descriptions are historical development records.
 | [Source import](IMPORTING.md) | How the original v0.1 working prototype entered GitHub |
 | [Prototype notes](PROTOTYPE-V0.1-NOTES.md) | Historical first-stage implementation and technical assumptions |
 
-The development source after v0.3.0 adds an optional
-[PSG input-data bridge](PSG-INPUT-DATA-SEMANTICS.md) and independent
-[FM write-input bridge](FM-DATA-BRIDGE.md). The public v0.3.0 ZIP
-remains unchanged; the full audio milestone is not yet complete.
+The v0.4.0 milestone adds optional, independent
+[PSG input-data](PSG-INPUT-DATA-SEMANTICS.md) and
+[FM write-input](FM-DATA-BRIDGE.md) bridges. Previous releases remain unchanged.
+
+- [Audio bending](AUDIO-BENDING.md): signal paths, bus ownership, controls, recovery, browser scheduling and evidence limits.
 
 ## Documentation conventions
 

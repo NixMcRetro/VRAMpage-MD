@@ -5,6 +5,23 @@ Verified on 24 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
+Audio-input milestone candidate **v0.4.0** is on `experiment/audio-milestone`.
+The FM implementation is merged in [PR #45](https://github.com/NixMcRetro/VRAMpage-MD/pull/45)
+as `2cb6e85fbbf08af3928361b161ba702f51f5fa87`, after
+[all seven PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40068642780)
+passed. The candidate adds actual Z80 FM/PSG simultaneous traffic, independent
+counters, exact repeated fresh-core output, and native browser scheduling probes.
+Both Luna High workers independently reviewed each other's tests and the audio
+model documentation. Final candidate regression, CI and publication gates are
+pending. Preserve the v0.3.0 public artifact below unchanged.
+
+The bounded audio milestone covers chip write-input bridges, not Z80 RAM faults
+or arbitration changes. Native audio probes observe stereo 44.1 kHz finite
+buffers, bounded start lead, pause/resume and a synthetic visibility event under
+normal test load. They do not establish audible quality, actual OS background
+throttling or physical fidelity. See [audio model](AUDIO-BENDING.md).
+
+
 Transaction VRAM v0.3.0 is merged and publicly verified. [PR #43](https://github.com/NixMcRetro/VRAMpage-MD/pull/43)
 merged as `4cfb983f3003449c0632375576f6a674e660d778`.
 [PR CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40062636637)

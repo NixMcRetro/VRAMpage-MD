@@ -11,7 +11,7 @@ ZIP = f"VRAMpage-MD-{TAG}-macos.zip"
 
 class VersioningTests(unittest.TestCase):
     def test_single_canonical_version(self):
-        self.assertEqual(VERSION, "0.3.0")
+        self.assertEqual(VERSION, "0.4.0")
         self.assertTrue((ROOT / "docs/VERSIONING.md").exists())
         self.assertIn(TAG, (ROOT / "docs/VERSIONING.md").read_text())
 
@@ -32,6 +32,9 @@ class VersioningTests(unittest.TestCase):
         self.assertIn(ZIP, build)
         self.assertIn("BUILD-INFO.json", workflow)
         self.assertIn("Source commit:", workflow)
+        self.assertIn(f'repos/$GH_REPO/commits/{TAG}', workflow)
+        self.assertIn('if [ "$tag_commit" != "$GITHUB_SHA" ]; then', workflow)
+        self.assertIn("Release tag does not match packaged source", workflow)
         self.assertIn("github.ref == 'refs/heads/main'", workflow)
         self.assertIn("Never replace assets or metadata of an already-public release", workflow)
         self.assertIn("is already public; publish a new version", workflow)

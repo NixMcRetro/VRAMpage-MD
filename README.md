@@ -6,7 +6,10 @@
 
 ## Download and play on your Mac
 
-**[Download VRAMpage MD v0.3.0 - complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.3.0/VRAMpage-MD-v0.3.0-macos.zip)**
+The v0.4.0 download links are staged for publication after final release checks.
+Until publication completes, use the [verified v0.3.0 package](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.3.0/VRAMpage-MD-v0.3.0-macos.zip).
+
+**[Download VRAMpage MD v0.4.0 - complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.0/VRAMpage-MD-v0.4.0-macos.zip)**
 
 1. Download the ZIP and double-click it in Finder to extract it.
 2. Open the **VRAMpage-MD** folder and double-click **START.command**.
@@ -21,11 +24,11 @@ If your Mac blocks `START.command`, right-click it and choose **Open**, or follo
 
 [Previous v0.2.8 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.8/VRAMpage-MD-v0.2.8-macos.zip) remains available for reproducing earlier experiments.
 
-[Latest release and checksum](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.3.0) · [Other runnable versions and historical source releases](docs/RELEASE-HISTORY.md)
+[Latest release and checksum](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.4.0) · [Other runnable versions and historical source releases](docs/RELEASE-HISTORY.md)
 
 **v0.3.0:** choose **Frame projection** or **Transaction** in the VRAM patchbay, then use the same legs and bridges. Transaction mode maps actual emulator VRAM accesses and exports separate model metadata and counters. Frame projection remains the default fallback. Both are digital approximations.
 
-**Development source after v0.3.0:** optional, off-by-default [PSG](docs/PSG-INPUT-DATA-SEMANTICS.md) and [FM input-data bridges](docs/FM-DATA-BRIDGE.md) advance the audio milestone. It changes future chip-input writes, not mixed audio samples. This is not included in the immutable v0.3.0 ZIP, and the full v0.4.0 audio milestone is not released.
+**v0.4.0:** [audio input bridges](docs/AUDIO-BENDING.md) add independent PSG and FM D0-D7 pair controls, exact counters and experiment metadata. They change future chip-input writes before synthesis. Both the 68000 and Z80 routes are covered by synthetic tests; Z80 RAM/arbitration faults and physical electrical fidelity remain outside this model. Enable sound, choose a pair and apply it. Removing a bridge does not repair prior chip state; use clean restart when needed.
 
 **RAM research:** a [reproducible bounded experiment](docs/RAM-STATUS-FOLLOWUP.md) now shows player-trajectory divergence while recorded demo inputs continue at the same phase. This uses the existing public core and does not establish physical electrical accuracy.
 
@@ -34,6 +37,7 @@ If your Mac blocks `START.command`, right-click it and choose **Open**, or follo
 - **Play:** Load a cartridge from your computer, use keyboard/gamepad controls, enable sound, pause, reset or go fullscreen.
 - **Bend video memory:** Click the VRAM AD0–AD7 chip legs to simulate disconnected address lines, or bridge two signals. Watch how the game's video memory responds.
 - **Bend game logic:** Experiment with 68000 work-RAM address/data faults, short pulses and affected-write limits. Check CPU STOP/HALT indicators and try explicit recovery.
+- **Bend audio inputs:** Apply separate FM or PSG write-input bridges, inspect counters and remove them independently. Start at low volume.
 - **Compare experiments:** Record fault settings and export JSON containing reproducibility metadata, including a build identifier when available.
 
 The interface fits different window sizes, follows your system Light/Dark preference and offers both corrected video output and raw diagnostic output. Some faults can freeze a game or leave persistent RAM corruption until a **Clean restart**.

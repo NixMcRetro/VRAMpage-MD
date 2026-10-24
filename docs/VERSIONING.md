@@ -1,14 +1,14 @@
 # Versioning policy
 
-Current published milestone: **v0.3.0** (`VERSION` stores `0.3.0`).
-The transaction-VRAM milestone passed its correctness, performance and package
-gates. Development after this tag is identified by its source commit; the
-development PSG/FM audio implementation does not declare or publish the full v0.4.0 milestone. Published versions are listed on [GitHub Releases](https://github.com/NixMcRetro/VRAMpage-MD/releases).
+Current source milestone: **v0.4.0** (`VERSION` stores `0.4.0`).
+The audio-input milestone adds independent PSG/FM bridges and verified Z80 write
+routes. Publish only after final CI and package gates pass. The immutable
+v0.3.0 transaction-VRAM release and all earlier artifacts remain unchanged.
 
 VRAMpage MD is experimental, **not version 2.x**. Use semantic-looking
 `MAJOR.MINOR.PATCH` identifiers with leading `0` until a deliberately
-approved stable release. The delivered VRAM milestone is `v0.3.0`; the next major feature milestone is
-`v0.4.0` (hardware-informed audio faults).
+approved stable release. The delivered VRAM milestone is `v0.3.0`; the audio-input milestone is
+`v0.4.0`. Later workbench improvements retain experimental 0.x numbering.
 Do not declare `v1.0.0` solely because a new patchbay control was added.
 
 ## Corrected feature history
@@ -30,8 +30,8 @@ v0.2.5 adds independent VRAM AD0-AD7 leg switches within the current
 frame-scoped model. v0.2.6 adds build identification to experiment exports.
 v0.2.7 adds a default-disabled metadata-only first-affected-write diagnostic.
 v0.2.8 compacts the work-RAM chip layout without changing the VRAM chip.
-Further incremental RAM-stage improvements use v0.2.9, etc. The transaction-VRAM milestone uses v0.3.0; hardware-informed audio bending
-remains reserved for v0.4.0. A leg switch does not advance either milestone.
+Further incremental RAM-stage improvements use v0.2.9, etc. The transaction-VRAM milestone uses v0.3.0; the audio-input milestone
+uses v0.4.0. A leg switch does not advance either milestone.
 
 ## What changes and what remains historical
 

@@ -126,13 +126,13 @@ jobs:
           find release/vrampage -type d -name '__pycache__' -prune -exec rm -rf '{}' +
           tar -czf release/VRAMpage-MD-static-site.tar.gz -C release vrampage
       - name: Package local review app with launcher
-        run: python3 scripts/package-review.py --output release/VRAMpage-MD-v0.3.0-macos.zip
+        run: python3 scripts/package-review.py --output release/VRAMpage-MD-v0.4.0-macos.zip
       - name: Upload ready-to-run local review app
         uses: actions/upload-artifact@v4
         with:
           name: VRAMpage-MD-local-review
           retention-days: 30
-          path: release/VRAMpage-MD-v0.3.0-macos.zip
+          path: release/VRAMpage-MD-v0.4.0-macos.zip
           if-no-files-found: error
       - name: Upload release bundle for manual McRetro staging
         uses: actions/upload-artifact@v4

@@ -26,9 +26,9 @@ clock to advance. Final PR CI40066559119 and merged-main CI40066918601 pass all
 seven checks, including packaged Firefox/WebKit audio and controls. This checks
 software audio routing, not audible output or native macOS.
 
-Z80-origin PSG traffic, audible
-output and physical electrical fidelity are not claimed. This is a bounded
-unreleased audio feature, not full v0.4.0 acceptance.
+At the PR #44 checkpoint, Z80-origin PSG traffic was not yet demonstrated.
+The later v0.4.0 acceptance section records actual Z80 PSG/FM route tests.
+Audible output and physical electrical fidelity remain unclaimed.
 
 # v0.3.0 transaction VRAM verification
 
@@ -915,3 +915,14 @@ strict/sanitizer and JavaScript checks. Fresh staged profiles cover matching FM
 backends; actual Chromium audio/control and transaction suites pass. A synthetic
 post-reset mailbox proves the partial reset executes before counter assertions.
 Native macOS and audible output have not been tested by this automation.
+
+Audio milestone acceptance adds an original Z80 FM/PSG program: only the Z80
+writes chip inputs, while an encoded 68K bootstrap allowlist proves bus-control
+and RAM-loading stores. Both FM backends compare normal/disabled samples,
+isolated FM (62 inputs/33 changed), isolated PSG (3/2), simultaneous counters,
+removal isolation, clean restart and exact fresh-core repetitions. Browser
+queue checks delegate genuine native AudioContext/AudioBuffer calls and observe
+stereo 44.1 kHz finite samples, at most 205 ms start lead, no new scheduling while
+paused, resumed scheduling and a near-now start after a synthetic visibility
+event. This is a normal-load observation, not OS-background or backlog stress
+validation. No native Mac or audible evidence is claimed.

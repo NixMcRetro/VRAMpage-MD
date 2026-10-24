@@ -64,9 +64,9 @@ The objective is to make every version reproducible without relying on chat hist
 
 **New docs:** `docs/AUDIO-BENDING.md`.
 
-- [ ] Describe Z80 sound-driver RAM, YM2612 writes, PSG writes and bus ownership before connecting virtual pins.
-- [ ] Separate bus faults from DSP/post-mix processing, which must never be labelled circuit bending.
-- [ ] Include audio enable/mute behaviour, underruns, browser gesture restrictions and safety/volume guidance.
+- [x] Describe Z80 sound-driver RAM, YM2612 writes, PSG writes and bus ownership before connecting virtual pins.
+- [x] Separate bus faults from DSP/post-mix processing, which must never be labelled circuit bending.
+- [x] Include audio enable/mute behaviour, underruns, browser gesture restrictions and safety/volume guidance.
 
 **Tests:** clean synthesis without faults; register aliasing and corrupted writes with known inputs; determinism; unchanged channel count/sample rate; no unbounded audio queue after pausing or backgrounding.
 

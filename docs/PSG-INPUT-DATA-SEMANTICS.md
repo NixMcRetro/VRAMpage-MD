@@ -26,6 +26,8 @@ Removing the bridge changes future writes only. It does not repair the PSG
 latch, registers, current audio output, or any other chip state already changed
 by prior writes. The feature models a deterministic digital input condition;
 it does not model analog contention or establish physical electrical behavior.
-The available synthetic test cartridge exercises the 68000 PSG route. The
-aggregate sink also covers any other caller that reaches `psg_write`, but Z80
-traffic has not been separately demonstrated.
+Original synthetic cartridges exercise both the 68000 PSG route and Z80
+`$7F11` writes under the native BUSREQ/RESET sequence. A mixed Z80 fixture
+verifies simultaneous FM/PSG counters and repeated fresh-core output for both
+FM backends. These are software route tests, not commercial-game or physical
+hardware evidence.

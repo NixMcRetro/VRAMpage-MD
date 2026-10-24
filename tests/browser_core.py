@@ -67,6 +67,132 @@ class AnnotatedBrowserResult(unittest.TextTestResult):
 
 
 class ActualCoreBrowserTests(unittest.TestCase):
+    def test_audio_queue_is_bounded_across_pause_resume_and_visibility_event(self):
+        handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
+        with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                with sync_playwright() as p:
+                    kwargs = {'executable_path': OPTIONS.executable} if OPTIONS.executable else {}
+                    browser = getattr(p, OPTIONS.browser).launch(**kwargs)
+                    page = browser.new_page(viewport={'width': 1366, 'height': 768})
+                    errors = []
+                    page.on('pageerror', lambda e: errors.append(str(e)))
+                    page.add_init_script("""
+                        const audioKey = window.AudioContext ? 'AudioContext' : 'webkitAudioContext';
+                        const NativeAudioContext = window[audioKey];
+                        window.__audioScheduleProbe = {starts: []};
+                        if (NativeAudioContext) {
+                            const nativeCreateBufferSource = NativeAudioContext.prototype.createBufferSource;
+                            NativeAudioContext.prototype.createBufferSource = function(...args) {
+                                const source = Reflect.apply(nativeCreateBufferSource, this, args);
+                                const nativeStart = source.start;
+                                source.start = function(...startArgs) {
+                                    const buffer = source.buffer;
+                                    let finite = !!buffer;
+                                    if (buffer) {
+                                        for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+                                            const samples = buffer.getChannelData(channel);
+                                            for (let i = 0; i < samples.length; i++) {
+                                                if (!Number.isFinite(samples[i])) { finite = false; break; }
+                                            }
+                                        }
+                                    }
+                                    const now = source.context.currentTime;
+                                    const when = startArgs.length ? startArgs[0] : now;
+                                    window.__audioScheduleProbe.starts.push({
+                                        now, when, lead: when - now, sampleRate: buffer?.sampleRate ?? 0,
+                                        channels: buffer?.numberOfChannels ?? 0, finite,
+                                        visibilityEventSynthetic: window.__syntheticVisibilityProbe || false
+                                    });
+                                    return Reflect.apply(nativeStart, source, startArgs);
+                                };
+                                return source;
+                            };
+                            window[audioKey] = new Proxy(NativeAudioContext, {
+                                construct(target, args) {
+                                    const context = Reflect.construct(target, args);
+                                    window.testAudioContext = context;
+                                    return context;
+                                }
+                            });
+                        }
+                    """)
+                    core_js = (OPTIONS.site_root / 'core/genplus.js').read_text()
+                    core_js += '\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\n'
+                    page.route('**/core/genplus.js', lambda route: route.fulfill(
+                        content_type='text/javascript', body=core_js))
+                    build_info={'application':'VRAMpage MD','application_version':'0.4.0',
+                                'source_commit':'b'*40,'package_format':1}
+                    page.route('**/build-info.json',lambda route:route.fulfill(
+                        content_type='application/json',body=json.dumps(build_info)))
+                    page.goto(f'http://127.0.0.1:{server.server_port}/')
+                    page.wait_for_function('!!window.testCore')
+                    page.locator('#romFile').set_input_files({
+                        'name':'original-audio-queue.bin',
+                        'mimeType':'application/octet-stream',
+                        'buffer':original_cartridge()})
+                    expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+                    page.locator('#soundBtn').click()
+                    expect(page.locator('#soundBtn')).to_have_text('Mute Sound')
+                    page.wait_for_function('window.__audioScheduleProbe.starts.length >= 6')
+
+                    initial = page.evaluate('''() => ({
+                        contextRate: window.testAudioContext.sampleRate,
+                        starts: window.__audioScheduleProbe.starts.slice()
+                    })''')
+                    self.assertEqual(initial['contextRate'], 44100)
+                    self.assertTrue(initial['starts'])
+                    for start in initial['starts']:
+                        self.assertEqual(start['sampleRate'], 44100)
+                        self.assertEqual(start['channels'], 2)
+                        self.assertTrue(start['finite'], 'real AudioBuffer samples are finite')
+                        self.assertGreaterEqual(start['lead'], -0.005)
+                        self.assertLessEqual(start['lead'], 0.205,
+                                             'scheduled audio lead stays within the 200 ms cap plus tolerance')
+
+                    page.locator('#pauseBtn').click()
+                    expect(page.locator('#pauseBtn')).to_have_text('Resume')
+                    paused_count = page.evaluate('window.__audioScheduleProbe.starts.length')
+                    page.wait_for_timeout(250)
+                    self.assertEqual(page.evaluate('window.__audioScheduleProbe.starts.length'), paused_count,
+                                     'pause stops scheduling new sources')
+                    page.locator('#pauseBtn').click()
+                    expect(page.locator('#pauseBtn')).to_have_text('Pause')
+                    page.wait_for_function('n=>window.__audioScheduleProbe.starts.length > n',
+                                            arg=paused_count)
+
+                    before_visibility = page.evaluate('''() => {
+                        const count = window.__audioScheduleProbe.starts.length;
+                        const hidden = document.hidden;
+                        window.__syntheticVisibilityProbe = true;
+                        document.dispatchEvent(new Event('visibilitychange'));
+                        return {count, hidden};
+                    }''')
+                    self.assertFalse(before_visibility['hidden'],
+                                     'visibility check uses a visible page and a synthetic event')
+                    page.wait_for_function('n=>window.__audioScheduleProbe.starts.slice(n).some(s=>s.visibilityEventSynthetic)',
+                                            arg=before_visibility['count'])
+                    visibility_start = page.evaluate('''n=>window.__audioScheduleProbe.starts
+                        .slice(n).find(s=>s.visibilityEventSynthetic)''',
+                        before_visibility['count'])
+                    self.assertTrue(visibility_start['visibilityEventSynthetic'],
+                                    'this is a dispatched visibility event, not OS backgrounding')
+                    self.assertLessEqual(visibility_start['lead'], 0.055,
+                                         'observed source start after the synthetic event is near current time')
+                    all_starts = page.evaluate('window.__audioScheduleProbe.starts')
+                    for start in all_starts:
+                        self.assertEqual(start['sampleRate'], 44100)
+                        self.assertEqual(start['channels'], 2)
+                        self.assertTrue(start['finite'])
+                        self.assertLessEqual(start['lead'], 0.205,
+                                             'all real source starts respect the bounded scheduling lead')
+                    self.assertEqual(errors, [])
+                    browser.close()
+            finally:
+                server.shutdown()
+
     def test_original_video_audio_and_controls(self):
         handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
         with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:
@@ -98,7 +224,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     core_js += '\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\n'
                     page.route('**/core/genplus.js', lambda route: route.fulfill(content_type='text/javascript', body=core_js))
                     # A fixture manifest exercises provenance without mocking the real core.
-                    build_info={'application':'VRAMpage MD','application_version':'0.3.0',
+                    build_info={'application':'VRAMpage MD','application_version':'0.4.0',
                                 'source_commit':'b'*40,'package_format':1}
                     page.route('**/build-info.json',lambda route:route.fulfill(
                         content_type='application/json',body=json.dumps(build_info)))
@@ -230,9 +356,9 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     with page.expect_download() as download:
                         page.locator('#logicExperimentBtn').click()
                     payload=json.loads(Path(download.value.path()).read_text())
-                    self.assertEqual(payload['modelVersion'],'0.3.0-experimental')
+                    self.assertEqual(payload['modelVersion'],'0.4.0-experimental')
                     self.assertEqual(payload['schemaVersion'],1)
-                    self.assertEqual(payload['build'],{'status':'available','applicationVersion':'0.3.0','sourceCommit':'b'*40})
+                    self.assertEqual(payload['build'],{'status':'available','applicationVersion':'0.4.0','sourceCommit':'b'*40})
                     self.assertEqual(payload['vramFault']['addressMask'],0)
                     self.assertEqual([e['mask'] for e in payload['vramAddressLineChanges']],[1,129,0])
                     self.assertEqual(payload['rom']['name'],'original-video-tone.bin')
