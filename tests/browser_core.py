@@ -163,24 +163,24 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     page.wait_for_function('n=>window.__audioScheduleProbe.starts.length > n',
                                             arg=paused_count)
 
-                    before_visibility = page.evaluate('''() => ({
-                        count: window.__audioScheduleProbe.starts.length,
-                        hidden: document.hidden
-                    })''')
-                    self.assertFalse(before_visibility['hidden'],
-                                     'visibility check uses a visible page and a synthetic event')
-                    page.evaluate('''() => {
+                    before_visibility = page.evaluate('''() => {
+                        const count = window.__audioScheduleProbe.starts.length;
+                        const hidden = document.hidden;
                         window.__syntheticVisibilityProbe = true;
                         document.dispatchEvent(new Event('visibilitychange'));
+                        return {count, hidden};
                     }''')
-                    page.wait_for_function('n=>window.__audioScheduleProbe.starts.length > n',
+                    self.assertFalse(before_visibility['hidden'],
+                                     'visibility check uses a visible page and a synthetic event')
+                    page.wait_for_function('n=>window.__audioScheduleProbe.starts.slice(n).some(s=>s.visibilityEventSynthetic)',
                                             arg=before_visibility['count'])
-                    visibility_start = page.evaluate('n=>window.__audioScheduleProbe.starts[n]',
-                                                     before_visibility['count'])
+                    visibility_start = page.evaluate('''n=>window.__audioScheduleProbe.starts
+                        .slice(n).find(s=>s.visibilityEventSynthetic)''',
+                        before_visibility['count'])
                     self.assertTrue(visibility_start['visibilityEventSynthetic'],
                                     'this is a dispatched visibility event, not OS backgrounding')
                     self.assertLessEqual(visibility_start['lead'], 0.055,
-                                         'synthetic visibility event restarts scheduling near current time')
+                                         'observed source start after the synthetic event is near current time')
                     all_starts = page.evaluate('window.__audioScheduleProbe.starts')
                     for start in all_starts:
                         self.assertEqual(start['sampleRate'], 44100)
