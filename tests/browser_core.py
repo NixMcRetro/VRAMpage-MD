@@ -227,10 +227,16 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     self.assertEqual((masked['bridgeA'], masked['bridgeB']), (-1, -1))
                     self.assertEqual((page.evaluate('testCore._get_fm_data_bridge_state().bridgeA'),
                                       page.evaluate('testCore._get_fm_data_bridge_state().bridgeB')), (0, 7))
+                    page.locator('#fmLegMode').select_option('ground')
+                    page.locator('#fmChip .pin').nth(2).click()
+                    self.assertEqual(page.evaluate('testCore._get_fm_data_bridge_state().dataMask'), 4)
+                    self.assertEqual(page.evaluate('testCore._get_psg_data_bridge_state().dataMask'), 129,
+                                     'FM leg changes preserve the independent PSG mask')
                     with page.expect_download() as download_info:
                         page.locator('#circuitConfigDownload').click()
                     saved = json.loads(Path(download_info.value.path()).read_text())
                     self.assertEqual(saved['schemaVersion'], 2)
+                    self.assertEqual(saved['configuration']['fm'], {'pair':None,'dataMask':4})
                     self.assertEqual(saved['configuration']['psg'], {'pair':None,'dataMask':129})
                     self.assertEqual(saved['configuration']['fm'], {'pair':[0,7],'dataMask':0})
                     self.assertNotIn('rom', saved)
@@ -256,6 +262,8 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     })''')
                     self.assertEqual(ram_state['mask'], 1)
                     self.assertEqual((ram_state['vram']['mask'],ram_state['vram']['bridgeA'],ram_state['vram']['bridgeB']), (0,-1,-1))
+                    self.assertEqual(ram_state['fm']['dataMask'],0,
+                                     'legacy pair import replaces the FM mask')
                     self.assertTrue(ram_state['psg']['configured'] and ram_state['fm']['configured'],
                                     'RAM handoff leaves independent PSG and FM configurations intact')
                     self.assertEqual(ram_state['psg']['dataMask'],0,
