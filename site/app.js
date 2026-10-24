@@ -31,6 +31,7 @@
   let lastContact = '';
   let vramAddressMask=0, vramAddressLineChanges=[];
   let vramModelId=1, vramModelTransitions=[];
+  let lastVramSelectorStatus=0;
   let possibleVramResidue = false;
   let displayRefreshQueued = false;
   let logicApiAvailable = false, logicActive = false, logicStatsRetained = false;
@@ -179,25 +180,31 @@
   function restoreVramAfterRamReject(snapshot,reason) {
     if (!snapshot) return {ok:true,status:0};
     const ok=applyVramModel(snapshot.modelId,snapshot.mask,snapshot.pair,reason);
-    return {ok,status:ok?0:currentVramModelState().status ?? -1};
+    const state=currentVramModelState();
+    if (!ok) vramModelTransitions.push({frame:logicApiReady()?Number(emulator._get_logic_frame()):null,
+      from:vramModelId,to:snapshot.modelId,fromMask:vramAddressMask,toMask:snapshot.mask,
+      fromPair:canonical(actualPair()),toPair:snapshot.pair,reason,result:'restore-rejected',
+      selectorStatus:lastVramSelectorStatus,actualModelId:state.modelId,actualMask:state.mask,
+      actualBridgeA:state.bridgeA,actualBridgeB:state.bridgeB});
+    return {ok,status:ok?0:lastVramSelectorStatus};
   }
 
   function callVramModel(modelId,mask,pair) {
     const validation=validateVramModel(modelId,mask,pair);
-    if (!validation.ok) return validation.status;
+    if (!validation.ok) return lastVramSelectorStatus=validation.status;
     if (vramModelApiReady())
-      return emulator._set_vram_fault_model(...validation.args);
+      return lastVramSelectorStatus=emulator._set_vram_fault_model(...validation.args);
     // The legacy setters are retained for older cores and always mean frame projection.
-    if (mask && pair) return 1;
+    if (mask && pair) return lastVramSelectorStatus=1;
     if (typeof emulator?._set_vram_address_mask==='function') {
       const status=emulator._set_vram_address_mask(mask);
-      if (status!==0 && status!==undefined) return status;
-    } else if (mask) return 1;
+      if (status!==0 && status!==undefined) return lastVramSelectorStatus=status;
+    } else if (mask) return lastVramSelectorStatus=1;
     if (typeof emulator?._set_vram_short==='function') {
       const status=emulator._set_vram_short(...(pair || [-1,-1]));
-      if (status!==0 && status!==undefined) return status;
-    } else if (pair) return 1;
-    return 0;
+      if (status!==0 && status!==undefined) return lastVramSelectorStatus=status;
+    } else if (pair) return lastVramSelectorStatus=1;
+    return lastVramSelectorStatus=0;
   }
 
   function vramFaultActive() { return !!(vramAddressMask || actualPair()); }
@@ -311,11 +318,22 @@
           rollbackStatus=0;
         }
       }
+      if (rollbackStatus!==0 && vramModelApiReady()) {
+        const actual=currentVramModelState();
+        vramModelId=actual.modelId;
+        vramAddressMask=actual.mask;
+        latched=actual.bridgeA>=0&&actual.bridgeB>=0
+          ? canonical([actual.bridgeA,actual.bridgeB]) : null;
+        momentary=null;momentaryRestorePair=null;selectedPin=null;
+      }
       vramModelTransitions.push({frame:oldFrame,from:oldModel,to:modelId,reason,
         result:'ram-disconnect-rejected',rollbackStatus,safeFallbackStatus,
         attemptedModelCountersReset:vramModelApiReady()?modelId:null,
         rollbackModelCountersReset:vramModelApiReady()&&rollbackStatus===0?oldModel:null,
-        transactionCacheInvalidated:!!vramModelApiReady()&&(modelId===2||oldModel===2)});
+        transactionCacheInvalidated:!!vramModelApiReady()&&(modelId===2||oldModel===2),
+        actualModelId:currentVramModelState().modelId,actualMask:currentVramModelState().mask,
+        actualBridgeA:currentVramModelState().bridgeA,actualBridgeB:currentVramModelState().bridgeB,
+        ramFaultStillActive:logicActive});
       $('vramModelStatus').textContent=rollbackStatus===0
         ? safeFallbackStatus===0
           ? 'RAM disconnect failed. VRAM faults were cleared in frame mode; selector rollback reset model counters.'
@@ -327,6 +345,11 @@
           : 'RAM disconnect failed; VRAM configuration restored. Selector rollback reset model counters.'
         : `RAM disconnect failed; VRAM rollback also failed (status ${rollbackStatus}).`);
       updateFaultUI();
+      if (rollbackStatus!==0) {
+        if (!paused) pauseToggle();
+        $('vramModelStatus').textContent='RAM disconnect failed and VRAM rollback was rejected. Both fault states are retained; emulation was paused.';
+        stamp('Unsafe dual-domain rollback failure; emulation paused before another tick.');
+      }
       return false;
     }
     vramModelId=modelId;
@@ -620,13 +643,22 @@
     if (!started || typeof emulator?._recover_logic_cpu !== 'function') return;
     const frame=Number(emulator._get_logic_frame());
     const flagsBefore=Number(emulator._get_logic_cpu_flags());
+    const hadRamFault=logicActive;
     if (!disconnectLogic({silent:true,pulseReason:'manual CPU recovery'})) {
       setLogicStatus('Recovery stopped: could not disconnect RAM fault.');
       return;
     }
     if (!disconnect('CPU recovery disconnected VRAM fault')) {
-      setLogicStatus('Recovery stopped: VRAM fault could not be safely reconnected.');
-      stamp('CPU recovery stopped because the VRAM configuration could not be cleared.');
+      const state=currentVramModelState();
+      const partial={action:'recovery-aborted',frame,flagsBefore,
+        ramFaultWasActive:hadRamFault,ramFaultDisconnected:hadRamFault&&!logicActive,
+        vramFaultDisconnected:false,reason:'VRAM clear rejected',
+        actualModelId:state.modelId,actualMask:state.mask,
+        actualBridgeA:state.bridgeA,actualBridgeB:state.bridgeB};
+      cpuInterventions.push(partial);
+      logicResetState='Recovery stopped after RAM fault disconnect; VRAM configuration remains active';
+      setLogicStatus('Recovery stopped: VRAM clear was rejected. The RAM fault is disconnected, VRAM configuration remains active, and no CPU intervention was issued.');
+      stamp('CPU recovery aborted after RAM disconnect; VRAM configuration remains active and CPU intervention was not issued.');
       return;
     }
     const status=emulator._recover_logic_cpu(mode);

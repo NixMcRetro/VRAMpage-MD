@@ -49,9 +49,19 @@ jobs:
           test -f scripts/build-core.sh || { echo "Import v0.1 source first"; exit 1; }
           bash scripts/test.sh
           bash scripts/build-core.sh
+          mkdir -p "$RUNNER_TEMP/normal-core"
+          cp site/core/genplus.js site/core/genplus.wasm "$RUNNER_TEMP/normal-core/"
+          test "$(sha256sum site/core/genplus.js | cut -d ' ' -f1)" = "3b984104bf92fd9e7a47fa5f081ed18d020e61dee6cd87df7580c147a3edc3bd"
+          test "$(sha256sum site/core/genplus.wasm | cut -d ' ' -f1)" = "0bb55f946e5bb20ba0efc24e81776305ba8e1d9a82e0a3dcdca9e6218fbbe6d9"
           test -s site/core/genplus.js
           test -s site/core/genplus.wasm
           test -f site/source/README.txt
+          bash scripts/build-core.sh site-runtime
+          test -s site/core/genplus.js
+          test -s site/core/genplus.wasm
+          test -f site/source/runtime-profile/BUILDING.txt
+          test -f site/source/runtime-profile/source/scripts/vram_transaction_api.js
+          node tests/test_runtime_build_profile.cjs site/core/genplus.js
           node tests/test_wasm_logic.cjs site/core/genplus.js
       - name: Verify isolated RAM diagnostics with synthetic CPU tests
         shell: bash
@@ -105,6 +115,8 @@ jobs:
           key: ${{ steps.browser-cache.outputs.cache-primary-key }}
       - name: Verify actual-core video, audio and controls
         run: python3 tests/browser_core.py --browser chromium
+      - name: Verify actual runtime and legacy VRAM model handoffs
+        run: python3 tests/browser_transaction.py --browser chromium --normal-core "$RUNNER_TEMP/normal-core"
       - name: Package static website with corresponding emulator source
         shell: bash
         run: |

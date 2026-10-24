@@ -2,12 +2,16 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PROFILE="${1-normal}"
-if [[ $# -gt 1 || ( "$PROFILE" != normal && "$PROFILE" != runtime ) ]]; then
-  echo "Usage: $0 [normal|runtime]" >&2
+if [[ $# -gt 1 || ( "$PROFILE" != normal && "$PROFILE" != runtime && "$PROFILE" != site-runtime ) ]]; then
+  echo "Usage: $0 [normal|runtime|site-runtime]" >&2
   exit 2
 fi
 if [[ "$PROFILE" == runtime ]]; then
   exec python3 "$ROOT/scripts/build-core-runtime.py"
+fi
+if [[ "$PROFILE" == site-runtime ]]; then
+  python3 "$ROOT/scripts/build-core-runtime.py"
+  exec python3 "$ROOT/scripts/install-runtime-site.py"
 fi
 CORE="$ROOT/vendor/wasm-genplus"
 PINNED_COMMIT="6090aff9e9b2f578cd28882bd4571d2e35b1d674"
