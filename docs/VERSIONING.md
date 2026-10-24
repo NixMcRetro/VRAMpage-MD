@@ -3,7 +3,7 @@
 Current published milestone: **v0.3.0** (`VERSION` stores `0.3.0`).
 The transaction-VRAM milestone passed its correctness, performance and package
 gates. Development after this tag is identified by its source commit; the
-partial PSG audio slice does not declare or publish the full v0.4.0 milestone. Published versions are listed on [GitHub Releases](https://github.com/NixMcRetro/VRAMpage-MD/releases).
+development PSG/FM audio implementation does not declare or publish the full v0.4.0 milestone. Published versions are listed on [GitHub Releases](https://github.com/NixMcRetro/VRAMpage-MD/releases).
 
 VRAMpage MD is experimental, **not version 2.x**. Use semantic-looking
 `MAJOR.MINOR.PATCH` identifiers with leading `0` until a deliberately

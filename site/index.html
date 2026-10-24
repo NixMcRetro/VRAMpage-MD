@@ -163,6 +163,24 @@
         </div>
         <p class="small-note">The counters aggregate at the PSG write sink and do not identify which CPU initiated a write. Disconnecting changes future writes only. The model does not repair current PSG chip state.</p>
       </section>
+      <section class="notes-block fm-panel" aria-label="FM register input bridge">
+        <div class="section-heading"><h2>07 <span>/</span> FM register input bridge</h2><span>D0-D7</span></div>
+        <p>Bridge two FM data inputs. The selected low-dominant inputs are applied to each register-address and register-data byte before the chip decodes it.</p>
+        <div class="logic-controls psg-controls">
+          <label>Input A <select id="fmBridgeA"></select></label>
+          <label>Input B <select id="fmBridgeB"></select></label>
+        </div>
+        <div class="logic-actions">
+          <button id="fmBridgeApply" type="button" disabled>Apply bridge</button>
+          <button id="fmBridgeRemove" type="button" disabled>Remove bridge</button>
+        </div>
+        <p id="fmBridgeStatus" class="logic-status" role="status" aria-live="polite">Checking core support…</p>
+        <div class="logic-metrics psg-metrics">
+          <div><span>FM register writes</span><strong id="fmInputWrites">0</strong></div>
+          <div><span>Bytes changed</span><strong id="fmChangedWrites">0</strong></div>
+        </div>
+        <p class="small-note">Counters aggregate at the shared FM write boundary and do not identify which CPU initiated a write. Removing the bridge affects future writes only; it does not repair current chip state. Full sound reset clears the bridge. Z80-only reset preserves the bridge connection and counters.</p>
+      </section>
       <details class="log-block">
         <summary class="section-heading"><h2>03 <span>/</span> Event log</h2><span>View activity</span></summary>
         <button id="clearLogBtn" type="button" class="clear-log">Clear log</button>

@@ -16,6 +16,7 @@ PATCH_CORE_HELPERS = (
     "vram_transaction_core.h", "vram_transaction_runtime.h", "vram_transaction_render.h",
     "work_ram_fault.c", "work_ram_fault.h", "work_ram_runtime.c", "work_ram_runtime.h",
     "psg_data_fault.h", "psg_data_fault_core.c", "psg_data_fault_runtime.c",
+    "fm_data_fault.h", "fm_data_fault_core.c", "fm_data_fault_runtime.c",
 )
 
 

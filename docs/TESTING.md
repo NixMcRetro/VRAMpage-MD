@@ -22,7 +22,8 @@ Packaged Firefox Web Audio checks provision a PulseAudio virtual output at
 44.1 kHz on the ephemeral Linux runner. A native-context probe found `resume()`
 pending with a suspended context at time zero before this explicit device setup.
 The test retains the enable/mute assertions and requires the genuine context's
-clock to advance; CI must verify the device setup before merge. This checks
+clock to advance. Final PR CI40066559119 and merged-main CI40066918601 pass all
+seven checks, including packaged Firefox/WebKit audio and controls. This checks
 software audio routing, not audible output or native macOS.
 
 Z80-origin PSG traffic, audible
@@ -896,3 +897,21 @@ legacy selection. The final test fixture explicitly discards an inherited
 caller's custom output directory. See the linked build record for hashes,
 source-rebuild details and limits. Current-runtime performance and public model
 controls remain separate work.
+
+## FM input bridge and Z80 route
+
+`tests/test_fm_data_fault.py` checks strict native/sanitizer behavior and patch
+rejection. `tests/test_vram_transaction_wasm.py` builds matching normal/runtime
+YM2612 and YM3438 profiles and runs `tests/test_fm_data_runtime.cjs`: generated
+samples, disabled equivalence, active changes, busy status, exact counters and
+reset behavior. `tests/test_z80_psg_runtime.cjs` uses an original Z80 program
+loaded by a validated 68K bootstrap, with no commercial cartridge. Production
+profile checks execute both fixtures. Actual-core browser tests cover optional
+FM controls, draft retention, exports, unavailable APIs and clean reset.
+These checks establish software behavior, not audible or physical fidelity.
+
+FM integration checkpoint: the full local suite passes 107 Python tests, native
+strict/sanitizer and JavaScript checks. Fresh staged profiles cover matching FM
+backends; actual Chromium audio/control and transaction suites pass. A synthetic
+post-reset mailbox proves the partial reset executes before counter assertions.
+Native macOS and audible output have not been tested by this automation.

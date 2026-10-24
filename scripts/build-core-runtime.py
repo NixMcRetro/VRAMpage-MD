@@ -21,6 +21,10 @@ HELPER_FILES = (
     "psg_data_fault_core.c",
     "psg_data_fault_runtime.c",
     "psg_data_fault_api.js",
+    "fm_data_fault.h",
+    "fm_data_fault_core.c",
+    "fm_data_fault_runtime.c",
+    "fm_data_fault_api.js",
     "vram_fault_patch.c",
     "vram_transaction.c",
     "vram_transaction.h",
@@ -42,6 +46,7 @@ PATCHED_FILES = (
     "src/main/c/core/vdp_render.h",
     "src/main/c/core/vdp_render.c",
     "src/main/c/core/sound/psg.c",
+    "src/main/c/core/sound/sound.c",
     "src/main/c/core/vram_transaction_render.h",
     "src/main/c/core/m68k/m68kcpu.h",
     "src/main/c/core/memz80.c",
@@ -139,6 +144,7 @@ def patch_cmake(cmake: Path) -> None:
         'add_compile_flags(LD "-sEXPORTED_RUNTIME_METHODS=HEAPU8,HEAPF32")',
         'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/vram_transaction_api.js")',
         'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/psg_data_fault_api.js")',
+        'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/fm_data_fault_api.js")',
     )
     if any(flag in text for flag in flags):
         raise RuntimeError("Pinned source already contains runtime profile flags")

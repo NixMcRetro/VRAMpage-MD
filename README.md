@@ -25,7 +25,7 @@ If your Mac blocks `START.command`, right-click it and choose **Open**, or follo
 
 **v0.3.0:** choose **Frame projection** or **Transaction** in the VRAM patchbay, then use the same legs and bridges. Transaction mode maps actual emulator VRAM accesses and exports separate model metadata and counters. Frame projection remains the default fallback. Both are digital approximations.
 
-**Development source after v0.3.0:** an optional, off-by-default [PSG input-data bridge](docs/PSG-INPUT-DATA-SEMANTICS.md) begins the audio milestone. It changes future chip-input writes, not mixed audio samples. This is not included in the immutable v0.3.0 ZIP, and the full v0.4.0 audio milestone is not released.
+**Development source after v0.3.0:** optional, off-by-default [PSG](docs/PSG-INPUT-DATA-SEMANTICS.md) and [FM input-data bridges](docs/FM-DATA-BRIDGE.md) advance the audio milestone. It changes future chip-input writes, not mixed audio samples. This is not included in the immutable v0.3.0 ZIP, and the full v0.4.0 audio milestone is not released.
 
 **RAM research:** a [reproducible bounded experiment](docs/RAM-STATUS-FOLLOWUP.md) now shows player-trajectory divergence while recorded demo inputs continue at the same phase. This uses the existing public core and does not establish physical electrical accuracy.
 

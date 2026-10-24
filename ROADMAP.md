@@ -50,9 +50,11 @@ v0.3.0 Mac download is published and freshly verified against its checksum,
 source, tag, compiled core and launcher. Audio is the next active milestone.
 Physical electrical fidelity and native Mac acceptance remain separate evidence.
 
-The first bounded audio slice is an off-by-default PSG input-data bridge with
-native/sanitizer, real-WASM and browser coverage. YM2612 and independently
-verified Z80 paths remain necessary before v0.4.0 is complete.
+Development source has off-by-default PSG and FM input-data bridges with
+independent controls and exports. Matching normal/runtime FM tests cover YM2612
+and YM3438; an original Z80 program verifies the PSG bus route. Complete audio
+acceptance, coordinated fault/recovery checks and release verification remain
+necessary before publishing v0.4.0.
 
 ## v0.1 | NTSC hardware-mode foundation
 

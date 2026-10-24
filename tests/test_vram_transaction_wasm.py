@@ -32,7 +32,8 @@ def stage_source(vendor: Path, target: Path):
              "vram_transaction.h", "vram_transaction_core.h", "vram_transaction_runtime.h",
              "vram_transaction_render.h",
              "work_ram_fault.c", "work_ram_fault.h", "work_ram_runtime.c", "work_ram_runtime.h",
-             "psg_data_fault.h", "psg_data_fault_core.c", "psg_data_fault_runtime.c")
+             "psg_data_fault.h", "psg_data_fault_core.c", "psg_data_fault_runtime.c",
+             "fm_data_fault.h", "fm_data_fault_core.c", "fm_data_fault_runtime.c", "fm_data_fault_api.js")
     for name in names:
         shutil.copy2(ROOT / "scripts" / name, helpers / name)
     command([os.environ.get("PYTHON", "python3"), str(helpers / "patch_core.py"), str(target)])
@@ -41,6 +42,8 @@ def stage_source(vendor: Path, target: Path):
         "src/main/c/wasm/vram_transaction.c", "src/main/c/wasm/vram_transaction.h",
         "src/main/c/wasm/vram_transaction_runtime.h", "src/main/c/wasm/psg_data_fault_core.c",
         "src/main/c/wasm/psg_data_fault_runtime.c", "src/main/c/core/sound/psg.c",
+        "src/main/c/wasm/fm_data_fault_core.c", "src/main/c/wasm/fm_data_fault_runtime.c",
+        "src/main/c/core/sound/sound.c", "src/main/c/core/fm_data_fault.h",
         "src/main/c/core/vdp_render.h",
         "src/main/c/core/vdp_render.c", "src/main/c/core/vram_transaction_render.h",
         "src/main/c/core/m68k/m68kcpu.h", "src/main/c/core/memz80.c",
@@ -68,7 +71,8 @@ def stage_source(vendor: Path, target: Path):
         raise AssertionError("partial transaction bridge marker was accepted")
 
 
-def build(staged: Path, diagnostic: bool, alt_renderer: bool = False, runtime: bool = False):
+def build(staged: Path, diagnostic: bool, alt_renderer: bool = False, runtime: bool = False,
+          ym3438: bool = False):
     cmake = staged / "CMakeLists.txt"
     text = cmake.read_text()
     anchor = "add_executable(${PROJECT_NAME} ${SOURCE_FILES})"
@@ -82,6 +86,15 @@ def build(staged: Path, diagnostic: bool, alt_renderer: bool = False, runtime: b
         flags.insert(0, f'add_compile_flags(LD "--pre-js={api_js}")')
         psg_api_js = ROOT / "scripts/psg_data_fault_api.js"
         flags.insert(0, f'add_compile_flags(LD "--pre-js={psg_api_js}")')
+        fm_api_js = ROOT / "scripts/fm_data_fault_api.js"
+        flags.insert(0, f'add_compile_flags(LD "--pre-js={fm_api_js}")')
+    if ym3438:
+        config = staged / "src/main/c/wasm/config.c"
+        config_text = config.read_text()
+        if config_text.count('config.ym3438         = 0;') != 1:
+            raise AssertionError("YM3438 test configuration anchor is missing or ambiguous")
+        config.write_text(config_text.replace('config.ym3438         = 0;',
+                                              'config.ym3438         = 1;', 1))
     if alt_renderer:
         flags.insert(0, 'add_compile_flags(C "-DALT_RENDERER")')
     if all(flag in text for flag in flags):
@@ -162,14 +175,17 @@ class VramTransactionWasm(unittest.TestCase):
         else:
             cls.temp = tempfile.TemporaryDirectory(prefix="vram-tx-wasm-")
             root = Path(cls.temp.name)
-        normal_source, runtime_source, diagnostic_source, alt_source, baseline_source = (
+        normal_source, runtime_source, diagnostic_source, alt_source, baseline_source, normal_ym3438_source, ym3438_source = (
             root / "normal", root / "runtime", root / "diagnostic",
-            root / "diagnostic-alt", root / "baseline")
+            root / "diagnostic-alt", root / "baseline", root / "normal-ym3438",
+            root / "runtime-ym3438")
         stage_source(vendor, normal_source)
         stage_source(vendor, runtime_source)
         stage_source(vendor, diagnostic_source)
         stage_source(vendor, alt_source)
         stage_source(vendor, baseline_source)
+        stage_source(vendor, normal_ym3438_source)
+        stage_source(vendor, ym3438_source)
         test_previous_diagnostic_build_upgrades(vendor, root / "previous-diagnostic")
         original_render = subprocess.check_output([
             "git", "-C", str(vendor), "show",
@@ -180,6 +196,8 @@ class VramTransactionWasm(unittest.TestCase):
         cls.diagnostic_js = build(diagnostic_source, diagnostic=True)
         cls.diagnostic_alt_js = build(alt_source, diagnostic=True, alt_renderer=True)
         cls.baseline_js = build(baseline_source, diagnostic=False)
+        cls.normal_ym3438_js = build(normal_ym3438_source, diagnostic=False, ym3438=True)
+        cls.runtime_ym3438_js = build(ym3438_source, diagnostic=False, runtime=True, ym3438=True)
 
     @classmethod
     def tearDownClass(cls):
@@ -333,6 +351,9 @@ class VramTransactionWasm(unittest.TestCase):
         self.assertTrue((bundle / "scripts/vram_transaction_api.js").is_file())
         self.assertTrue((bundle / "scripts/psg_data_fault_api.js").is_file())
         self.assertTrue((bundle / "scripts/psg_data_fault_core.c").is_file())
+        self.assertTrue((bundle / "scripts/fm_data_fault_api.js").is_file())
+        self.assertTrue((bundle / "scripts/fm_data_fault_core.c").is_file())
+        self.assertTrue((bundle / "scripts/fm_data_fault_runtime.c").is_file())
         self.assertTrue((bundle / "scripts/build-core-runtime.py").is_file())
         self.assertTrue((bundle / "THIRD-PARTY-NOTICES.md").is_file())
         self.assertTrue((runtime_output / "THIRD-PARTY-NOTICES.md").is_file())
@@ -344,10 +365,17 @@ class VramTransactionWasm(unittest.TestCase):
         self.assertNotIn("-DVRAM_TX_DIAGNOSTIC", cmake)
         self.assertIn("--pre-js=${CMAKE_SOURCE_DIR}/../scripts/vram_transaction_api.js", cmake)
         self.assertIn("--pre-js=${CMAKE_SOURCE_DIR}/../scripts/psg_data_fault_api.js", cmake)
+        self.assertIn("--pre-js=${CMAKE_SOURCE_DIR}/../scripts/fm_data_fault_api.js", cmake)
         command(["node", str(fixture / "tests/test_runtime_build_profile.cjs"),
                  str(runtime_paths[0])], cwd=fixture)
         command(["node", str(fixture / "tests/test_psg_data_runtime.cjs"),
                  str(runtime_paths[0]), str(normal_paths[0])], cwd=fixture)
+        command(["node", str(fixture / "tests/test_z80_psg_runtime.cjs"),
+                 str(runtime_paths[0]), str(normal_paths[0])], cwd=fixture)
+        command(["node", str(fixture / "tests/test_fm_data_runtime.cjs"),
+                 str(runtime_paths[0]), str(normal_paths[0])], cwd=fixture)
+        command(["node", str(fixture / "tests/test_fm_data_runtime.cjs"),
+                 str(self.runtime_ym3438_js), str(self.normal_ym3438_js), "ym3438"], cwd=fixture)
 
         command(["bash", str(build_script), "normal"], cwd=fixture, env=env,
                 stdout=subprocess.DEVNULL)

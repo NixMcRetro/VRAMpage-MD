@@ -40,7 +40,8 @@ older standalone-model descriptions are historical development records.
 | [Prototype notes](PROTOTYPE-V0.1-NOTES.md) | Historical first-stage implementation and technical assumptions |
 
 The development source after v0.3.0 adds an optional
-[PSG input-data bridge](PSG-INPUT-DATA-SEMANTICS.md). The public v0.3.0 ZIP
+[PSG input-data bridge](PSG-INPUT-DATA-SEMANTICS.md) and independent
+[FM write-input bridge](FM-DATA-BRIDGE.md). The public v0.3.0 ZIP
 remains unchanged; the full audio milestone is not yet complete.
 
 ## Documentation conventions
