@@ -51,40 +51,70 @@
         </div>
       </section>
 
-      <aside class="bender-panel" aria-label="VRAM patchbay">
-        <div class="section-heading"><h2>02 <span>/</span> VRAM patchbay</h2><span>AD0–AD7</span></div>
-        <p class="explain">Click a leg to disconnect or reconnect its address signal. Use Bridge mode or presets 1–8 for shorts.</p>
-        <label class="vram-mode">VRAM model
-          <select id="vramModel" aria-describedby="vramModelStatus">
-            <option value="1">Frame projection</option>
-            <option value="2">Logical-byte transaction</option>
-          </select>
-        </label>
-        <p id="vramModelStatus" class="explain" role="status" aria-live="polite">Frame projection is the default model.</p>
-        <label class="vram-mode">Leg action <select id="vramMode"><option value="disconnect">Disconnect / reconnect</option><option value="bridge">Bridge two nets</option></select></label>
-        <p id="vramModeHint" class="explain"></p>
-        <div class="chip-box">
-          <p class="board-label">315-5313 &nbsp; / &nbsp; VDP ADDRESS BUS</p>
-          <div class="pin-grid" id="pinGrid" role="group" aria-label="Conceptual VRAM address nets">
-            <div class="chip-middle"><strong>VRAM</strong><span>AD0–AD7</span></div>
+      <aside class="chip-workbench" aria-label="Console chip fault workbench">
+        <div class="chip-workbench-grid">
+          <section class="chip-card" aria-label="VRAM chip">
+            <h2>VRAM <small>VDP address nets</small></h2>
+            <label class="chip-compact-control">Model
+              <select id="vramModel" aria-describedby="vramModelStatus">
+                <option value="1">Frame</option><option value="2">Transaction</option>
+              </select>
+            </label>
+            <label class="chip-compact-control">Leg action
+              <select id="vramMode"><option value="disconnect">Cut / reconnect</option><option value="bridge">Bridge pair</option></select>
+            </label>
+            <div class="pin-grid chip-pin-grid" id="pinGrid" role="group" aria-label="Conceptual VRAM address nets">
+              <div class="chip-middle"><strong>VRAM</strong><span>AD0–AD7</span></div>
+            </div>
+            <p id="connectionLabel" class="chip-state" aria-live="polite">NONE — NORMAL ADDRESSING</p>
+            <p id="vramModelStatus" class="chip-state" role="status" aria-live="polite">Frame projection is the default model.</p>
+          </section>
+          <section class="chip-card" aria-label="Work RAM chip">
+            <h2>WORK RAM <small>logical address lines</small></h2>
+            <label class="chip-compact-control">Leg action
+              <select id="ramLegAction"><option value="cut">Cut / reconnect A lines</option><option value="bridge">Bridge two A lines</option></select>
+            </label>
+            <div id="ramChip" class="ram-chip work-ram-chip" role="group" aria-label="Conceptual work RAM address lines" aria-describedby="chipExplanation">
+              <div class="ram-chip-body"><strong>WORK RAM</strong><span>64 KiB</span><small>A1–A15</small></div>
+            </div>
+            <button id="chipRestoreBtn" type="button" disabled>Reconnect all A lines</button>
+            <p id="ramChipState" class="chip-state" aria-live="polite">Address lines are connected.</p>
+          </section>
+          <section class="chip-card" aria-label="FM chip">
+            <h2>FM <small>YM2612 register data</small></h2>
+            <label class="chip-compact-control">Leg action
+              <select id="fmLegMode"><option value="bridge">Bridge two bits</option><option value="ground" data-audio-mask>Force selected bits low</option></select>
+            </label>
+            <div id="fmChip" class="data-chip" role="group" aria-label="FM data inputs D0 through D7"></div>
+            <p id="fmChipState" class="chip-state" aria-live="polite">No FM data fault.</p>
+          </section>
+          <section class="chip-card" aria-label="PSG chip">
+            <h2>PSG / VDP <small>programmable sound data</small></h2>
+            <label class="chip-compact-control">Leg action
+              <select id="psgLegMode"><option value="bridge">Bridge two bits</option><option value="ground" data-audio-mask>Force selected bits low</option></select>
+            </label>
+            <div id="psgChip" class="data-chip" role="group" aria-label="PSG data inputs D0 through D7"></div>
+            <p id="psgChipState" class="chip-state" aria-live="polite">No PSG data fault.</p>
+          </section>
+        </div>
+        <details class="chip-settings">
+          <summary>VRAM presets, counters and model notes</summary>
+          <p id="vramModeHint" class="explain"></p>
+          <div class="presets-head"><h3>Presets</h3><button id="disconnectBtn" type="button">Reconnect all [0]</button></div>
+          <div id="presetGrid" class="preset-grid"></div>
+          <div class="metrics">
+            <div><span>Projected differences</span><strong id="readCount">0</strong></div>
+            <div><span>Changed bytes</span><strong id="writeCount">0</strong></div>
           </div>
-          <div class="chip-foot">× marks a signal forced low. Several legs may be disconnected.</div>
-        </div>
-        <div class="patch-status"><span>VRAM FAULT</span><strong id="connectionLabel">NONE — NORMAL ADDRESSING</strong></div>
-        <div class="presets-head"><h3>Presets</h3><button id="disconnectBtn" type="button">Reconnect all [0]</button></div>
-        <div id="presetGrid" class="preset-grid"></div>
-        <div class="metrics">
-          <div><span>Projected differences</span><strong id="readCount">0</strong></div>
-          <div><span>Changed bytes</span><strong id="writeCount">0</strong></div>
-        </div>
-        <div id="transactionMetrics" class="transaction-metrics" hidden>
-          <div><span>Logical byte reads</span><strong id="transactionReads">0</strong></div>
-          <div><span>Logical byte writes</span><strong id="transactionWrites">0</strong></div>
-          <div><span>Redirected reads</span><strong id="redirectedReads">0</strong></div>
-          <div><span>Redirected writes</span><strong id="redirectedWrites">0</strong></div>
-          <div><span>Changed physical writes</span><strong id="physicalWrites">0</strong></div>
-        </div>
-        <p id="vramModelNotice" class="notice"><strong>Experimental model.</strong> Shorts are applied around each emulated frame, not at every real VRAM bus transition. This is not yet a cycle-accurate electrical simulation.</p>
+          <div id="transactionMetrics" class="transaction-metrics" hidden>
+            <div><span>Logical byte reads</span><strong id="transactionReads">0</strong></div>
+            <div><span>Logical byte writes</span><strong id="transactionWrites">0</strong></div>
+            <div><span>Redirected reads</span><strong id="redirectedReads">0</strong></div>
+            <div><span>Redirected writes</span><strong id="redirectedWrites">0</strong></div>
+            <div><span>Changed physical writes</span><strong id="physicalWrites">0</strong></div>
+          </div>
+          <p id="vramModelNotice" class="notice"><strong>Experimental model.</strong> VRAM lines are conceptual logical address nets, not a physical pinout or cycle-accurate electrical simulation.</p>
+        </details>
       </aside>
     </div>
 
@@ -106,10 +136,6 @@
         </label>
       </div>
       <p class="logic-note" id="chipExplanation"><strong>Address-line switches.</strong> Click a wire to toggle its × and force that signal low, using Access above. This applies immediately and stays active until reconnected or replaced by another fault. The chip is a conceptual address-bus diagram, not a physical pinout. “Disabled” uses a stuck-low model; a real open wire can float.</p>
-      <div id="ramChip" class="ram-chip" role="group" aria-label="Conceptual work RAM address lines" aria-describedby="chipExplanation">
-        <div class="ram-chip-body"><strong>WORK RAM</strong><span>64 KiB</span><small>Logical address inputs<br>A1–A15</small></div>
-      </div>
-      <div class="logic-actions"><button id="chipRestoreBtn" type="button" disabled>Reconnect all address lines</button></div>
       <div class="logic-actions">
         <button id="logicApplyBtn" type="button" disabled>Apply RAM fault</button>
         <button id="logicDisconnectBtn" type="button" disabled>Disconnect RAM</button>

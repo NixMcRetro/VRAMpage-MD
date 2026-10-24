@@ -134,9 +134,10 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     with page.expect_download() as download_info:
                         page.locator('#circuitConfigDownload').click()
                     saved = json.loads(Path(download_info.value.path()).read_text())
+                    self.assertEqual(saved['schemaVersion'], 2)
                     self.assertEqual(saved['configuration'], {
                         'vram': {'modelId': 1, 'mask': 0, 'pair': None},
-                        'ram': None, 'psg': None, 'fm': None
+                        'ram': None, 'psg': {'pair':None,'dataMask':0}, 'fm': {'pair':None,'dataMask':0}
                     })
                     self.assertNotIn('rom', saved)
                     self.assertNotIn('inputWrites', json.dumps(saved))
@@ -215,10 +216,23 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     self.assertEqual((state['psg']['bridgeA'], state['psg']['bridgeB']), (1, 6))
                     self.assertTrue(state['fm']['configured'])
                     self.assertEqual((state['fm']['bridgeA'], state['fm']['bridgeB']), (0, 7))
+                    # The chip-leg UI must call the production mask API. Grounding
+                    # PSG inputs replaces its bridge while FM stays independent.
+                    page.locator('#psgLegMode').select_option('ground')
+                    page.locator('#psgChip .pin').nth(0).click()
+                    page.locator('#psgChip .pin').nth(7).click()
+                    masked = page.evaluate('testCore._get_psg_data_bridge_state()')
+                    self.assertTrue(masked['configured'])
+                    self.assertEqual(masked['dataMask'], 129)
+                    self.assertEqual((masked['bridgeA'], masked['bridgeB']), (-1, -1))
+                    self.assertEqual((page.evaluate('testCore._get_fm_data_bridge_state().bridgeA'),
+                                      page.evaluate('testCore._get_fm_data_bridge_state().bridgeB')), (0, 7))
                     with page.expect_download() as download_info:
                         page.locator('#circuitConfigDownload').click()
                     saved = json.loads(Path(download_info.value.path()).read_text())
-                    self.assertEqual(saved, payload)
+                    self.assertEqual(saved['schemaVersion'], 2)
+                    self.assertEqual(saved['configuration']['psg'], {'pair':None,'dataMask':129})
+                    self.assertEqual(saved['configuration']['fm'], {'pair':[0,7],'dataMask':0})
                     self.assertNotIn('rom', saved)
                     self.assertNotIn('lastFrameCounts', json.dumps(saved))
                     ram_payload = {
@@ -244,9 +258,14 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     self.assertEqual((ram_state['vram']['mask'],ram_state['vram']['bridgeA'],ram_state['vram']['bridgeB']), (0,-1,-1))
                     self.assertTrue(ram_state['psg']['configured'] and ram_state['fm']['configured'],
                                     'RAM handoff leaves independent PSG and FM configurations intact')
+                    self.assertEqual(ram_state['psg']['dataMask'],0,
+                                     'the imported pair replaces the previous PSG data mask')
                     with page.expect_download() as download_info:
                         page.locator('#circuitConfigDownload').click()
-                    self.assertEqual(json.loads(Path(download_info.value.path()).read_text()), ram_payload)
+                    ram_saved=json.loads(Path(download_info.value.path()).read_text())
+                    self.assertEqual(ram_saved['schemaVersion'], 2)
+                    self.assertEqual(ram_saved['configuration']['psg'], {'pair':[1,6],'dataMask':0})
+                    self.assertEqual(ram_saved['configuration']['fm'], {'pair':[0,7],'dataMask':0})
                     if not page.locator('#logicExperiment').evaluate('element => element.open'):
                         page.locator('#logicExperiment > summary').click()
                     with page.expect_download() as export_info:
@@ -570,11 +589,11 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     self.assertNotIn('romBytes',payload)
                     self.assertEqual(payload['psgInputFault']['available'],psg_api)
                     if psg_api:
-                        self.assertEqual(payload['psgInputFault']['modelVersion'],'psg-data-low-dominant-v1')
+                        self.assertEqual(payload['psgInputFault']['modelVersion'],'psg-data-low-dominant-v2')
                         self.assertTrue(payload['psgInputFault']['configured'])
                     self.assertEqual(payload['fmInputFault']['available'],fm_api)
                     if fm_api:
-                        self.assertEqual(payload['fmInputFault']['modelVersion'],'fm-register-data-low-dominant-v1')
+                        self.assertEqual(payload['fmInputFault']['modelVersion'],'fm-register-data-low-dominant-v2')
                         self.assertTrue(payload['fmInputFault']['configured'])
                     page.locator('#resetBtn').click()
                     page.wait_for_function('testCore._get_logic_address_mask()===0')
