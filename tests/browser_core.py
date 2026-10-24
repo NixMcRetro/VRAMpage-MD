@@ -238,7 +238,6 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     self.assertEqual(saved['schemaVersion'], 2)
                     self.assertEqual(saved['configuration']['fm'], {'pair':None,'dataMask':4})
                     self.assertEqual(saved['configuration']['psg'], {'pair':None,'dataMask':129})
-                    self.assertEqual(saved['configuration']['fm'], {'pair':[0,7],'dataMask':0})
                     self.assertNotIn('rom', saved)
                     self.assertNotIn('lastFrameCounts', json.dumps(saved))
                     ram_payload = {
