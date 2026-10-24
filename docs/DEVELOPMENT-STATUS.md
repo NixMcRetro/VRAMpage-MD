@@ -5,11 +5,22 @@ Verified on 24 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
-Integration branch `integration/transaction-app` builds on verified main
-`d074bdf88585e87406b589f7513d00cb7d034e1d` (PR #42). Public v0.2.8 remains
-unchanged until the v0.3.0 release passes CI and publication checks.
+Transaction VRAM v0.3.0 is merged and publicly verified. [PR #43](https://github.com/NixMcRetro/VRAMpage-MD/pull/43)
+merged as `4cfb983f3003449c0632375576f6a674e660d778`.
+[PR CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40062636637)
+and [merged-main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40062903294)
+passed all seven checks, including packaged actual-core Firefox and WebKit.
+[Publication](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40063210310)
+passed. The public [complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.3.0/VRAMpage-MD-v0.3.0-macos.zip)
+has SHA-256 `b1570d4b9524ba3c87bbeacb2672d5be4883f4a24e8ac90092fd828d6924aef6`.
+The tag, both build manifests, version and source commit agree. All 626 entries,
+executable launcher, source and notices were checked. Fresh downloaded-core API
+and three actual-browser tests passed, as did launcher asset serving and Ctrl+C
+shutdown. Runtime binaries match the independently audited timing record.
+Native macOS, audible output and physical electrical accuracy are not claimed.
+Previous public artifacts remain unchanged.
 
-Implemented: explicit frame/transaction selector, existing VRAM legs and bridges,
+Implemented: explicit frame/transaction selector, VRAM legs and bridges,
 capability/effectiveness reporting, five completed-frame transaction counters,
 separate experiment metadata, and validated RAM/VRAM handoff with rollback and
 fail-closed pause. Active RAM pulses reject takeover without losing their budget.
@@ -19,24 +30,20 @@ core remains a supported fallback with unchanged binary hashes.
 Independent Luna High implementation/review covered the app and core changes.
 The final core/source checkpoint passed 99 Python tests without skips, normal
 LeakSanitizer, strict/native and JavaScript suites, five fresh actual-WASM
-profiles, production normal/runtime builds, runtime API checks, three actual-core
-transaction Chromium tests and the existing actual-core Chromium smoke test.
-Version-label changes require focused rechecks; packaged Firefox/WebKit CI and
-final release verification remain pending. No native macOS or audible test is
-claimed.
+profiles, production normal/runtime builds and actual-core Chromium. Version
+changes passed six focused checks and repeated actual-core browser tests.
+The first runtime timing failed and is preserved; the reviewed inactive path
+passes the unchanged fixed five-pair gate with independent raw-data audit.
+See [both retained records](experiments/vram-runtime-performance-2026-10-24-v2-summary.json).
+These synthetic timings do not establish game-wide performance.
 
-The first runtime timing failed and is preserved. A reviewed per-render-call
-inactive fast path fixes the measured overhead without changing active mapping.
-The [second fixed five-pair record](experiments/vram-runtime-performance-2026-10-24-v2-summary.json)
-passes independent raw-data/provenance audit and all unchanged 1.05 gates:
-runtime default median/p95 ratios 1.00890/1.02977, transaction identity
-1.00966/1.01988. Every sample and both complete records are retained on immutable
-evidence commits. These synthetic timings do not establish game-wide performance.
-
-Next: complete version/package checks, open the coherent v0.3.0 feature PR,
-require all CI, merge, and verify the complete public Mac download from that
-merged commit. Then begin bounded hardware-informed audio implementation for
-v0.4.0. Read this checkpoint before older historical sections below.
+Next: a usable PSG input-data bridge as the first bounded audio slice, followed
+by YM2612 and verified Z80 paths before calling v0.4.0 complete. Work is isolated
+on `experiment/audio-psg-input`; native helper tests pass with normal sanitizers.
+Independent review found patcher drift acceptance, which must be fixed before
+integration. Browser controls, actual-WASM tests and final independent review
+remain in progress. Keep v0.3.0 as the public milestone; do not release a
+partial audio implementation as v0.4.0. Read the queue before older history below.
 
 ## Compact Work RAM interface
 

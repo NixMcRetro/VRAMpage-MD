@@ -1,3 +1,21 @@
+# v0.3.0 transaction VRAM verification
+
+[PR #43](https://github.com/NixMcRetro/VRAMpage-MD/pull/43) and merged-main
+CI40062903294 pass all seven checks: source, three browser suites, fresh compiled
+core/package and extracted actual-core Firefox/WebKit. Independent specialist
+reviews covered the model/handoff code and renderer optimization. The full
+source checkpoint passed 99 tests with normal native sanitizers; six current
+version checks and actual-core Chromium were repeated after version changes.
+
+The unchanged five-pair runtime performance gate passes; both failed and passing
+records remain available in the experiment summaries. Fresh public v0.3.0 ZIP
+checksum, tag, manifests and source agree. Its runtime hashes match the measured
+candidate; three extracted Chromium transaction tests and API checks pass, as do
+launcher asset serving and clean Ctrl+C shutdown. See the current
+[development status](DEVELOPMENT-STATUS.md) for immutable links and checksum.
+These are Linux synthetic/core checks, not native Mac, audible or physical tests.
+The older stage records below describe acceptance at their original checkpoints.
+
 # Browser CI provisioning
 
 Browser binaries use the existing pinned Playwright cache. OS libraries are still
