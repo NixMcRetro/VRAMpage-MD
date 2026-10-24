@@ -34,6 +34,10 @@ class FmDataFaultHelper(unittest.TestCase):
         previous = patched.replace('input bridge v2', 'input bridge v1')
         migrated = PATCH_CORE.patch_fm_data_fault(previous)
         self.assertEqual(migrated, patched, 'exact V1 bridge layout upgrades to V2')
+        partial_previous = previous.replace('fm_data_fault_runtime_reset();',
+                                             'fm_data_fault_reset();', 1)
+        with self.assertRaises(SystemExit):
+            PATCH_CORE.patch_fm_data_fault(partial_previous)
         self.assertEqual(sum(patched.count(f'FM_WRITE_HANDLER({name});')
                              for name in PATCH_CORE.FM_HANDLERS), 4)
         self.assertEqual(patched.count('fm_data_fault_runtime_apply((int)data)'), 1)
