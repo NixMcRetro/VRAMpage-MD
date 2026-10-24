@@ -280,6 +280,68 @@ class ActualCoreBrowserTests(unittest.TestCase):
             finally:
                 server.shutdown()
 
+    def test_randomiser_mutates_only_selected_runtime_chip_and_exports_values(self):
+        handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
+        with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                with sync_playwright() as p:
+                    kwargs = {'executable_path': OPTIONS.executable} if OPTIONS.executable else {}
+                    browser = getattr(p, OPTIONS.browser).launch(**kwargs)
+                    page = browser.new_page(viewport={'width':1366,'height':768},accept_downloads=True)
+                    errors=[]
+                    page.on('pageerror',lambda error:errors.append(str(error)))
+                    core_js=(OPTIONS.site_root/'core/genplus.js').read_text()
+                    core_js += '\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\n'
+                    page.route('**/core/genplus.js',lambda route:route.fulfill(content_type='text/javascript',body=core_js))
+                    page.goto(f'http://127.0.0.1:{server.server_port}/')
+                    page.wait_for_function('!!window.testCore')
+                    page.locator('#romFile').set_input_files({
+                        'name':'original-randomiser.bin','mimeType':'application/octet-stream',
+                        'buffer':original_cartridge()})
+                    expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+                    page.wait_for_function('window.testCore._get_logic_frame()>10')
+                    page.locator('#pauseBtn').click()
+                    starts=page.evaluate('window.testCore._get_logic_frame()')
+                    def randomise(selector,value):
+                        return page.locator(selector).evaluate('''(button,value)=>{
+                          const saved=Math.random;let calls=0;Math.random=()=>{calls++;return value};
+                          try { button.click(); return calls; } finally { Math.random=saved; }
+                        }''',value)
+                    self.assertEqual(randomise('#randomPsgBtn',0),2)
+                    psg=page.evaluate('testCore._get_psg_data_bridge_state()')
+                    self.assertEqual(psg['dataMask'],1)
+                    self.assertEqual(page.evaluate('testCore._get_fm_data_bridge_state().dataMask'),0)
+                    self.assertEqual(page.evaluate('testCore._get_vram_fault_model_state().mask'),0)
+
+                    self.assertEqual(randomise('#randomFmBtn',0.999999),3)
+                    fm=page.evaluate('testCore._get_fm_data_bridge_state()')
+                    self.assertTrue(fm['configured'])
+                    self.assertEqual((fm['bridgeA'],fm['bridgeB']),(6,7))
+                    self.assertEqual(page.evaluate('testCore._get_psg_data_bridge_state().dataMask'),1)
+
+                    page.locator('#vramModel').select_option('2')
+                    selected_model=page.locator('#vramModel').input_value()
+                    self.assertEqual(randomise('#randomVramBtn',0.999999),3)
+                    vram=page.evaluate('testCore._get_vram_fault_model_state()')
+                    self.assertEqual(vram['modelId'],int(selected_model))
+                    self.assertEqual((vram['bridgeA'],vram['bridgeB']),(6,7))
+                    self.assertEqual(page.evaluate('testCore._get_logic_address_mask()'),0)
+                    self.assertEqual(page.locator('#pauseBtn').inner_text(),'Resume')
+                    self.assertEqual(page.evaluate('testCore._get_logic_frame()'),starts,
+                                     'randomisation does not start or advance a paused core')
+                    with page.expect_download() as info:
+                        page.locator('#circuitConfigDownload').click()
+                    saved=json.loads(Path(info.value.path()).read_text())
+                    self.assertEqual(saved['configuration']['psg'],{'pair':None,'dataMask':1})
+                    self.assertEqual(saved['configuration']['fm'],{'pair':[6,7],'dataMask':0})
+                    self.assertEqual(saved['configuration']['vram'],{'modelId':2,'mask':0,'pair':[6,7]})
+                    self.assertEqual(errors,[])
+                    browser.close()
+            finally:
+                server.shutdown()
+
     def test_audio_queue_is_bounded_across_pause_resume_and_visibility_event(self):
         handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
         with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:

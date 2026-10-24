@@ -127,6 +127,7 @@ window.Module = async () => {
         window.mockCore.vramAddressMask=mask;
         window.mockCore.short=a<0?[-1,-1]:[a,b];
         if (window.mockCore.throwVramModelAfter) throw new Error('synthetic VRAM selector trap after mutation');
+        if (window.mockCore.rejectVramModelAfterMutation) return 9;
         return 0;
       },
       _get_vram_fault_model_state:()=>window.mockCore.nullVramState?null:({modelId:vramModel.modelId,modelVersion:vramModel.modelId===2
@@ -165,6 +166,7 @@ window.Module = async () => {
       if (!Number.isInteger(mask)||mask<0||mask>255) return 1;
       if (mask&&!psg.supported) return 2;
       Object.assign(psg,{configured:!!mask,bridgeA:-1,bridgeB:-1,dataMask:mask,inputWrites:'0',changedWrites:'0'});
+      if (window.mockCore.rejectPsgMaskAfterMutation) return 1;
       return 0;
     };
   }

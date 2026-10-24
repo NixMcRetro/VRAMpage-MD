@@ -2,6 +2,7 @@
 
 ## Unreleased workbench improvements
 
+- Add a Randomiser row with separate PSG, FM and VRAM buttons for chip-local cuts or bridges, reusing existing models and exports.
 - Compare two saved experiment exports locally without changing emulation; distinguish matching, different and unavailable identities and inspect recorded settings, counters and recovery outcomes.
 - Add a distinct pause-and-disconnect action for all fault domains, with pulse/held-action cancellation and per-domain partial-failure reporting.
 - Clarify that CPU recovery clears RAM/VRAM faults while leaving audio faults unchanged. Preserve explicit resume and clean restart as separate actions.

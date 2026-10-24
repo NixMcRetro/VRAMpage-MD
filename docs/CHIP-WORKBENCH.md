@@ -44,3 +44,25 @@ The result reports partial failure rather than claiming every chip is clear.
 This does not reset the CPU or repair earlier corruption. See
 [CPU recovery](CPU-RECOVERY.md) for the distinct actions and pulse limitations.
 The public v0.4.1 download remains unchanged until a later workbench release.
+
+## Development-source randomiser
+
+The **Randomiser** row has separate **PSG**, **FM** and **VRAM** buttons. Each
+press chooses cuts or a joined pair within that chip's eight supported lines.
+It replaces only that chip's fault configuration; it cannot join different
+chips. The diagram shows the resulting crosses or bridge. The current VRAM
+model is retained, and the existing sound enable/mute and play/pause controls
+remain separate.
+
+Work RAM is excluded. VRAM randomisation refuses while a RAM fault/pulse or
+held VRAM bridge would be disturbed. Audio chips remain independent of those
+memory controls. Unsupported chips are unavailable; an older bridge-only API
+can choose bridges without pretending to support cuts. Core rejections or
+unavailable state are reported instead of claiming success. A trapped or
+uncertain change pauses emulation for inspection rather than restarting it.
+
+Use **Download configuration** to save the resulting settings and experiment
+JSON to retain the recorded state and counters. Randomisation does not consume
+a staged configuration preview or add a new file format. Removing a fault
+changes future accesses, without repairing prior corruption. These remain
+digital approximations, not physical open-wire or electrical fault simulation.
