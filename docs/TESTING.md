@@ -951,3 +951,16 @@ JavaScript/schema and native smoke checks. Chromium browser logic passes 40/40;
 compiled runtime/normal-core browser checks pass 4/4. Deferred File.text tests
 cover latest-selection precedence, Apply refusal during reads, cancellation and
 invalid replacement. No core code or compiler flags changed from v0.4.0.
+
+## Compact chip workbench and audio masks
+
+The native mask helpers exhaust all 256 masks against all 256 input bytes,
+including invalid configuration atomicity, pair/mask replacement and reset.
+Actual-WASM tone tests cover PSG and both FM backends; disabled output matches
+normal cores. The ordinary normal-core binaries retain their pinned hashes.
+Browser checks cover chip-local selection isolation, four compact bodies within
+1366 by 768, keyboard/cross states, mask/pair export, v1 configuration import,
+legacy mask-capability rejection and RAM/VRAM handoffs. Actual browser-core tests
+activate cuts on both audio chips, save their independent masks and restore
+legacy pairs. Advanced VRAM controls are opened before testing their buttons.
+This is software/synthetic-cartridge evidence, not native Mac or physical tests.

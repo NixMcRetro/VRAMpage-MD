@@ -5,6 +5,23 @@ Verified on 24 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
+The v0.4.1 candidate adds a compact 2 by 2 chip workbench: VRAM, Work RAM, FM
+and PSG/VDP. Pin selections and connections stay within each chip. Existing
+VRAM/Work RAM behavior is reused; runtime FM/PSG data masks add stuck-low cuts
+at the existing write boundaries. Work RAM data bridges remain in advanced
+settings and their active state is reported on the compact card.
+
+Reciprocal Luna High review approved the native core and UI/config changes.
+The full 107-test native/SDK suite passes with normal sanitizer settings, fresh
+WASM profiles and both FM backends. Chromium passes 45 logic tests, four
+actual-core tests, three transaction tests and six display/fullscreen tests.
+The actual-core cases exercise both audio chips' masks and import legacy pairs
+back over them. All four chip bodies fit within the 1366 by 768 viewport.
+Configuration schema 2 saves masks and imports schema 1; new audio experiment
+subsections are schema 2 with native model v2. Historical files are unchanged.
+Final package, GitHub CI and publication gates remain before delivery.
+
+
 Configuration save/preview/apply is merged in [PR #47](https://github.com/NixMcRetro/VRAMpage-MD/pull/47)
 as `ccc80e12db4a58ca54d5056bcd0e9d5cc188f013`.
 [PR CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40083076183)

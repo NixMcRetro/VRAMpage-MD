@@ -52,7 +52,7 @@ semantics, normal binary output and legacy pair APIs. Missing mask APIs disable
 only audio cut mode. No Z80 fault model, Work RAM data-cut model, physical pinout
 claim or cross-chip wiring is included.
 
-Assignment: Luna High core author and independent UI/configuration author in
+Implemented with Luna High core author and independent UI/configuration author in
 isolated worktrees, with reciprocal specialist review. Acceptance includes
 native/sanitizer and actual-WASM mask/bridge/reset tests, real browser control
 and viewport tests, chip-local selection isolation, truthful legacy fallback,
@@ -61,6 +61,11 @@ or recorded experiments. Keep the existing public v0.4.0 artifact unchanged.
 
 Configuration save/preview/apply is already complete in PR #47. Do not rebuild
 it; extend its strict format only as needed for audio masks, retaining v1 import.
+Local verification passes: 107 native/SDK tests, 45 browser logic cases, four
+actual-core cases, three transaction cases and six display cases. Both source
+reviews approve. Required GitHub checks and same-commit package verification
+remain the delivery gate.
+
 After this user priority, resume coordinated fault-disconnect/recovery using
 existing setters and pulse protections, then experiment comparison.
 

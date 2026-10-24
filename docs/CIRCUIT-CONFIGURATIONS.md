@@ -45,7 +45,7 @@ Version 1 files with nullable audio pairs remain importable and are normalized
 without modifying the original file. New downloads use version 2.
 
 For example, this version 2 file selects a frame-model VRAM bridge and two
-independent audio bridges:
+independent audio settings:
 
 ```json
 {

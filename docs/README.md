@@ -39,7 +39,7 @@ older standalone-model descriptions are historical development records.
 | [Source import](IMPORTING.md) | How the original v0.1 working prototype entered GitHub |
 | [Prototype notes](PROTOTYPE-V0.1-NOTES.md) | Historical first-stage implementation and technical assumptions |
 
-The v0.4.0 milestone adds optional, independent
+The v0.4.1 workbench extends optional, independent
 [PSG input-data](PSG-INPUT-DATA-SEMANTICS.md) and
 [FM write-input](FM-DATA-BRIDGE.md) bridges. Previous releases remain unchanged.
 
