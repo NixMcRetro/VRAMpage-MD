@@ -186,6 +186,13 @@ window.Module=opts=>originalFactory(opts).then(core=>{
         page.locator(".pin").nth(0).click()
         page.wait_for_function("testCore._get_vram_address_mask()===1")
         expect(page.locator(".pin").nth(0).locator(".chip-cut")).to_have_css("visibility", "visible")
+        with page.expect_download() as download:
+            page.locator("#logicExperiment > summary").click()
+            page.locator("#logicExperimentBtn").click()
+        data = json.loads(Path(download.value.path()).read_text())
+        self.assertEqual(data["vramFault"]["addressMask"], 1)
+        self.assertEqual(data["vramAddressLineChanges"][-1]["mask"], 1)
+        page.locator("#logicExperiment > summary").click()
         page.locator("#disconnectBtn").click()
         page.wait_for_function("testCore._get_vram_address_mask()===0")
         page.locator("#vramMode").select_option("bridge")
