@@ -1,0 +1,454 @@
+{
+  "recordedAt": "2026-10-24T01:02:07.486Z",
+  "protocol": {
+    "name": "visible-mode5-recurring-32-word-dma-runtime-v1",
+    "mode": "timed-benchmark",
+    "measured": true,
+    "fixedPairs": 5,
+    "fixedDurationMsPerRun": 30000,
+    "warmupTicks": 120,
+    "preflight": "one common first Mode 5 tick, then public runtime selection where applicable, then exactly 120 fixed ticks; transaction support bit must be present; recurring CPU loop counter must advance; baseline, normal, runtime-default and runtime-identity must match full frame/audio/RAM/CPU-flag observations",
+    "timedUnit": "one input-update + emulator tick + audio render; per-frame hrtime duration in milliseconds",
+    "pairOrder": "pairs 1,3,5 forward; pairs 2,4 reverse; no result-based reordering or exclusion",
+    "percentile": "nearest-rank: sorted[Math.ceil(p*n)-1]; median is nearest-rank p=0.50; p95 is per-run frame p=0.95",
+    "statisticUse": "report raw five per-run medians and p95s; do not pool frame samples across runs",
+    "performanceGate": "For normal, runtime-default, runtime-identity, median of five paired run ratios to baseline must be <=1.05 for both per-run median frame duration and per-run p95 frame duration. runtime-active-ad3 is descriptive and does not determine the no-fault gate.",
+    "workload": "visible synthetic Mode 5 tile scene plus original 68K ROM loop issuing recurring 32-word VRAM DMA from ROM byte 0x4000 to VRAM 0x6000",
+    "variants": [
+      "baseline",
+      "normal",
+      "runtime-default",
+      "runtime-identity",
+      "runtime-active-ad3"
+    ],
+    "quietPeriodRequired": true,
+    "noisePolicy": "retain every sample; do not retime, rerun, or exclude based on results; record host load before and after; the fixed 1.05 threshold still applies"
+  },
+  "provenance": {
+    "sourceBefore": {
+      "commit": "2f497fe080bff94c6a197ebd07b164071e4573f2",
+      "tree": "a7e3da6dc82a029d1763a964a7c27712c223c8ff",
+      "trackedClean": true,
+      "status": ""
+    },
+    "sourceAfter": {
+      "commit": "2f497fe080bff94c6a197ebd07b164071e4573f2",
+      "tree": "a7e3da6dc82a029d1763a964a7c27712c223c8ff",
+      "trackedClean": true,
+      "status": ""
+    },
+    "hostBefore": {
+      "loadAverage": [
+        0.02,
+        0.03,
+        0.04
+      ],
+      "node": "v24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "cpuModel": "AMD EPYC 9V74 80-Core Processor",
+      "logicalCpus": 5,
+      "totalMemoryBytes": 35743760384,
+      "emscripten": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 4.0.23 (7a5d93b50f6a3a35e85a0d2fc9e667b8498e6aed)",
+      "cmake": "cmake version 4.1.3"
+    },
+    "hostAfter": {
+      "loadAverage": [
+        1,
+        0.95,
+        0.62
+      ]
+    },
+    "coreBasenames": {
+      "baseline": "genplus.js",
+      "normal": "genplus.js",
+      "runtime-default": "genplus.js",
+      "runtime-identity": "genplus.js",
+      "runtime-active-ad3": "genplus.js"
+    },
+    "artifactManifest": {
+      "baseline": {
+        "jsBasename": "genplus.js",
+        "jsSha256": "3b984104bf92fd9e7a47fa5f081ed18d020e61dee6cd87df7580c147a3edc3bd",
+        "wasmBasename": "genplus.wasm",
+        "wasmSha256": "86b1086cc33091542bf2b866984b0cd3a541143448258a1a5e49abe846621f42"
+      },
+      "normal": {
+        "jsBasename": "genplus.js",
+        "jsSha256": "3b984104bf92fd9e7a47fa5f081ed18d020e61dee6cd87df7580c147a3edc3bd",
+        "wasmBasename": "genplus.wasm",
+        "wasmSha256": "0bb55f946e5bb20ba0efc24e81776305ba8e1d9a82e0a3dcdca9e6218fbbe6d9"
+      },
+      "runtime": {
+        "jsBasename": "genplus.js",
+        "jsSha256": "d5576f9c6943608de4f748c100f27b725601f9014ab99c8b80d6fe71c330b0e3",
+        "wasmBasename": "genplus.wasm",
+        "wasmSha256": "d37132fa4dca82cdcefee0758031d3767b6b982f6826d9c8880cd680e76ec951"
+      }
+    },
+    "artifactsUnchanged": {
+      "baseline": true,
+      "normal": true,
+      "runtime": true
+    },
+    "provenanceStable": true
+  },
+  "preflight": {
+    "baseline": {
+      "variant": "baseline",
+      "setupTicksBeforeSelection": 1,
+      "fixedTicksAfterSelection": 120,
+      "loopCounterBeforeSelection": 1280,
+      "loopCounterAfterSelection": 25653,
+      "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+      "ramSha256": "59e0728bc8ea035714f4ca23748dfcfa439e72deb37a1b6c001387f60a923f3d",
+      "audioSamples": 736,
+      "logicFrame": 121,
+      "cpuFlags": 0,
+      "transactionCounters": null
+    },
+    "normal": {
+      "variant": "normal",
+      "setupTicksBeforeSelection": 1,
+      "fixedTicksAfterSelection": 120,
+      "loopCounterBeforeSelection": 1280,
+      "loopCounterAfterSelection": 25653,
+      "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+      "ramSha256": "59e0728bc8ea035714f4ca23748dfcfa439e72deb37a1b6c001387f60a923f3d",
+      "audioSamples": 736,
+      "logicFrame": 121,
+      "cpuFlags": 0,
+      "transactionCounters": null
+    },
+    "runtime-default": {
+      "variant": "runtime-default",
+      "setupTicksBeforeSelection": 1,
+      "fixedTicksAfterSelection": 120,
+      "loopCounterBeforeSelection": 1280,
+      "loopCounterAfterSelection": 25653,
+      "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+      "ramSha256": "59e0728bc8ea035714f4ca23748dfcfa439e72deb37a1b6c001387f60a923f3d",
+      "audioSamples": 736,
+      "logicFrame": 121,
+      "cpuFlags": 0,
+      "transactionCounters": {
+        "logicalByteReads": 0,
+        "logicalByteWrites": 0,
+        "redirectedByteReads": 0,
+        "redirectedByteWrites": 0,
+        "changedPhysicalByteWrites": 0
+      },
+      "vramModel": {
+        "modelId": 1,
+        "modelVersion": "frame-projection-v1",
+        "effective": false,
+        "reason": "no-fault",
+        "supportedModelsMask": 7,
+        "mask": 0,
+        "bridgeA": -1,
+        "bridgeB": -1,
+        "lastFrameCounts": {
+          "logicalByteReads": 0,
+          "logicalByteWrites": 0,
+          "redirectedByteReads": 0,
+          "redirectedByteWrites": 0,
+          "changedPhysicalByteWrites": 0
+        }
+      }
+    },
+    "runtime-identity": {
+      "variant": "runtime-identity",
+      "setupTicksBeforeSelection": 1,
+      "fixedTicksAfterSelection": 120,
+      "loopCounterBeforeSelection": 1280,
+      "loopCounterAfterSelection": 25653,
+      "frameSha256": "94012e117414ede9f4ef7eaee6e0581597ee3c90d609fc1a040685907dcdb423",
+      "ramSha256": "59e0728bc8ea035714f4ca23748dfcfa439e72deb37a1b6c001387f60a923f3d",
+      "audioSamples": 736,
+      "logicFrame": 121,
+      "cpuFlags": 0,
+      "transactionCounters": {
+        "logicalByteReads": 0,
+        "logicalByteWrites": 0,
+        "redirectedByteReads": 0,
+        "redirectedByteWrites": 0,
+        "changedPhysicalByteWrites": 0
+      },
+      "vramModel": {
+        "modelId": 2,
+        "modelVersion": "logical-byte-transaction-v1",
+        "effective": false,
+        "reason": "no-fault",
+        "supportedModelsMask": 7,
+        "mask": 0,
+        "bridgeA": -1,
+        "bridgeB": -1,
+        "lastFrameCounts": {
+          "logicalByteReads": 0,
+          "logicalByteWrites": 0,
+          "redirectedByteReads": 0,
+          "redirectedByteWrites": 0,
+          "changedPhysicalByteWrites": 0
+        }
+      }
+    },
+    "runtime-active-ad3": {
+      "variant": "runtime-active-ad3",
+      "setupTicksBeforeSelection": 1,
+      "fixedTicksAfterSelection": 120,
+      "loopCounterBeforeSelection": 1280,
+      "loopCounterAfterSelection": 25653,
+      "frameSha256": "9fc09750aa6916ed25344a59e962d16ffe745eb423c18bc777ff770a0d903d83",
+      "ramSha256": "59e0728bc8ea035714f4ca23748dfcfa439e72deb37a1b6c001387f60a923f3d",
+      "audioSamples": 736,
+      "logicFrame": 121,
+      "cpuFlags": 0,
+      "transactionCounters": {
+        "logicalByteReads": 36736,
+        "logicalByteWrites": 7286,
+        "redirectedByteReads": 15232,
+        "redirectedByteWrites": 3648,
+        "changedPhysicalByteWrites": 0
+      },
+      "vramModel": {
+        "modelId": 2,
+        "modelVersion": "logical-byte-transaction-v1",
+        "effective": true,
+        "reason": "none",
+        "supportedModelsMask": 7,
+        "mask": 8,
+        "bridgeA": -1,
+        "bridgeB": -1,
+        "lastFrameCounts": {
+          "logicalByteReads": 36736,
+          "logicalByteWrites": 7286,
+          "redirectedByteReads": 15232,
+          "redirectedByteWrites": 3648,
+          "changedPhysicalByteWrites": 0
+        }
+      }
+    }
+  },
+  "pairedSummary": {
+    "baseline": [
+      {
+        "pair": 1,
+        "medianFrameMs": 0.365615,
+        "p95FrameMs": 0.465176,
+        "medianRatioToBaseline": 1,
+        "p95RatioToBaseline": 1
+      },
+      {
+        "pair": 2,
+        "medianFrameMs": 0.366625,
+        "p95FrameMs": 0.472395,
+        "medianRatioToBaseline": 1,
+        "p95RatioToBaseline": 1
+      },
+      {
+        "pair": 3,
+        "medianFrameMs": 0.367967,
+        "p95FrameMs": 0.513488,
+        "medianRatioToBaseline": 1,
+        "p95RatioToBaseline": 1
+      },
+      {
+        "pair": 4,
+        "medianFrameMs": 0.367448,
+        "p95FrameMs": 0.491185,
+        "medianRatioToBaseline": 1,
+        "p95RatioToBaseline": 1
+      },
+      {
+        "pair": 5,
+        "medianFrameMs": 0.373907,
+        "p95FrameMs": 0.46828,
+        "medianRatioToBaseline": 1,
+        "p95RatioToBaseline": 1
+      }
+    ],
+    "normal": [
+      {
+        "pair": 1,
+        "medianFrameMs": 0.364173,
+        "p95FrameMs": 0.490454,
+        "medianRatioToBaseline": 0.9960559605049027,
+        "p95RatioToBaseline": 1.0543407226512116
+      },
+      {
+        "pair": 2,
+        "medianFrameMs": 0.36885,
+        "p95FrameMs": 0.483864,
+        "medianRatioToBaseline": 1.0060688714626662,
+        "p95RatioToBaseline": 1.024278411075477
+      },
+      {
+        "pair": 3,
+        "medianFrameMs": 0.364823,
+        "p95FrameMs": 0.456672,
+        "medianRatioToBaseline": 0.991455755543296,
+        "p95RatioToBaseline": 0.8893528183716075
+      },
+      {
+        "pair": 4,
+        "medianFrameMs": 0.368408,
+        "p95FrameMs": 0.499748,
+        "medianRatioToBaseline": 1.002612614574035,
+        "p95RatioToBaseline": 1.0174333499597912
+      },
+      {
+        "pair": 5,
+        "medianFrameMs": 0.366346,
+        "p95FrameMs": 0.47483,
+        "medianRatioToBaseline": 0.9797783940926488,
+        "p95RatioToBaseline": 1.0139873579909455
+      }
+    ],
+    "runtime-default": [
+      {
+        "pair": 1,
+        "medianFrameMs": 0.379686,
+        "p95FrameMs": 0.494711,
+        "medianRatioToBaseline": 1.038485838928928,
+        "p95RatioToBaseline": 1.0634920976146665
+      },
+      {
+        "pair": 2,
+        "medianFrameMs": 0.381298,
+        "p95FrameMs": 0.521671,
+        "medianRatioToBaseline": 1.040021820661439,
+        "p95RatioToBaseline": 1.1043110109124779
+      },
+      {
+        "pair": 3,
+        "medianFrameMs": 0.378694,
+        "p95FrameMs": 0.490332,
+        "medianRatioToBaseline": 1.0291520707019923,
+        "p95RatioToBaseline": 0.9549044963076059
+      },
+      {
+        "pair": 4,
+        "medianFrameMs": 0.383562,
+        "p95FrameMs": 0.546839,
+        "medianRatioToBaseline": 1.0438538242145827,
+        "p95RatioToBaseline": 1.1133055773282978
+      },
+      {
+        "pair": 5,
+        "medianFrameMs": 0.380868,
+        "p95FrameMs": 0.492247,
+        "medianRatioToBaseline": 1.0186169288085005,
+        "p95RatioToBaseline": 1.0511809173998463
+      }
+    ],
+    "runtime-identity": [
+      {
+        "pair": 1,
+        "medianFrameMs": 0.378804,
+        "p95FrameMs": 0.498236,
+        "medianRatioToBaseline": 1.0360734652571693,
+        "p95RatioToBaseline": 1.0710698746280978
+      },
+      {
+        "pair": 2,
+        "medianFrameMs": 0.379856,
+        "p95FrameMs": 0.504495,
+        "medianRatioToBaseline": 1.0360886464370953,
+        "p95RatioToBaseline": 1.0679516082939067
+      },
+      {
+        "pair": 3,
+        "medianFrameMs": 0.377993,
+        "p95FrameMs": 0.49464,
+        "medianRatioToBaseline": 1.027247008563268,
+        "p95RatioToBaseline": 0.9632941763001277
+      },
+      {
+        "pair": 4,
+        "medianFrameMs": 0.380647,
+        "p95FrameMs": 0.574901,
+        "medianRatioToBaseline": 1.0359207289194663,
+        "p95RatioToBaseline": 1.17043680079807
+      },
+      {
+        "pair": 5,
+        "medianFrameMs": 0.379826,
+        "p95FrameMs": 0.523153,
+        "medianRatioToBaseline": 1.015830139580163,
+        "p95RatioToBaseline": 1.117179892372085
+      }
+    ],
+    "runtime-active-ad3": [
+      {
+        "pair": 1,
+        "medianFrameMs": 0.840835,
+        "p95FrameMs": 1.076623,
+        "medianRatioToBaseline": 2.2997825581554365,
+        "p95RatioToBaseline": 2.3144422756118117
+      },
+      {
+        "pair": 2,
+        "medianFrameMs": 0.844811,
+        "p95FrameMs": 1.047669,
+        "medianRatioToBaseline": 2.304291851346744,
+        "p95RatioToBaseline": 2.2177817292731716
+      },
+      {
+        "pair": 3,
+        "medianFrameMs": 0.866504,
+        "p95FrameMs": 1.157646,
+        "medianRatioToBaseline": 2.3548416026437153,
+        "p95RatioToBaseline": 2.254475274982083
+      },
+      {
+        "pair": 4,
+        "medianFrameMs": 0.888347,
+        "p95FrameMs": 1.165858,
+        "medianRatioToBaseline": 2.4176128322919164,
+        "p95RatioToBaseline": 2.373561896230545
+      },
+      {
+        "pair": 5,
+        "medianFrameMs": 0.880767,
+        "p95FrameMs": 1.13414,
+        "medianRatioToBaseline": 2.3555777238725137,
+        "p95RatioToBaseline": 2.421927052190997
+      }
+    ]
+  },
+  "performanceGate": {
+    "thresholdRatio": 1.05,
+    "aggregation": "median of five paired ratios; per-run p95 is nearest-rank frame p95 within that run",
+    "noFaultVariants": [
+      "normal",
+      "runtime-default",
+      "runtime-identity"
+    ],
+    "details": {
+      "normal": {
+        "medianOfFivePairedMedianRatios": 0.9960559605049027,
+        "medianOfFivePairedP95Ratios": 1.0174333499597912,
+        "pass": true
+      },
+      "runtime-default": {
+        "medianOfFivePairedMedianRatios": 1.038485838928928,
+        "medianOfFivePairedP95Ratios": 1.0634920976146665,
+        "pass": false
+      },
+      "runtime-identity": {
+        "medianOfFivePairedMedianRatios": 1.0359207289194663,
+        "medianOfFivePairedP95Ratios": 1.0710698746280978,
+        "pass": false
+      }
+    },
+    "pass": false,
+    "failureExitCode": 2,
+    "provenanceFailureExitCode": 3
+  },
+  "fullRecord": {
+    "archiveName": "vram-runtime-performance-2026-10-24-v1.json.gz",
+    "archiveSha256": "78e703f56e0ea129f093c39699089b2f158bdf2368e92863b0756fc82d901575",
+    "rawSha256": "8ab33546d127b83776eb1e00e49a440e32200df97f09c6726ce7ab5cbeee60ff",
+    "rawBytes": 36714967
+  }
+}
