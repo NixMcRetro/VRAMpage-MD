@@ -26,12 +26,21 @@ Verified on 24 October 2026. Read [work queue](WORK-QUEUE.md),
 The next source slice adds read-only comparison of two saved experiment exports.
 Implementation is on `experiment/experiment-comparison`, based on merged PR #49
 and its checkpoint `ec5756e`. It reuses exported metadata rather than introducing
-a new emulator model or changing the export schema. The comparison must separate
+a new emulator model. Export schema versions remain unchanged; the additive
+`logic.available` flag identifies unavailable counter fallbacks. Comparison separates
 ROM/core/build/model identity, recorded settings, active state and results, with
 missing legacy metadata explicitly unknown. No public release or version bump
 is planned. See [comparison usage](EXPERIMENTS.md#compare-saved-exports-development-source).
-Independent review and required PR/main CI remain integration gates until the
-final verification record is added below. The next bounded task after that gate
+Independent Luna High review approves source checkpoint `64ae7a3`. The full
+107-test native/SDK suite with normal sanitizers and fresh WASM profiles passes,
+as do the source script's JavaScript/native checks. The unchanged native/core
+evidence is reused after the final input-validation and presentation fixes.
+The initial full Chromium interface suite passes 59/59; compiled-core4/4,
+transaction3/3 and display6/6 pass. Final focused WebKit comparison tests pass
+2/2, including actual exporter mask/data-pair records, stale reads, no mutator
+calls and 390-pixel layout. Final Chromium regression and required PR/main CI
+remain integration gates until the final verification record is added below.
+The next bounded task after that gate
 is combined workbench acceptance before the Phase D feature freeze.
 
 Coordinated all-domain removal is implemented in development source after the

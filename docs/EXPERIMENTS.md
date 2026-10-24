@@ -7,13 +7,18 @@ JSON** files. Select export A and export B to inspect their recorded identities,
 fault settings, counters and recovery outcomes. Comparison is read-only: loading
 a record does not apply settings, load a cartridge, pause, restart or recover the
 emulator. Clear the comparison to discard the in-memory records and cancel
-pending reads. Nothing is uploaded or saved by the comparison panel.
+pending reads. Each file is limited to 256 KiB with bounded JSON structure.
+Nothing is uploaded or saved by the comparison panel. Long cell values are
+abbreviated; assessments compare the complete recorded values.
 
 Check the ROM SHA-256, pinned core revision, application build commit and model
 versions first. Missing or unavailable metadata is unknown, not a match. A source
 commit identifies the application build separately from the pinned upstream
 core. Preserve original exports; older records may omit newer audio, transaction
-or recovery fields.
+or recovery fields. New exports retain schema version 1 and add
+`logic.available` to distinguish observed logic counters from API fallback
+values. Historical exports remain unchanged; missing availability can leave
+counter comparisons unknown.
 
 Recorded counters and CPU flags describe the saved observation, not a replay.
 Equal identifiers and settings do not prove equal input timing, run length,

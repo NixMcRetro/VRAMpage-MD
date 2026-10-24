@@ -154,3 +154,11 @@ Require full applicable source/browser/compiled-package CI before merging.
 Preserve public v0.4.1, its original tag/assets and all recorded evidence. No
 version bump or intermediate release; no McRetro.net work. After verified
 integration, review combined workbench acceptance before the Phase D freeze.
+
+Implemented and independently reviewed through `64ae7a3`. The full 107-test
+native/SDK suite and source script pass; unchanged core evidence is reused.
+Chromium interface59/59, compiled-core4/4, transaction3/3 and display6/6 pass;
+final focused WebKit comparison2/2 passes. Final Chromium and required GitHub
+PR/main checks remain before integration. The implementation includes bounded
+input validation, explicit unavailable values, a readable scrollable table and
+the additive logic-availability export flag while retaining schema versions.

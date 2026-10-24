@@ -996,3 +996,21 @@ Firefox and WebKit and tests the extracted compiled package before merge.
 These are software and original-synthetic-cartridge checks, not native macOS,
 audible output, physical gamepad or electrical-fidelity validation. The public
 v0.4.1 ZIP remains immutable and does not contain this unreleased action.
+
+# Saved experiment comparison verification (development source)
+
+The comparison module is checked by `node tests/test_experiment_comparison.cjs`
+through `bash scripts/test.sh`. Browser regressions run in the existing
+`tests/browser_logic.py` suite and its three-browser CI matrix. Imports must be
+bounded, text-only and read-only, including invalid files, missing legacy
+metadata, unavailable APIs and pending reads canceled or replaced by the user.
+Identity equality is metadata equality, not proof of gameplay equivalence.
+
+The initial Chromium integration passes all 59 interface tests, six display
+tests, four compiled-core tests and three transaction tests. The production
+runtime API and 25 original-cartridge WASM logic checks also pass. Independent
+review and final source/CI results are recorded in the development checkpoint;
+these initial results do not substitute for those gates. No core implementation
+changed. Export schema versions are retained with an additive `logic.available`
+flag so unavailable logic counters are not presented as observed values. No new
+native Mac, audible or physical evidence is claimed.
