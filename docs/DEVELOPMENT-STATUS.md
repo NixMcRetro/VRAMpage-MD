@@ -5,8 +5,8 @@ Verified on 24 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
-Verified integration base: `46dcc80a8d561cde4b79453300a2a1bdee3e847c` (PR #41).
-[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40041499264)
+Verified integration base: `d074bdf88585e87406b589f7513d00cb7d034e1d` (PR #42).
+[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40043483063)
 passed source, Chromium, Firefox, WebKit and actual-core/package checks.
 The immutable [v0.2.8 Mac package](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.8/VRAMpage-MD-v0.2.8-macos.zip)
 was published by [workflow 39972454348](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39972454348)
@@ -37,8 +37,10 @@ profiles, normal Chromium and real packaging passed locally.
 required checks passed, and merged-main CI passed too. The normal app/release remains v0.2.8; the [isolated runtime builder](VRAM-RUNTIME-BUILD.md) now passes independent
 review, normal/runtime/normal actual build checks, source-bundle reproduction and
 the full 94-test suite locally. Normal core hashes and actual-core Chromium are
-unchanged. Required CI precedes merge; UI selection,
-experiment exports and milestone acceptance follow. Read the first unfinished
+unchanged. PR #42 and merged-main CI passed. Browser model selection, chip controls,
+safe RAM handoff and transaction exports are now the active coherent feature
+assignment. Current-runtime performance and v0.3.0 acceptance accompany this
+integration; no intermediate release is planned. Read the first unfinished
 [work-queue](WORK-QUEUE.md) item and relevant protocol before older history.
 Reuse unchanged passing evidence; new diagnostic code needs focused tests,
 independent specialist review, final regression and CI before merge.

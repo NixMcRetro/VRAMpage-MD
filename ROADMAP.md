@@ -1,5 +1,20 @@
 # VRAMpage MD roadmap
 
+## Active strategy: complete usable major features
+
+| Phase | Delivery |
+|---|---|
+| A, active | v0.3.0: browser transaction-VRAM selection, existing chip controls, safe RAM coordination, exports and acceptable runtime performance |
+| B | v0.4.0: hardware-informed YM2612, PSG and Z80 audio faults with clean normal audio |
+| C | Essential saved configurations, reproducible presets, coordinated faults, recovery and experiment comparison |
+| D | Feature freeze, comprehensive crash/regression fixing, browser/audio stability, performance, usability and release candidate |
+
+Reuse the merged VRAM engine, API and runtime builder. Focused correctness and
+independent specialist review remain mandatory during implementation; full
+regression and browser verification happen at integration boundaries. Do not
+repeat completed research or publish minor intermediate releases. Historical
+milestones below remain available as evidence.
+
 ## Current delivery: v0.2.8 compact Work RAM interface
 
 The source import, display fixes and work-RAM development through v0.2.4 are
