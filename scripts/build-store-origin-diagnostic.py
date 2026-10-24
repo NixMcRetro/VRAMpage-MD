@@ -11,6 +11,12 @@ import tarfile
 
 PIN = "6090aff9e9b2f578cd28882bd4571d2e35b1d674"
 MARK = "VRAMPAGE PRIVATE STORE ORIGIN DIAGNOSTIC v1"
+PATCH_CORE_HELPERS = (
+    "patch_core.py", "vram_fault_patch.c", "vram_transaction.c", "vram_transaction.h",
+    "vram_transaction_core.h", "vram_transaction_runtime.h", "vram_transaction_render.h",
+    "work_ram_fault.c", "work_ram_fault.h", "work_ram_runtime.c", "work_ram_runtime.h",
+    "psg_data_fault.h", "psg_data_fault_core.c", "psg_data_fault_runtime.c",
+)
 
 
 def sha(path):
@@ -52,9 +58,7 @@ def main():
         tar.extractall(staged, filter="data")
     helper = out / "scripts"
     helper.mkdir()
-    for name in ("patch_core.py", "vram_fault_patch.c", "vram_transaction.c", "vram_transaction.h",
-                 "vram_transaction_core.h", "vram_transaction_runtime.h", "vram_transaction_render.h", "work_ram_fault.c",
-                 "work_ram_fault.h", "work_ram_runtime.c", "work_ram_runtime.h"):
+    for name in PATCH_CORE_HELPERS:
         shutil.copy2(repo / "scripts" / name, helper / name)
     subprocess.run([sys.executable, str(helper / "patch_core.py"), str(staged)], check=True)
 
@@ -120,10 +124,7 @@ WORK_RAM_KEEPALIVE uint32_t get_store_diag_width(void) {{ return diag_width; }}
         digest.update(file.relative_to(staged).as_posix().encode())
         digest.update(bytes.fromhex(sha(file)))
     tool_paths = ("scripts/build-store-origin-diagnostic.py", "scripts/run-store-origin-diagnostic.cjs",
-                  "scripts/patch_core.py", "scripts/vram_fault_patch.c", "scripts/vram_transaction.c",
-                  "scripts/vram_transaction.h", "scripts/vram_transaction_core.h",
-                  "scripts/vram_transaction_runtime.h", "scripts/vram_transaction_render.h", "scripts/work_ram_fault.c",
-                  "scripts/work_ram_fault.h", "scripts/work_ram_runtime.c", "scripts/work_ram_runtime.h",
+                  *(f"scripts/{name}" for name in PATCH_CORE_HELPERS),
                   "scripts/observe-attract-demo.cjs", "scripts/observe-ram-alias-audio-phase.cjs",
                   "tests/test_store_origin_diagnostic.py", "tests/test_store_origin_runner.cjs",
                   "tests/test_store_origin_wasm.cjs")
