@@ -170,7 +170,7 @@ window.Module=opts=>originalFactory(opts).then(core=>{
             page.locator("#logicExperimentBtn").click()
         data = json.loads(Path(download.value.path()).read_text())
         self.assertEqual(data["schemaVersion"], 1)
-        self.assertEqual(data["modelVersion"], "0.2.8-experimental")
+        self.assertEqual(data["modelVersion"], "0.3.0-experimental")
         self.assertIn("readCount", data)
         self.assertIn("vramFault", data)
         self.assertIn("vramAddressLineChanges", data)
