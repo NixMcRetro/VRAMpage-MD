@@ -67,6 +67,84 @@ class AnnotatedBrowserResult(unittest.TextTestResult):
 
 
 class ActualCoreBrowserTests(unittest.TestCase):
+    def test_normal_core_rejects_optional_configuration_before_mutation(self):
+        normal_source = OPTIONS.site_root / 'source/src/main/js'
+        normal_js = normal_source / 'genplus.js'
+        normal_wasm = normal_source / 'genplus.wasm'
+        if not normal_js.is_file() or not normal_wasm.is_file():
+            self.fail(f'complete source package must provide normal core assets at {normal_source}')
+        handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
+        with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                with sync_playwright() as p:
+                    kwargs = {'executable_path': OPTIONS.executable} if OPTIONS.executable else {}
+                    browser = getattr(p, OPTIONS.browser).launch(**kwargs)
+                    page = browser.new_page(viewport={'width': 1366, 'height': 768}, accept_downloads=True)
+                    errors = []
+                    page.on('pageerror', lambda error: errors.append(str(error)))
+                    core_js = normal_js.read_text()
+                    core_js += '\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\n'
+                    page.route('**/core/genplus.js', lambda route: route.fulfill(
+                        content_type='text/javascript', body=core_js))
+                    page.route('**/core/genplus.wasm', lambda route: route.fulfill(
+                        content_type='application/wasm', path=str(normal_wasm)))
+                    page.goto(f'http://127.0.0.1:{server.server_port}/')
+                    page.wait_for_function('!!window.testCore')
+                    page.locator('#romFile').set_input_files({
+                        'name': 'original-normal-config.bin',
+                        'mimeType': 'application/octet-stream',
+                        'buffer': original_cartridge()})
+                    expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+                    page.wait_for_function('window.testCore._get_logic_frame()>10')
+                    self.assertEqual(page.evaluate("typeof testCore._set_vram_fault_model"), 'undefined')
+                    self.assertEqual(page.evaluate("typeof testCore._set_psg_data_bridge"), 'undefined')
+                    self.assertEqual(page.evaluate("typeof testCore._set_fm_data_bridge"), 'undefined')
+                    page.locator('#pauseBtn').click()
+                    expect(page.locator('#pauseBtn')).to_have_text('Resume')
+                    before = page.evaluate('''() => ({
+                        addressMask: testCore._get_vram_address_mask(),
+                        ramMask: testCore._get_logic_address_mask(),
+                        vramModel: document.querySelector('#vramModel').value,
+                        psgA: document.querySelector('#psgBridgeA').value,
+                        fmA: document.querySelector('#fmBridgeA').value
+                    })''')
+                    requested = {
+                        'format': 'vrampage-md-circuit-config', 'schemaVersion': 1,
+                        'configuration': {
+                            'vram': {'modelId': 1, 'mask': 0, 'pair': None},
+                            'ram': None, 'psg': [1, 6], 'fm': [0, 7]
+                        }
+                    }
+                    page.locator('#circuitConfigFile').set_input_files({
+                        'name': 'unsupported-normal-config.json', 'mimeType': 'application/json',
+                        'buffer': json.dumps(requested).encode()})
+                    expect(page.locator('#circuitConfigApply')).to_be_enabled()
+                    page.locator('#circuitConfigApply').click()
+                    expect(page.locator('#circuitConfigStatus')).to_contain_text('does not support the requested PSG bridge')
+                    after_reject = page.evaluate('''() => ({
+                        addressMask: testCore._get_vram_address_mask(),
+                        ramMask: testCore._get_logic_address_mask(),
+                        vramModel: document.querySelector('#vramModel').value,
+                        psgA: document.querySelector('#psgBridgeA').value,
+                        fmA: document.querySelector('#fmBridgeA').value
+                    })''')
+                    self.assertEqual(after_reject, before, 'unsupported normal-core request is rejected before any mutation')
+                    with page.expect_download() as download_info:
+                        page.locator('#circuitConfigDownload').click()
+                    saved = json.loads(Path(download_info.value.path()).read_text())
+                    self.assertEqual(saved['configuration'], {
+                        'vram': {'modelId': 1, 'mask': 0, 'pair': None},
+                        'ram': None, 'psg': None, 'fm': None
+                    })
+                    self.assertNotIn('rom', saved)
+                    self.assertNotIn('inputWrites', json.dumps(saved))
+                    self.assertEqual(errors, [])
+                    browser.close()
+            finally:
+                server.shutdown()
+
     def test_circuit_configuration_uses_runtime_core_and_roundtrips_without_rom_data(self):
         handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
         with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:
