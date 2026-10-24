@@ -44,6 +44,8 @@ The development source after v0.3.0 adds an optional
 [FM write-input bridge](FM-DATA-BRIDGE.md). The public v0.3.0 ZIP
 remains unchanged; the full audio milestone is not yet complete.
 
+- [Audio bending](AUDIO-BENDING.md): signal paths, bus ownership, controls, recovery, browser scheduling and evidence limits.
+
 ## Documentation conventions
 
 - **Describe what works today separately from what is planned.** Mark features as Implemented, Experimental, Planned or Unverified. Label the v0.2 work-RAM model Experimental until genuine-game checks are recorded; do not imply a verified Sonic outcome or sound bending.
