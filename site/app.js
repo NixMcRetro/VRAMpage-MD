@@ -101,6 +101,7 @@
     updateLogicControls();
     refreshVramControls();
     refreshPsgDataControls();
+    refreshFmDataControls();
   }
 
   function samePair(a,b) { return !!(a && b) && a[0] === b[0] && a[1] === b[1]; }
@@ -124,9 +125,20 @@
       typeof core?._get_psg_data_bridge_state==='function';
   }
 
+  function fmDataApiReady(core=emulator) {
+    return typeof core?._set_fm_data_bridge==='function' &&
+      typeof core?._get_fm_data_bridge_state==='function';
+  }
+
   function currentPsgDataState() {
     if (!psgDataApiReady()) return null;
     try { return emulator._get_psg_data_bridge_state(); }
+    catch (_) { return null; }
+  }
+
+  function currentFmDataState() {
+    if (!fmDataApiReady()) return null;
+    try { return emulator._get_fm_data_bridge_state(); }
     catch (_) { return null; }
   }
 
@@ -180,6 +192,58 @@
     stamp(enabled
       ? `PSG data bridge applied: D${a} ↔ D${b}; existing chip state was not repaired.`
       : 'PSG data bridge removed; existing chip state was not repaired.');
+  }
+
+  function refreshFmDataControls() {
+    const available=fmDataApiReady();
+    const state=currentFmDataState();
+    const supported=!!state?.supported;
+    $('fmBridgeApply').disabled=!started || !available || !supported;
+    $('fmBridgeRemove').disabled=!started || !available || !state?.configured;
+    $('fmBridgeA').disabled=!started || !available || !supported;
+    $('fmBridgeB').disabled=!started || !available || !supported;
+    $('fmInputWrites').textContent=state?.inputWrites ?? '0';
+    $('fmChangedWrites').textContent=state?.changedWrites ?? '0';
+    $('fmBridgeStatus').textContent=!available
+      ? 'This core does not provide the optional FM runtime API.'
+      : !state
+        ? 'FM runtime state is unavailable; controls are disabled.'
+      : !supported
+        ? (state.configured ? 'Configured, but inactive in this system profile.' : 'FM bridge is unavailable in this system profile.')
+        : state.configured
+          ? `Active: D${state.bridgeA} ↔ D${state.bridgeB}; future FM register writes only.`
+          : 'No FM data bridge is active.';
+  }
+
+  function setFmDataBridge(enabled) {
+    if (!fmDataApiReady()) {
+      $('fmBridgeStatus').textContent='This core does not provide the optional FM runtime API.';
+      return;
+    }
+    const state=currentFmDataState();
+    if (enabled && !state?.supported) {
+      $('fmBridgeStatus').textContent='FM bridge request rejected: unsupported system profile.';
+      return;
+    }
+    const a=enabled ? Number($('fmBridgeA').value) : -1;
+    const b=enabled ? Number($('fmBridgeB').value) : -1;
+    if (enabled && (!Number.isInteger(a) || !Number.isInteger(b) || a<0 || a>7 || b<0 || b>7 || a===b)) {
+      $('fmBridgeStatus').textContent='Choose two distinct FM data inputs from D0 to D7.';
+      return;
+    }
+    const status=emulator._set_fm_data_bridge(enabled?1:0,a,b);
+    if (status!==0) {
+      $('fmBridgeStatus').textContent=status===2
+        ? 'FM bridge request rejected: unsupported system profile.'
+        : 'FM bridge request rejected: invalid settings.';
+      stamp(`FM bridge request rejected (status ${status})`);
+      refreshFmDataControls();
+      return;
+    }
+    refreshFmDataControls();
+    stamp(enabled
+      ? `FM data bridge applied: D${a} ↔ D${b}; existing chip state was not repaired.`
+      : 'FM data bridge removed; existing chip state was not repaired.');
   }
 
   function currentVramModelState() {
@@ -873,6 +937,7 @@
     const writes=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.writeCount : coreWrites;
     const runtimeVramState=vramModelApiReady()?currentVramModelState():null;
     const psgState=currentPsgDataState();
+    const fmState=currentFmDataState();
     const transactionCounts=runtimeVramState?.lastFrameCounts
       ? {...runtimeVramState.lastFrameCounts} : null;
     const data={
@@ -916,6 +981,16 @@
         bridgeB:psgState?.bridgeB ?? -1,
         inputWrites:psgState?.inputWrites ?? '0',
         changedWrites:psgState?.changedWrites ?? '0'},
+      fmInputFault:{schemaVersion:1,available:!!fmState,
+        modelVersion:fmState?.modelVersion ?? null,
+        supported:fmState?.supported ?? false,
+        configured:fmState?.configured ?? false,
+        effective:fmState?.effective ?? false,
+        reason:fmState?.reason ?? 'api-unavailable',
+        bridgeA:fmState?.bridgeA ?? -1,
+        bridgeB:fmState?.bridgeB ?? -1,
+        inputWrites:fmState?.inputWrites ?? '0',
+        changedWrites:fmState?.changedWrites ?? '0'},
       vramModelTransitions:vramModelTransitions.map(entry=>({...entry})),
       exportedAt:new Date().toISOString()
     };
@@ -1111,6 +1186,7 @@
     refreshVramTelemetry();
     refreshLogicMetrics();
     refreshPsgDataControls();
+    refreshFmDataControls();
   }
 
   function animationFrame(time) {
@@ -1155,6 +1231,7 @@
     $('soundBtn').textContent=audioOn?'Mute Sound':'Enable Sound';
     $('soundBtn').setAttribute('aria-pressed',String(audioOn));
     refreshPsgDataControls();
+    refreshFmDataControls();
     stamp(audioOn?'Audio enabled (FM + PSG output)':'Audio muted');
   }
 
@@ -1202,6 +1279,7 @@
     accumulated=0;lastFrame=0;resetStats();nextAudioTime=0;
     updateLogicControls();
     refreshPsgDataControls();
+    refreshFmDataControls();
     stamp(`Cartridge inserted: ${name} (forced NTSC-U)`);
     // Browser audio is unlocked by a separate Sound button after user gesture.
   }
@@ -1350,6 +1428,12 @@
     // without overwriting a pair the user is preparing to apply.
     $('psgBridgeA').value='0';
     $('psgBridgeB').value='1';
+    for (const id of ['fmBridgeA','fmBridgeB']) {
+      const select=$(id);
+      select.innerHTML=Array.from({length:8},(_,bit)=>`<option value="${bit}">D${bit}</option>`).join('');
+    }
+    $('fmBridgeA').value='0';
+    $('fmBridgeB').value='1';
     setupPatchbay();installKeyboard();
     configureLogicLines();
     $('logicKind').addEventListener('change',()=>{
@@ -1371,6 +1455,8 @@
     }));
     $('psgBridgeApply').addEventListener('click',()=>setPsgDataBridge(true));
     $('psgBridgeRemove').addEventListener('click',()=>setPsgDataBridge(false));
+    $('fmBridgeApply').addEventListener('click',()=>setFmDataBridge(true));
+    $('fmBridgeRemove').addEventListener('click',()=>setFmDataBridge(false));
     $('rawVideoToggle').addEventListener('change', () => {
       previousVideoStatus = "";
       drawActiveVideo();
