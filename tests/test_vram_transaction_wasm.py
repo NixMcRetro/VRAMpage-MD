@@ -32,7 +32,8 @@ def stage_source(vendor: Path, target: Path):
              "vram_transaction.h", "vram_transaction_core.h", "vram_transaction_runtime.h",
              "vram_transaction_render.h",
              "work_ram_fault.c", "work_ram_fault.h", "work_ram_runtime.c", "work_ram_runtime.h",
-             "psg_data_fault.h", "psg_data_fault_core.c", "psg_data_fault_runtime.c")
+             "psg_data_fault.h", "psg_data_fault_core.c", "psg_data_fault_runtime.c",
+             "fm_data_fault.h", "fm_data_fault_core.c", "fm_data_fault_runtime.c", "fm_data_fault_api.js")
     for name in names:
         shutil.copy2(ROOT / "scripts" / name, helpers / name)
     command([os.environ.get("PYTHON", "python3"), str(helpers / "patch_core.py"), str(target)])
@@ -41,6 +42,8 @@ def stage_source(vendor: Path, target: Path):
         "src/main/c/wasm/vram_transaction.c", "src/main/c/wasm/vram_transaction.h",
         "src/main/c/wasm/vram_transaction_runtime.h", "src/main/c/wasm/psg_data_fault_core.c",
         "src/main/c/wasm/psg_data_fault_runtime.c", "src/main/c/core/sound/psg.c",
+        "src/main/c/wasm/fm_data_fault_core.c", "src/main/c/wasm/fm_data_fault_runtime.c",
+        "src/main/c/core/sound/sound.c", "src/main/c/core/fm_data_fault.h",
         "src/main/c/core/vdp_render.h",
         "src/main/c/core/vdp_render.c", "src/main/c/core/vram_transaction_render.h",
         "src/main/c/core/m68k/m68kcpu.h", "src/main/c/core/memz80.c",
@@ -333,6 +336,9 @@ class VramTransactionWasm(unittest.TestCase):
         self.assertTrue((bundle / "scripts/vram_transaction_api.js").is_file())
         self.assertTrue((bundle / "scripts/psg_data_fault_api.js").is_file())
         self.assertTrue((bundle / "scripts/psg_data_fault_core.c").is_file())
+        self.assertTrue((bundle / "scripts/fm_data_fault_api.js").is_file())
+        self.assertTrue((bundle / "scripts/fm_data_fault_core.c").is_file())
+        self.assertTrue((bundle / "scripts/fm_data_fault_runtime.c").is_file())
         self.assertTrue((bundle / "scripts/build-core-runtime.py").is_file())
         self.assertTrue((bundle / "THIRD-PARTY-NOTICES.md").is_file())
         self.assertTrue((runtime_output / "THIRD-PARTY-NOTICES.md").is_file())
@@ -344,9 +350,12 @@ class VramTransactionWasm(unittest.TestCase):
         self.assertNotIn("-DVRAM_TX_DIAGNOSTIC", cmake)
         self.assertIn("--pre-js=${CMAKE_SOURCE_DIR}/../scripts/vram_transaction_api.js", cmake)
         self.assertIn("--pre-js=${CMAKE_SOURCE_DIR}/../scripts/psg_data_fault_api.js", cmake)
+        self.assertIn("--pre-js=${CMAKE_SOURCE_DIR}/../scripts/fm_data_fault_api.js", cmake)
         command(["node", str(fixture / "tests/test_runtime_build_profile.cjs"),
                  str(runtime_paths[0])], cwd=fixture)
         command(["node", str(fixture / "tests/test_psg_data_runtime.cjs"),
+                 str(runtime_paths[0]), str(normal_paths[0])], cwd=fixture)
+        command(["node", str(fixture / "tests/test_fm_data_runtime.cjs"),
                  str(runtime_paths[0]), str(normal_paths[0])], cwd=fixture)
 
         command(["bash", str(build_script), "normal"], cwd=fixture, env=env,

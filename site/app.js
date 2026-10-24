@@ -1155,7 +1155,7 @@
     $('soundBtn').textContent=audioOn?'Mute Sound':'Enable Sound';
     $('soundBtn').setAttribute('aria-pressed',String(audioOn));
     refreshPsgDataControls();
-    stamp(audioOn?'Audio enabled (FM + PSG; no sound-chip faults yet)':'Audio muted');
+    stamp(audioOn?'Audio enabled (FM + PSG output)':'Audio muted');
   }
 
   async function startCartridge(bytes, name, {cleanRestart=false}={}) {
