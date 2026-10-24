@@ -933,3 +933,14 @@ source `8c1d5329477d8702e1fb0d294abfbc233d50d80d`, its version/tag and checksum.
 Downloaded-core API, mixed FM/PSG/Z80 tests, Chromium audio/control (2) and
 transaction (3) tests pass. Its launcher serves every required runtime file
 and exits cleanly on Ctrl+C. This remains Linux cloud evidence.
+
+## Circuit configuration development checks
+
+`node tests/test_circuit_config_schema.cjs` validates version, exact fields,
+bounds, mutually exclusive RAM/VRAM targets, byte lanes and normalized pairs.
+`tests/browser_logic.py` checks inert preview, explicit apply, current applied
+settings rather than unapplied drafts, pulse/capability refusal, stable counters
+including reversed live audio connections, and pause/status after rejected or
+throwing core calls. `tests/browser_core.py` exercises the actual runtime with an
+original cartridge through VRAM/audio apply, RAM handoff and configuration/export
+round-trips. These files contain settings only, without ROM or memory contents.

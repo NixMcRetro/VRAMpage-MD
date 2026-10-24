@@ -3,8 +3,8 @@
 Development source after the public v0.4.0 release can save and restore stable
 circuit settings. This feature is not in the original v0.4.0 ZIP.
 
-Open **Circuit configuration**, choose **Save configuration**, and keep the JSON
-file. To restore it, choose the file, review its preview and click **Apply**.
+Open **Circuit configuration**, choose **Download configuration**, and keep the JSON
+file. To restore it, choose the file, review its preview and click **Apply staged configuration**.
 Choosing a file only stages a preview. It does not activate faults or change the
 existing controls. Cancel discards the preview. Invalid replacement files leave
 the previous valid preview visible and report that the replacement was rejected.

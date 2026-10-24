@@ -29,8 +29,10 @@ throttling or physical fidelity. See [audio model](AUDIO-BENDING.md).
 Active Phase C: strict circuit-configuration save/preview/apply, implemented on
 `experiment/circuit-config` from this release. Import is inert; explicit apply
 must preflight capabilities and preserve counter state for unchanged settings.
-Independent review is addressing thrown-setter failures, unknown-state reporting
-and undirected-pair normalization before integration. No new public release is
+Thrown-setter pause, unavailable-state reporting and undirected-pair
+normalization are implemented, including reversed live audio selections.
+Actual-runtime configuration staging, RAM/VRAM handoff and export tests pass;
+final review and full integration checks remain pending. No new public release is
 planned for this development slice. Read the work queue before older checkpoints.
 
 Transaction VRAM v0.3.0 is merged and publicly verified. [PR #43](https://github.com/NixMcRetro/VRAMpage-MD/pull/43)

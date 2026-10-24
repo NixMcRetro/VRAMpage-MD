@@ -45,6 +45,8 @@ The v0.4.0 milestone adds optional, independent
 
 - [Audio bending](AUDIO-BENDING.md): signal paths, bus ownership, controls, recovery, browser scheduling and evidence limits.
 
+- [Circuit configuration files](CIRCUIT-CONFIGURATIONS.md): development save/preview/apply format, capability checks and failure semantics.
+
 ## Documentation conventions
 
 - **Describe what works today separately from what is planned.** Mark features as Implemented, Experimental, Planned or Unverified. Label the v0.2 work-RAM model Experimental until genuine-game checks are recorded; do not imply a verified Sonic outcome or sound bending.

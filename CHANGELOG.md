@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased: workbench configurations
+
+- Save stable VRAM, RAM, PSG and FM settings in a strict versioned JSON file, separate from experiment exports and ROM/memory data.
+- Preview imports without changing the circuit; explicitly apply after capability and pulse checks. Retain existing memory-domain handoffs and independent audio controls.
+- Preserve counters when configurations differ only in bridge endpoint order. Pause on later rejected or throwing core operations and report unavailable state honestly.
+- Make future release dispatch create only an absent tag before verifying its source commit; never move existing tags or replace public releases.
+- Keep the published v0.4.0 package unchanged.
+
 ## v0.4.0 - audio input bridges
 
 - Add an off-by-default PSG input-data bridge in the optional runtime, before register decoding and synthesis.

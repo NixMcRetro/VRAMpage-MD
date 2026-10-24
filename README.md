@@ -27,6 +27,8 @@ If your Mac blocks `START.command`, right-click it and choose **Open**, or follo
 
 **v0.4.0:** [audio input bridges](docs/AUDIO-BENDING.md) add independent PSG and FM D0-D7 pair controls, exact counters and experiment metadata. They change future chip-input writes before synthesis. Both the 68000 and Z80 routes are covered by synthetic tests; Z80 RAM/arbitration faults and physical electrical fidelity remain outside this model. Enable sound, choose a pair and apply it. Removing a bridge does not repair prior chip state; use clean restart when needed.
 
+**Development source after v0.4.0:** [circuit configuration files](docs/CIRCUIT-CONFIGURATIONS.md) save stable RAM/VRAM and audio settings. Loading a file previews it; an explicit Apply changes the circuit. This is not included in the immutable v0.4.0 ZIP.
+
 **RAM research:** a [reproducible bounded experiment](docs/RAM-STATUS-FOLLOWUP.md) now shows player-trajectory divergence while recorded demo inputs continue at the same phase. This uses the existing public core and does not establish physical electrical accuracy.
 
 ## What can it do?
