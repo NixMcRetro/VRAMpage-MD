@@ -71,7 +71,8 @@ def stage_source(vendor: Path, target: Path):
         raise AssertionError("partial transaction bridge marker was accepted")
 
 
-def build(staged: Path, diagnostic: bool, alt_renderer: bool = False, runtime: bool = False):
+def build(staged: Path, diagnostic: bool, alt_renderer: bool = False, runtime: bool = False,
+          ym3438: bool = False):
     cmake = staged / "CMakeLists.txt"
     text = cmake.read_text()
     anchor = "add_executable(${PROJECT_NAME} ${SOURCE_FILES})"
@@ -85,6 +86,15 @@ def build(staged: Path, diagnostic: bool, alt_renderer: bool = False, runtime: b
         flags.insert(0, f'add_compile_flags(LD "--pre-js={api_js}")')
         psg_api_js = ROOT / "scripts/psg_data_fault_api.js"
         flags.insert(0, f'add_compile_flags(LD "--pre-js={psg_api_js}")')
+        fm_api_js = ROOT / "scripts/fm_data_fault_api.js"
+        flags.insert(0, f'add_compile_flags(LD "--pre-js={fm_api_js}")')
+    if ym3438:
+        config = staged / "src/main/c/wasm/config.c"
+        config_text = config.read_text()
+        if config_text.count('config.ym3438         = 0;') != 1:
+            raise AssertionError("YM3438 test configuration anchor is missing or ambiguous")
+        config.write_text(config_text.replace('config.ym3438         = 0;',
+                                              'config.ym3438         = 1;', 1))
     if alt_renderer:
         flags.insert(0, 'add_compile_flags(C "-DALT_RENDERER")')
     if all(flag in text for flag in flags):
@@ -165,14 +175,15 @@ class VramTransactionWasm(unittest.TestCase):
         else:
             cls.temp = tempfile.TemporaryDirectory(prefix="vram-tx-wasm-")
             root = Path(cls.temp.name)
-        normal_source, runtime_source, diagnostic_source, alt_source, baseline_source = (
+        normal_source, runtime_source, diagnostic_source, alt_source, baseline_source, ym3438_source = (
             root / "normal", root / "runtime", root / "diagnostic",
-            root / "diagnostic-alt", root / "baseline")
+            root / "diagnostic-alt", root / "baseline", root / "runtime-ym3438")
         stage_source(vendor, normal_source)
         stage_source(vendor, runtime_source)
         stage_source(vendor, diagnostic_source)
         stage_source(vendor, alt_source)
         stage_source(vendor, baseline_source)
+        stage_source(vendor, ym3438_source)
         test_previous_diagnostic_build_upgrades(vendor, root / "previous-diagnostic")
         original_render = subprocess.check_output([
             "git", "-C", str(vendor), "show",
@@ -183,6 +194,7 @@ class VramTransactionWasm(unittest.TestCase):
         cls.diagnostic_js = build(diagnostic_source, diagnostic=True)
         cls.diagnostic_alt_js = build(alt_source, diagnostic=True, alt_renderer=True)
         cls.baseline_js = build(baseline_source, diagnostic=False)
+        cls.runtime_ym3438_js = build(ym3438_source, diagnostic=False, runtime=True, ym3438=True)
 
     @classmethod
     def tearDownClass(cls):
@@ -359,6 +371,8 @@ class VramTransactionWasm(unittest.TestCase):
                  str(runtime_paths[0]), str(normal_paths[0])], cwd=fixture)
         command(["node", str(fixture / "tests/test_fm_data_runtime.cjs"),
                  str(runtime_paths[0]), str(normal_paths[0])], cwd=fixture)
+        command(["node", str(fixture / "tests/test_fm_data_runtime.cjs"),
+                 str(self.runtime_ym3438_js), str(normal_paths[0]), "ym3438"], cwd=fixture)
 
         command(["bash", str(build_script), "normal"], cwd=fixture, env=env,
                 stdout=subprocess.DEVNULL)

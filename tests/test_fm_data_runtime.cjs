@@ -4,7 +4,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const [runtimePath, normalPath] = process.argv.slice(2).map(value => path.resolve(value));
+const [runtimeArg, normalArg, variant] = process.argv.slice(2);
+const runtimePath = runtimeArg && path.resolve(runtimeArg);
+const normalPath = normalArg && path.resolve(normalArg);
 if (!runtimePath || !normalPath) throw new Error('Pass runtime and normal genplus.js paths.');
 
 function locate(file) {
@@ -16,7 +18,7 @@ function fmToneCartridge() {
   const view = new DataView(rom.buffer);
   for (let offset = 0; offset < 0x100; offset += 4) view.setUint32(offset, 0x300);
   view.setUint32(0, 0xffff00);
-  view.setUint32(4, 0x200);
+  view.setUint32(4, 0x400);
   rom.set(Buffer.from('SEGA MEGA DRIVE '), 0x100);
   rom.set(Buffer.from('VRAMPAGE FM DATA TEST'), 0x120);
   view.setUint32(0x1a4, rom.length - 1);
@@ -24,11 +26,14 @@ function fmToneCartridge() {
   view.setUint32(0x1ac, 0xffffff);
 
   const words = [];
+  const word = (address, value) => words.push(0x33fc, value, address >>> 16, address & 0xffff);
   const byte = (address, value) => words.push(0x13fc, value, address >>> 16, address & 0xffff);
   const reg = (address, value) => {
     byte(0x00a04000, address);
     byte(0x00a04001, value);
   };
+  word(0x00a11100, 0x0100); // Assert BUSREQ before using the Z80/FM bus.
+  word(0x00a11200, 0x0100); // Release the Z80 reset while BUSREQ is held.
   reg(0x22, 0x00); // LFO off
   reg(0x27, 0x00); // normal channel mode
   for (const offset of [0, 4, 8, 12]) {
@@ -45,7 +50,7 @@ function fmToneCartridge() {
   reg(0xa4, 0x22);
   reg(0x28, 0xf0); // key on channel 0
   words.push(0x60fe);
-  words.forEach((value, index) => view.setUint16(0x200 + index * 2, value));
+  words.forEach((value, index) => view.setUint16(0x400 + index * 2, value));
   [0x4e72, 0x2700, 0x60fe].forEach((value, index) => view.setUint16(0x300 + index * 2, value));
   return rom;
 }
@@ -92,10 +97,17 @@ function testUnsignedCounterFacadeBoundaries() {
 async function main() {
   testUnsignedCounterFacadeBoundaries();
   const rom = fmToneCartridge();
-  const normal = await createCore(normalPath, rom);
-  assert.equal(typeof normal._set_fm_data_bridge, 'undefined',
-    'normal core does not expose the optional FM bridge');
-  const baseline = nextAudio(normal);
+  let baselineCore;
+  if (variant === 'ym3438') {
+    baselineCore = await createCore(runtimePath, rom);
+    assert.equal(typeof baselineCore._set_fm_data_bridge, 'function');
+    assert.equal(baselineCore._get_fm_data_bridge_state().configured, false);
+  } else {
+    baselineCore = await createCore(normalPath, rom);
+    assert.equal(typeof baselineCore._set_fm_data_bridge, 'undefined',
+      'normal core does not expose the optional FM bridge');
+  }
+  const baseline = nextAudio(baselineCore);
   assert.ok(baseline.count > 0, 'synthetic FM program produces audio samples');
   assert.ok([...baseline.left, ...baseline.right].every(Number.isFinite));
   assert.ok([...baseline.left, ...baseline.right].some(value => Math.abs(value) > 0.0001),
@@ -106,15 +118,20 @@ async function main() {
   assert.equal(typeof off._set_fm_data_bridge_c, 'undefined');
   assert.equal(off._get_fm_data_bridge_state().supported, true);
   const offSamples = nextAudio(off);
-  assert.equal(offSamples.count, baseline.count, 'runtime-off sample count matches normal');
-  assert.deepEqual(offSamples.left, baseline.left, 'runtime-off left samples match normal');
-  assert.deepEqual(offSamples.right, baseline.right, 'runtime-off right samples match normal');
+  assert.equal(offSamples.count, baseline.count, 'runtime-off sample count matches baseline');
+  assert.deepEqual(offSamples.left, baseline.left, 'runtime-off left samples match baseline');
+  assert.deepEqual(offSamples.right, baseline.right, 'runtime-off right samples match baseline');
   assert.equal(off._get_fm_data_bridge_state().inputWrites, '0');
 
   const active = await createCore(runtimePath, rom);
   assert.equal(active._set_fm_data_bridge(1, 0, 5), 0);
+  assert.equal(active._set_psg_data_bridge(1, 1, 7), 0,
+    'PSG and FM bridges can be configured independently');
+  const psgBeforeFmWrites = active._get_psg_data_bridge_state();
   const changed = nextAudio(active);
   const state = active._get_fm_data_bridge_state();
+  assert.deepEqual(active._get_psg_data_bridge_state(), psgBeforeFmWrites,
+    'FM activity does not mutate PSG bridge configuration or counters');
   assert.equal(changed.count, baseline.count, 'active bridge preserves sample count');
   assert.ok([...changed.left, ...changed.right].every(Number.isFinite));
   assert.ok(BigInt(state.inputWrites) > 0n, 'shared FM write sink counts 68K register bytes');
@@ -141,9 +158,13 @@ async function main() {
   assert.equal(active._set_fm_data_bridge(1, 0, 5, 6), 1, 'rejects extra argument');
   assert.deepEqual(active._get_fm_data_bridge_state(), beforeInvalid,
     'invalid calls preserve bridge configuration and counters');
+  assert.equal(active._set_fm_data_bridge(0, -1, -1), 0);
+  assert.deepEqual(active._get_psg_data_bridge_state(), psgBeforeFmWrites,
+    'removing FM bridge does not mutate PSG bridge state');
 
   const reset = await createCore(runtimePath, rom);
   assert.equal(reset._set_fm_data_bridge(1, 0, 5), 0);
+  assert.equal(reset._set_psg_data_bridge(1, 1, 7), 0);
   const prior = nextAudio(reset);
   assert.ok(BigInt(reset._get_fm_data_bridge_state().inputWrites) > 0n);
   reset.HEAPU8.set(rom, reset._get_rom_buffer_ref(rom.length));
@@ -152,12 +173,14 @@ async function main() {
   assert.equal(resetState.configured, false, 'full sound reset clears bridge selection');
   assert.equal(resetState.inputWrites, '0', 'full sound reset clears write counter');
   assert.equal(resetState.changedWrites, '0', 'full sound reset clears changed counter');
+  assert.equal(reset._get_psg_data_bridge_state().configured, false,
+    'full sound reset also clears the independent PSG bridge');
   const restored = nextAudio(reset);
   assert.equal(restored.count, baseline.count);
   assert.deepEqual(restored.left, baseline.left,
     'new cartridge returns future FM output to normal');
   assert.notDeepEqual(prior.left, restored.left);
-  console.log('Synthetic 68K FM writes matched normal output while off, changed output while active, and reset cleanly.');
+  console.log(`Synthetic 68K FM writes matched ${variant === 'ym3438' ? 'YM3438 runtime-off' : 'normal'} output while off, changed output while active, and reset cleanly.`);
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1; });

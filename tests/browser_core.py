@@ -133,6 +133,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     page.locator('#soundBtn').click()
                     expect(page.locator('#soundBtn')).to_have_text('Enable Sound')
                     psg_api=page.evaluate("typeof testCore._set_psg_data_bridge==='function'")
+                    fm_api=page.evaluate("typeof testCore._set_fm_data_bridge==='function'")
                     if psg_api:
                         page.evaluate('''() => {
                             window.__nativePsgState=testCore._get_psg_data_bridge_state;
@@ -164,6 +165,36 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     else:
                         expect(page.locator('#psgBridgeApply')).to_be_disabled()
                         self.assertIn('does not provide',page.locator('#psgBridgeStatus').inner_text())
+                    if fm_api:
+                        page.evaluate('''() => {
+                            window.__nativeFmState=testCore._get_fm_data_bridge_state;
+                            testCore._get_fm_data_bridge_state=()=>{throw new Error('injected FM state failure')};
+                        }''')
+                        expect(page.locator('#fmBridgeStatus')).to_contain_text('runtime state is unavailable')
+                        expect(page.locator('#fmBridgeApply')).to_be_disabled()
+                        self.assertEqual(errors,[], 'optional FM state failure does not break the page')
+                        page.evaluate('testCore._get_fm_data_bridge_state=window.__nativeFmState')
+                        expect(page.locator('#fmBridgeApply')).to_be_enabled()
+                        page.locator('#fmBridgeA').select_option('0')
+                        page.locator('#fmBridgeB').select_option('5')
+                        page.locator('#fmBridgeApply').click()
+                        fm_state=page.evaluate('testCore._get_fm_data_bridge_state()')
+                        self.assertTrue(fm_state['effective'])
+                        self.assertEqual((fm_state['bridgeA'],fm_state['bridgeB']),(0,5))
+                        frame_before=page.evaluate('testCore._get_logic_frame()')
+                        page.locator('#fmBridgeA').select_option('2')
+                        page.locator('#fmBridgeB').select_option('6')
+                        page.wait_for_function('frame=>testCore._get_logic_frame()>=frame+4',arg=frame_before)
+                        self.assertEqual((page.locator('#fmBridgeA').input_value(),page.locator('#fmBridgeB').input_value()),('2','6'),
+                                         'frame refresh preserves the uncommitted FM pair draft')
+                        page.locator('#fmBridgeApply').click()
+                        fm_state=page.evaluate('testCore._get_fm_data_bridge_state()')
+                        self.assertTrue(fm_state['effective'])
+                        self.assertEqual((fm_state['bridgeA'],fm_state['bridgeB']),(2,6),
+                                         'Apply commits the retained FM pair draft to the core')
+                    else:
+                        expect(page.locator('#fmBridgeApply')).to_be_disabled()
+                        self.assertIn('does not provide',page.locator('#fmBridgeStatus').inner_text())
                     page.locator('#screen').click()
                     page.keyboard.down('x')
                     page.wait_for_function('new Float32Array(testCore.HEAPF32.buffer,testCore._get_input_buffer_ref(),32)[11]===1')
@@ -211,10 +242,16 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     if psg_api:
                         self.assertEqual(payload['psgInputFault']['modelVersion'],'psg-data-low-dominant-v1')
                         self.assertTrue(payload['psgInputFault']['configured'])
+                    self.assertEqual(payload['fmInputFault']['available'],fm_api)
+                    if fm_api:
+                        self.assertEqual(payload['fmInputFault']['modelVersion'],'fm-register-data-low-dominant-v1')
+                        self.assertTrue(payload['fmInputFault']['configured'])
                     page.locator('#resetBtn').click()
                     page.wait_for_function('testCore._get_logic_address_mask()===0')
                     if psg_api:
                         page.wait_for_function('!testCore._get_psg_data_bridge_state().configured')
+                    if fm_api:
+                        page.wait_for_function('!testCore._get_fm_data_bridge_state().configured')
                     expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
                     self.assertEqual(errors,[])
                     browser.close()
