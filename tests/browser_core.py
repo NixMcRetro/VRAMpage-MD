@@ -79,6 +79,20 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     page = browser.new_page(viewport={'width': 1366, 'height': 768}, accept_downloads=True)
                     errors = []
                     page.on('pageerror', lambda e: errors.append(str(e)))
+                    console_messages = []
+                    page.on('console', lambda entry: console_messages.append(f'{entry.type}: {entry.text}'))
+                    # Observe the genuine context without replacing its audio implementation.
+                    page.add_init_script("""
+                        const audioKey = window.AudioContext ? 'AudioContext' : 'webkitAudioContext';
+                        const NativeAudioContext = window[audioKey];
+                        if (NativeAudioContext) window[audioKey] = new Proxy(NativeAudioContext, {
+                            construct(target, args) {
+                                const context = Reflect.construct(target, args);
+                                window.testAudioContext = context;
+                                return context;
+                            }
+                        });
+                    """)
                     # Capture the real instantiated module without replacing its behavior.
                     core_js = (OPTIONS.site_root / 'core/genplus.js').read_text()
                     core_js += '\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\n'
@@ -109,7 +123,12 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     try:
                         expect(page.locator('#soundBtn')).to_have_text('Mute Sound')
                     except AssertionError as error:
-                        self.fail(f"{error}\nApplication event log:\n{page.locator('#experimentLog').inner_text()}")
+                        audio_state = page.evaluate("""() => {
+                            const c = window.testAudioContext;
+                            return c ? {state:c.state,sampleRate:c.sampleRate,currentTime:c.currentTime} : null;
+                        }""")
+                        self.fail(f"{error}\nNative audio state: {audio_state}\nBrowser console: {console_messages}"
+                                  f"\nApplication event log:\n{page.locator('#experimentLog').text_content()}")
                     page.locator('#soundBtn').click()
                     expect(page.locator('#soundBtn')).to_have_text('Enable Sound')
                     psg_api=page.evaluate("typeof testCore._set_psg_data_bridge==='function'")
