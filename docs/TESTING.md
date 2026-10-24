@@ -1014,3 +1014,9 @@ these initial results do not substitute for those gates. No core implementation
 changed. Export schema versions are retained with an additive `logic.available`
 flag so unavailable logic counters are not presented as observed values. No new
 native Mac, audible or physical evidence is claimed.
+
+Final keyboard acceptance also covers the focused results region: arrow keys
+scroll it in 40-pixel steps and game/fault hotkeys do not reach the emulator.
+Native ArrowDown left the focused overflowing region unchanged in local
+Chromium and WebKit, so the focused handler provides the small explicit scroll
+fallback. Three focused comparison cases pass in each browser on `2d29d0a`.

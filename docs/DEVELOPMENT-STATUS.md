@@ -40,6 +40,10 @@ transaction3/3 and display6/6 pass. Final focused WebKit comparison tests pass
 2/2, including actual exporter mask/data-pair records, stale reads, no mutator
 calls and 390-pixel layout. Final Chromium regression and required PR/main CI
 remain integration gates until the final verification record is added below.
+The final Chromium suite passes 60/60 before the focused keyboard fix.
+Independent review approves `2d29d0a`: results-region arrow scrolling and blocked
+game hotkeys pass all three focused comparison cases in Chromium and WebKit.
+Native/core evidence is unchanged; required CI must pass on the final head.
 The next bounded task after that gate
 is combined workbench acceptance before the Phase D feature freeze.
 

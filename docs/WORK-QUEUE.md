@@ -162,3 +162,6 @@ final focused WebKit comparison2/2 passes. Final Chromium and required GitHub
 PR/main checks remain before integration. The implementation includes bounded
 input validation, explicit unavailable values, a readable scrollable table and
 the additive logic-availability export flag while retaining schema versions.
+Final Chromium60/60 and extracted package core4/4 plus transaction3/3 pass.
+Independent review approves final keyboard fix `2d29d0a`; focused comparison3/3
+passes in both Chromium and WebKit. Required final-head PR/main CI remains.
