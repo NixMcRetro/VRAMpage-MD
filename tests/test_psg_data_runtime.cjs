@@ -94,6 +94,12 @@ async function main() {
 
   const inputCountExport = active._get_psg_data_bridge_input_writes;
   const changedCountExport = active._get_psg_data_bridge_changed_writes;
+  assert.equal(typeof inputCountExport.call(active), 'bigint',
+    'compiled uint64 input counter uses the exact Wasm BigInt ABI');
+  assert.equal(typeof changedCountExport.call(active), 'bigint',
+    'compiled uint64 changed counter uses the exact Wasm BigInt ABI');
+  assert.equal(String(inputCountExport.call(active)), activeState.inputWrites);
+  assert.equal(String(changedCountExport.call(active)), activeState.changedWrites);
   active._get_psg_data_bridge_input_writes = () => 9007199254740993n;
   active._get_psg_data_bridge_changed_writes = () => 9007199254740995n;
   assert.equal(active._get_psg_data_bridge_state().inputWrites, '9007199254740993',

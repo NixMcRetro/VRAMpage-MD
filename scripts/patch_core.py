@@ -553,7 +553,10 @@ def patch_psg_input_fault(source: str) -> str:
         if all(source.count(block) == 1 for block in patched) and all(
                 source.count(marker) == 1 for marker in
                 ('VRAMpage PSG input bridge v1', 'psg_data_fault_runtime_reset()',
-                 'psg_data_fault_runtime_apply((int)data)')):
+                 'psg_data_fault_runtime_apply((int)data)')) and \
+                source.count('VRAM_TX_RUNTIME') == 3 and \
+                source.count('#if defined(VRAM_TX_RUNTIME)') == 3 and \
+                source.count('#include "psg_data_fault.h"') == 1:
             return source
         raise SystemExit('PSG input bridge source is partial, malformed, or modified. No changes made.')
     if not all(source.count(block) == 1 for block in pristine):
