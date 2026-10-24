@@ -21,7 +21,10 @@ Public v0.4.0 remains unchanged at its original tag/source below. The
 configuration feature is development source and a CI review artifact, not a
 replacement public release. No external repository was modified or deployed.
 
-Resume with the work queue's coordinated fault-disconnect/recovery task.
+Current user priority is the compact four-chip workbench with chip-local
+bridges and visible disconnected lines. PSG/FM line masks need native runtime
+support; VRAM and Work RAM address cuts already exist. Resume the work queue's
+coordinated fault-disconnect/recovery task after this requested work.
 Use existing setters and pulse protections, distinguish memory-only CPU recovery
 from all-domain disconnection and clean restart, and require truthful partial
 failure status. Do not repeat configuration, VRAM or audio implementation.

@@ -36,12 +36,33 @@ and [versioning](VERSIONING.md). Status describes evidence, not promised effects
 Configuration slice verified: PR #47 merged `ccc80e12`; PR CI40083076183 and
 main CI40083371467 pass all seven checks. Do not rebuild this completed feature.
 
-Next bounded C task: coordinate fault disconnection and recovery across memory
-and audio controls, reusing existing setters. Clarify which controls clear only
-memory faults and which clear every domain; preserve CPU-only versus clean-reset
-semantics. Require partial-failure reporting and existing pulse protections.
-Configuration integration is tracked in [PR #47](https://github.com/NixMcRetro/VRAMpage-MD/pull/47);
-merge only after its required checks pass.
+## Current user priority: compact chip workbench
+
+Show VRAM, Work RAM, FM and PSG together in the existing sidebar as compact
+conceptual chip diagrams. Connections stay within each individual chip, as
+explicitly confirmed by the user. Keep signal labels inside bodies, short legs,
+keyboard access, visible selected/connected states and crosses for grounded
+signals. Target all four diagrams in an ordinary 1366 by 768 browser viewport.
+Retain advanced controls and existing presets rather than duplicating state.
+
+The native PSG/FM models currently bridge pairs only. Add runtime-only 8-bit
+stuck-low masks at their existing write-input boundaries, mutually exclusive
+with each chip's pair. Preserve timestamps, synthesis, exact counters, reset
+semantics, normal binary output and legacy pair APIs. Missing mask APIs disable
+only audio cut mode. No Z80 fault model, Work RAM data-cut model, physical pinout
+claim or cross-chip wiring is included.
+
+Assignment: Luna High core author and independent UI/configuration author in
+isolated worktrees, with reciprocal specialist review. Acceptance includes
+native/sanitizer and actual-WASM mask/bridge/reset tests, real browser control
+and viewport tests, chip-local selection isolation, truthful legacy fallback,
+experiment metadata and configuration-file migration without rewriting v1 files
+or recorded experiments. Keep the existing public v0.4.0 artifact unchanged.
+
+Configuration save/preview/apply is already complete in PR #47. Do not rebuild
+it; extend its strict format only as needed for audio masks, retaining v1 import.
+After this user priority, resume coordinated fault-disconnect/recovery using
+existing setters and pulse protections, then experiment comparison.
 
 ## Feature-first continuation
 
