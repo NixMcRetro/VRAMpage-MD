@@ -826,3 +826,24 @@ Chromium and a real review package passed. Exact previous-main vendor patching
 upgraded and repeated byte-identically. This is not new runtime performance,
 production transaction-profile, native Mac or physical validation. Required CI
 precedes merge; old experiment data and release binaries remain unchanged.
+
+
+## Optional production runtime builder verification
+
+The [isolated runtime build](VRAM-RUNTIME-BUILD.md) adds an actual production
+normal/runtime/normal sequence to `tests.test_vram_transaction_wasm`, alongside
+the existing five-profile matrix. CI already supplies the pinned SDK and vendor
+checkout for that mandatory job; source-only skips do not constitute acceptance.
+`tests.test_runtime_build_profile` checks normalized positive/negative output
+paths without a compiler. The integrated full suite passed 94 tests with no
+skips and normal leak checking. Normal actual-core Chromium also passed.
+
+The production factory passes `tests/test_runtime_build_profile.cjs` using an
+original synthetic cartridge. Independent review repeated it on both emitted
+and source-rebuilt factories; the JS/WASM hashes match. Tests cover API presence,
+diagnostic bridge absence, model selection, completed counts, invalid input and
+legacy selection. The final test fixture explicitly discards an inherited
+`VRAM_RUNTIME_OUTPUT_DIR`, exercising the default output without writing to a
+caller's custom output directory. See the linked build record for hashes,
+source-rebuild details and limits. Current-runtime performance and public model
+controls remain separate work.

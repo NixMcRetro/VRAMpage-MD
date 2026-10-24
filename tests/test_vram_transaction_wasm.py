@@ -1,6 +1,7 @@
 """Build normal and diagnostic pinned cores, then run real WASM VDP paths."""
 from pathlib import Path
 import io
+import hashlib
 import os
 import shutil
 import subprocess
@@ -193,6 +194,155 @@ class VramTransactionWasm(unittest.TestCase):
         command(["node", str(ROOT / "tests/test_vram_renderer_visible.cjs"),
                  str(self.baseline_js), str(self.normal_js), str(self.diagnostic_js),
                  str(self.diagnostic_alt_js)])
+
+    def test_production_runtime_build_profile_switching(self):
+        vendor = Path(os.environ.get("VRAMPAGE_WASM_GENPLUS", ROOT / "vendor/wasm-genplus"))
+        fixture = Path(self.temp.name if self.temp is not None else os.environ["VRAM_TX_WASM_BUILD_ROOT"])
+        fixture.mkdir(parents=True, exist_ok=True)
+        fixture = Path(tempfile.mkdtemp(prefix="production-profile-switch-", dir=fixture))
+
+        archive = subprocess.check_output(["git", "-C", str(ROOT), "archive", "HEAD"])
+        with tarfile.open(fileobj=io.BytesIO(archive), mode="r:") as source:
+            source.extractall(fixture, filter="data")
+        fixture_vendor = fixture / "vendor/wasm-genplus"
+        shutil.copytree(
+            vendor, fixture_vendor,
+            ignore=shutil.ignore_patterns("build", "genplus.js", "genplus.wasm"),
+        )
+        build_script = fixture / "scripts/build-core.sh"
+        runtime_output = fixture / "build/runtime-profile"
+
+        core_snapshot = sorted(
+            (path.relative_to(fixture / "site/core").as_posix(),
+             hashlib.sha256(path.read_bytes()).hexdigest())
+            for path in (fixture / "site/core").rglob("*") if path.is_file()
+        )
+        for arguments in (("unknown",), ("",), ("runtime", "extra")):
+            result = subprocess.run(["bash", str(build_script), *arguments], cwd=fixture)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(runtime_output.exists(), "invalid profile must not create output")
+            current_core = sorted(
+                (path.relative_to(fixture / "site/core").as_posix(),
+                 hashlib.sha256(path.read_bytes()).hexdigest())
+                for path in (fixture / "site/core").rglob("*") if path.is_file()
+            )
+            self.assertEqual(current_core, core_snapshot, "invalid profile must not mutate site")
+            self.assertFalse((fixture / "build").exists(), "invalid profile must not create build output")
+
+        env = os.environ.copy()
+        env.pop("VRAM_RUNTIME_OUTPUT_DIR", None)
+        env["VRAMPAGE_WASM_GENPLUS"] = str(fixture_vendor)
+        command(["bash", str(build_script)], cwd=fixture, env=env, stdout=subprocess.DEVNULL)
+        normal_paths = (fixture / "site/core/genplus.js", fixture / "site/core/genplus.wasm")
+        expected_hashes = (
+            "3b984104bf92fd9e7a47fa5f081ed18d020e61dee6cd87df7580c147a3edc3bd",
+            "0bb55f946e5bb20ba0efc24e81776305ba8e1d9a82e0a3dcdca9e6218fbbe6d9",
+        )
+
+        def hashes(paths):
+            return tuple(hashlib.sha256(path.read_bytes()).hexdigest() for path in paths)
+
+        self.assertEqual(hashes(normal_paths), expected_hashes,
+                         "default production build matches the main normal profile")
+        vendor_status = subprocess.check_output(
+            ["git", "-C", str(fixture_vendor), "status", "--porcelain"], text=True
+        )
+
+        unsafe_env = env.copy()
+        unsafe_env["VRAM_RUNTIME_OUTPUT_DIR"] = str(fixture / "site/core")
+        unsafe = subprocess.run(["bash", str(build_script), "runtime"],
+                                cwd=fixture, env=unsafe_env, capture_output=True, text=True)
+        self.assertNotEqual(unsafe.returncode, 0)
+        self.assertEqual(hashes(normal_paths), expected_hashes,
+                         "unsafe output path leaves normal module untouched")
+
+        dotdot_output = fixture / "build/../site/runtime-escape"
+        dotdot_env = env.copy()
+        dotdot_env["VRAM_RUNTIME_OUTPUT_DIR"] = str(dotdot_output)
+        dotdot_result = subprocess.run(["bash", str(build_script), "runtime"],
+                                       cwd=fixture, env=dotdot_env,
+                                       capture_output=True, text=True)
+        self.assertNotEqual(dotdot_result.returncode, 0)
+        self.assertFalse((fixture / "site/runtime-escape").exists(),
+                         "normalized site escape fails before output mutation")
+
+        vendor_child_output = fixture_vendor / "runtime-output"
+        vendor_child_env = env.copy()
+        vendor_child_env["VRAM_RUNTIME_OUTPUT_DIR"] = str(vendor_child_output)
+        vendor_child_result = subprocess.run(["bash", str(build_script), "runtime"],
+                                             cwd=fixture, env=vendor_child_env,
+                                             capture_output=True, text=True)
+        self.assertNotEqual(vendor_child_result.returncode, 0)
+        self.assertFalse(vendor_child_output.exists(),
+                         "configured vendor checkout is protected from output mutation")
+
+        symlink_target = fixture / "build/symlink-target"
+        symlink_target.mkdir(parents=True)
+        (symlink_target / "sentinel").write_text("keep")
+        symlink_output = fixture / "build/runtime-symlink"
+        symlink_output.symlink_to(symlink_target, target_is_directory=True)
+        symlink_env = env.copy()
+        symlink_env["VRAM_RUNTIME_OUTPUT_DIR"] = str(symlink_output)
+        symlink_result = subprocess.run(["bash", str(build_script), "runtime"],
+                                        cwd=fixture, env=symlink_env,
+                                        capture_output=True, text=True)
+        self.assertNotEqual(symlink_result.returncode, 0)
+        self.assertEqual((symlink_target / "sentinel").read_text(), "keep")
+
+        missing_vendor_env = env.copy()
+        missing_vendor_env["VRAMPAGE_WASM_GENPLUS"] = str(fixture / "missing-vendor")
+        missing_vendor_output = fixture / "build/missing-vendor-output"
+        missing_vendor_env["VRAM_RUNTIME_OUTPUT_DIR"] = str(missing_vendor_output)
+        missing_vendor = subprocess.run(["bash", str(build_script), "runtime"],
+                                        cwd=fixture, env=missing_vendor_env,
+                                        capture_output=True, text=True)
+        self.assertNotEqual(missing_vendor.returncode, 0)
+        self.assertFalse(missing_vendor_output.exists(),
+                         "missing pinned vendor fails before creating output")
+
+        invalid_jobs_env = env.copy()
+        invalid_jobs_env["VRAM_BUILD_JOBS"] = "0"
+        invalid_jobs_output = fixture / "build/invalid-jobs"
+        invalid_jobs_env["VRAM_RUNTIME_OUTPUT_DIR"] = str(invalid_jobs_output)
+        invalid_jobs = subprocess.run(["bash", str(build_script), "runtime"],
+                                      cwd=fixture, env=invalid_jobs_env,
+                                      capture_output=True, text=True)
+        self.assertNotEqual(invalid_jobs.returncode, 0)
+        self.assertFalse(invalid_jobs_output.exists(),
+                         "invalid build settings fail before creating output")
+
+        command(["bash", str(build_script), "runtime"], cwd=fixture, env=env,
+                stdout=subprocess.DEVNULL)
+        runtime_paths = (runtime_output / "core/genplus.js", runtime_output / "core/genplus.wasm")
+        self.assertTrue(all(path.is_file() and path.stat().st_size for path in runtime_paths))
+        self.assertEqual(hashes(normal_paths), expected_hashes,
+                         "runtime profile does not alter normal production outputs")
+        self.assertEqual(
+            subprocess.check_output(["git", "-C", str(fixture_vendor), "status", "--porcelain"], text=True),
+            vendor_status,
+            "runtime profile does not alter the pinned vendor checkout",
+        )
+
+        bundle = runtime_output / "source"
+        self.assertTrue((bundle / "wasm-genplus/CMakeLists.txt").is_file())
+        self.assertTrue((bundle / "scripts/vram_transaction_api.js").is_file())
+        self.assertTrue((bundle / "scripts/build-core-runtime.py").is_file())
+        self.assertTrue((bundle / "THIRD-PARTY-NOTICES.md").is_file())
+        self.assertTrue((runtime_output / "THIRD-PARTY-NOTICES.md").is_file())
+        instructions = (runtime_output / "BUILDING.txt").read_text()
+        self.assertIn(PIN, instructions)
+        self.assertIn("source/scripts/vram_transaction_api.js", instructions)
+        cmake = (bundle / "wasm-genplus/CMakeLists.txt").read_text()
+        self.assertIn("-DVRAM_TX_RUNTIME", cmake)
+        self.assertNotIn("-DVRAM_TX_DIAGNOSTIC", cmake)
+        self.assertIn("--pre-js=${CMAKE_SOURCE_DIR}/../scripts/vram_transaction_api.js", cmake)
+        command(["node", str(fixture / "tests/test_runtime_build_profile.cjs"),
+                 str(runtime_paths[0])], cwd=fixture)
+
+        command(["bash", str(build_script), "normal"], cwd=fixture, env=env,
+                stdout=subprocess.DEVNULL)
+        self.assertEqual(hashes(normal_paths), expected_hashes,
+                         "normal runtime normal sequence keeps the exact normal artifacts")
 
 
 if __name__ == "__main__":

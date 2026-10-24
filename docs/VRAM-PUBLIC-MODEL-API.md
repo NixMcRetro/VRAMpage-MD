@@ -9,7 +9,7 @@ build and immutable v0.2.8 Mac download retain frame-projection controls. The
 defines IDs, errors and model behavior; the
 [renderer record](VRAM-RENDER-DIAGNOSTIC.md) contains prior verification.
 
-The optional developer/test runtime profile exposes model selection and read-only scalar state
+The optional runtime core profile exposes model selection and read-only scalar state
 and last-frame counters, without diagnostic memory accessors, handler invocation
 bridges, cache setters or renderer probes. A diagnostic profile adds those
 test-only exports; the default profile exposes neither new runtime API nor test
@@ -54,7 +54,8 @@ The actual-WASM harness builds five isolated profiles: normal, runtime-only,
 diagnostic, alternate-renderer diagnostic and original-renderer reference.
 Runtime-only defines `VRAM_TX_RUNTIME`. Diagnostic builds enable the same runtime
 plus `VRAM_TX_DIAGNOSTIC`; existing diagnostic-only guards remain compatible.
-There is currently no production runtime-profile builder or application selector.
+The [optional runtime builder](VRAM-RUNTIME-BUILD.md) also produces this profile
+through `scripts/build-core.sh runtime`. There is no application selector yet.
 The ordinary `scripts/build-core.sh` remains the normal profile.
 
 The generated runtime factory installs these JavaScript-facing methods:
@@ -117,7 +118,7 @@ Normal, diagnostic, alternate and reference artifacts are retained alongside
 them. These are developer/test outputs, not the Mac download or a new release.
 Source-only runs that skip missing SDK/vendor prerequisites are not acceptance.
 
-## Verified checkpoint
+## API groundwork checkpoint (PR #41)
 
 Independent specialist review approved author commit
 `d8e566242e5058b4bb99bd264139e38d9c41c254` and independently reran its actual-WASM
@@ -143,4 +144,6 @@ closed. The normal production build, actual-core Chromium and a real 384-file
 review ZIP also passed locally. Normal JS/WASM hashes match the PR #40 main
 baseline exactly. These checks do not certify a production transaction build,
 new runtime performance, native Mac behavior or physical fidelity. Required CI
-still precedes merge.
+passed for PR #41 and merged main.
+The later production-builder verification is recorded separately in
+[runtime build integration](VRAM-RUNTIME-BUILD.md).

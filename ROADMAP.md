@@ -29,11 +29,12 @@ Both the initial failed and corrected passing measurements are preserved.
 and required CI; see [renderer evidence](docs/VRAM-RENDER-DIAGNOSTIC.md).
 
 The safe core selector, read-only model/support state and completed-frame counts
-are now implemented in an optional harness-built runtime profile, separately
+are now implemented in an optional runtime profile, separately
 from diagnostic test bridges. [API verification](docs/VRAM-PUBLIC-MODEL-API.md)
-records independent review and local acceptance. Required CI precedes merge.
+records independent review and acceptance. PR #41 and merged-main CI passed.
 
-Next, add the production runtime build, explicit application model selection and
+The [isolated production runtime builder](docs/VRAM-RUNTIME-BUILD.md) now provides
+an explicit opt-in command while preserving normal builds. Next, add explicit application model selection and
 separate transaction experiment exports, with compatibility, browser, current
 runtime performance and milestone acceptance. The public app
 still uses frame-scoped VRAM. This diagnostic checkpoint does not complete

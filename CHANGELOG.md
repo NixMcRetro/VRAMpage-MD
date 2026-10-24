@@ -1,5 +1,11 @@
 # Changelog
 
+## Post-v0.2.8 optional runtime build
+
+- Add an explicit transaction-runtime core build with isolated source, flags and outputs, preserving the normal app and release.
+- Include matching modified source, API shim and rebuild instructions. Reject invalid profiles before mutation and protect existing output data.
+- Exercise the production builder and normal/runtime/normal switching through the actual-WASM CI suite. UI selection, experiment exports and v0.3.0 acceptance remain separate work.
+
 ## Post-v0.2.8 safe VRAM model API groundwork
 
 - Separate an optional runtime API from diagnostic handler/memory/cache test exports. Preserve the normal build and immutable v0.2.8 download.

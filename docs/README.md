@@ -73,3 +73,5 @@ v0.2.7 includes an optional, default-disabled metadata-only RAM write trace for 
 - [Eight-write status follow-up](RAM-STATUS-FOLLOWUP.md): separately predefined object-memory trial using the same core, timing and success criteria.
 
 - [Safe VRAM model API groundwork](VRAM-PUBLIC-MODEL-API.md): optional runtime and diagnostic export separation, validation and acceptance.
+
+- [Optional runtime core build](VRAM-RUNTIME-BUILD.md): isolated production command, corresponding source, profile switching and remaining application gates.
