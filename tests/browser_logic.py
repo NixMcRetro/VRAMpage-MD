@@ -302,6 +302,20 @@ class BrowserLogicTests(unittest.TestCase):
             "name": "circuit-config.json", "mimeType": "application/json", "buffer": raw.encode()
         })
 
+    @staticmethod
+    def defer_circuit_file_reads(page):
+        page.evaluate("""() => {
+            window.__pendingCircuitReads=[];
+            File.prototype.text=function() {
+                return new Promise(resolve=>window.__pendingCircuitReads.push({name:this.name,resolve}));
+            };
+            window.__resolveCircuitRead=(name,text)=>{
+                const entry=[...window.__pendingCircuitReads].reverse().find(read=>read.name===name&&!read.done);
+                if(!entry) throw new Error(`No pending circuit file read named ${name}`);
+                entry.done=true; entry.resolve(text);
+            };
+        }""")
+
     def test_circuit_config_import_is_inert_then_explicit_apply_roundtrips(self):
         self.page.close()
         self.page = self.new_page(circuit_config=True)
@@ -543,6 +557,73 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.locator("#circuitConfigApply").click()
         expect(self.page.locator("#circuitConfigStatus")).to_contain_text("active RAM pulse")
         self.assertEqual(self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]"), before)
+
+    def test_circuit_config_async_reads_latest_selection_only_and_blocks_apply(self):
+        self.page.close()
+        self.page = self.new_page(circuit_config=True)
+        self.load_rom()
+        self.defer_circuit_file_reads(self.page)
+        old = self.circuit_configuration(vram_pair=[0, 2])
+        latest = self.circuit_configuration(vram_pair=[3, 7], psg=[1, 5], fm=[2, 6])
+        before = self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length,mockCore.logic.setterCalls.length]")
+        self.page.locator("#circuitConfigFile").set_input_files({
+            "name":"older.json", "mimeType":"application/json", "buffer":json.dumps(old).encode()})
+        self.page.wait_for_function("window.__pendingCircuitReads.length===1")
+        expect(self.page.locator("#circuitConfigApply")).to_be_disabled()
+        expect(self.page.locator("#circuitConfigCancel")).to_be_enabled()
+        self.page.locator("#circuitConfigApply").evaluate("button=>{button.disabled=false;button.click()}")
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("Wait for the selected configuration file")
+        self.page.locator("#circuitConfigFile").set_input_files({
+            "name":"latest.json", "mimeType":"application/json", "buffer":json.dumps(latest).encode()})
+        self.page.wait_for_function("window.__pendingCircuitReads.length===2")
+        self.page.evaluate("text=>window.__resolveCircuitRead('latest.json',text)", json.dumps(latest))
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("Preview loaded")
+        expect(self.page.locator("#circuitConfigPreview")).to_contain_text("VRAM AD3↔AD7")
+        expect(self.page.locator("#circuitConfigApply")).to_be_enabled()
+        self.page.evaluate("text=>window.__resolveCircuitRead('older.json',text)", json.dumps(old))
+        self.page.wait_for_timeout(30)
+        expect(self.page.locator("#circuitConfigPreview")).to_contain_text("VRAM AD3↔AD7")
+        self.assertEqual(self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length,mockCore.logic.setterCalls.length]"), before,
+                         "file reads and previews do not mutate selectors, core state, or history")
+        self.page.locator("#circuitConfigApply").click()
+        self.assertEqual(self.page.evaluate("[mockCore.vramModel.bridgeA,mockCore.vramModel.bridgeB]"), [3, 7])
+        self.assertEqual(self.page.evaluate("[mockCore.psg.bridgeA,mockCore.psg.bridgeB]"), [1, 5])
+        self.assertEqual(self.page.evaluate("[mockCore.fm.bridgeA,mockCore.fm.bridgeB]"), [2, 6])
+
+    def test_circuit_config_invalid_replacement_preserves_preview_and_cancel_stales_read(self):
+        self.page.close()
+        self.page = self.new_page(circuit_config=True)
+        self.load_rom()
+        valid = self.circuit_configuration(vram_pair=[1, 4])
+        self.stage_circuit_file(valid)
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("Preview loaded")
+        self.defer_circuit_file_reads(self.page)
+        before = self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length,mockCore.logic.setterCalls.length]")
+        self.page.locator("#circuitConfigFile").set_input_files({
+            "name":"invalid.json", "mimeType":"application/json", "buffer":b"{"})
+        self.page.wait_for_function("window.__pendingCircuitReads.length===1")
+        expect(self.page.locator("#circuitConfigApply")).to_be_disabled()
+        expect(self.page.locator("#circuitConfigPreview")).to_contain_text("VRAM AD1↔AD4")
+        self.page.evaluate("window.__resolveCircuitRead('invalid.json','{')")
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("previous valid preview is still available")
+        expect(self.page.locator("#circuitConfigPreview")).to_contain_text("VRAM AD1↔AD4")
+        expect(self.page.locator("#circuitConfigApply")).to_be_enabled()
+        self.assertEqual(self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length,mockCore.logic.setterCalls.length]"), before)
+        self.page.locator("#circuitConfigCancel").click()
+        expect(self.page.locator("#circuitConfigPreview")).to_be_hidden()
+
+        self.page.locator("#circuitConfigFile").set_input_files({
+            "name":"cancelled.json", "mimeType":"application/json", "buffer":json.dumps(valid).encode()})
+        self.page.wait_for_function("window.__pendingCircuitReads.length===2")
+        expect(self.page.locator("#circuitConfigApply")).to_be_disabled()
+        expect(self.page.locator("#circuitConfigCancel")).to_be_enabled()
+        self.page.locator("#circuitConfigCancel").click()
+        self.page.evaluate("text=>window.__resolveCircuitRead('cancelled.json',text)", json.dumps(valid))
+        self.page.wait_for_timeout(30)
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("pending file read canceled")
+        expect(self.page.locator("#circuitConfigPreview")).to_be_hidden()
+        expect(self.page.locator("#circuitConfigApply")).to_be_disabled()
+        self.assertEqual(self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length,mockCore.logic.setterCalls.length]"), before)
 
     def test_pulses_end_on_exact_emulated_frame_and_preserve_writes(self):
         self.load_rom()
