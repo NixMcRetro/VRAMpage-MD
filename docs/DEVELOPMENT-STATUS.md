@@ -37,13 +37,19 @@ passes the unchanged fixed five-pair gate with independent raw-data audit.
 See [both retained records](experiments/vram-runtime-performance-2026-10-24-v2-summary.json).
 These synthetic timings do not establish game-wide performance.
 
-Next: a usable PSG input-data bridge as the first bounded audio slice, followed
-by YM2612 and verified Z80 paths before calling v0.4.0 complete. Work is isolated
-on `experiment/audio-psg-input`; native helper tests pass with normal sanitizers.
-Independent review found patcher drift acceptance, which must be fixed before
-integration. Browser controls, actual-WASM tests and final independent review
-remain in progress. Keep v0.3.0 as the public milestone; do not release a
-partial audio implementation as v0.4.0. Read the queue before older history below.
+The first bounded PSG input-data bridge is implemented in development source,
+not the immutable v0.3.0 download. It defaults off, reports exact decimal counters,
+handles missing/unavailable APIs, preserves editable pair drafts, and exports its
+own model metadata. Clearing changes future writes; full PSG reset clears the
+configuration/counters, while CPU-only reset does not promise chip repair.
+Native strict/sanitizer, production normal/runtime/normal builds, actual-WASM
+clean-tone equivalence/active change/reset and runtime/normal Chromium checks
+pass. Independent review required additional patch-drift guards; final review,
+full integration regression and CI remain gates before merge.
+
+Keep v0.3.0 as the public milestone. Next audio work is YM2612 and verified Z80
+paths before calling v0.4.0 complete; do not release a partial audio slice under
+that tag. Read the queue before older historical records below.
 
 ## Compact Work RAM interface
 

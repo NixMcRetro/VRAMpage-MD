@@ -1,3 +1,17 @@
+# PSG audio development verification
+
+The runtime-only PSG input-data bridge has strict native/sanitizer and patch
+layout/drift tests. Actual-WASM checks compare generated 68K PSG tones against
+the normal core: exact clean samples with the bridge off, changed samples with
+the bridge on, equal sample counts, finite output and clean restart restoration.
+Compiled uint64 getters use the BigInt ABI; exported decimal strings preserve
+values above 2^53 without putting BigInt into JSON. Production profile switching
+retains the exact normal core hashes. Chromium covers runtime and normal fallback,
+throwing optional state getters, editing active pair drafts, export and reset.
+Full integrated checks and CI remain merge gates. Z80-origin PSG traffic, audible
+output and physical electrical fidelity are not claimed. This is a bounded
+unreleased audio feature, not full v0.4.0 acceptance.
+
 # v0.3.0 transaction VRAM verification
 
 [PR #43](https://github.com/NixMcRetro/VRAMpage-MD/pull/43) and merged-main
