@@ -5,6 +5,29 @@ Verified on 24 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
+Configuration save/preview/apply is merged in [PR #47](https://github.com/NixMcRetro/VRAMpage-MD/pull/47)
+as `ccc80e12db4a58ca54d5056bcd0e9d5cc188f013`.
+[PR CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40083076183)
+and [merged-main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40083371467)
+pass all seven checks, including three-browser interfaces and extracted
+actual-core Firefox/WebKit. The merged tree matches reviewed head `2207fa3`.
+Independent Luna High review, full 107-test native/SDK suite, schema/native/JS
+checks, 40 Chromium logic cases and four actual runtime/normal-core cases pass.
+The 679-entry extracted review package also passes three transaction cases.
+A transient GitHub API HTTP 503 affected status polling only and recovered;
+no failed workflow was hidden or rerun to bypass a failure.
+
+Public v0.4.0 remains unchanged at its original tag/source below. The
+configuration feature is development source and a CI review artifact, not a
+replacement public release. No external repository was modified or deployed.
+
+Resume with the work queue's coordinated fault-disconnect/recovery task.
+Use existing setters and pulse protections, distinguish memory-only CPU recovery
+from all-domain disconnection and clean restart, and require truthful partial
+failure status. Do not repeat configuration, VRAM or audio implementation.
+This checkpoint branch contains notes only above verified main; bundle them
+with the next implementation rather than opening a documentation-only PR.
+
 Audio-input milestone **v0.4.0** is merged and publicly verified.
 [PR #46](https://github.com/NixMcRetro/VRAMpage-MD/pull/46) merged as
 `8c1d5329477d8702e1fb0d294abfbc233d50d80d`.
