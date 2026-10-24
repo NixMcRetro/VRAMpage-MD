@@ -577,7 +577,8 @@ def patch_mode5_render_reads(source: str) -> str:
     if VRAM_RENDER_V1_MARKER in source:
         if (source.count(VRAM_RENDER_V1_MARKER) != 1 or
                 source.count(VRAM_RENDER_V1_READS) != 1 or
-                VRAM_RENDER_MARKER in source):
+                VRAM_RENDER_MARKER in source or
+                'vram_tx_render_active_snapshot' in source):
             raise SystemExit('Prior Mode 5 renderer adapter is partial or ambiguous.')
         source = source.replace(VRAM_RENDER_V1_READS, VRAM_RENDER_READS, 1)
     if already_patched:

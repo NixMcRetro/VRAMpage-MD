@@ -94,6 +94,14 @@ class VramRendererPatch(unittest.TestCase):
         with self.assertRaises(SystemExit):
             patch_core.patch_mode5_render_reads(partial)
 
+        mixed = legacy.replace(
+            'void render_bg_m5(int line)\n{\n',
+            'void render_bg_m5(int line)\n{\n'
+            '  const int vram_tx_render_active_snapshot = '
+            'vram_tx_diagnostic_render_active;\n', 1)
+        with self.assertRaises(SystemExit):
+            patch_core.patch_mode5_render_reads(mixed)
+
     def test_raw_name_read_reintroduced_after_marker_fails_closed(self):
         patched = patch_core.patch_mode5_render_reads(self.source)
         pattern = re.compile(r"(?m)^(\s*)atbuf = VRAM_TX_RENDER_U32\([^\n]+\);$")
