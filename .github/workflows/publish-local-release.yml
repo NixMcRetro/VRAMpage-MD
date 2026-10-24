@@ -53,6 +53,12 @@ jobs:
           if ! gh release view v0.4.0 >/dev/null 2>&1; then
             gh release create v0.4.0 --draft --target "$GITHUB_SHA" --title 'VRAMpage MD v0.4.0' --notes 'Download the complete Mac ZIP below, extract it and open START.command. Python 3 is required. Load your own legally usable cartridge. See the included README and third-party non-commercial terms.'
           fi
+          # GitHub draft releases do not necessarily create a Git tag yet.
+          # Create only an absent ref; never move or overwrite an existing tag.
+          if ! gh api "repos/$GH_REPO/git/ref/tags/v0.4.0" >/dev/null 2>&1; then
+            gh api "repos/$GH_REPO/git/refs" --method POST \
+              -f ref=refs/tags/v0.4.0 -f sha="$GITHUB_SHA" >/dev/null
+          fi
           # Resolve lightweight or annotated tags to the commit packaged above.
           tag_commit="$(gh api "repos/$GH_REPO/commits/v0.4.0" --jq '.sha')"
           if [ "$tag_commit" != "$GITHUB_SHA" ]; then
