@@ -915,3 +915,14 @@ strict/sanitizer and JavaScript checks. Fresh staged profiles cover matching FM
 backends; actual Chromium audio/control and transaction suites pass. A synthetic
 post-reset mailbox proves the partial reset executes before counter assertions.
 Native macOS and audible output have not been tested by this automation.
+
+Audio milestone acceptance adds an original Z80 FM/PSG program: only the Z80
+writes chip inputs, while an encoded 68K bootstrap allowlist proves bus-control
+and RAM-loading stores. Both FM backends compare normal/disabled samples,
+isolated FM (62 inputs/33 changed), isolated PSG (3/2), simultaneous counters,
+removal isolation, clean restart and exact fresh-core repetitions. Browser
+queue checks delegate genuine native AudioContext/AudioBuffer calls and observe
+stereo 44.1 kHz finite samples, at most 205 ms start lead, no new scheduling while
+paused, resumed scheduling and a near-now start after a synthetic visibility
+event. This is a normal-load observation, not OS-background or backlog stress
+validation. No native Mac or audible evidence is claimed.

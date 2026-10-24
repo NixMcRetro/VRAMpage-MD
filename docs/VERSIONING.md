@@ -7,8 +7,8 @@ v0.3.0 transaction-VRAM release and all earlier artifacts remain unchanged.
 
 VRAMpage MD is experimental, **not version 2.x**. Use semantic-looking
 `MAJOR.MINOR.PATCH` identifiers with leading `0` until a deliberately
-approved stable release. The delivered VRAM milestone is `v0.3.0`; the next major feature milestone is
-`v0.4.0` (hardware-informed audio faults).
+approved stable release. The delivered VRAM milestone is `v0.3.0`; the audio-input milestone is
+`v0.4.0`. Later workbench improvements retain experimental 0.x numbering.
 Do not declare `v1.0.0` solely because a new patchbay control was added.
 
 ## Corrected feature history
