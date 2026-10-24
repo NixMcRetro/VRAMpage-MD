@@ -522,10 +522,21 @@ void EMSCRIPTEN_KEEPALIVE clear_vram_tx_test_cache(void)
     return source
 
 
-VRAM_RENDER_MARKER = 'VRAM TX MODE 5 RENDER READS v1'
-VRAM_RENDER_READS = '''
+VRAM_RENDER_V1_MARKER = 'VRAM TX MODE 5 RENDER READS v1'
+VRAM_RENDER_V1_READS = '''
 #if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)
 #include "vram_transaction_render.h" /* VRAM TX MODE 5 RENDER READS v1 */
+#define VRAM_TX_RENDER_U16(address) vram_tx_render_read_u16(address)
+#define VRAM_TX_RENDER_U32(address) vram_tx_render_read_u32(address)
+#else
+#define VRAM_TX_RENDER_U16(address) (*(uint16 *)&vram[(address)])
+#define VRAM_TX_RENDER_U32(address) (*(uint32 *)&vram[(address)])
+#endif
+'''
+VRAM_RENDER_MARKER = 'VRAM TX MODE 5 RENDER READS v2'
+VRAM_RENDER_READS = '''
+#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)
+#include "vram_transaction_render.h" /* VRAM TX MODE 5 RENDER READS v2 */
 #define VRAM_TX_RENDER_U16(address) \\
   (vram_tx_render_active_snapshot ? vram_tx_render_read_u16(address) : \\
    (*(uint16 *)&vram[(address)]))
@@ -562,7 +573,13 @@ def _function_ranges(source: str, name: str, arguments: str,
 def patch_mode5_render_reads(source: str) -> str:
     """Route pinned M5 VRAM reads through a snapshotted active fast path."""
     include_anchor = '#include "shared.h"'
-    already_patched = VRAM_RENDER_MARKER in source
+    already_patched = VRAM_RENDER_MARKER in source or VRAM_RENDER_V1_MARKER in source
+    if VRAM_RENDER_V1_MARKER in source:
+        if (source.count(VRAM_RENDER_V1_MARKER) != 1 or
+                source.count(VRAM_RENDER_V1_READS) != 1 or
+                VRAM_RENDER_MARKER in source):
+            raise SystemExit('Prior Mode 5 renderer adapter is partial or ambiguous.')
+        source = source.replace(VRAM_RENDER_V1_READS, VRAM_RENDER_READS, 1)
     if already_patched:
         if (source.count(VRAM_RENDER_MARKER) != 1 or
                 source.count(VRAM_RENDER_READS) != 1):
