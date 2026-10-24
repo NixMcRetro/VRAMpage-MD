@@ -49,7 +49,8 @@ h1 span { color:var(--accent); }
 .toolbar button, .load-btn { flex:1; min-width:88px; min-height:40px; text-align:center; font-size:12px; font-weight:700; }
 .load-btn { display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid #8f3c26; background:var(--accent); color:white; border-radius:2px; padding:9px 13px; }
 .load-btn:hover { background:#9c422a; }
-#romFile, #circuitConfigFile { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+.load-btn:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+#romFile, #circuitConfigFile, #compareFileA, #compareFileB { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
 .instructions { border-top:1px solid var(--rule); background:var(--surface-2); padding:11px 16px 12px; }
 .instructions p { font-size:12px; line-height:1.7; color:#555b57; }
 .instructions strong { color:var(--ink); font:700 10px ui-monospace,SFMono-Regular,Consolas,monospace; margin-right:9px; }
@@ -331,6 +332,9 @@ footer { padding-top:9px; font-size:10px; }
 .transaction-metrics span { display:block; color:var(--muted); font-size:10px; }
 .transaction-metrics strong { display:block; padding-top:3px; overflow-wrap:anywhere; font:700 14px ui-monospace,SFMono-Regular,Consolas,monospace; }
 .circuit-config-preview { max-height:220px; overflow:auto; padding:10px; border:1px solid var(--rule); border-radius:5px; background:var(--surface); white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace; }
+.experiment-comparison table { display:block; max-width:100%; overflow:auto; border-collapse:collapse; font-size:12px; }
+.experiment-comparison th,.experiment-comparison td { padding:6px 8px; border:1px solid var(--rule); text-align:left; vertical-align:top; overflow-wrap:anywhere; }
+.experiment-comparison td:nth-child(2),.experiment-comparison td:nth-child(3) { max-width:240px; }
 .pin.cut { color:var(--accent); background:var(--surface); border-color:var(--rule); }
 .pin.cut .chip-cut { visibility:visible; }
 

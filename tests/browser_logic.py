@@ -1476,6 +1476,35 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertEqual(payload["logicFault"]["lines"], ["A1", "A2"])
         self.assertEqual(payload["cpuFlags"], 3)
 
+    def test_read_only_experiment_comparison_uses_unknown_and_inert_text(self):
+        first={"schemaVersion":1,"corePin":"d"*40,"build":{"applicationVersion":"0.4.1","sourceCommit":"a"*40},
+               "modelVersion":"0.4.1-experimental","rom":{"name":"<img src=x onerror=alert(1)>","sha256":"b"*64},
+               "vramFault":{"kind":"none","addressMask":0,"bridge":None},"logic":{"fault":None,"active":False,"readCount":0,"writeCount":0},
+               "currentFrame":10,"cpuFlags":0,"psgInputFault":{"available":False},"fmInputFault":{"available":False}}
+        second=json.loads(json.dumps(first));second["rom"]["sha256"]="c"*64
+        before=self.page.locator("#powerLabel").inner_text()
+        self.page.evaluate("""() => {
+          const nativeText=File.prototype.text;
+          File.prototype.text=function(){return window.__delayCompareRead
+            ?new Promise(resolve=>window.__finishCompareRead=()=>resolve('{"rom":{"name":"stale"}}'))
+            :nativeText.call(this);};
+          window.__delayCompareRead=true;
+        }""")
+        self.page.locator("#compareFileA").set_input_files({"name":"slow.json","mimeType":"application/json","buffer":b'{"rom":{"name":"slow"}}'})
+        expect(self.page.locator("#compareStatus")).to_contain_text("Reading export A")
+        self.page.locator("#compareCancel").click()
+        self.page.evaluate("window.__finishCompareRead()")
+        expect(self.page.locator("#compareOutput table")).to_have_count(0)
+        self.page.evaluate("window.__delayCompareRead=false")
+        self.page.locator("#compareFileA").set_input_files({"name":"a.json","mimeType":"application/json","buffer":json.dumps(first).encode()})
+        self.page.locator("#compareFileB").set_input_files({"name":"b.json","mimeType":"application/json","buffer":json.dumps(second).encode()})
+        expect(self.page.locator("#compareOutput")).to_contain_text("mismatch")
+        expect(self.page.locator("#compareOutput")).to_contain_text("unknown")
+        self.assertEqual(self.page.locator("#compareOutput img").count(),0)
+        self.assertEqual(self.page.locator("#powerLabel").inner_text(),before)
+        self.page.locator("#compareCancel").click()
+        expect(self.page.locator("#compareOutput table")).to_have_count(0)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)

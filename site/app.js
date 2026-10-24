@@ -1567,6 +1567,59 @@
     refreshCircuitConfigControls();
   }
 
+  function setupExperimentComparison() {
+    const slots=[null,null];
+    const generations=[0,0];
+    const status=$('compareStatus'), output=$('compareOutput');
+    for (const [label,input] of [['compareFileALabel','compareFileA'],['compareFileBLabel','compareFileB']])
+      $(label).addEventListener('keydown',event=>{
+        if(event.key==='Enter'||event.key===' ') { event.preventDefault(); $(input).click(); }
+      });
+    function render() {
+      output.replaceChildren();
+      if (!slots[0] || !slots[1]) return;
+      const table=document.createElement('table');
+      const head=document.createElement('thead'), header=document.createElement('tr');
+      for (const label of ['Recorded field','Export A','Export B','Assessment']) {
+        const cell=document.createElement('th'); cell.scope='col'; cell.textContent=label; header.append(cell);
+      }
+      head.append(header); table.append(head);
+      const body=document.createElement('tbody');
+      for (const row of window.VRAMpageExperimentComparison.compare(slots[0],slots[1])) {
+        const tr=document.createElement('tr');
+        for (const value of [row.label,row.a,row.b,row.status]) {
+          const cell=document.createElement('td'); cell.textContent=value; tr.append(cell);
+        }
+        body.append(tr);
+      }
+      table.append(body); output.append(table);
+      status.textContent='Both exports loaded. Unknown fields mean one or both exports did not record that value.';
+    }
+    for (let i=0;i<2;i++) $(i?'compareFileB':'compareFileA').addEventListener('change',event=>{
+      const file=event.target.files?.[0]; event.target.value='';
+      const generation=++generations[i];
+      if (!file) return;
+      slots[i]=null; output.replaceChildren();
+      status.textContent=`Reading export ${i?'B':'A'} locally…`;
+      Promise.resolve().then(async()=>{
+        if (file.size>window.VRAMpageExperimentComparison.MAX_BYTES) throw new Error('Experiment export must be at most 256 KB.');
+        const parsed=window.VRAMpageExperimentComparison.parse(await file.text());
+        if (generation!==generations[i]) return;
+        slots[i]=parsed;
+        status.textContent=`Export ${i?'B':'A'} loaded locally.`;
+        render();
+      }).catch(error=>{
+        if (generation!==generations[i]) return;
+        slots[i]=null;
+        status.textContent=`Export ${i?'B':'A'} was not loaded: ${error.message}`;
+      });
+    });
+    $('compareCancel').addEventListener('click',()=>{
+      generations[0]++; generations[1]++; slots[0]=slots[1]=null;
+      output.replaceChildren(); status.textContent='Comparison cleared; pending reads canceled.';
+    });
+  }
+
   async function sha256Hex(bytes) {
     if (!window.crypto?.subtle) return null;
     const digest=await window.crypto.subtle.digest('SHA-256',bytes);
@@ -2113,6 +2166,7 @@
     $('fmBridgeApply').addEventListener('click',()=>setFmDataBridge(true));
     $('fmBridgeRemove').addEventListener('click',()=>setFmDataBridge(false));
     setupCircuitConfigurationControls();
+    setupExperimentComparison();
     $('rawVideoToggle').addEventListener('change', () => {
       previousVideoStatus = "";
       drawActiveVideo();

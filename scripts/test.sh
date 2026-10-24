@@ -5,6 +5,8 @@ cd "$ROOT"
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 node --check site/app.js
 node --check site/circuit-config.js
+node --check site/experiment-comparison.js
+node tests/test_experiment_comparison.cjs
 node tests/test_circuit_config_schema.cjs
 node --check site/framebuffer.js
 node tests/test_framebuffer.cjs
