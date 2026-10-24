@@ -4,7 +4,6 @@ No commercial ROM, mock emulator, or game-derived data is used.
 """
 import argparse
 import json
-import os
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -13,6 +12,7 @@ import threading
 import unittest
 
 from playwright.sync_api import sync_playwright, expect
+from browser_result import AnnotatedBrowserResult
 
 ROOT = Path(__file__).resolve().parents[1]
 OPTIONS = None
@@ -47,23 +47,6 @@ def original_cartridge():
     for i, value in enumerate([0x4e72, 0x2700, 0x60fe]):
         struct.pack_into('>H', rom, 0x300+2*i, value)
     return bytes(rom)
-
-
-class AnnotatedBrowserResult(unittest.TextTestResult):
-    """Keep CI failures readable when signed job-log downloads are unavailable."""
-    def annotate(self, test, error):
-        if os.environ.get('GITHUB_ACTIONS') == 'true':
-            message = self._exc_info_to_string(error, test)[-12000:]
-            message = message.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
-            print(f'::error title=Actual-core browser failure::{message}', flush=True)
-
-    def addFailure(self, test, error):
-        super().addFailure(test, error)
-        self.annotate(test, error)
-
-    def addError(self, test, error):
-        super().addError(test, error)
-        self.annotate(test, error)
 
 
 class ActualCoreBrowserTests(unittest.TestCase):

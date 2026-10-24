@@ -8,6 +8,8 @@ from pathlib import Path
 import threading
 import unittest
 
+from browser_result import AnnotatedBrowserResult
+
 from playwright.sync_api import expect, sync_playwright
 
 
@@ -1225,4 +1227,5 @@ if __name__ == "__main__":
     parser.add_argument("--executable", help="Optional local browser executable")
     parser.add_argument("--artifacts", type=Path, help="Screenshot directory outside the source tree")
     OPTIONS, remaining = parser.parse_known_args()
-    unittest.main(argv=[__file__, *remaining], verbosity=2)
+    unittest.main(argv=[__file__, *remaining], verbosity=2,
+                  testRunner=unittest.TextTestRunner(verbosity=2, resultclass=AnnotatedBrowserResult))
