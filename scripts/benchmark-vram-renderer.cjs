@@ -9,6 +9,10 @@ const os = require('node:os');
 const crypto = require('node:crypto');
 const {execFileSync} = require('node:child_process');
 const {visibleCartridge, makeCore, observable} = require('../tests/test_vram_renderer_visible.cjs');
+const RUNTIME_COUNTER_FIELDS = [
+  'logicalByteReads', 'logicalByteWrites', 'redirectedByteReads',
+  'redirectedByteWrites', 'changedPhysicalByteWrites'
+];
 
 function parseArgs(argv) {
   const args = {};
@@ -92,6 +96,13 @@ function commandVersion(command, args) {
   catch { return 'unavailable on benchmark host'; }
 }
 
+function provenanceMatches(sourceBefore, sourceAfter, artifactsUnchanged) {
+  return sourceBefore.commit === sourceAfter.commit &&
+    sourceBefore.tree === sourceAfter.tree && sourceAfter.trackedClean &&
+    sourceBefore.status === sourceAfter.status &&
+    Object.values(artifactsUnchanged).every(Boolean);
+}
+
 function entry(jsPath) {
   const absolute = path.resolve(jsPath);
   const resolved = fs.realpathSync(absolute);
@@ -108,6 +119,16 @@ function cpuLoopCount(state) { return state.ram.readUInt16BE(0); }
 
 function runtimeModelSnapshot(core) {
   const state = core._get_vram_fault_model_state();
+  if (!state || typeof state !== 'object' || !state.lastFrameCounts ||
+      typeof state.lastFrameCounts !== 'object')
+    throw new Error('Runtime module returned invalid public VRAM model state');
+  const lastFrameCounts = {};
+  for (const name of RUNTIME_COUNTER_FIELDS) {
+    const value = state.lastFrameCounts[name];
+    if (!Number.isSafeInteger(value) || value < 0)
+      throw new Error(`Runtime module returned an invalid ${name} counter`);
+    lastFrameCounts[name] = value;
+  }
   return {
     modelId: state.modelId,
     modelVersion: state.modelVersion,
@@ -117,7 +138,7 @@ function runtimeModelSnapshot(core) {
     mask: state.mask,
     bridgeA: state.bridgeA,
     bridgeB: state.bridgeB,
-    lastFrameCounts: {...state.lastFrameCounts}
+    lastFrameCounts
   };
 }
 
@@ -174,12 +195,15 @@ async function runPreflightVariant(name, factory, rom, mask, ticksAfterSelection
   const identity = profile.runtime ? name === 'runtime-identity' : name === 'identity';
   const writes = runtimeState ? Number(counters.logicalByteWrites) :
     diagnosticCounters ? Number(diagnosticCounters[1]) : 0;
-  if (active && (!counters || writes === 0))
+  if (active && (!Number.isSafeInteger(writes) || writes <= 0))
     throw new Error(`${name}: fixed-tick preflight observed no mapped DMA writes`);
-  if (identity && runtimeState && Object.values(counters).some(value => Number(value) !== 0))
+  if (identity && runtimeState && Object.values(counters).some(value => value !== 0))
     throw new Error(`${name}: runtime identity unexpectedly counted transaction accesses`);
   if (identity && diagnosticCounters && Number(diagnosticCounters[1]) !== 0)
     throw new Error(`${name}: identity unexpectedly counted mapped writes`);
+  if (runtimeState && name === 'runtime-default' &&
+      Object.values(counters).some(value => value !== 0))
+    throw new Error('runtime-default: frame-projection profile unexpectedly counted transaction accesses');
   if (runtimeState && name === 'runtime-default' && selectedModel.modelId !== 1)
     throw new Error('runtime-default: public model changed without an explicit selection');
   return {
@@ -379,9 +403,7 @@ async function main() {
     trackedClean: trackedClean(),
     status: git('status', '--porcelain', '--untracked-files=normal')
   };
-  const provenanceStable = sourceBefore.commit === sourceAfter.commit &&
-    sourceBefore.tree === sourceAfter.tree && sourceAfter.trackedClean &&
-    Object.values(artifactsUnchanged).every(Boolean);
+  const provenanceStable = provenanceMatches(sourceBefore, sourceAfter, artifactsUnchanged);
   const hostAfter = {loadAverage: os.loadavg()};
   const report = {
     recordedAt: new Date().toISOString(),
@@ -442,5 +464,5 @@ if (require.main === module) {
 
 module.exports = {
   parseArgs, profileDefinition, runtimeModelSnapshot, selectProfileModel,
-  runPreflightVariant, comparePreflightState, entry
+  runPreflightVariant, comparePreflightState, entry, provenanceMatches
 };

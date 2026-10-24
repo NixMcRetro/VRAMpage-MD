@@ -1,7 +1,8 @@
 'use strict';
 const assert = require('node:assert/strict');
 const {
-  parseArgs, profileDefinition, selectProfileModel
+  parseArgs, profileDefinition, runtimeModelSnapshot, selectProfileModel,
+  provenanceMatches
 } = require('../scripts/benchmark-vram-renderer.cjs');
 
 const common = ['--baseline', 'baseline.js', '--normal', 'normal.js', '--out', 'record.json'];
@@ -69,6 +70,20 @@ const unsupported = fakeRuntime(3);
 assert.throws(() => selectProfileModel(unsupported, runtime, 8, 'runtime-active-ad3'),
   /unsupported in the active VDP mode/);
 assert.deepEqual(unsupported.setterCalls, [], 'unsupported mode is rejected before mutation');
+
+assert.equal(runtimeModelSnapshot(core).lastFrameCounts.logicalByteWrites, 0);
+for (const invalid of [NaN, Infinity, -1, 1.5, Number.MAX_SAFE_INTEGER + 1, '1', undefined]) {
+  const bad = fakeRuntime();
+  bad.model.lastFrameCounts.logicalByteWrites = invalid;
+  assert.throws(() => runtimeModelSnapshot(bad), /invalid logicalByteWrites/,
+    `unsafe counter ${String(invalid)} is rejected`);
+}
+
+const before = {commit: 'a', tree: 'b', trackedClean: true, status: ''};
+const after = {...before};
+assert.equal(provenanceMatches(before, after, {baseline: true, runtime: true}), true);
+assert.equal(provenanceMatches(before, {...after, status: '?? new-source-file'},
+  {baseline: true, runtime: true}), false, 'untracked source mutation invalidates provenance');
 
 let diagnosticCalls = 0;
 const diagnosticCore = {_set_vram_transaction_diagnostic() { diagnosticCalls++; return 0; }};
