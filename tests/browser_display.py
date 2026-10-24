@@ -76,13 +76,19 @@ class BrowserDisplayTests(unittest.TestCase):
               parseFloat(getComputedStyle(document.querySelector('.screen-well')).paddingLeft) -
               parseFloat(getComputedStyle(document.querySelector('.screen-well')).paddingRight),
             buffer:[document.getElementById('screen').width, document.getElementById('screen').height],
-            overflow:document.documentElement.scrollWidth > innerWidth};
+            overflow:document.documentElement.scrollWidth > innerWidth,
+            viewport:[innerWidth,innerHeight],
+            overflowNodes:document.documentElement.scrollWidth > innerWidth
+              ? [...document.querySelectorAll('body *')].map(el=>({
+                  tag:el.tagName,id:el.id,classes:el.className,
+                  right:el.getBoundingClientRect().right,width:el.getBoundingClientRect().width
+                })).filter(el=>el.right>innerWidth).slice(0,20) : []};
         }''')
 
     def assert_native(self, geometry):
         self.assertEqual(geometry['buffer'], [320, 224])
         self.assertAlmostEqual(geometry['canvas']['width'] / geometry['canvas']['height'], 10 / 7, delta=0.002)
-        self.assertFalse(geometry['overflow'], 'Horizontal page overflow')
+        self.assertFalse(geometry['overflow'], f'Horizontal page overflow: {geometry}')
 
     def screenshot(self, name):
         if OPTIONS.artifacts:

@@ -386,6 +386,9 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.close()
         self.page=self.new_page(circuit_config=True)
         self.load_rom()
+        # The shared logic fixture opens diagnostics below the chip workbench.
+        self.page.evaluate('window.scrollTo(0,0)')
+        self.page.wait_for_function('window.scrollY === 0')
         bodies=self.page.evaluate("""() => ['#pinGrid .chip-middle','#ramChip .ram-chip-body',
           '#fmChip .chip-middle','#psgChip .chip-middle'].map(selector=>{
             const r=document.querySelector(selector).getBoundingClientRect();
