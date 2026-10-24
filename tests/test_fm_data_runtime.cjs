@@ -204,6 +204,21 @@ async function testZ80FmAndPsg(runtimePath, normalPath) {
   assert.equal(bothPsg.changedWrites, psgState.changedWrites);
   assert.notDeepEqual(bothSamples.left, baseline.left, 'combined bridges transform the generated tone');
 
+  const bothRepeat = await createCore(runtimePath, rom);
+  assert.equal(bothRepeat._set_fm_data_bridge(1, 0, 5), 0);
+  assert.equal(bothRepeat._set_psg_data_bridge(1, 0, 7), 0);
+  const repeatedSamples = nextAudio(bothRepeat);
+  assert.equal(repeatedSamples.count, bothSamples.count,
+    'fresh mixed bridge run produces the same sample count');
+  assert.deepEqual(repeatedSamples.left, bothSamples.left,
+    'fresh mixed bridge run reproduces left samples exactly');
+  assert.deepEqual(repeatedSamples.right, bothSamples.right,
+    'fresh mixed bridge run reproduces right samples exactly');
+  assert.deepEqual(bothRepeat._get_fm_data_bridge_state(), bothFm,
+    'fresh mixed bridge run reproduces FM counters and configuration');
+  assert.deepEqual(bothRepeat._get_psg_data_bridge_state(), bothPsg,
+    'fresh mixed bridge run reproduces PSG counters and configuration');
+
   const bothFmBeforeRemoval = both._get_fm_data_bridge_state();
   const bothPsgBeforeRemoval = both._get_psg_data_bridge_state();
   assert.equal(both._set_fm_data_bridge(0, -1, -1), 0);
