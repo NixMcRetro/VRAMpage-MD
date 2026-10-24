@@ -382,7 +382,10 @@
 
   function currentVramModelState() {
     if (vramModelApiReady()) {
-      try { return emulator._get_vram_fault_model_state(); }
+      try {
+        const state=emulator._get_vram_fault_model_state();
+        if (state) return state;
+      }
       catch (_) { /* The legacy view below remains usable if optional metadata fails. */ }
     }
     return {
@@ -1030,7 +1033,10 @@
     if (!pendingPulse) return;
     pendingPulse.status='cancelled';
     pendingPulse.reason=reason;
-    pendingPulse.endFrame=Number(emulator._get_logic_frame());
+    try {
+      const frame=Number(emulator._get_logic_frame());
+      pendingPulse.endFrame=Number.isFinite(frame)&&frame>=0?frame:null;
+    } catch (_) { pendingPulse.endFrame=null; }
     pendingPulse=null;
   }
 
@@ -1045,27 +1051,66 @@
 
     const results=[];
     const note=(domain,result,actual)=>results.push({domain,result,actual});
-    let vramState=null;
+    const syncVramState=actual=>{
+      if (!actual || (actual.modelId!==1 && actual.modelId!==2) ||
+          !Number.isInteger(actual.mask) || actual.mask<0 || actual.mask>255 ||
+          !Number.isInteger(actual.bridgeA) || !Number.isInteger(actual.bridgeB)) return false;
+      vramModelId=actual.modelId;
+      vramAddressMask=actual.mask;
+      latched=actual.bridgeA>=0&&actual.bridgeA<=7&&actual.bridgeB>=0&&actual.bridgeB<=7&&actual.bridgeA!==actual.bridgeB
+        ? canonical([actual.bridgeA,actual.bridgeB]) : null;
+      momentary=null; momentaryRestorePair=null; selectedPin=null;
+      return true;
+    };
+    let vramState=null, vramStateUnknown=false;
     if (vramModelApiReady()) {
-      try { vramState=emulator._get_vram_fault_model_state(); } catch (_) { /* Use tracked state below. */ }
+      try { vramState=emulator._get_vram_fault_model_state(); vramStateUnknown=!vramState; }
+      catch (_) { vramStateUnknown=true; }
     }
     const vramActive=vramState
       ? !!(vramState.mask || (vramState.bridgeA>=0 && vramState.bridgeB>=0))
-      : vramFaultActive();
+      : vramFaultActive() || vramStateUnknown;
     if (!vramActive) note('VRAM','already off','no configured VRAM fault');
     else {
-      try {
+      let supportStateUnknown=false;
+      if (vramModelApiReady()) {
+        try { emulator._get_vram_supported_model_mask(); }
+        catch (_) { supportStateUnknown=true; }
+      }
+      if (supportStateUnknown) {
+        try {
+          // Model 1 identity is supported in every runtime profile and clears the VRAM fault.
+          const selectorStatus=emulator._set_vram_fault_model(1,0,-1,-1);
+          let actual=null;
+          try { actual=emulator._get_vram_fault_model_state(); } catch (_) { /* Keep the result explicitly unverified. */ }
+          if (actual) syncVramState(actual);
+          const off=actual && !actual.mask && !(actual.bridgeA>=0&&actual.bridgeB>=0);
+          note('VRAM',selectorStatus!==0?`clear rejected (${selectorStatus})`:off?'cleared':'clear accepted; runtime state unknown',
+            actual?`runtime model ${actual.modelId}, ${off?'no fault configured':'fault remains configured'}`:'runtime state unknown');
+        } catch (_) {
+          let actual=null;
+          try { actual=emulator._get_vram_fault_model_state(); } catch (_) { /* Fall through to tracked state. */ }
+          if (actual) syncVramState(actual);
+          note('VRAM','clear threw',actual
+            ? `runtime model ${actual.modelId}, ${actual.mask||(actual.bridgeA>=0&&actual.bridgeB>=0)?'fault remains configured':'no fault configured'}`
+            : vramFaultActive()?'tracked fault remains active; runtime state unknown':'tracked fault off; runtime state unknown');
+        }
+      } else try {
         const cleared=disconnect('all fault domains disconnected');
         let actual=null;
         try { if (vramModelApiReady()) actual=emulator._get_vram_fault_model_state(); } catch (_) { /* Show tracked state below. */ }
         const actualIsRuntime=!!actual;
         actual=actual || currentVramModelState();
         const stillActive=!!(actual.mask || (actual.bridgeA>=0 && actual.bridgeB>=0));
-        note('VRAM',cleared&&!stillActive?'cleared':'clear failed',
+        const result=cleared&&!stillActive
+          ? (actualIsRuntime||!vramModelApiReady()?'cleared':'clear accepted; runtime state unknown')
+          : 'clear failed';
+        note('VRAM',result,
           `${actualIsRuntime?'runtime':'tracked'} model ${actual.modelId}, mask ${actual.mask}, pair ${actual.bridgeA>=0&&actual.bridgeB>=0?`AD${actual.bridgeA}↔AD${actual.bridgeB}`:'none'}`);
       } catch (_) {
         let actual=null;
         try { if (vramModelApiReady()) actual=emulator._get_vram_fault_model_state(); } catch (_) { /* Fall through to tracked values. */ }
+        if (actual) syncVramState(actual);
         note('VRAM','clear threw',actual
           ? `runtime model ${actual.modelId}, ${actual.mask||(actual.bridgeA>=0&&actual.bridgeB>=0)?'fault remains configured':'no fault configured'}`
           : vramFaultActive()?'tracked fault remains active; runtime state unknown':'tracked fault off; runtime state unknown');

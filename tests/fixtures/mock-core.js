@@ -125,15 +125,19 @@ window.Module = async () => {
         Object.assign(vramModel,{modelId,mask,bridgeA:a,bridgeB:b});
         window.mockCore.vramAddressMask=mask;
         window.mockCore.short=a<0?[-1,-1]:[a,b];
+        if (window.mockCore.throwVramModelAfter) throw new Error('synthetic VRAM selector trap after mutation');
         return 0;
       },
-      _get_vram_fault_model_state:()=>({modelId:vramModel.modelId,modelVersion:vramModel.modelId===2
+      _get_vram_fault_model_state:()=>window.mockCore.nullVramState?null:({modelId:vramModel.modelId,modelVersion:vramModel.modelId===2
         ?'logical-byte-transaction-v1':'frame-projection-v1',mask:vramModel.mask,
         bridgeA:vramModel.bridgeA,bridgeB:vramModel.bridgeB,supportedModelsMask:vramModel.supportedModelsMask,
         effective:!!(vramModel.mask||vramModel.bridgeA>=0),reason:vramModel.mask||vramModel.bridgeA>=0?'active':'no-fault',
         lastFrameCounts:{logicalByteReads:0,logicalByteWrites:0,redirectedByteReads:0,
           redirectedByteWrites:0,changedPhysicalByteWrites:0}}),
-      _get_vram_supported_model_mask:()=>vramModel.supportedModelsMask
+      _get_vram_supported_model_mask:()=>{
+        if(window.mockCore.throwVramSupport) throw new Error('synthetic VRAM support metadata trap');
+        return vramModel.supportedModelsMask;
+      }
     });
   }
   if (window.__circuitConfigCore && !window.__legacyPsgDataCore) {
@@ -211,7 +215,10 @@ window.Module = async () => {
       _set_logic_fault: setLogicFault,
       _get_logic_reads: () => logic.reads,
       _get_logic_writes: () => logic.writes,
-      _get_logic_frame: () => logic.frame,
+      _get_logic_frame: () => {
+        if(window.mockCore.throwFrameOnce) {window.mockCore.throwFrameOnce=false;throw new Error('synthetic frame telemetry trap');}
+        return logic.frame;
+      },
       _get_logic_activation_frame: () => logic.activationFrame,
       _get_logic_cpu_flags: () => logic.cpuFlags,
     });

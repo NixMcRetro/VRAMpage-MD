@@ -377,9 +377,12 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.locator("#logicPulseFrames").select_option("writes:8")
         self.page.locator("#logicPulseBtn").click()
         self.assertEqual(self.page.evaluate("window.mockCore.logic.pulseState"), 1)
+        self.page.evaluate("window.mockCore.throwFrameOnce=true")
         self.page.locator("#disconnectAllFaultsBtn").click()
         self.assertEqual(self.page.evaluate("window.mockCore.logic.pulseState"), 4)
-        self.assertEqual(self.export_payload()["faultPulses"][0]["status"], "cancelled")
+        pulse = self.export_payload()["faultPulses"][0]
+        self.assertEqual(pulse["status"], "cancelled")
+        self.assertIsNone(pulse["endFrame"], "missing telemetry must not block cancellation or other domain clears")
         self.assertEqual(self.page.evaluate("window.mockCore.logic.recoveries"), [])
 
         page = self.new_page(circuit_config=True)
@@ -409,6 +412,48 @@ class BrowserLogicTests(unittest.TestCase):
         expect(page.locator("#pauseBtn")).to_have_text("Resume")
         self.assertEqual(page.evaluate("[mockCore.vramModel.calls.length,mockCore.logic.setterCalls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]"), calls)
         self.assertEqual(page.evaluate("window.mockCore.starts"), starts)
+
+    def test_all_domain_disconnect_does_not_report_unknown_vram_state_as_off(self):
+        page = self.new_page(circuit_config=True)
+        self.load_rom(page)
+        page.evaluate("window.mockCore.nullVramState=true")
+        calls = page.evaluate("window.mockCore.vramModel.calls.length")
+        page.locator("#disconnectAllFaultsBtn").click()
+        expect(page.locator("#disconnectAllFaultsStatus")).to_contain_text(
+            "VRAM: clear accepted; runtime state unknown")
+        self.assertEqual(page.evaluate("window.mockCore.vramModel.calls.length"), calls + 1)
+
+    def test_all_domain_disconnect_uses_safe_vram_clear_when_support_metadata_throws(self):
+        page = self.new_page(circuit_config=True)
+        self.load_rom(page)
+        page.locator("#vramMode").select_option("bridge")
+        page.locator("#pinGrid .pin").nth(0).click()
+        page.locator("#pinGrid .pin").nth(1).click()
+        page.locator("#psgBridgeApply").click()
+        page.evaluate("window.mockCore.throwVramSupport=true")
+        calls = page.evaluate("window.mockCore.vramModel.calls.length")
+        page.locator("#disconnectAllFaultsBtn").click()
+        self.assertEqual(page.evaluate("window.mockCore.vramModel.calls.length"), calls + 1)
+        expect(page.locator("#disconnectAllFaultsStatus")).to_contain_text("VRAM: cleared")
+        expect(page.locator("#disconnectAllFaultsStatus")).to_contain_text("PSG: cleared")
+        self.assertFalse(page.evaluate("window.mockCore.vramModel.mask || window.mockCore.vramModel.bridgeA>=0"))
+        self.assertFalse(page.evaluate("window.mockCore.psg.configured"))
+
+    def test_all_domain_disconnect_syncs_vram_tracking_after_throwing_clear_mutates(self):
+        page = self.new_page(circuit_config=True)
+        self.load_rom(page)
+        page.locator("#vramMode").select_option("bridge")
+        page.locator("#pinGrid .pin").nth(0).click()
+        page.locator("#pinGrid .pin").nth(1).click()
+        page.evaluate("window.mockCore.throwVramModelAfter=true")
+        page.locator("#disconnectAllFaultsBtn").click()
+        expect(page.locator("#disconnectAllFaultsStatus")).to_contain_text(
+            "VRAM: clear threw (runtime model 1, no fault configured)")
+        expect(page.locator("#connectionLabel")).to_have_text("NONE — NORMAL ADDRESSING")
+        payload=self.export_payload_for(page)
+        self.assertEqual(payload["vramFault"]["kind"], "none")
+        self.assertEqual(payload["vramTransaction"]["mask"], 0)
+        self.assertEqual(payload["vramTransaction"]["bridgeA"], -1)
 
     def test_cpu_recovery_leaves_audio_faults_active_and_names_cleared_domains(self):
         page = self.new_page(circuit_config=True)
