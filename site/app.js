@@ -48,7 +48,7 @@
   let logicResetState = 'No cartridge loaded';
   let romHashPromise = Promise.resolve(null);
   const CORE_PIN = '6090aff9e9b2f578cd28882bd4571d2e35b1d674';
-  const APPLICATION_VERSION = '0.4.0';
+  const APPLICATION_VERSION = '0.4.1';
   let buildInfo = {status:'unavailable',applicationVersion:APPLICATION_VERSION,sourceCommit:null};
   loadBuildInfo().then(info=>{buildInfo=info;});
 
@@ -1429,7 +1429,7 @@
     const data={
       schemaVersion:1,
       build:{...buildInfo},
-      modelVersion:'0.4.0-experimental',
+      modelVersion:'0.4.1-experimental',
       vramFault:{kind:vramAddressMask?'address-stuck-low':actualPair()?'address-bridge':'none',
         addressMask:vramAddressMask,lines:vramLines(vramAddressMask),bridge:actualPair()?[...actualPair()]:null},
       vramAddressLineChanges:vramAddressLineChanges.map(entry=>({...entry})),
@@ -1457,7 +1457,7 @@
         bridgeA:runtimeVramState?.bridgeA ?? actualPair()?.[0] ?? -1,
         bridgeB:runtimeVramState?.bridgeB ?? actualPair()?.[1] ?? -1,
         lastFrameCounts:transactionCounts},
-      psgInputFault:{schemaVersion:1,available:!!psgState,
+      psgInputFault:{schemaVersion:2,available:!!psgState,
         modelVersion:psgState?.modelVersion ?? null,
         supported:psgState?.supported ?? false,
         configured:psgState?.configured ?? false,
@@ -1468,7 +1468,7 @@
         dataMask:Number.isInteger(psgState?.dataMask)?psgState.dataMask:0,
         inputWrites:psgState?.inputWrites ?? '0',
         changedWrites:psgState?.changedWrites ?? '0'},
-      fmInputFault:{schemaVersion:1,available:!!fmState,
+      fmInputFault:{schemaVersion:2,available:!!fmState,
         modelVersion:fmState?.modelVersion ?? null,
         supported:fmState?.supported ?? false,
         configured:fmState?.configured ?? false,

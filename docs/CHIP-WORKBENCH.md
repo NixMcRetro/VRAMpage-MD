@@ -1,6 +1,6 @@
 # Compact chip workbench
 
-Development after the public v0.4.0 release brings the existing VRAM and Work
+The v0.4.1 workbench brings the existing VRAM and Work
 RAM diagrams together with FM and PSG controls in one compact sidebar. These
 are conceptual signal diagrams, not physical chip pinouts. The PSG is a logical
 function inside the Mega Drive VDP.
@@ -33,5 +33,4 @@ and audio cut mode is unavailable.
 Configuration save/preview/apply must preserve the selected masks as well as
 pairs. Older version 1 configuration files remain importable. Experiment
 exports identify the active audio model and mask without rewriting historical
-records. The original v0.4.0 download remains unchanged; development review
-packages are identified by their source commit.
+records. The original v0.4.0 download remains unchanged; new packages are identified by their version and source commit.

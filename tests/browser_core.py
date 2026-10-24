@@ -346,7 +346,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     core_js += '\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\n'
                     page.route('**/core/genplus.js', lambda route: route.fulfill(
                         content_type='text/javascript', body=core_js))
-                    build_info={'application':'VRAMpage MD','application_version':'0.4.0',
+                    build_info={'application':'VRAMpage MD','application_version':'0.4.1',
                                 'source_commit':'b'*40,'package_format':1}
                     page.route('**/build-info.json',lambda route:route.fulfill(
                         content_type='application/json',body=json.dumps(build_info)))
@@ -447,7 +447,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     core_js += '\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\n'
                     page.route('**/core/genplus.js', lambda route: route.fulfill(content_type='text/javascript', body=core_js))
                     # A fixture manifest exercises provenance without mocking the real core.
-                    build_info={'application':'VRAMpage MD','application_version':'0.4.0',
+                    build_info={'application':'VRAMpage MD','application_version':'0.4.1',
                                 'source_commit':'b'*40,'package_format':1}
                     page.route('**/build-info.json',lambda route:route.fulfill(
                         content_type='application/json',body=json.dumps(build_info)))
@@ -579,18 +579,20 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     with page.expect_download() as download:
                         page.locator('#logicExperimentBtn').click()
                     payload=json.loads(Path(download.value.path()).read_text())
-                    self.assertEqual(payload['modelVersion'],'0.4.0-experimental')
+                    self.assertEqual(payload['modelVersion'],'0.4.1-experimental')
                     self.assertEqual(payload['schemaVersion'],1)
-                    self.assertEqual(payload['build'],{'status':'available','applicationVersion':'0.4.0','sourceCommit':'b'*40})
+                    self.assertEqual(payload['build'],{'status':'available','applicationVersion':'0.4.1','sourceCommit':'b'*40})
                     self.assertEqual(payload['vramFault']['addressMask'],0)
                     self.assertEqual([e['mask'] for e in payload['vramAddressLineChanges']],[1,129,0])
                     self.assertEqual(payload['rom']['name'],'original-video-tone.bin')
                     self.assertEqual(len(payload['rom']['sha256']),64)
                     self.assertNotIn('romBytes',payload)
+                    self.assertEqual(payload['psgInputFault']['schemaVersion'],2)
                     self.assertEqual(payload['psgInputFault']['available'],psg_api)
                     if psg_api:
                         self.assertEqual(payload['psgInputFault']['modelVersion'],'psg-data-low-dominant-v2')
                         self.assertTrue(payload['psgInputFault']['configured'])
+                    self.assertEqual(payload['fmInputFault']['schemaVersion'],2)
                     self.assertEqual(payload['fmInputFault']['available'],fm_api)
                     if fm_api:
                         self.assertEqual(payload['fmInputFault']['modelVersion'],'fm-register-data-low-dominant-v2')

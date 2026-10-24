@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased: compact chip workbench
+## v0.4.1 - compact chip workbench
 
 - Bring the four modeled circuits into a compact chip-local workbench, retaining VRAM/Work RAM controls and adding FM/PSG leg controls.
 - Add runtime-only FM/PSG stuck-low data masks alongside existing pair bridges, preserving normal synthesis and reset semantics.
