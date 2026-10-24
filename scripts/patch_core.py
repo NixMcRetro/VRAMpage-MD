@@ -522,6 +522,35 @@ void EMSCRIPTEN_KEEPALIVE clear_vram_tx_test_cache(void)
     return source
 
 
+def patch_psg_input_fault(source: str) -> str:
+    """Gate the low-dominant PSG data bridge at the synchronized write sink."""
+    include_anchor = '#include "blip_buf.h"'
+    include = ('#include "blip_buf.h"\n'
+               '#if defined(VRAM_TX_RUNTIME)\n'
+               '#include "psg_data_fault.h" /* VRAMpage PSG input bridge v1 */\n'
+               '#endif')
+    source = replace_pinned(source, include_anchor, include,
+                            'PSG input bridge include')
+    reset_before = 'void psg_reset()\n{\n  int i;'
+    reset_after = ('void psg_reset()\n{\n  int i;\n'
+                   '#if defined(VRAM_TX_RUNTIME)\n'
+                   '  psg_data_fault_runtime_reset();\n'
+                   '#endif')
+    source = replace_pinned(source, reset_before, reset_after,
+                            'PSG reset bridge hook')
+    write_before = ('    psg.clocks += ((clocks - psg.clocks + PSG_MCYCLES_RATIO - 1) / PSG_MCYCLES_RATIO) * PSG_MCYCLES_RATIO;\n'
+                    '  }\n\n'
+                    '  if (data & 0x80)')
+    write_after = ('    psg.clocks += ((clocks - psg.clocks + PSG_MCYCLES_RATIO - 1) / PSG_MCYCLES_RATIO) * PSG_MCYCLES_RATIO;\n'
+                   '  }\n\n'
+                   '#if defined(VRAM_TX_RUNTIME)\n'
+                   '  data = (unsigned int)psg_data_fault_runtime_apply((int)data);\n'
+                   '#endif\n\n'
+                   '  if (data & 0x80)')
+    return replace_pinned(source, write_before, write_after,
+                          'PSG synchronized write bridge hook')
+
+
 VRAM_RENDER_V1_MARKER = 'VRAM TX MODE 5 RENDER READS v1'
 VRAM_RENDER_V1_READS = '''
 #if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)
@@ -820,6 +849,7 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     m68k_h = root / 'src/main/c/core/m68k/m68kcpu.h'
     z80_c = root / 'src/main/c/core/memz80.c'
     dma_c = root / 'src/main/c/core/vdp_ctrl.c'
+    psg_c = root / 'src/main/c/core/sound/psg.c'
 
     wasm = wasm_c.read_text()
     config = config_c.read_text()
@@ -828,6 +858,7 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     m68k = m68k_h.read_text()
     z80 = z80_c.read_text()
     dma = dma_c.read_text()
+    psg = psg_c.read_text() if transaction_adapter else None
 
     if wasm.count('#define SOUND_FREQUENCY 44100') != 1:
         raise SystemExit('Expected wasm.c header missing; upstream changed. No modifications made.')
@@ -857,6 +888,17 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
         wasm = wasm.replace(work_ram_include, work_ram_include + '\n' + tx_include, 1)
     elif wasm.count(tx_include) != 1:
         raise SystemExit('Diagnostic transaction helper include is ambiguous.')
+
+    psg_include = ('#if defined(VRAM_TX_RUNTIME)\n'
+                   '#include "psg_data_fault_core.c"\n'
+                   '#include "psg_data_fault_runtime.c"\n'
+                   '#endif')
+    if psg_include not in wasm:
+        if wasm.count(work_ram_include) != 1:
+            raise SystemExit('Expected PSG runtime helper include anchor missing or ambiguous.')
+        wasm = wasm.replace(work_ram_include, work_ram_include + '\n' + psg_include, 1)
+    elif wasm.count(psg_include) != 1:
+        raise SystemExit('PSG runtime helper include is ambiguous.')
 
     # start() precedes the embedded VRAM block, requiring a forward declaration.
     declaration = 'static void bend_reset(void);\n'
@@ -901,16 +943,19 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     if transaction_adapter:
         dma = patch_vram_transactions(dma)
         render_c = patch_mode5_render_reads(render_c)
+        psg = patch_psg_input_fault(psg)
     changed = (wasm != wasm_c.read_text() or config != config_c.read_text() or
                render != render_h.read_text() or m68k != m68k_h.read_text() or
                z80 != z80_c.read_text() or dma != dma_c.read_text() or
-               (transaction_adapter and render_c != render_c_path.read_text()))
+               (transaction_adapter and (render_c != render_c_path.read_text() or
+                                          psg != psg_c.read_text())))
     if changed:
         wasm_c.write_text(wasm)
         config_c.write_text(config)
         render_h.write_text(render)
         if transaction_adapter:
             render_c_path.write_text(render_c)
+            psg_c.write_text(psg)
         m68k_h.write_text(m68k)
         z80_c.write_text(z80)
         dma_c.write_text(dma)
@@ -921,6 +966,7 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
             destination.mkdir(parents=True, exist_ok=True)
             for filename in ('work_ram_fault.h', 'work_ram_runtime.h'):
                 (destination / filename).write_text((scripts / filename).read_text())
+            (destination / 'psg_data_fault.h').write_text((scripts / 'psg_data_fault.h').read_text())
             (destination / 'vram_transaction.h').write_text((scripts / 'vram_transaction.h').read_text())
             (destination / 'vram_transaction_runtime.h').write_text((scripts / 'vram_transaction_runtime.h').read_text())
             if destination.name == 'core' and transaction_adapter:
@@ -930,6 +976,8 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
         for filename in ('work_ram_fault.c', 'work_ram_runtime.c'):
             (wasm_dir / filename).write_text((scripts / filename).read_text())
         (wasm_dir / 'vram_transaction.c').write_text((scripts / 'vram_transaction.c').read_text())
+        (wasm_dir / 'psg_data_fault_core.c').write_text((scripts / 'psg_data_fault_core.c').read_text())
+        (wasm_dir / 'psg_data_fault_runtime.c').write_text((scripts / 'psg_data_fault_runtime.c').read_text())
     else:
         # A no-op patch still checks that the helper source copies match the
         # repository files. Updating only these generated copies is safe.
@@ -939,6 +987,9 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
                 target = destination / filename
                 if not target.exists() or target.read_text() != (scripts / filename).read_text():
                     target.write_text((scripts / filename).read_text())
+            target = destination / 'psg_data_fault.h'
+            if not target.exists() or target.read_text() != (scripts / 'psg_data_fault.h').read_text():
+                target.write_text((scripts / 'psg_data_fault.h').read_text())
             for filename in ('vram_transaction.h', 'vram_transaction_runtime.h'):
                 target = destination / filename
                 if not target.exists() or target.read_text() != (scripts / filename).read_text():
@@ -958,6 +1009,11 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
         transaction_c = (scripts / 'vram_transaction.c').read_text()
         if not target.exists() or target.read_text() != transaction_c:
             target.write_text(transaction_c)
+        for filename in ('psg_data_fault_core.c', 'psg_data_fault_runtime.c'):
+            target = root / 'src/main/c/wasm' / filename
+            content = (scripts / filename).read_text()
+            if not target.exists() or target.read_text() != content:
+                target.write_text(content)
     return changed
 
 
