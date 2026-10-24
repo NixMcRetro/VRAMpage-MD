@@ -41,6 +41,7 @@
   let cpuInterventions = [];
   let faultPulses = [], pendingPulse = null;
   let activeRamConfiguration = null, stagedCircuitConfiguration = null;
+  let circuitConfigLoadGeneration=0, circuitConfigLoading=false;
   let logicAddressMask = 0, addressLineChanges = [];
   let logicResetState = 'No cartridge loaded';
   let romHashPromise = Promise.resolve(null);
@@ -991,8 +992,8 @@
   }
 
   function refreshCircuitConfigControls() {
-    $('circuitConfigApply').disabled=!stagedCircuitConfiguration || !started;
-    $('circuitConfigCancel').disabled=!stagedCircuitConfiguration;
+    $('circuitConfigApply').disabled=!stagedCircuitConfiguration || !started || circuitConfigLoading;
+    $('circuitConfigCancel').disabled=!stagedCircuitConfiguration && !circuitConfigLoading;
     const preview=$('circuitConfigPreview');
     preview.hidden=!stagedCircuitConfiguration;
     preview.textContent=stagedCircuitConfiguration?circuitConfigSummary(stagedCircuitConfiguration):'';
@@ -1000,14 +1001,25 @@
 
   function stageCircuitConfigurationFile(file) {
     if (!file) return;
+    const generation=++circuitConfigLoadGeneration;
+    circuitConfigLoading=true;
+    $('circuitConfigStatus').textContent=stagedCircuitConfiguration
+      ? 'Reading selected file. The previous valid preview is retained; Apply is disabled until reading finishes.'
+      : 'Reading selected file. Nothing has been applied.';
+    refreshCircuitConfigControls();
     Promise.resolve().then(async()=>{
       if (file.size>32768) throw new Error('Circuit configuration must be at most 32 KB.');
       const parsed=window.VRAMpageCircuitConfig.parse(await file.text());
+      if (generation!==circuitConfigLoadGeneration) return;
       stagedCircuitConfiguration=parsed;
       $('circuitConfigStatus').textContent='Preview loaded. Nothing has been applied; choose Apply when ready.';
-      refreshCircuitConfigControls();
     }).catch(error=>{
-      $('circuitConfigStatus').textContent=`Configuration not staged: ${error.message}`;
+      if (generation!==circuitConfigLoadGeneration) return;
+      $('circuitConfigStatus').textContent=`Configuration not staged: ${error.message}${stagedCircuitConfiguration?' The previous valid preview is still available.':''}`;
+    }).finally(()=>{
+      if (generation!==circuitConfigLoadGeneration) return;
+      circuitConfigLoading=false;
+      refreshCircuitConfigControls();
     });
   }
 
@@ -1107,6 +1119,10 @@
   }
 
   function applyStagedCircuitConfiguration() {
+    if (circuitConfigLoading) {
+      $('circuitConfigStatus').textContent='Wait for the selected configuration file to finish reading before Apply.';
+      return false;
+    }
     const config=stagedCircuitConfiguration;
     if (!config) return false;
     let error;
@@ -1199,8 +1215,10 @@
     });
     $('circuitConfigApply').addEventListener('click',applyStagedCircuitConfiguration);
     $('circuitConfigCancel').addEventListener('click',()=>{
+      ++circuitConfigLoadGeneration;
+      circuitConfigLoading=false;
       stagedCircuitConfiguration=null;
-      $('circuitConfigStatus').textContent='Staged configuration discarded; no core settings changed.';
+      $('circuitConfigStatus').textContent='Staged configuration discarded and pending file read canceled; no core settings changed.';
       refreshCircuitConfigControls();
     });
     refreshCircuitConfigControls();
