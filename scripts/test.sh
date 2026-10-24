@@ -7,6 +7,7 @@ node --check site/app.js
 node --check site/framebuffer.js
 node tests/test_framebuffer.cjs
 node tests/test_framebuffer_properties.cjs
+node tests/test_benchmark_vram_runtime.cjs
 node tests/test_pulse_sweep.cjs
 node --check scripts/observe-attract-demo.cjs
 node tests/test_attract_diagnostics.cjs

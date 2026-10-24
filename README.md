@@ -43,7 +43,7 @@ The interface fits different window sizes, follows your system Light/Dark prefer
 | Topic | Where to start |
 | --- | --- |
 | Source code and contributor build | [Developer build instructions](docs/DEPLOYMENT.md) |
-| Optional transaction runtime core | [Isolated build instructions](docs/VRAM-RUNTIME-BUILD.md) and [safe model API](docs/VRAM-PUBLIC-MODEL-API.md); application selection is still pending |
+| Transaction VRAM development | [Browser controls and handoff behavior](docs/LOGIC-BENDING.md#browser-transaction-vram-integration), [runtime build](docs/VRAM-RUNTIME-BUILD.md) and [model API](docs/VRAM-PUBLIC-MODEL-API.md) |
 | Technical architecture and fault assumptions | [Logic bending](docs/LOGIC-BENDING.md) · [Video output](docs/VIDEO-OUTPUT.md) |
 | Current verified state and experiments | [Development status](docs/DEVELOPMENT-STATUS.md) · [Experiment records](docs/EXPERIMENTS.md) · [RAM trace](docs/RAM-WRITE-TRACE.md) |
 | Roadmap and next work | [ROADMAP.md](ROADMAP.md) · [Work queue](docs/WORK-QUEUE.md) |

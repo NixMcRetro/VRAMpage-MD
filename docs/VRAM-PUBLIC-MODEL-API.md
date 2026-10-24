@@ -55,7 +55,8 @@ diagnostic, alternate-renderer diagnostic and original-renderer reference.
 Runtime-only defines `VRAM_TX_RUNTIME`. Diagnostic builds enable the same runtime
 plus `VRAM_TX_DIAGNOSTIC`; existing diagnostic-only guards remain compatible.
 The [optional runtime builder](VRAM-RUNTIME-BUILD.md) also produces this profile
-through `scripts/build-core.sh runtime`. There is no application selector yet.
+through `scripts/build-core.sh runtime`. The browser now offers explicit model selection through the production
+`site-runtime` profile; see [handoff and export behavior](LOGIC-BENDING.md#browser-transaction-vram-integration).
 The ordinary `scripts/build-core.sh` remains the normal profile.
 
 The generated runtime factory installs these JavaScript-facing methods:

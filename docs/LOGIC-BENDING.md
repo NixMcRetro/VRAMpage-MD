@@ -70,7 +70,8 @@ not a claim that cross-lane electrical shorts cannot occur.
 
 The work-RAM controls are kept separate from the existing VRAM patchbay. Only
 one fault domain is active at a time, so a RAM experiment cannot silently run
-alongside the frame-scoped VRAM approximation. The collapsible RAM panel selects
+alongside a VRAM fault. Frame projection remains the default VRAM model; the
+transaction runtime also offers explicit logical-byte transaction selection. The collapsible RAM panel selects
 an address or data pair and read, write, or both directions; selecting a pair
 does not apply it until **Apply RAM fault** is pressed. The monitor shows
 affected read/write counts, the model frame and activation frame, plus the
@@ -97,8 +98,9 @@ a predictable Sonic outcome. See [the experiment procedure](EXPERIMENTS.md).
 - Chromium 1366×768 actual-core smoke covers cartridge loading, RAM application,
   disconnect, SHA-256 metadata export and clean restart. Native macOS acceptance
   and real-game Firefox/WebKit checks remain outstanding.
-- Keep the existing VRAM fault model frame-scoped. Only work-RAM faults use the
-  new transaction-level model.
+- VRAM transaction controls use the separately reviewed logical-byte model in
+  supported Mega Drive Mode 5; frame projection remains available as fallback.
+  Neither model establishes physical electrical accuracy.
 - Establish the exact NTSC Model 1 board revision and cite board-level pinout
   evidence before making any physical pin-fidelity claim.
 
@@ -125,3 +127,27 @@ mask forces selected address bits low, separately from bridging a pair. A0 is
 preserved for byte lanes, reads do not mutate storage, and aliased writes
 persist. This is a deterministic stuck-low approximation of omitted inputs,
 not a model of floating disconnected wires or a verified physical pinout.
+
+
+## Browser transaction VRAM integration
+
+Choose **Frame projection** or **Transaction** in the VRAM patchbay, then use
+the same address legs and bridge presets. The selector reports support,
+configuration and effectiveness separately. Unsupported modes suspend the
+transaction model; reconnect remains available through a safe fallback. A clean
+restart or new cartridge returns to frame projection with no fault.
+
+The app validates requests before domain handoff and changes settings between
+synchronous emulator ticks. Failed handoffs restore the prior configuration
+where possible and report partial cleanup or rollback failure truthfully.
+Attempted selector changes can reset transaction counters even when settings are
+restored; transition exports record that reset. Active RAM pulses reject VRAM
+fault activation before changing settings or pulse budgets. A rollback failure
+that would leave conflicting faults pauses execution instead of silently
+continuing. Removing a fault does not undo physical VRAM/RAM writes already made.
+
+Experiment exports retain the existing top-level fields and add separate,
+versioned logic and VRAM transaction sections. The latter records actual model,
+support/effectiveness, settings and last-completed-frame byte counters. These are
+not the legacy frame-projection difference counts. Exports contain metadata and
+counts, not ROM or RAM contents. Earlier experiment files remain unchanged.

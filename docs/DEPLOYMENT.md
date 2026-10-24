@@ -136,7 +136,12 @@ after adding package inputs, as source/core tests alone do not validate the ZIP.
 The opt-in `bash scripts/build-core.sh runtime` builds the reviewed
 [model API](VRAM-PUBLIC-MODEL-API.md) in isolated `build/runtime-profile`, with
 matching source, shim and rebuild instructions. See [runtime build instructions](VRAM-RUNTIME-BUILD.md).
-No diagnostic bridges are enabled and the public website/release workflows
-continue using the normal profile. Application controls, experiment exports,
-performance and release acceptance remain future work. Do not enable diagnostic
-exports to ship transaction controls or silently replace an existing release.
+`bash scripts/build-core.sh site-runtime` installs that runtime and matching
+source into the browser site. Production website/release builds use this profile;
+explicit `normal` retains the previous core as a tested frame-model fallback.
+The workflow verifies the normal baseline before installation and tests both
+browser paths. No diagnostic bridges are enabled. Keep the marked runtime source,
+shim, notices and rebuild recipe with the installed binary. Application model
+selection and separate experiment counters use the reviewed runtime API.
+Milestone performance and release acceptance remain required. Do not enable
+diagnostic exports to ship controls or silently replace an existing release.

@@ -5,8 +5,8 @@
 Build the reviewed transaction-model runtime through a reproducible opt-in
 production build path. Reuse the [safe model API](VRAM-PUBLIC-MODEL-API.md),
 reviewed helper and renderer integration. Preserve the default normal JS/WASM binaries,
-static hosting and immutable v0.2.8 download. This stage does not add application
-controls, change experiment exports, publish a release or declare v0.3.0.
+static hosting and immutable v0.2.8 download. The original build-only stage did not add application controls or publish a
+release. The browser integration now uses this reviewed path as described below.
 
 Integration base: `46dcc80a8d561cde4b79453300a2a1bdee3e847c`, merged
 [PR #41](https://github.com/NixMcRetro/VRAMpage-MD/pull/41).
@@ -105,3 +105,15 @@ cached tools and the installed browser. The normal corresponding-source bundle
 adds the helper and shim; only the normal JS/WASM hashes are unchanged.
 Required GitHub checks remain the merge gate. These results do not establish
 runtime performance, native Mac behavior, audible output or physical fidelity.
+
+
+## Browser site profile
+
+`bash scripts/build-core.sh site-runtime` builds the isolated runtime and installs
+its JS/WASM in `site/core`. Matching runtime source, shim, notices and rebuild
+instructions are retained in the marked `site/source/runtime-profile` tree.
+The site then offers frame or transaction selection with the existing chip
+controls. Explicit `normal` remains the fallback production build; it does not
+expose the new runtime selector API. The website/release workflow verifies normal
+baseline hashes and tests both that fallback and the installed runtime in the
+browser before packaging. Diagnostic bridges remain excluded.
