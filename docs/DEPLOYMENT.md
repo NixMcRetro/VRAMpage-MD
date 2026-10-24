@@ -3,7 +3,7 @@
 ## Complete local application release
 
 The normal user download is the single versioned ZIP attached to the
-[VRAMpage-MD v0.3.0 release](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.3.0),
+[VRAMpage-MD v0.4.0 release](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.4.0),
 not GitHub's source archive. It includes START.command, the site, compiled
 JS/WASM, complete modified core source, licence notices and launch instructions.
 It requires Python 3 on the user's Mac but no build tools or Git authentication.
@@ -16,7 +16,7 @@ bash scripts/test.sh
 bash scripts/build-core.sh normal
 bash scripts/build-core.sh site-runtime
 node tests/test_wasm_logic.cjs site/core/genplus.js
-python3 scripts/package-review.py --output /tmp/VRAMpage-MD-v0.3.0-macos.zip
+python3 scripts/package-review.py --output /tmp/VRAMpage-MD-v0.4.0-macos.zip
 ```
 
 Extract and launch the package before attaching it to a GitHub release. Preserve
@@ -28,7 +28,7 @@ artifact is not evidence for a different commit. Keep a SHA-256 checksum beside
 the downloadable ZIP. GitHub Actions artifacts remain useful for CI/review, but
 release assets provide a persistent direct download without nested archives.
 
-To publish without a local upload, run **Publish complete v0.3.0 local download**
+To publish without a local upload, run **Publish complete v0.4.0 local download**
 in GitHub Actions on `main` after its checks pass. It rebuilds and tests the core,
 verifies BUILD-INFO against the run commit, attaches the ZIP/checksum and publishes
 the release using the repository-scoped Actions token. It never accesses

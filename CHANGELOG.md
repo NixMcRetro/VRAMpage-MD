@@ -1,12 +1,13 @@
 # Changelog
 
-## Unreleased: audio development
+## v0.4.0 - audio input bridges
 
 - Add an off-by-default PSG input-data bridge in the optional runtime, before register decoding and synthesis.
 - Add browser pair controls, truthful support/reset status and exact decimal counters in experiment exports; retain clean normal audio and legacy-core fallback.
 - Add an independent FM write-input bridge for YM2612 and YM3438, covering address and data bytes while preserving native port, cycle and busy-status handling. Full sound reset clears it; Z80-only partial reset preserves the configured bridge and counters.
 - Verify original synthetic Z80-to-PSG traffic through BUSREQ/RESET, with exactly three writes and two changed bytes. Compare generated FM samples against matching normal cores for both backends.
-- Keep these changes in development source pending complete v0.4.0 acceptance. The public v0.3.0 download remains unchanged.
+- Verify actual Z80 FM/PSG mixed writes, isolated and simultaneous counters, and exact repeated output for both FM backends. Observe native stereo 44.1 kHz scheduling bounds, pause/resume and a synthetic visibility event.
+- Package the audio-input milestone with matching modified source and Mac launcher. Preserve the original v0.3.0 download. Z80 RAM/arbitration faults, audible/native Mac and physical validation remain outside this release.
 
 ## v0.3.0 - transaction-level VRAM
 

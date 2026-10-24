@@ -1,9 +1,9 @@
 # Versioning policy
 
-Current published milestone: **v0.3.0** (`VERSION` stores `0.3.0`).
-The transaction-VRAM milestone passed its correctness, performance and package
-gates. Development after this tag is identified by its source commit; the
-development PSG/FM audio implementation does not declare or publish the full v0.4.0 milestone. Published versions are listed on [GitHub Releases](https://github.com/NixMcRetro/VRAMpage-MD/releases).
+Current source milestone: **v0.4.0** (`VERSION` stores `0.4.0`).
+The audio-input milestone adds independent PSG/FM bridges and verified Z80 write
+routes. Publish only after final CI and package gates pass. The immutable
+v0.3.0 transaction-VRAM release and all earlier artifacts remain unchanged.
 
 VRAMpage MD is experimental, **not version 2.x**. Use semantic-looking
 `MAJOR.MINOR.PATCH` identifiers with leading `0` until a deliberately

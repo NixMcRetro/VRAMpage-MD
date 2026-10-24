@@ -1,8 +1,8 @@
 # Audio bending
 
-The development runtime models digital write-input bridges for the Mega Drive
-PSG and FM chips. These controls are experimental, off by default, and separate
-from the public v0.3.0 package. They alter chip inputs before synthesis, never
+The v0.4.0 runtime models digital write-input bridges for the Mega Drive
+PSG and FM chips. These controls are experimental, off by default, and absent
+from earlier public packages. They alter chip inputs before synthesis, never
 apply distortion to mixed samples, and do not establish electrical accuracy.
 
 ## Signal paths and ownership
