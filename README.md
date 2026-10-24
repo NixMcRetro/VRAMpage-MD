@@ -1,8 +1,5 @@
 # VRAMpage MD
 
-The v0.4.1 links are staged for publication after final checks. Until then,
-use the [verified v0.4.0 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.0/VRAMpage-MD-v0.4.0-macos.zip).
-
 **Play Sega Mega Drive / Genesis games in your browser and experiment with simulated hardware faults.** VRAMpage MD is an experimental, hardware-informed circuit-bending workbench built from a modified Genesis Plus GX emulator. Supply your own legally usable game cartridge file. No game ROMs are included or uploaded.
 
 > **New here? Start with the Mac download below.** You do not need to know Git, install a developer application or compile an emulator.
@@ -31,6 +28,8 @@ If your Mac blocks `START.command`, right-click it and choose **Open**, or follo
 **v0.4.0:** [audio input bridges](docs/AUDIO-BENDING.md) add independent PSG and FM D0-D7 pair controls, exact counters and experiment metadata. They change future chip-input writes before synthesis. Both the 68000 and Z80 routes are covered by synthetic tests; Z80 RAM/arbitration faults and physical electrical fidelity remain outside this model. Enable sound, choose a pair and apply it. Removing a bridge does not repair prior chip state; use clean restart when needed.
 
 **v0.4.1:** [four compact chip diagrams](docs/CHIP-WORKBENCH.md) keep VRAM, Work RAM, FM and PSG visible together. Click legs to disconnect supported lines or join a pair within that chip. Audio cuts use a new stuck-low input model. [Configuration files](docs/CIRCUIT-CONFIGURATIONS.md) save masks and bridges; loading previews settings before explicit Apply. Older configuration files remain importable.
+
+**Development source after v0.4.1:** coordinated fault removal adds a separate pause-and-disconnect action for every modeled domain. CPU recovery still clears RAM/VRAM faults and preserves audio faults. These unreleased controls are not in the public ZIP above; see [recovery semantics](docs/CPU-RECOVERY.md).
 
 **RAM research:** a [reproducible bounded experiment](docs/RAM-STATUS-FOLLOWUP.md) now shows player-trajectory divergence while recorded demo inputs continue at the same phase. This uses the existing public core and does not establish physical electrical accuracy.
 

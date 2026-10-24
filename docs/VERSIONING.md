@@ -1,8 +1,11 @@
 # Versioning policy
 
-Current source milestone candidate: **v0.4.1** (`VERSION` stores `0.4.1`).
+Current public milestone: **v0.4.1** (`VERSION` stores `0.4.1`).
 It delivers the compact chip workbench, runtime audio line masks and saved
-configurations. Publish only after required CI and complete package checks pass.
+configurations. Later source-only workbench changes are identified by build
+commit metadata and an Unreleased changelog section. Bump versioned labels and
+release inputs together at the next meaningful milestone; never replace the
+existing v0.4.1 ZIP. Publish only after required CI and complete package checks pass.
 The original v0.4.0 audio and v0.3.0 VRAM release artifacts remain unchanged.
 
 VRAMpage MD is experimental, **not version 2.x**. Use semantic-looking

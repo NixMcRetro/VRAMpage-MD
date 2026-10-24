@@ -36,7 +36,7 @@ and [versioning](VERSIONING.md). Status describes evidence, not promised effects
 Configuration slice verified: PR #47 merged `ccc80e12`; PR CI40083076183 and
 main CI40083371467 pass all seven checks. Do not rebuild this completed feature.
 
-## Current user priority: compact chip workbench
+## Completed user priority: compact chip workbench
 
 Show VRAM, Work RAM, FM and PSG together in the existing sidebar as compact
 conceptual chip diagrams. Connections stay within each individual chip, as
@@ -64,7 +64,13 @@ it; extend its strict format only as needed for audio masks, retaining v1 import
 Local verification passes: 107 native/SDK tests, 45 browser logic cases, four
 actual-core cases, three transaction cases and six display cases. Both source
 reviews approve. Required GitHub checks and same-commit package verification
-remain the delivery gate.
+passed. PR #48 is merged as `e579c57`; PR40088693320 and main40089045294
+pass all seven checks. Publication40089373232 passes all four jobs. Fresh public
+v0.4.1 ZIP provenance, SHA-256, 681-entry source/notices, launcher, downloaded
+API/audio and extracted actual-core4/4 plus transaction3/3 checks pass. The
+continuation branch `experiment/chip-workbench-delivery-checkpoint` records
+post-merge evidence; bundle it with the next implementation. No delivery blocker.
+Reuse cached Chromium, WebKit and SDK; see the environment notes linked in status.
 
 After this user priority, resume coordinated fault-disconnect/recovery using
 existing setters and pulse protections, then experiment comparison.
@@ -90,3 +96,20 @@ No minor cosmetic/documentation releases or repeated completed research.
    and record the precise remaining actual-game blocker. Never download a
    commercial ROM or claim synthetic tests satisfy the attract-mode milestone.
 5. Record exact tested commits, evidence and limitations. Preserve earlier results.
+
+## Active bounded task: coordinated removal and recovery
+
+Build on verified public v0.4.1/source `e579c57`. Reuse existing setters and
+native fault semantics; no emulator-core rewrite or new hardware model.
+Luna High implements app controls and focused tests; an independent Luna High
+reviewer checks cancellation, partial failures, state reporting and actual-core
+coverage. Coordinator handles docs, integration and required GitHub gates.
+
+Acceptance: one action pauses and best-effort clears each configured domain;
+no late pulse or key release restores a fault or triggers CPU recovery; failures
+retain successful clears and remain paused; optional legacy APIs are reported
+truthfully; CPU-only controls retain RAM/VRAM clearing and audio preservation;
+exported metadata does not confuse fault removal with a CPU intervention.
+Preserve the small-screen chip budget and existing strict configuration import.
+Run full applicable regression and compiled-core browser checks before merge.
+No public release or version bump for this intermediate workbench slice.

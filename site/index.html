@@ -97,6 +97,10 @@
             <p id="psgChipState" class="chip-state" aria-live="polite">No PSG data fault.</p>
           </section>
         </div>
+        <div class="logic-actions chip-workbench-actions">
+          <button id="disconnectAllFaultsBtn" type="button" disabled title="Pauses emulation and attempts to clear VRAM, work RAM, PSG and FM faults. It does not restart the console.">Disconnect all faults</button>
+        </div>
+        <p id="disconnectAllFaultsStatus" class="logic-status" role="status" aria-live="polite">Load a ROM to disconnect all fault domains.</p>
         <details class="chip-settings" id="vramSettings">
           <summary>VRAM presets, counters and model notes</summary>
           <p id="vramModeHint" class="explain"></p>
@@ -145,7 +149,7 @@
         <button id="logicResumeBtn" type="button" disabled>Disconnect and force resume</button>
         <button id="logicCpuResetBtn" type="button" disabled>CPU-only reset</button>
       </div>
-      <p class="logic-note">Experimental recovery preserves corrupted RAM and may immediately stop again. Both actions disconnect faults. CPU-only reset leaves other chips running. Use Clean restart for a full reboot.</p>
+        <p class="logic-note">CPU recovery disconnects RAM and VRAM faults, leaves PSG/FM faults unchanged, preserves corrupted RAM and may immediately stop again. CPU-only reset leaves other chips running. Use Disconnect all faults to pause and clear each fault domain, or Clean restart for a full reboot.</p>
       <div class="logic-actions pulse-settings">
         <label for="logicPulseFrames">Pulse length</label>
         <select id="logicPulseFrames" disabled aria-label="Pulse limit: emulated frames or affected writes">

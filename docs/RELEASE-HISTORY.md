@@ -1,8 +1,5 @@
 # VRAMpage MD releases and source history
 
-The v0.4.1 links are staged for publication after final checks. Until then,
-use the [verified v0.4.0 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.0/VRAMpage-MD-v0.4.0-macos.zip).
-
 **[Download the current ready-to-run Mac package: v0.4.1](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip)**
 
 For ordinary use, download the complete ZIP, extract it, open **START.command** and load your own legally usable cartridge. Python 3 is required; you do not need Git or WebAssembly build tools. See [Mac launch help](RUNNING-LOCALLY.md).

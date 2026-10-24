@@ -34,3 +34,13 @@ Configuration save/preview/apply must preserve the selected masks as well as
 pairs. Older version 1 configuration files remain importable. Experiment
 exports identify the active audio model and mask without rewriting historical
 records. The original v0.4.0 download remains unchanged; new packages are identified by their version and source commit.
+
+## Development-source coordinated removal
+
+**Disconnect all faults** pauses emulation and attempts every modeled domain,
+including audio masks and pair bridges. It abandons pending leg selections and
+held/momentary restore actions so they cannot reinstate a connection afterward.
+The result reports partial failure rather than claiming every chip is clear.
+This does not reset the CPU or repair earlier corruption. See
+[CPU recovery](CPU-RECOVERY.md) for the distinct actions and pulse limitations.
+The public v0.4.1 download remains unchanged until a later workbench release.

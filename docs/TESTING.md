@@ -974,3 +974,25 @@ An explicit percentage width alone did not fix it and was reverted. The four-chi
 viewport assertion starts at scroll position zero after the shared logic fixture
 opens lower diagnostics. Browser failures, including subtests, are exposed as
 CI annotations when signed job-log downloads are unavailable.
+
+# Coordinated fault removal verification (development source)
+
+The full 107-test Python/native/SDK suite passes with strict native warnings,
+normal ASan/UBSan/LeakSanitizer settings and fresh isolated WASM profiles. No
+core implementation changed. Actual-core Chromium tests configure native
+VRAM/RAM masks and FM/PSG masks, clear them through the new UI, and verify no
+frame advance, CPU recovery or cartridge restart. They also verify separate
+disconnect metadata. The four actual-core cases, three transaction cases and
+six display cases pass.
+
+The interface regressions cover independent partial clears, optional legacy
+APIs, state getters that throw, selectors that throw after changing state,
+held-key restoration cancellation, pending and orphan core pulses, still-armed
+pulses, metadata history resets and memory-only CPU recovery. Chromium runs the
+complete final suite; local WebKit passed the original 55 cases and the three
+new boundary cases separately. Required CI runs the complete suite in Chromium,
+Firefox and WebKit and tests the extracted compiled package before merge.
+
+These are software and original-synthetic-cartridge checks, not native macOS,
+audible output, physical gamepad or electrical-fidelity validation. The public
+v0.4.1 ZIP remains immutable and does not contain this unreleased action.

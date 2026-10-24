@@ -5,7 +5,56 @@ Verified on 24 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
-The v0.4.1 candidate adds a compact 2 by 2 chip workbench: VRAM, Work RAM, FM
+Coordinated all-domain removal is implemented in development source after the
+public v0.4.1 baseline below. It pauses, cancels held/momentary restores and
+pulse callbacks, independently clears available domains and records truthful
+per-domain outcomes in `faultDisconnects`. CPU recovery keeps its existing
+RAM/VRAM clearing and explicitly preserves audio fault configurations. No new
+native model or core implementation is introduced.
+
+Independent Luna High review approves integrated implementation `96f4abd`.
+The 107-test native/SDK suite with normal sanitizers and fresh WASM profiles
+passes. Compiled-core Chromium4/4, transaction3/3 and display6/6 pass. WebKit55
+plus the final three boundary cases and final Chromium interface checks are
+recorded in the current task logs. Required PR/main CI and the same-commit
+review package remain before source integration. No public release is planned
+for this intermediate slice; retain v0.4.1 and its original artifact unchanged.
+Next after verified integration: experiment comparison, then the remaining
+workbench acceptance and stabilisation queue.
+
+
+PR #48 is merged as `e579c571f14b3549a5befa33d9e62ba3f3c9d45b`.
+[PR CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40088693320)
+and [main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40089045294)
+passed all seven checks. The merged source tree is identical to independently
+reviewed head `1878816`. [Publication40089373232](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40089373232)
+passed all four jobs and published **VRAMpage MD v0.4.1** from that exact merge.
+
+The [public complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip)
+was freshly downloaded. Its 681 unique entries, executable launcher, source,
+notices, tag, version and matching root/site build manifests are verified.
+SHA-256: `36133552de9c7dafb9502dea957b6a4934fe4b503d19e311fb898834162ec6fd`.
+Runtime JS/WASM hashes match the reviewed candidate. Downloaded production API,
+PSG/FM mask/pair tone and reset tests pass; extracted Chromium actual-core4/4
+and transaction3/3 pass. The launcher serves complete required asset bodies with
+HTTP200 and exits cleanly on Ctrl+C. No ROM or secret paths/signatures found.
+Local WebKit also passes all six display and 45 logic tests after independent
+probes isolated native Work RAM select overflow. Shorter action labels fix it
+without replacing the control or weakening the overflow checks.
+
+There are no outstanding delivery gates for this feature. Next: coordinated
+fault-disconnect/recovery using existing setters and pulse protections, then
+experiment comparison. Bundle this checkpoint branch with that next implementation;
+do not repeat completed configuration, chip, VRAM or audio work.
+
+Continuation environment notes are `/workspace/scratch/VRAMPAGE-ENVIRONMENT.md`.
+Reuse `/usr/bin/chromium`, the pinned SDK and cached WebKit under
+`/workspace/.cloud-tools/playwright`; do not reinstall them. The local WebKit
+wrapper needs the documented workspace library setup. CI uses its normal system
+libraries. No native Mac, audible or physical testing is claimed.
+
+
+Public v0.4.1 delivers a compact 2 by 2 chip workbench: VRAM, Work RAM, FM
 and PSG/VDP. Pin selections and connections stay within each chip. Existing
 VRAM/Work RAM behavior is reused; runtime FM/PSG data masks add stuck-low cuts
 at the existing write boundaries. Work RAM data bridges remain in advanced
@@ -19,7 +68,7 @@ The actual-core cases exercise both audio chips' masks and import legacy pairs
 back over them. All four chip bodies fit within the 1366 by 768 viewport.
 Configuration schema 2 saves masks and imports schema 1; new audio experiment
 subsections are schema 2 with native model v2. Historical files are unchanged.
-Final package, GitHub CI and publication gates remain before delivery.
+Final package, PR/main CI, publication and fresh public-download checks pass above.
 
 
 Configuration save/preview/apply is merged in [PR #47](https://github.com/NixMcRetro/VRAMpage-MD/pull/47)
@@ -35,14 +84,13 @@ A transient GitHub API HTTP 503 affected status polling only and recovered;
 no failed workflow was hidden or rerun to bypass a failure.
 
 Public v0.4.0 remains unchanged at its original tag/source below. The new
-configuration and chip workbench features are staged together for v0.4.1 in
-[PR #48](https://github.com/NixMcRetro/VRAMpage-MD/pull/48). Do not describe that
-new download as published until its main/publication gates pass. No external
+configuration and chip workbench features are delivered together in public
+v0.4.1 through [PR #48](https://github.com/NixMcRetro/VRAMpage-MD/pull/48). No external
 repository was modified or deployed.
 
 The compact four-chip workbench and native PSG/FM line masks are implemented.
 Resume the work queue's coordinated fault-disconnect/recovery task after the
-requested work passes its remaining delivery gates.
+completed chip workbench. All delivery gates pass above.
 Use existing setters and pulse protections, distinguish memory-only CPU recovery
 from all-domain disconnection and clean restart, and require truthful partial
 failure status. Do not repeat configuration, VRAM or audio implementation.

@@ -9,6 +9,12 @@
 | C, active | Essential saved configurations, reproducible presets, coordinated faults, recovery and experiment comparison |
 | D | Feature freeze, comprehensive crash/regression fixing, browser/audio stability, performance, usability and release candidate |
 
+Phase C already includes saved configuration preview/apply and the compact
+four-chip workbench in public v0.4.1. The current bounded addition is coordinated
+fault removal with explicit partial-failure status, retaining memory-only CPU
+recovery and clean restart as separate actions. Experiment comparison follows.
+Do not repeat the completed configuration or chip integration.
+
 Reuse the merged VRAM engine, API and runtime builder. Focused correctness and
 independent specialist review remain mandatory during implementation; full
 regression and browser verification happen at integration boundaries. Do not
