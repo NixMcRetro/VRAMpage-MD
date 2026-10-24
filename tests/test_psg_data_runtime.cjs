@@ -1,6 +1,8 @@
 'use strict';
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 
 const [runtimePath, normalPath] = process.argv.slice(2).map(value => path.resolve(value));
 if (!runtimePath || !normalPath) throw new Error('Pass runtime and normal genplus.js paths.');
@@ -59,7 +61,31 @@ function nextAudio(core) {
   };
 }
 
+function testUnsignedCounterFacadeBoundaries() {
+  const module = {
+    postRun: [],
+    _set_psg_data_bridge_c: () => 0,
+    _get_psg_data_bridge_version: () => 0,
+    HEAPU8: new Uint8Array([0]),
+    _get_psg_data_bridge_supported: () => 1,
+    _get_psg_data_bridge_enabled: () => 1,
+    _get_psg_data_bridge_a: () => 0,
+    _get_psg_data_bridge_b: () => 7,
+    _get_psg_data_bridge_input_writes: () => -1n,
+    _get_psg_data_bridge_changed_writes: () => -(1n << 63n)
+  };
+  const shim = fs.readFileSync(path.join(__dirname, '../scripts/psg_data_fault_api.js'), 'utf8');
+  vm.runInNewContext(shim, {Module: module});
+  module.postRun[0]();
+  const state = module._get_psg_data_bridge_state();
+  assert.equal(state.inputWrites, '18446744073709551615',
+    'uint64 maximum remains unsigned in the public decimal-string API');
+  assert.equal(state.changedWrites, '9223372036854775808',
+    'uint64 high-bit boundary remains unsigned in the public decimal-string API');
+}
+
 async function main() {
+  testUnsignedCounterFacadeBoundaries();
   const rom = toneCartridge();
   const normal = await createCore(normalPath, rom);
   assert.equal(typeof normal._set_psg_data_bridge, 'undefined',
