@@ -63,9 +63,10 @@ function fmToneCartridge() {
   reg(0x28, 0xf0); // key on channel 0
   words.push(0x303c, 0x7fff); // Let the tone run across frames before Z80 reset.
   const dbra = words.length;
-  words.push(0x51c8, ((dbra * 2) - ((dbra + 2) * 2)) & 0xffff); // DBRA D0, loop
+  words.push(0x51c8, ((dbra * 2) - ((dbra + 1) * 2)) & 0xffff); // DBRA D0, loop
   word(0x00a11200, 0x0000); // Assert Z80 reset after FM writes have been counted.
   word(0x00a11200, 0x0100); // Release it; this is a chip-only partial FM reset.
+  words.push(0x13fc, 0x005a, 0x00ff, 0x0102); // Mailbox marks execution after reset.
   words.push(0x60fe);
   words.forEach((value, index) => view.setUint16(0x800 + index * 2, value));
   [0x4e72, 0x2700, 0x60fe].forEach((value, index) => view.setUint16(0x300 + index * 2, value));
@@ -98,6 +99,12 @@ function fmStatusProbe(core) {
   const base = core._get_logic_ram_ref() >>> 0;
   // The 68K work RAM byte lanes are word-swapped in the exported heap view.
   return [core.HEAPU8[base + 0x101], core.HEAPU8[base + 0x100]];
+}
+
+function fmZ80ResetMarker(core) {
+  const base = core._get_logic_ram_ref() >>> 0;
+  // 68K byte stores use ADDR ^ 1 in the raw heap view.
+  return core.HEAPU8[base + (0x0102 ^ 1)];
 }
 
 function testUnsignedCounterFacadeBoundaries() {
@@ -157,8 +164,12 @@ async function main() {
   assert.equal(active._set_fm_data_bridge(1, 0, 5), 0);
   assert.equal(active._set_psg_data_bridge(1, 1, 7), 0,
     'PSG and FM bridges can be configured independently');
+  assert.equal(fmZ80ResetMarker(active), 0,
+    'post-reset mailbox is empty before the delayed reset instruction executes');
   const psgBeforeFmWrites = active._get_psg_data_bridge_state();
   const changed = nextAudio(active);
+  assert.equal(fmZ80ResetMarker(active), 0,
+    'the delayed Z80-only reset and following mailbox store have not executed yet');
   assert.deepEqual(fmStatusProbe(active), baselineStatus,
     'FM bridge leaves the immediate and delayed busy/status reads unchanged');
   const state = active._get_fm_data_bridge_state();
@@ -177,6 +188,8 @@ async function main() {
   const beforeZ80Reset = active._get_fm_data_bridge_state();
   for (let frame = 0; frame < 5; frame++) nextAudio(active);
   const afterZ80Reset = active._get_fm_data_bridge_state();
+  assert.equal(fmZ80ResetMarker(active), 0x5a,
+    'post-reset mailbox confirms the Z80-only reset executed before counter checks');
   assert.equal(afterZ80Reset.configured, true,
     'Z80-only reset leaves the FM bridge connected');
   assert.equal(afterZ80Reset.inputWrites, beforeZ80Reset.inputWrites,
