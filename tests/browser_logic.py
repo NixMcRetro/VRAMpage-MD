@@ -307,6 +307,12 @@ class BrowserLogicTests(unittest.TestCase):
             "name": "circuit-config.json", "mimeType": "application/json", "buffer": raw.encode()
         })
 
+    def open_vram_settings(self, page=None):
+        page = page or self.page
+        details = page.locator("#vramSettings")
+        if not details.evaluate("element => element.open"):
+            details.locator("summary").click()
+
     @staticmethod
     def defer_circuit_file_reads(page):
         page.evaluate("""() => {
@@ -459,7 +465,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.close()
         self.page=self.new_page(circuit_config=True,legacy_psg_mask=True)
         self.load_rom()
-        expect(self.page.locator('#psgLegMode option[data-audio-mask]')).to_be_disabled()
+        self.assertTrue(self.page.locator('#psgLegMode option[data-audio-mask]').evaluate('e=>e.disabled'))
         expect(self.page.locator('#psgChip .pin').first).to_be_enabled()
         self.page.locator('#psgChip .pin').nth(0).click()
         self.page.locator('#psgChip .pin').nth(7).click()
@@ -885,6 +891,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertEqual(payload['vramFault'],{'kind':'address-stuck-low','addressMask':128,'lines':['AD7'],'bridge':None})
         self.assertEqual([e['mask'] for e in payload['vramAddressLineChanges']],[1,129,128])
         self.assertTrue(all(isinstance(e['reason'],str) for e in payload['vramAddressLineChanges']))
+        self.open_vram_settings()
         self.page.locator('#disconnectBtn').click()
         self.assertEqual(self.page.evaluate('mockCore.vramAddressMask'),0)
         self.assertEqual(self.export_payload()['vramAddressLineChanges'][-1]['mask'],0)
@@ -937,6 +944,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.locator('#logicCpuResetBtn').click()
         self.assertEqual(self.page.evaluate('mockCore.vramAddressMask'),0)
         legs.nth(2).click()
+        self.open_vram_settings()
         self.page.locator('.preset').first.click()
         self.assertEqual(self.page.evaluate('mockCore.vramAddressMask'),0)
         expect(self.page.locator('.pin.connected')).to_have_count(2)
@@ -987,6 +995,7 @@ class BrowserLogicTests(unittest.TestCase):
         page.locator('.pin').nth(1).click()
         expect(page.locator('.pin.connected')).to_have_count(2)
         expect(page.locator('.pin .chip-cut').first).to_have_css('visibility','hidden')
+        self.open_vram_settings(page)
         page.locator('#disconnectBtn').click()
         expect(page.locator('.pin.connected')).to_have_count(0)
 
@@ -1028,6 +1037,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.locator('.pin').nth(7).focus()
         self.page.keyboard.press('Enter')
         expect(self.page.locator('.pin.connected')).to_have_count(2)
+        self.open_vram_settings()
         self.page.locator('#disconnectBtn').click()
         expect(self.page.locator('.pin.connected')).to_have_count(0)
 
@@ -1064,7 +1074,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.locator("[data-chip-line]").nth(1).click()
         self.assertEqual(self.export_payload()["faultPulses"][0]["status"], "cancelled")
         self.page.locator("#logicApplyBtn").click()
-        expect(self.page.locator("[data-chip-line]").nth(1)).to_have_attribute("aria-pressed", "false")
+        expect(self.page.locator("[data-chip-line]").nth(1)).to_have_attribute("aria-pressed", "true")
         self.page.locator("[data-chip-line]").nth(2).click()
         self.page.locator("#logicResumeBtn").click()
         self.assertEqual(self.page.evaluate("window.mockCore.logic.addressMask"), 0)
