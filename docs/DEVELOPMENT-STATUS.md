@@ -1,5 +1,17 @@
 # Development status and continuation checkpoint
 
+## Current user priority — compact RAM pulse and recovery
+
+The user requested CPU reset beside Randomiser, a temporary Work RAM write
+randomiser confined to A11–A15, and no forced pause during all-domain clearing.
+Implementation is isolated on `experiment/workbench-ram-pulse` from checkpoint
+`ffb330f`. The new burst uses the existing eight-affected-write/one-frame limit
+without CPU recovery; the existing advanced forced-resume pulses remain intact.
+Confirmed complete disconnection preserves prior play/pause, while partial or
+unknown outcomes pause for inspection. Reuse existing native code/evidence,
+preserve v0.4.1 and keep McRetro.net untouched. Implementation, independent review
+and required CI remain before integration.
+
 ## PR #51 integration checkpoint — 25 October 2026
 
 [PR #51](https://github.com/NixMcRetro/VRAMpage-MD/pull/51) merged as

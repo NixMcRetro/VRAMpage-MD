@@ -1,5 +1,24 @@
 # Development work queue
 
+## Current user priority: compact CPU reset, RAM burst and running disconnect
+
+Reuse PR #51's verified workbench and checkpoint `ffb330f`. Add **CPU reset**
+next to the Randomiser buttons using the existing memory-clearing/audio-preserving
+CPU-only recovery. Add a separate random **write-only A11–A15 joined pair**,
+limited to eight affected writes with a one-frame maximum. It clears without
+CPU recovery. Refuse existing memory faults/pulses/held contacts rather than
+overwriting them; preserve audio, staged files, pause state and existing advanced
+pulse behavior. Record the chosen pair, limits and explicit no-recovery outcome
+in the existing pulse history. No new native model or claim of lockup-free use.
+
+Remove the upfront pause from **Disconnect all faults**. A confirmed complete
+clear preserves prior play/pause; unsafe partial, failed or unknown state pauses
+before another tick. Keep callback cancellation, successful clears, per-domain
+outcomes and no automatic CPU intervention. Test original advanced pulses and
+recovery alongside these changes, not just new controls. Preserve the compact
+viewport, optional legacy APIs, v0.4.1 release and McRetro.net boundary. Independent
+review, full applicable regression, actual-core checks and PR/main CI remain gates.
+
 ## PR #51 integration checkpoint — 25 October 2026
 
 [PR #51](https://github.com/NixMcRetro/VRAMpage-MD/pull/51) merged as

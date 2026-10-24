@@ -1,6 +1,6 @@
 # Short RAM fault pulses
 
-**Pulse selected fault → force resume** applies the current RAM pair/direction
+The advanced **Pulse selected fault → force resume** control applies the current RAM pair/direction
 for 1, 2, 4 or 8 emulated frames, then disconnects the fault and attempts forced
 CPU resume. One NTSC frame is approximately 17 ms at normal playback speed.
 These are frame-length contacts, not per-access or cycle-accurate pulses. A
@@ -24,6 +24,31 @@ pairs. See [Affected-write pulses](ACCESS-LIMITED-PULSES.md) for cutoff semantic
 export reasons and the longword-hook correction. The frame options below remain.
 
 ## Timing, interruption and recording
+
+### Development-source A11–A15 random write pulse
+
+The compact workbench's **RAM pulse** control chooses one distinct joined pair
+from **A11–A15**, on **writes only**. Each click is limited to **eight affected
+writes**, with a **one-emulated-frame maximum**. These are logical address-line
+bridges, not writes to particular numeric RAM locations. The original advanced
+pulse controls retain their selected limits and force-resume behavior.
+
+This new burst disconnects at completion without issuing CPU recovery. Use the
+nearby **CPU reset** explicitly when wanted. Starting and completing it preserve
+the app's pause state; when paused, it waits for emulated ticks after Resume.
+Existing RAM/VRAM faults, active pulses and held contacts must be cleared or
+released first rather than silently replaced. FM/PSG settings remain unchanged.
+Disconnect all faults, CPU reset, cartridge replacement and clean restart cancel
+the pending burst so it cannot trigger later recovery or restore a fault.
+
+Download experiment JSON to retain the chosen pair, write/frame limits, result
+and no-recovery metadata in `faultPulses`. Stable configuration files do not
+store pulses. The A11–A15 restriction and short duration do not guarantee that
+gameplay continues or that prior corruption is repaired. Reuse the existing
+bounded-write model; no additional hardware model or game-specific edits are
+introduced.
+
+### Existing advanced pulse behavior
 
 The frontend checks completion immediately after each emulator tick, before the
 next tick can run, including when animation catch-up executes multiple ticks.

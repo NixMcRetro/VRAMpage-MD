@@ -1042,3 +1042,21 @@ unreadable pulse state and held-bridge restoration after refusal. A first full
 64-case run had one nondeterministic test expectation; it was replaced with an
 explicit mode choice, and the failed log remains under `/workspace/scratch/randomise`.
 The native/SDK107 and source script pass with unchanged native model code.
+
+# Compact RAM burst and recovery acceptance (development source)
+
+Force deterministic endpoints within A11–A15 (zero-based 10–14), writes only,
+eight affected writes maximum and one-frame expiry. Assert that completion
+disconnects without a CPU intervention; the existing advanced pulse controls
+must retain their forced-resume behavior. Cover paused/no-write expiry, missing
+APIs, overlap/held-contact refusal, cancellation by disconnect/reset/new-ROM,
+setter/release failures, truthful pulse/export metadata and audio isolation.
+
+Verify the compact CPU reset invokes the existing CPU-only action, preserves
+RAM contents/audio faults and app pause state, and cancels pending work without
+late callbacks. Successful all-domain disconnection must preserve running and
+paused states; failed, partial or unverified results must remain inspectable
+and pause before another tick, without discarding successful clears. Update
+old always-paused assertions to test these requested semantics explicitly.
+Run the applicable complete source/browser suite and actual compiled core,
+retaining normal sanitizers and the four-chip/compact-controls viewport checks.
