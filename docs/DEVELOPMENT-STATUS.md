@@ -1,5 +1,23 @@
 # Development status and continuation checkpoint
 
+## PR #49 integration checkpoint — 25 October 2026
+
+[PR #49](https://github.com/NixMcRetro/VRAMpage-MD/pull/49) merged as
+`1bb92a5d6055f78b8d002c45f6d3b9102adac5c7` after all seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40094544657)
+passed on reviewed head `a6a3f34a3cb69dde813d04ec711b346f01386236`.
+All seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40104216774)
+passed, including source, three-browser interfaces, compiled-core/package and
+packaged Firefox/WebKit. The merge tree exactly matches the reviewed head.
+The original v0.4.1 release metadata, tag and asset digests remain unchanged;
+McRetro.net was not modified or deployed. No integration blocker remains.
+Next bounded task: experiment comparison. Preserve this checkpoint with the
+next implementation rather than opening a documentation-only PR.
+Shell Git fetch was unavailable because the executor proxy could not connect;
+latest remote main/PR/CI were fetched through the connected GitHub API.
+No additional local/native Mac, audible or physical checks were run.
+
+
 Verified on 24 October 2026. Read [work queue](WORK-QUEUE.md),
 [versioning](VERSIONING.md), [testing](TESTING.md) and [roadmap](../ROADMAP.md).
 
