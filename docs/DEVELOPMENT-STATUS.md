@@ -1,5 +1,15 @@
 # Development status and continuation checkpoint
 
+## Current user priority — Randomiser
+
+The user requested **Randomiser** followed by independent **PSG**, **FM** and
+**VRAM** buttons. Implementation is isolated on `experiment/random-chip-faults`
+from checkpoint `d44c063`, with documentation in a separate worktree. Reuse the
+verified models and apply paths; preserve Work RAM and every unselected chip.
+This user request precedes the combined workbench acceptance task below. No
+native model, version bump, public release or McRetro.net deployment is planned.
+Implementation, independent review and required CI remain before integration.
+
 ## PR #50 integration checkpoint — 25 October 2026
 
 [PR #50](https://github.com/NixMcRetro/VRAMpage-MD/pull/50) merged as

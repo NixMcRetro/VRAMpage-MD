@@ -1020,3 +1020,15 @@ scroll it in 40-pixel steps and game/fault hotkeys do not reach the emulator.
 Native ArrowDown left the focused overflowing region unchanged in local
 Chromium and WebKit, so the focused handler provides the small explicit scroll
 fallback. Three focused comparison cases pass in each browser on `2d29d0a`.
+
+# Chip-local Randomiser acceptance (development source)
+
+Control tests must force both random modes and endpoint/mask boundaries rather
+than depend on probabilistic outcomes. A button changes only its selected chip;
+assert the other native setter calls/settings and Work RAM are unchanged. VRAM
+retains its model and refuses unsafe memory handoffs or held contacts. Legacy
+bridge-only and unsupported APIs must be explicit, and rejected/throwing setters
+must not claim success or silently resume a paused emulator. Verify existing
+configuration/experiment exports and staged-preview preservation, keyboard
+activation, compact layout and the actual compiled runtime. Reuse unchanged
+core correctness evidence; record executed results in the final checkpoint.

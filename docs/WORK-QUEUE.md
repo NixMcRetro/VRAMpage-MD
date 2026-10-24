@@ -1,5 +1,22 @@
 # Development work queue
 
+## Current user priority: chip-local Randomiser
+
+Add a compact **Randomiser** label followed by **PSG**, **FM**, **VRAM** buttons,
+as explicitly requested. Each button selects cuts or a distinct joined pair
+within its own chip using the existing models. Preserve the other chips, Work
+RAM, selected VRAM model, staged configuration and ordinary play/pause state.
+Do not add cross-chip links, another fault model, intensity controls or a new
+export format. Existing configurations/exports must capture the chosen state.
+
+Acceptance: deterministic tests cover both modes, valid endpoints/nonzero masks,
+chip isolation, RAM/pulse/held-contact guards, bridge-only and unavailable APIs,
+rejected/trapped setters, truthful state, configuration/export round trips,
+keyboard operation and the compact viewport. Reuse unchanged native/core
+evidence and run applicable full regression and actual-core checks. Independent
+specialist review and passing PR/main CI remain required. Preserve v0.4.1 and
+McRetro.net; return to combined workbench acceptance after this requested slice.
+
 ## PR #50 integration checkpoint — 25 October 2026
 
 [PR #50](https://github.com/NixMcRetro/VRAMpage-MD/pull/50) merged as
