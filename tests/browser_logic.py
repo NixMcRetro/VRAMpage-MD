@@ -52,7 +52,7 @@ class BrowserLogicTests(unittest.TestCase):
             context.close()
         self.assertEqual(self.errors, [], "Uncaught application errors")
 
-    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False):
+    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False):
         context = self.browser.new_context(
             viewport={"width": 1366, "height": 768},
             color_scheme="light",
@@ -67,6 +67,10 @@ class BrowserLogicTests(unittest.TestCase):
             page.add_init_script("window.__legacyPsgDataCore = true;")
         if legacy_fm_data:
             page.add_init_script("window.__legacyFmDataCore = true;")
+        if legacy_psg_mask:
+            page.add_init_script("window.__legacyPsgMaskCore = true;")
+        if legacy_fm_mask:
+            page.add_init_script("window.__legacyFmMaskCore = true;")
         if legacy_vram_chip:
             page.add_init_script("window.__legacyVramChipCore = true;")
         if legacy_chip:
@@ -283,15 +287,16 @@ class BrowserLogicTests(unittest.TestCase):
         return json.loads(Path(info.value.path()).read_text())
 
     @staticmethod
-    def circuit_configuration(vram_pair=None, vram_mask=0, model_id=1, ram=None, psg=None, fm=None):
+    def circuit_configuration(vram_pair=None, vram_mask=0, model_id=1, ram=None, psg=None, fm=None, psg_mask=0, fm_mask=0):
+        audio = lambda pair, mask: {"pair": pair, "dataMask": mask}
         return {
             "format": "vrampage-md-circuit-config",
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "configuration": {
                 "vram": {"modelId": model_id, "mask": vram_mask, "pair": vram_pair},
                 "ram": ram,
-                "psg": psg,
-                "fm": fm,
+                "psg": audio(psg, psg_mask),
+                "fm": audio(fm, fm_mask),
             },
         }
 
@@ -367,6 +372,116 @@ class BrowserLogicTests(unittest.TestCase):
                          "applying an identical configuration skips selectors and preserves counters")
         self.assertEqual(self.page.evaluate("mockCore.psg.inputWrites"), "42")
         self.assertEqual(self.page.evaluate("mockCore.fm.inputWrites"), "27")
+
+    def test_chip_workbench_shows_four_compact_chips_at_mac_viewport(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        bodies=self.page.evaluate("""() => ['#pinGrid .chip-middle','#ramChip .ram-chip-body',
+          '#fmChip .chip-middle','#psgChip .chip-middle'].map(selector=>{
+            const r=document.querySelector(selector).getBoundingClientRect();
+            return {selector,top:r.top,bottom:r.bottom,width:r.width,height:r.height};
+          })""")
+        self.assertEqual(len(bodies),4)
+        for body in bodies:
+            self.assertGreater(body['width'],50,body)
+            self.assertGreater(body['height'],20,body)
+            self.assertGreaterEqual(body['top'],0,body)
+            self.assertLessEqual(body['bottom'],768,body)
+        for selector in ('#ramChip [data-chip-line]','#pinGrid .pin','#fmChip .pin','#psgChip .pin'):
+            self.assertGreaterEqual(self.page.locator(selector).first.evaluate('el=>el.getBoundingClientRect().height'),24)
+
+    def test_audio_chip_inputs_are_independent_and_masks_replace_pairs(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        self.page.locator('#psgChip .pin').nth(0).click()
+        self.page.locator('#fmChip .pin').nth(1).click()
+        self.assertEqual(self.page.evaluate('[mockCore.psg.configured,mockCore.fm.configured]'),[False,False],
+                         'a first selection stays local to its chip')
+        self.page.locator('#psgChip .pin').nth(7).click()
+        self.assertEqual(self.page.evaluate('[mockCore.psg.bridgeA,mockCore.psg.bridgeB]'),[0,7])
+        self.assertFalse(self.page.evaluate('mockCore.fm.configured'))
+        self.page.locator('#fmChip .pin').nth(6).click()
+        self.assertEqual(self.page.evaluate('[mockCore.fm.bridgeA,mockCore.fm.bridgeB]'),[1,6])
+
+        self.page.locator('#psgLegMode').select_option('ground')
+        self.page.locator('#psgChip .pin').nth(0).click()
+        self.page.locator('#psgChip .pin').nth(7).click()
+        self.assertEqual(self.page.evaluate('[mockCore.psg.configured,mockCore.psg.bridgeA,mockCore.psg.dataMask]'),[True,-1,129])
+        self.assertTrue(self.page.evaluate('mockCore.fm.configured'))
+        self.page.locator('#fmLegMode').select_option('ground')
+        self.page.locator('#fmChip .pin').nth(3).click()
+        self.assertEqual(self.page.evaluate('[mockCore.fm.bridgeA,mockCore.fm.dataMask]'),[-1,8])
+        self.assertEqual(self.page.evaluate('mockCore.psg.dataMask'),129)
+
+        self.page.evaluate("mockCore.psg.inputWrites='91';mockCore.fm.inputWrites='37'")
+        calls=self.page.evaluate('[mockCore.vramModel.calls.length,mockCore.logic.setterCalls.length,mockCore.psg.calls.length,mockCore.fm.calls.length,mockCore.psg.maskCalls.length,mockCore.fm.maskCalls.length]')
+        with self.page.expect_download() as info:
+            self.page.locator('#circuitConfigDownload').click()
+        saved=json.loads(Path(info.value.path()).read_text())
+        self.assertEqual(saved['schemaVersion'],2)
+        self.assertEqual(saved['configuration']['psg'],{'pair':None,'dataMask':129})
+        self.assertEqual(saved['configuration']['fm'],{'pair':None,'dataMask':8})
+        experiment=self.export_payload()
+        self.assertEqual(experiment['psgInputFault']['dataMask'],129)
+        self.assertEqual(experiment['fmInputFault']['dataMask'],8)
+        self.assertEqual(self.page.evaluate('[mockCore.psg.configured,mockCore.psg.bridgeA,mockCore.psg.bridgeB,mockCore.psg.dataMask,mockCore.fm.configured,mockCore.fm.bridgeA,mockCore.fm.bridgeB,mockCore.fm.dataMask]'),
+                         [True,-1,-1,129,True,-1,-1,8])
+        self.stage_circuit_file(saved)
+        self.page.locator('#circuitConfigApply').click()
+        self.assertEqual(self.page.evaluate('[mockCore.vramModel.calls.length,mockCore.logic.setterCalls.length,mockCore.psg.calls.length,mockCore.fm.calls.length,mockCore.psg.maskCalls.length,mockCore.fm.maskCalls.length]'),
+                         calls, 'identical config should not invoke any setter')
+        expect(self.page.locator('#circuitConfigStatus')).to_contain_text('already matches')
+        self.assertEqual(self.page.evaluate('[mockCore.vramModel.calls.length,mockCore.logic.setterCalls.length,mockCore.psg.calls.length,mockCore.fm.calls.length,mockCore.psg.maskCalls.length,mockCore.fm.maskCalls.length]'),calls)
+        self.assertEqual(self.page.evaluate('[mockCore.psg.inputWrites,mockCore.fm.inputWrites]'),['91','37'])
+
+    def test_pair_selections_stay_local_to_each_chip(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        self.page.locator('#ramLegAction').select_option('bridge')
+        self.page.locator('#ramChip [data-chip-line]').nth(0).click()
+        self.page.locator('#psgChip .pin').nth(0).click()
+        self.page.locator('#fmChip .pin').nth(2).click()
+        self.assertEqual(self.page.evaluate('[mockCore.logic.active,mockCore.psg.configured,mockCore.fm.configured]'),
+                         [False,False,False], 'one leg on each bank is only a local pending selection')
+        self.page.locator('#ramChip [data-chip-line]').nth(2).click()
+        self.assertEqual(self.page.evaluate('[mockCore.logic.config.kind,mockCore.logic.config.a,mockCore.logic.config.b]'),[1,0,2])
+        self.assertEqual(self.page.evaluate('[mockCore.psg.configured,mockCore.fm.configured]'),[False,False])
+        self.page.locator('#psgChip .pin').nth(7).click()
+        self.page.locator('#fmChip .pin').nth(6).click()
+        self.assertEqual(self.page.evaluate('[mockCore.psg.bridgeA,mockCore.psg.bridgeB,mockCore.fm.bridgeA,mockCore.fm.bridgeB]'),
+                         [0,7,2,6])
+        self.assertEqual(self.page.evaluate('[mockCore.logic.config.a,mockCore.logic.config.b]'),[0,2])
+
+    def test_audio_mask_unavailable_keeps_pair_bridge_mode_available(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True,legacy_psg_mask=True)
+        self.load_rom()
+        expect(self.page.locator('#psgLegMode option[data-audio-mask]')).to_be_disabled()
+        expect(self.page.locator('#psgChip .pin').first).to_be_enabled()
+        self.page.locator('#psgChip .pin').nth(0).click()
+        self.page.locator('#psgChip .pin').nth(7).click()
+        self.assertEqual(self.page.evaluate('[mockCore.psg.bridgeA,mockCore.psg.bridgeB]'),[0,7])
+        self.assertEqual(self.page.locator('#psgLegMode').input_value(),'bridge')
+
+    def test_circuit_config_imports_v1_pairs_and_preflights_mask_capability(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True,legacy_psg_mask=True)
+        self.load_rom()
+        old={"format":"vrampage-md-circuit-config","schemaVersion":1,"configuration":{
+            "vram":{"modelId":1,"mask":0,"pair":None},"ram":None,"psg":[0,7],"fm":None}}
+        self.stage_circuit_file(old)
+        self.page.locator('#circuitConfigApply').click()
+        self.assertEqual(self.page.evaluate('[mockCore.psg.bridgeA,mockCore.psg.bridgeB]'),[0,7])
+        requested=self.circuit_configuration(vram_pair=[1,5],psg_mask=128)
+        before=self.page.evaluate('[mockCore.vramModel.calls.length,mockCore.psg.calls.length]')
+        self.stage_circuit_file(requested)
+        self.page.locator('#circuitConfigApply').click()
+        expect(self.page.locator('#circuitConfigStatus')).to_contain_text('does not support the requested PSG input cuts')
+        self.assertEqual(self.page.evaluate('[mockCore.vramModel.calls.length,mockCore.psg.calls.length]'),before,
+                         'missing mask capability is rejected before VRAM or PSG mutation')
 
     def test_circuit_config_rejects_invalid_unsupported_and_pulse_before_mutation(self):
         self.page.close()
@@ -475,8 +590,8 @@ class BrowserLogicTests(unittest.TestCase):
         with self.page.expect_download() as info:
             self.page.locator("#circuitConfigDownload").click()
         saved = json.loads(Path(info.value.path()).read_text())
-        self.assertEqual(saved["configuration"]["psg"], [0, 7])
-        self.assertEqual(saved["configuration"]["fm"], [1, 6])
+        self.assertEqual(saved["configuration"]["psg"], {"pair":[0,7],"dataMask":0})
+        self.assertEqual(saved["configuration"]["fm"], {"pair":[1,6],"dataMask":0})
         self.stage_circuit_file(saved)
         self.page.locator("#circuitConfigApply").click()
         expect(self.page.locator("#circuitConfigStatus")).to_contain_text("already matches")

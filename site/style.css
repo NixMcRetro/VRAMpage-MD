@@ -333,3 +333,51 @@ footer { padding-top:9px; font-size:10px; }
 .circuit-config-preview { max-height:220px; overflow:auto; padding:10px; border:1px solid var(--rule); border-radius:5px; background:var(--surface); white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace; }
 .pin.cut { color:var(--accent); background:var(--surface); border-color:var(--rule); }
 .pin.cut .chip-cut { visibility:visible; }
+
+/* One compact workbench keeps the four modeled IC groups visible together. */
+.chip-workbench { min-width:0; }
+.chip-workbench-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.chip-card { min-width:0; padding:8px; border:1px solid var(--rule); background:var(--surface); }
+.chip-card h2 { display:flex; flex-direction:column; gap:1px; margin:0 0 5px; font-size:12px; line-height:1.15; }
+.chip-card h2 small { color:var(--muted); font:10px ui-monospace,SFMono-Regular,Consolas,monospace; }
+.chip-compact-control { display:flex; align-items:center; justify-content:space-between; gap:4px; margin:3px 0; color:var(--muted); font-size:10px; }
+.chip-compact-control select { min-width:0; max-width:72%; padding:3px 4px; border:1px solid var(--rule); border-radius:2px; background:var(--surface); color:var(--ink); font:10px ui-monospace,SFMono-Regular,Consolas,monospace; }
+.chip-workbench .pin-grid, .chip-workbench .ram-chip, .data-chip {
+  display:grid; grid-template-columns:38px minmax(48px,1fr) 38px; gap:0; padding:0;
+  position:relative; isolation:isolate; width:100%; max-width:100%; margin:3px auto;
+}
+.chip-workbench .pin-grid { grid-template-rows:repeat(4,24px); }
+.chip-workbench .ram-chip { grid-template-rows:repeat(8,24px); max-width:100%; }
+.chip-workbench .chip-middle, .chip-workbench .ram-chip-body, .data-chip .chip-middle {
+  grid-column:1 / -1; margin:0 7px; padding:6px 18px; border:2px solid var(--ink);
+  border-radius:4px; background:var(--surface-2); color:var(--ink); z-index:-1;
+}
+.chip-workbench .chip-middle { grid-row:1 / span 4; justify-content:center; }
+.chip-workbench .ram-chip-body { grid-row:1 / span 8; gap:3px; padding:6px 16px; }
+.chip-workbench .chip-middle strong, .chip-workbench .ram-chip-body strong { font-size:11px; letter-spacing:0; color:var(--ink); }
+.chip-workbench .chip-middle span, .chip-workbench .ram-chip-body span, .chip-workbench .ram-chip-body small { font-size:8px; letter-spacing:0; line-height:1.2; color:var(--muted); }
+.chip-workbench .chip-pin, .chip-workbench .pin, .data-chip .pin {
+  min-height:24px; padding:0 1px; gap:1px; font-size:9px; line-height:1;
+}
+.chip-workbench .chip-signal { width:20px; font-size:9px; }
+.chip-workbench .chip-wire { flex:0 0 12px; min-width:12px; }
+.chip-workbench .chip-cut { font-size:16px; line-height:16px; }
+.data-chip { grid-template-rows:repeat(4,24px); }
+.data-chip .chip-middle { grid-row:1 / span 4; display:flex; align-items:center; justify-content:center; text-align:center; }
+.data-chip .chip-middle strong { font-size:10px; letter-spacing:0; }
+.data-chip .chip-middle span { color:var(--muted); font:8px ui-monospace,SFMono-Regular,Consolas,monospace; }
+.chip-workbench .pin.selected { background:var(--surface); color:var(--ink); border-color:var(--ink); }
+.chip-workbench .pin.cut, .chip-workbench .pin.bridged { color:var(--accent); background:var(--surface); border-color:var(--accent); }
+.chip-state { min-height:1.25em; margin:2px 0 0; color:var(--muted); font:9px/1.25 ui-monospace,SFMono-Regular,Consolas,monospace; overflow-wrap:anywhere; }
+.chip-card > button { align-self:stretch; min-height:26px; margin-top:3px; padding:4px; font-size:10px; }
+.chip-settings { margin-top:8px; border:1px solid var(--rule); background:var(--surface); }
+.chip-settings summary { padding:7px 9px; cursor:pointer; color:var(--muted); font-size:11px; }
+.chip-settings .explain { padding:5px 9px; font-size:10px; }
+.chip-settings .presets-head { padding:5px 9px; }
+.chip-settings .preset-grid { padding-inline:9px; }
+.chip-settings .metrics { margin:7px 9px 0; }
+.chip-settings .notice { margin:8px 9px; padding:6px 8px; font-size:10px; }
+.chip-workbench .ram-chip .chip-pin { min-height:24px; }
+@media (max-width:420px) {
+  .chip-workbench-grid { grid-template-columns:1fr; }
+}

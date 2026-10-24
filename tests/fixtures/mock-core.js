@@ -9,8 +9,8 @@ window.Module = async () => {
     reads: 0, writes: 0, frame: 0, activationFrame: 0, cpuFlags: 0,
     setterCalls: [], storedWrites: 0, recoveries: [], pulseState: 0, budget: 0, writesPerTick: 1, addressMask:0,
   };
-  const psg = {configured:false,bridgeA:-1,bridgeB:-1,supported:true,inputWrites:'0',changedWrites:'0',calls:[]};
-  const fm = {configured:false,bridgeA:-1,bridgeB:-1,supported:true,inputWrites:'0',changedWrites:'0',calls:[]};
+  const psg = {configured:false,bridgeA:-1,bridgeB:-1,dataMask:0,supported:true,inputWrites:'0',changedWrites:'0',calls:[],maskCalls:[]};
+  const fm = {configured:false,bridgeA:-1,bridgeB:-1,dataMask:0,supported:true,inputWrites:'0',changedWrites:'0',calls:[],maskCalls:[]};
   const vramModel = {modelId:1,mask:0,bridgeA:-1,bridgeB:-1,supportedModelsMask:7,calls:[]};
   window.mockCore = {starts: 0, ticks: 0, lastStartTick: 0, short: [-1, -1], vramAddressMask:0,
     vramMaskCalls:[], inputs: [], logic, psg, fm, vramModel};
@@ -75,7 +75,7 @@ window.Module = async () => {
       window.mockCore.starts++;
       resetLogic();window.mockCore.short=[-1,-1];window.mockCore.vramAddressMask=0;
       Object.assign(vramModel,{modelId:1,mask:0,bridgeA:-1,bridgeB:-1});
-      for (const state of [psg,fm]) Object.assign(state,{configured:false,bridgeA:-1,bridgeB:-1,inputWrites:'0',changedWrites:'0'});
+      for (const state of [psg,fm]) Object.assign(state,{configured:false,bridgeA:-1,bridgeB:-1,dataMask:0,inputWrites:'0',changedWrites:'0'});
       window.mockCore.lastStartTick = window.mockCore.ticks;
     },
     _tick() {
@@ -139,15 +139,22 @@ window.Module = async () => {
         }
         if (window.mockCore.rejectPsgBridge) return 1;
         if (enabled && (!psg.supported || a<0 || b<0 || a>7 || b>7 || a===b)) return 2;
-        Object.assign(psg,{configured:!!enabled,bridgeA:enabled?a:-1,bridgeB:enabled?b:-1,
+        Object.assign(psg,{configured:!!enabled,bridgeA:enabled?a:-1,bridgeB:enabled?b:-1,dataMask:0,
           inputWrites:'0',changedWrites:'0'});
         return 0;
       },
       _get_psg_data_bridge_state:()=>{
         if(window.mockCore.throwPsgState) throw new Error('synthetic PSG state trap');
-        return {...psg,modelVersion:'psg-data-bridge-test-v1'};
+        return {...psg,modelVersion:'psg-data-bridge-test-v2'};
       }
     });
+    if (!window.__legacyPsgMaskCore) core._set_psg_data_mask=mask=>{
+      psg.maskCalls.push(mask);
+      if (!Number.isInteger(mask)||mask<0||mask>255) return 1;
+      if (mask&&!psg.supported) return 2;
+      Object.assign(psg,{configured:!!mask,bridgeA:-1,bridgeB:-1,dataMask:mask,inputWrites:'0',changedWrites:'0'});
+      return 0;
+    };
   }
   if (window.__circuitConfigCore && !window.__legacyFmDataCore) {
     Object.assign(core, {
@@ -155,12 +162,19 @@ window.Module = async () => {
         fm.calls.push([enabled,a,b]);
         if (window.mockCore.rejectFmBridge) return 1;
         if (enabled && (!fm.supported || a<0 || b<0 || a>7 || b>7 || a===b)) return 2;
-        Object.assign(fm,{configured:!!enabled,bridgeA:enabled?a:-1,bridgeB:enabled?b:-1,
+        Object.assign(fm,{configured:!!enabled,bridgeA:enabled?a:-1,bridgeB:enabled?b:-1,dataMask:0,
           inputWrites:'0',changedWrites:'0'});
         return 0;
       },
-      _get_fm_data_bridge_state:()=>({...fm,modelVersion:'fm-data-bridge-test-v1'})
+      _get_fm_data_bridge_state:()=>({...fm,modelVersion:'fm-data-bridge-test-v2'})
     });
+    if (!window.__legacyFmMaskCore) core._set_fm_data_mask=mask=>{
+      fm.maskCalls.push(mask);
+      if (!Number.isInteger(mask)||mask<0||mask>255) return 1;
+      if (mask&&!fm.supported) return 2;
+      Object.assign(fm,{configured:!!mask,bridgeA:-1,bridgeB:-1,dataMask:mask,inputWrites:'0',changedWrites:'0'});
+      return 0;
+    };
   }
   if (!window.__legacyLogicCore) {
     // Expose the same setter on the instrumentation object so tests can
