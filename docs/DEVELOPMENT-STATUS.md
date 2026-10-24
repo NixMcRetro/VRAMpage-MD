@@ -48,7 +48,10 @@ pass. Independent specialist review approved the final patch-drift guards, actua
 WASM behavior and exact counter ABI. The full integrated 103-test suite passes
 with normal LeakSanitizer, fresh WASM and production profile switching; final
 actual-core Chromium and transaction tests pass. Required CI remains the merge
-gate, including packaged audio/controls in Firefox and WebKit.
+gate, including packaged audio/controls in Firefox and WebKit; see
+[PR #44](https://github.com/NixMcRetro/VRAMpage-MD/pull/44). Its first CI found
+an isolated diagnostic staging dependency omission. The reviewed manifest fix
+passes focused checks and fresh store-origin/VBlank actual-WASM suites.
 
 Keep v0.3.0 as the public milestone. Next audio work is YM2612 and verified Z80
 paths before calling v0.4.0 complete; do not release a partial audio slice under

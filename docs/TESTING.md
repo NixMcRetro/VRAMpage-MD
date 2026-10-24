@@ -11,6 +11,13 @@ throwing optional state getters, editing active pair drafts, export and reset.
 The full 103-test integrated suite passes with normal LeakSanitizer, fresh WASM
 and production profile switching. Final Chromium core and transaction suites
 pass. Required CI also exercises packaged audio controls in Firefox/WebKit.
+The first CI build exposed missing PSG helpers in the existing isolated RAM
+diagnostic staging list. The shared helper/provenance manifest now includes them;
+four focused contract checks and freshly compiled store-origin (9 groups) and
+VBlank-wait (18 groups) WASM tests pass independently. Historical evidence is
+unchanged. [PR #44](https://github.com/NixMcRetro/VRAMpage-MD/pull/44) tracks the
+feature and required final checks.
+
 Z80-origin PSG traffic, audible
 output and physical electrical fidelity are not claimed. This is a bounded
 unreleased audio feature, not full v0.4.0 acceptance.
