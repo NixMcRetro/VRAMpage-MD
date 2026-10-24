@@ -355,6 +355,8 @@ class VramTransactionWasm(unittest.TestCase):
                  str(runtime_paths[0])], cwd=fixture)
         command(["node", str(fixture / "tests/test_psg_data_runtime.cjs"),
                  str(runtime_paths[0]), str(normal_paths[0])], cwd=fixture)
+        command(["node", str(fixture / "tests/test_z80_psg_runtime.cjs"),
+                 str(runtime_paths[0]), str(normal_paths[0])], cwd=fixture)
         command(["node", str(fixture / "tests/test_fm_data_runtime.cjs"),
                  str(runtime_paths[0]), str(normal_paths[0])], cwd=fixture)
 

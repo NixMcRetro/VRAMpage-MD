@@ -577,6 +577,7 @@ def patch_fm_data_fault(source: str) -> str:
         if (source.count(FM_INCLUDE_AFTER) == 1 and source.count(FM_ADAPTER) == 1 and
                 source.count(FM_RESET_AFTER) == 1 and
                 all(source.count(f'FM_WRITE_HANDLER({name});') == 1 for name in FM_HANDLERS) and
+                source.replace(FM_ADAPTER, '', 1).count('FM_WRITE_HANDLER(') == len(FM_HANDLERS) and
                 all(source.count(f'fm_write = {name};') == 0 for name in FM_HANDLERS) and
                 source.replace(FM_ADAPTER, '', 1).count('fm_write =') == 0 and
                 source.count('fm_data_fault_runtime_') == 2 and
@@ -602,6 +603,7 @@ def patch_fm_data_fault(source: str) -> str:
     if (source.count(FM_INCLUDE_AFTER) != 1 or source.count(FM_ADAPTER) != 1 or
             source.count(FM_RESET_AFTER) != 1 or
             not all(source.count(f'FM_WRITE_HANDLER({name});') == 1 for name in FM_HANDLERS) or
+            source.replace(FM_ADAPTER, '', 1).count('FM_WRITE_HANDLER(') != len(FM_HANDLERS) or
             source.count('#if defined(VRAM_TX_RUNTIME)') != 3 or
             source.count('fm_data_fault_runtime_') != 2 or
             source.count('fm_data_fault_') != 2):

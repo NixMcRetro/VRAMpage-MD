@@ -51,6 +51,9 @@ class FmDataFaultHelper(unittest.TestCase):
             patched.replace('FM_WRITE_HANDLER(OPLL2413_Write);', 'fm_write = OPLL2413_Write;', 1),
             patched.replace('FM_WRITE_HANDLER(YM2413_Write);', 'fm_write = YM2413_Write;', 1),
             patched + '\nvoid unexpected_handler(void) { fm_write = NewHandler; }\n',
+            patched + '\nvoid unexpected_handler(void) { FM_WRITE_HANDLER(NewHandler); }\n',
+            patched.replace('FM_WRITE_HANDLER(YM3438_Write);',
+                            'FM_WRITE_HANDLER(YM3438_Write);\n  FM_WRITE_HANDLER(YM3438_Write);', 1),
         )
         for damaged in mutations:
             with self.subTest(damaged=damaged), self.assertRaises(SystemExit):
