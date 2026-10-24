@@ -67,7 +67,12 @@ state preserve PSG independence and legacy fallback.
 The original Z80-to-PSG fixture has also passed independent review and actual
 runtime checks: three writes, two changed bytes. Its encoded bootstrap proves
 that the 68K only controls BUSREQ/RESET and loads Z80 RAM, rather than writing the
-PSG directly. Final full regression and GitHub CI remain pending. Do not declare
+PSG directly. Final local regression passes: 107 Python tests with normal native sanitizer
+checks, JavaScript suites, fresh production/diagnostic profiles and both FM
+backends. The reset fixture now proves execution with a post-reset mailbox; its
+old DBRA loop incorrectly never reached reset. Both backend tests pass after
+that correction. Actual Chromium audio/controls and transaction tests pass.
+GitHub CI and merge remain pending. Do not declare
 v0.4.0 complete or publish before full audio acceptance. Read the work queue
 before older historical records below.
 

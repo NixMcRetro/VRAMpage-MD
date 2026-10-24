@@ -909,3 +909,9 @@ loaded by a validated 68K bootstrap, with no commercial cartridge. Production
 profile checks execute both fixtures. Actual-core browser tests cover optional
 FM controls, draft retention, exports, unavailable APIs and clean reset.
 These checks establish software behavior, not audible or physical fidelity.
+
+FM integration checkpoint: the full local suite passes 107 Python tests, native
+strict/sanitizer and JavaScript checks. Fresh staged profiles cover matching FM
+backends; actual Chromium audio/control and transaction suites pass. A synthetic
+post-reset mailbox proves the partial reset executes before counter assertions.
+Native macOS and audible output have not been tested by this automation.
