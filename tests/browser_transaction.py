@@ -183,6 +183,11 @@ window.Module=opts=>originalFactory(opts).then(core=>{
         page = self.page
         expect(page.locator('#vramModel option[value="2"]')).to_be_disabled()
         expect(page.locator("#transactionMetrics")).to_be_hidden()
+        page.locator(".pin").nth(0).click()
+        page.wait_for_function("testCore._get_vram_address_mask()===1")
+        expect(page.locator(".pin").nth(0).locator(".chip-cut")).to_have_css("visibility", "visible")
+        page.locator("#disconnectBtn").click()
+        page.wait_for_function("testCore._get_vram_address_mask()===0")
         page.locator("#vramMode").select_option("bridge")
         page.locator(".pin").nth(0).click()
         page.locator(".pin").nth(1).click()

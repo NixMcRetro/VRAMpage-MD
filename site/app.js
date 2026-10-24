@@ -209,15 +209,29 @@
     if (vramModelApiReady())
       return lastVramSelectorStatus=emulator._set_vram_fault_model(...validation.args);
     // The legacy setters are retained for older cores and always mean frame projection.
-    if (mask && pair) return lastVramSelectorStatus=1;
-    if (typeof emulator?._set_vram_address_mask==='function') {
+    const maskSetter=typeof emulator?._set_vram_address_mask==='function';
+    const bridgeSetter=typeof emulator?._set_vram_short==='function';
+    if (pair) {
+      const status=bridgeSetter?emulator._set_vram_short(pair[0],pair[1]):1;
+      if (status!==0 && status!==undefined) return lastVramSelectorStatus=status;
+    } else if (mask) {
+      if (!maskSetter) return lastVramSelectorStatus=1;
+      if (actualPair() && bridgeSetter) {
+        const clearStatus=emulator._set_vram_short(-1,-1);
+        if (clearStatus!==0 && clearStatus!==undefined) return lastVramSelectorStatus=clearStatus;
+      }
       const status=emulator._set_vram_address_mask(mask);
       if (status!==0 && status!==undefined) return lastVramSelectorStatus=status;
-    } else if (mask) return lastVramSelectorStatus=1;
-    if (typeof emulator?._set_vram_short==='function') {
-      const status=emulator._set_vram_short(...(pair || [-1,-1]));
-      if (status!==0 && status!==undefined) return lastVramSelectorStatus=status;
-    } else if (pair) return lastVramSelectorStatus=1;
+    } else {
+      if (bridgeSetter) {
+        const clearStatus=emulator._set_vram_short(-1,-1);
+        if (clearStatus!==0 && clearStatus!==undefined) return lastVramSelectorStatus=clearStatus;
+      }
+      if (maskSetter) {
+        const status=emulator._set_vram_address_mask(0);
+        if (status!==0 && status!==undefined) return lastVramSelectorStatus=status;
+      }
+    }
     return lastVramSelectorStatus=0;
   }
 
