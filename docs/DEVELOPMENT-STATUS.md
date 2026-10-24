@@ -1,6 +1,6 @@
 # Development status and continuation checkpoint
 
-Verified on 23 October 2026. Read [work queue](WORK-QUEUE.md),
+Verified on 24 October 2026. Read [work queue](WORK-QUEUE.md),
 [versioning](VERSIONING.md), [testing](TESTING.md) and [roadmap](../ROADMAP.md).
 
 ## Current checkpoint
@@ -34,8 +34,10 @@ harness-built runtime profile with separate diagnostic exports. Independent
 review and the integrated 91-test suite, normal leak checking, five real-WASM
 profiles, normal Chromium and real packaging passed locally.
 [PR #41](https://github.com/NixMcRetro/VRAMpage-MD/pull/41) merged after all
-required checks passed, and merged-main CI passed too. The normal app/release remains v0.2.8; production runtime
-build is the current [bounded task](VRAM-RUNTIME-BUILD.md); UI selection,
+required checks passed, and merged-main CI passed too. The normal app/release remains v0.2.8; the [isolated runtime builder](VRAM-RUNTIME-BUILD.md) now passes independent
+review, normal/runtime/normal actual build checks, source-bundle reproduction and
+the full 94-test suite locally. Normal core hashes and actual-core Chromium are
+unchanged. Required CI precedes merge; UI selection,
 experiment exports and milestone acceptance follow. Read the first unfinished
 [work-queue](WORK-QUEUE.md) item and relevant protocol before older history.
 Reuse unchanged passing evidence; new diagnostic code needs focused tests,

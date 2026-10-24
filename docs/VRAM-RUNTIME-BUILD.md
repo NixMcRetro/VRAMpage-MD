@@ -4,7 +4,7 @@
 
 Build the reviewed transaction-model runtime through a reproducible opt-in
 production build path. Reuse the [safe model API](VRAM-PUBLIC-MODEL-API.md),
-reviewed helper and renderer integration. Preserve the default normal build,
+reviewed helper and renderer integration. Preserve the default normal JS/WASM binaries,
 static hosting and immutable v0.2.8 download. This stage does not add application
 controls, change experiment exports, publish a release or declare v0.3.0.
 
@@ -15,7 +15,8 @@ passed all five source, browser and real-core/package jobs.
 
 ## Acceptance criteria
 
-- Keep the existing default invocation and normal output unchanged.
+- Keep the existing default invocation and normal JS/WASM binaries unchanged.
+  The corresponding-source bundle also includes the new helper and API shim.
 - Make the transaction runtime an explicit opt-in with separate output; never
   silently replace `site/core` or attach diagnostic bridges to the runtime.
 - Reject invalid options before mutating vendor source or output directories.
@@ -51,7 +52,8 @@ node tests/test_runtime_build_profile.cjs build/runtime-profile/core/genplus.js
 No argument or explicit `normal` builds the ordinary app in `site/core` and
 `site/source`. The `runtime` argument writes only to ignored
 `build/runtime-profile`: `core/genplus.js`, `core/genplus.wasm`,
-`source/wasm-genplus`, `source/scripts` and `BUILDING.txt`.
+`source/wasm-genplus`, `source/scripts`, `THIRD-PARTY-NOTICES.md` and
+`BUILDING.txt`.
 The runtime factory starts in the existing frame-projection model. There is no
 application model selector yet; use the documented core API in developer tools.
 Do not manually replace the public app core or treat this output as v0.3.0.
@@ -70,3 +72,36 @@ shim. Its `BUILDING.txt` explains how to rebuild the adjacent source directly
 with Emscripten and CMake, without a Git checkout or source download. Keep the
 source, upstream notices and repository third-party notices with any binary
 distribution. This stage does not publish a runtime ZIP or replace a release.
+
+## Verification checkpoint
+
+Independent Luna High implementation and review approved author commit
+`1d8b3f0` after fixing path validation and making the builder fixture ignore an
+inherited output override. The integrated full suite passed 94 Python tests
+without skips, including the actual production command and fresh five-profile
+WASM integration, six nested pinned-renderer checks, existing JavaScript/native
+suites, strict warnings and ASan/UBSan with normal LeakSanitizer settings.
+
+Tests reject empty/unknown/extra arguments, unsafe and normalized `..` output
+paths, symlinks, missing vendor input and invalid job counts. Pure path tests
+also cover a safe default, custom output and configured external vendor.
+The normal/runtime/normal sequence retains the exact normal binaries and leaves
+the configured vendor unchanged during the runtime step. Actual generated
+module checks select transaction mode using an original synthetic cartridge,
+observe counts, reject coercible input and verify legacy frame controls and
+absence of diagnostic memory/handler bridges.
+
+The source bundle was rebuilt using the exact `BUILDING.txt` commands.
+Independent review reran the API checks on both emitted and source-rebuilt
+factories. Their binaries match byte for byte:
+
+| Profile | JS SHA-256 | WASM SHA-256 |
+|---|---|---|
+| Normal, unchanged from main PR #41 | `3b984104bf92fd9e7a47fa5f081ed18d020e61dee6cd87df7580c147a3edc3bd` | `0bb55f946e5bb20ba0efc24e81776305ba8e1d9a82e0a3dcdca9e6218fbbe6d9` |
+| Optional runtime and rebuilt source | `d5576f9c6943608de4f748c100f27b725601f9014ab99c8b80d6fe71c330b0e3` | `d37132fa4dca82cdcefee0758031d3767b6b982f6826d9c8880cd680e76ec951` |
+
+The normal production build and actual-core Chromium smoke passed locally using
+cached tools and the installed browser. The normal corresponding-source bundle
+adds the helper and shim; only the normal JS/WASM hashes are unchanged.
+Required GitHub checks remain the merge gate. These results do not establish
+runtime performance, native Mac behavior, audible output or physical fidelity.
