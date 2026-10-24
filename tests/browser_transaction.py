@@ -141,6 +141,7 @@ window.Module=opts=>originalFactory(opts).then(core=>{
         expect(page.locator("#logicStatus")).to_contain_text("RAM fault remains unchanged")
 
         # A pulse refuses a VRAM takeover and keeps its active budget.
+        page.locator("#pauseBtn").click()
         page.locator("#logicPulseBtn").click()
         expect(page.locator("#logicStatus")).to_contain_text("RAM pulse active")
         page.locator(".pin").nth(6).click()
