@@ -9,6 +9,7 @@ static void same_state(fm_data_fault_state left, fm_data_fault_state right)
     assert(left.enabled == right.enabled);
     assert(left.bridge_a == right.bridge_a);
     assert(left.bridge_b == right.bridge_b);
+    assert(left.data_mask == right.data_mask);
     assert(left.input_writes == right.input_writes);
     assert(left.changed_writes == right.changed_writes);
 }
@@ -65,10 +66,44 @@ int main(void)
     assert(fm_data_fault_apply(0x01, 1) == 0x00);
     assert(fm_data_fault_get_state()->input_writes == 2);
     assert(fm_data_fault_get_state()->changed_writes == 1);
+    {
+        unsigned int mask;
+        for (mask = 1; mask < 256; ++mask) {
+            unsigned int value;
+            uint64_t expected_changed = 0;
+            assert(fm_data_fault_configure_mask(mask, 1) == FM_DATA_FAULT_OK);
+            assert(fm_data_fault_get_state()->enabled == 1);
+            assert(fm_data_fault_get_state()->bridge_a == -1);
+            assert(fm_data_fault_get_state()->bridge_b == -1);
+            assert(fm_data_fault_get_state()->data_mask == mask);
+            for (value = 0; value < 256; ++value) {
+                uint8_t input = (uint8_t)value;
+                uint8_t expected = (uint8_t)(input & (uint8_t)~mask);
+                assert(fm_data_fault_apply(input, 1) == expected);
+                expected_changed += expected != input;
+            }
+            assert(fm_data_fault_get_state()->input_writes == 256);
+            assert(fm_data_fault_get_state()->changed_writes == expected_changed);
+        }
+    }
+    saved = *fm_data_fault_get_state();
+    assert(fm_data_fault_configure_mask(-1, 1) == FM_DATA_FAULT_INVALID);
+    assert(fm_data_fault_configure_mask(1.5, 1) == FM_DATA_FAULT_INVALID);
+    assert(fm_data_fault_configure_mask(256, 1) == FM_DATA_FAULT_INVALID);
+    assert(fm_data_fault_configure_mask(NAN, 1) == FM_DATA_FAULT_INVALID);
+    assert(fm_data_fault_configure_mask(INFINITY, 1) == FM_DATA_FAULT_INVALID);
+    assert(fm_data_fault_configure_mask(1, 0) == FM_DATA_FAULT_UNSUPPORTED);
+    same_state(saved, *fm_data_fault_get_state());
+    assert(fm_data_fault_configure(1, 2, 5, 1) == FM_DATA_FAULT_OK);
+    assert(fm_data_fault_get_state()->data_mask == 0);
+    assert(fm_data_fault_configure_mask(0, 0) == FM_DATA_FAULT_OK);
+    assert(fm_data_fault_get_state()->enabled == 0);
+    assert(fm_data_fault_get_state()->data_mask == 0);
     fm_data_fault_reset();
     assert(fm_data_fault_get_state()->enabled == 0);
     assert(fm_data_fault_get_state()->bridge_a == -1);
     assert(fm_data_fault_get_state()->bridge_b == -1);
+    assert(fm_data_fault_get_state()->data_mask == 0);
     assert(fm_data_fault_get_state()->input_writes == 0);
     assert(fm_data_fault_get_state()->changed_writes == 0);
     return 0;

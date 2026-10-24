@@ -40,9 +40,13 @@ function installMode5Rom(core) {
   assert.equal(typeof core._get_vram_supported_model_mask, 'function');
   assert.equal(typeof core._set_psg_data_bridge, 'function');
   assert.equal(typeof core._set_psg_data_bridge_c, 'undefined');
+  assert.equal(typeof core._set_psg_data_mask, 'function');
+  assert.equal(typeof core._set_psg_data_mask_c, 'undefined');
   assert.equal(typeof core._get_psg_data_bridge_state, 'function');
   assert.equal(typeof core._set_fm_data_bridge, 'function');
   assert.equal(typeof core._set_fm_data_bridge_c, 'undefined');
+  assert.equal(typeof core._set_fm_data_mask, 'function');
+  assert.equal(typeof core._set_fm_data_mask_c, 'undefined');
   assert.equal(typeof core._get_fm_data_bridge_state, 'function');
   const diagnosticOnly = [
     '_run_vram_tx_test', '_get_vram_tx_counter', '_set_vram_transaction_diagnostic',
@@ -62,7 +66,8 @@ function installMode5Rom(core) {
   installMode5Rom(core);
   core._wasm_input_update(); core._tick(); core._sound();
   const psgState = core._get_psg_data_bridge_state();
-  assert.equal(psgState.modelVersion, 'psg-data-low-dominant-v1');
+  assert.equal(psgState.modelVersion, 'psg-data-low-dominant-v2');
+  assert.equal(psgState.dataMask, 0);
   assert.equal(psgState.supported, true);
   assert.equal(psgState.configured, false);
   assert.equal(core._set_psg_data_bridge(1, 0, 0), 1,
@@ -70,7 +75,8 @@ function installMode5Rom(core) {
   assert.deepEqual(core._get_psg_data_bridge_state(), psgState,
     'invalid bridge request is atomic');
   const fmState = core._get_fm_data_bridge_state();
-  assert.equal(fmState.modelVersion, 'fm-register-data-low-dominant-v1');
+  assert.equal(fmState.modelVersion, 'fm-register-data-low-dominant-v2');
+  assert.equal(fmState.dataMask, 0);
   assert.equal(fmState.supported, true);
   assert.equal(fmState.configured, false);
   assert.equal(core._set_fm_data_bridge(1, 0, 0), 1,

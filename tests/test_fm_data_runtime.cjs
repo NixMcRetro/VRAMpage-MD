@@ -286,6 +286,7 @@ function testUnsignedCounterFacadeBoundaries() {
     _get_fm_data_bridge_version: () => 0, HEAPU8: new Uint8Array([0]),
     _get_fm_data_bridge_supported: () => 1, _get_fm_data_bridge_enabled: () => 1,
     _get_fm_data_bridge_a: () => 0, _get_fm_data_bridge_b: () => 5,
+    _get_fm_data_mask: () => 0,
     _get_fm_data_bridge_input_writes: () => -1n,
     _get_fm_data_bridge_changed_writes: () => -(1n << 63n)
   };
@@ -324,6 +325,10 @@ async function main() {
   const off = await createCore(runtimePath, rom);
   assert.equal(typeof off._set_fm_data_bridge, 'function');
   assert.equal(typeof off._set_fm_data_bridge_c, 'undefined');
+  assert.equal(typeof off._set_fm_data_mask, 'function');
+  assert.equal(typeof off._set_fm_data_mask_c, 'undefined');
+  assert.equal(off._get_fm_data_bridge_state().modelVersion, 'fm-register-data-low-dominant-v2');
+  assert.equal(off._get_fm_data_bridge_state().dataMask, 0);
   assert.equal(off._get_fm_data_bridge_state().supported, true);
   const offSamples = nextAudio(off);
   assert.deepEqual(fmStatusProbe(off), baselineStatus,
@@ -334,6 +339,16 @@ async function main() {
   assert.equal(off._get_fm_data_bridge_state().inputWrites, '0');
 
   const active = await createCore(runtimePath, rom);
+  const invalidMasks = ['128', null, true, new Number(128), 1n, Symbol('mask'),
+    {valueOf() { throw new Error('mask setter must not coerce'); }}, 1.5, NaN, Infinity];
+  const beforeInvalidMask = active._get_fm_data_bridge_state();
+  for (const invalid of invalidMasks) {
+    assert.equal(active._set_fm_data_mask(invalid), 1, 'mask setter rejects non-integer-number values');
+  }
+  assert.equal(active._set_fm_data_mask(), 1, 'mask setter rejects missing args');
+  assert.equal(active._set_fm_data_mask(1, 2), 1, 'mask setter rejects extra args');
+  assert.deepEqual(active._get_fm_data_bridge_state(), beforeInvalidMask,
+    'rejected mask calls do not change configuration or counters');
   assert.equal(active._set_fm_data_bridge(1, 0, 5), 0);
   assert.equal(active._set_psg_data_bridge(1, 1, 7), 0,
     'PSG and FM bridges can be configured independently');
@@ -369,6 +384,28 @@ async function main() {
     'Z80-only reset preserves aggregate FM write counters');
   assert.equal(afterZ80Reset.changedWrites, beforeZ80Reset.changedWrites,
     'Z80-only reset preserves changed-byte counters');
+
+  const masked = await createCore(runtimePath, rom);
+  assert.equal(masked._set_fm_data_mask(0x80), 0);
+  const maskedBeforeFrame = masked._get_fm_data_bridge_state();
+  assert.equal(maskedBeforeFrame.dataMask, 0x80);
+  assert.equal(maskedBeforeFrame.bridgeA, -1);
+  assert.equal(maskedBeforeFrame.bridgeB, -1);
+  const maskedSamples = nextAudio(masked);
+  const maskedState = masked._get_fm_data_bridge_state();
+  assert.equal(maskedSamples.count, baseline.count);
+  assert.ok([...maskedSamples.left, ...maskedSamples.right].every(Number.isFinite));
+  assert.ok(BigInt(maskedState.inputWrites) > 0n);
+  assert.ok(BigInt(maskedState.changedWrites) > 0n);
+  assert.notDeepEqual(maskedSamples.left, baseline.left,
+    'stuck-low data mask changes real FM register writes and output');
+  assert.equal(masked._set_fm_data_bridge(1, 0, 5), 0,
+    'pair setter replaces mask configuration');
+  assert.equal(masked._get_fm_data_bridge_state().dataMask, 0);
+  assert.equal(masked._set_fm_data_mask(0), 0, 'zero mask clears all FM input faults');
+  assert.equal(masked._get_fm_data_bridge_state().configured, false);
+  assert.equal(masked._get_fm_data_bridge_state().inputWrites, '0');
+  assert.equal(masked._get_fm_data_bridge_state().changedWrites, '0');
 
   const beforeInvalid = active._get_fm_data_bridge_state();
   const coercion = {valueOf() { throw new Error('must not coerce'); }};

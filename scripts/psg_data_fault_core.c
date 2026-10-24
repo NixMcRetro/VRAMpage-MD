@@ -3,7 +3,7 @@
 #include <math.h>
 #include <string.h>
 
-static psg_data_fault_state state = {0, -1, -1, 0, 0};
+static psg_data_fault_state state = {0, -1, -1, 0, 0, 0};
 
 static void increment_saturated(uint64_t *value)
 {
@@ -21,6 +21,7 @@ void psg_data_fault_reset(void)
     state.enabled = 0;
     state.bridge_a = -1;
     state.bridge_b = -1;
+    state.data_mask = 0;
     state.input_writes = 0;
     state.changed_writes = 0;
 }
@@ -54,6 +55,26 @@ int psg_data_fault_configure(double enabled, double bridge_a, double bridge_b,
     state.enabled = next_enabled;
     state.bridge_a = next_enabled ? next_a : -1;
     state.bridge_b = next_enabled ? next_b : -1;
+    state.data_mask = 0;
+    state.input_writes = 0;
+    state.changed_writes = 0;
+    return PSG_DATA_FAULT_OK;
+}
+
+int psg_data_fault_configure_mask(double data_mask, int supported)
+{
+    unsigned int next_mask;
+
+    if (!exact_integer(data_mask) || data_mask < 0.0 || data_mask > 255.0)
+        return PSG_DATA_FAULT_INVALID;
+    next_mask = (unsigned int)data_mask;
+    if (next_mask && !supported)
+        return PSG_DATA_FAULT_UNSUPPORTED;
+
+    state.enabled = next_mask != 0;
+    state.bridge_a = -1;
+    state.bridge_b = -1;
+    state.data_mask = next_mask;
     state.input_writes = 0;
     state.changed_writes = 0;
     return PSG_DATA_FAULT_OK;
@@ -67,8 +88,13 @@ uint8_t psg_data_fault_apply(uint8_t data, int supported)
         return data;
 
     increment_saturated(&state.input_writes);
-    mask = (uint8_t)((1u << state.bridge_a) | (1u << state.bridge_b));
-    result = (data & mask) == mask ? data : (uint8_t)(data & (uint8_t)~mask);
+    if (state.data_mask) {
+        mask = (uint8_t)state.data_mask;
+        result = (uint8_t)(data & (uint8_t)~mask);
+    } else {
+        mask = (uint8_t)((1u << state.bridge_a) | (1u << state.bridge_b));
+        result = (data & mask) == mask ? data : (uint8_t)(data & (uint8_t)~mask);
+    }
     if (result != data)
         increment_saturated(&state.changed_writes);
     return result;
