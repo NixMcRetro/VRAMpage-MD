@@ -51,6 +51,8 @@ const originalFactory=window.Module;
 window.Module=opts=>originalFactory(opts).then(core=>{
   window.testCore=core;
   const nativeModel=core._set_vram_fault_model?.bind(core);
+  const nativeState=core._get_vram_fault_model_state?.bind(core);
+  const nativeSupport=core._get_vram_supported_model_mask?.bind(core);
   const nativeLogic=core._set_logic_fault?.bind(core);
   if(nativeModel) core._set_vram_fault_model=(...args)=>{
     if(window.__rejectAllVram) return 5;
@@ -66,6 +68,13 @@ window.Module=opts=>originalFactory(opts).then(core=>{
     if(window.__rejectRamApply && args[0]!==0) return 8;
     return nativeLogic(...args);
   };
+  if(nativeState) core._get_vram_fault_model_state=()=>{
+    const state=nativeState();
+    return window.__forceUnsupported
+      ? {...state,supportedModelsMask:3,reason:state.modelId===2?'unsupported-mode':state.reason}
+      : state;
+  };
+  if(nativeSupport) core._get_vram_supported_model_mask=()=>window.__forceUnsupported?3:nativeSupport();
   if(window.__hideRuntimeApi) {
     for(const name of ['_set_vram_fault_model','_get_vram_fault_model_state','_get_vram_supported_model_mask'])
       core[name]=undefined;
@@ -94,6 +103,14 @@ window.Module=opts=>originalFactory(opts).then(core=>{
         page.locator("#vramModel").select_option("2")
         self.assertEqual(page.evaluate("testCore._get_vram_fault_model_state().modelId"), 2)
         self.assertEqual(page.evaluate("testCore._get_vram_supported_model_mask()"), 7)
+        page.evaluate("window.__forceUnsupported=true")
+        expect(page.locator("#vramModelStatus")).to_contain_text("suspended outside supported VDP Mode 5")
+        page.locator("#disconnectBtn").click()
+        unsupported_disconnect=page.evaluate("testCore._get_vram_fault_model_state()")
+        self.assertEqual((unsupported_disconnect["modelId"],unsupported_disconnect["mask"],
+                          unsupported_disconnect["bridgeA"]),(1,0,-1))
+        page.evaluate("window.__forceUnsupported=false")
+        page.locator("#vramModel").select_option("2")
         page.locator("#logicExperiment > summary").click()
 
         # A transaction bridge is cleared before RAM activation; RAM is then active.
