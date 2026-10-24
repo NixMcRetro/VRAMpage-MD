@@ -656,6 +656,85 @@ class BrowserLogicTests(unittest.TestCase):
         for selector in ('#ramChip [data-chip-line]','#pinGrid .pin','#fmChip .pin','#psgChip .pin'):
             self.assertGreaterEqual(self.page.locator(selector).first.evaluate('el=>el.getBoundingClientRect().height'),24)
 
+    def test_randomiser_independently_applies_chip_settings_and_preserves_ram(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        self.assertEqual(self.page.locator('.randomiser-row button').all_text_contents(),['PSG','FM','VRAM'])
+        before=self.page.evaluate('({starts:mockCore.starts,ramCalls:mockCore.logic.setterCalls.length,fm:mockCore.fm.calls.length,vram:mockCore.vramModel.calls.length})')
+        def randomise(selector, value):
+            return self.page.locator(selector).evaluate('''(button,value)=>{
+              const saved=Math.random;let calls=0;Math.random=()=>{calls++;return value};
+              try { button.click(); return calls; } finally { Math.random=saved; }
+            }''',value)
+        self.assertEqual(randomise('#randomPsgBtn',0),2)
+        self.assertEqual(self.page.evaluate('mockCore.psg.dataMask'),1,
+                         self.page.evaluate("({status:document.querySelector('#randomiserStatus').textContent,calls:mockCore.psg.maskCalls,psg:mockCore.psg,disabled:document.querySelector('#randomPsgBtn').disabled})"))
+        self.assertEqual(self.page.evaluate('mockCore.fm.dataMask'),0)
+        self.assertEqual(self.page.evaluate('mockCore.vramModel.calls.length'),before['vram'])
+        self.assertEqual(randomise('#randomFmBtn',0.999999),3)
+        self.assertEqual(self.page.evaluate('[mockCore.fm.bridgeA,mockCore.fm.bridgeB]'),[6,7])
+        self.assertEqual(self.page.evaluate('mockCore.psg.dataMask'),1)
+        self.assertEqual(randomise('#randomVramBtn',0),2)
+        self.assertEqual(self.page.evaluate('mockCore.vramModel.calls.at(-1).slice(1)'),[1,-1,-1])
+        self.assertEqual(randomise('#randomVramBtn',0.999999),3)
+        self.assertEqual(self.page.evaluate('mockCore.vramModel.calls.at(-1).slice(1)'),[0,6,7])
+        self.assertEqual(self.page.evaluate('mockCore.starts'),before['starts'])
+
+        # VRAM randomisation refuses before its setter while RAM is active; audio remains independent.
+        self.page.locator('#logicApplyBtn').click()
+        logic_before=self.page.evaluate('({active:mockCore.logic.active,calls:mockCore.logic.setterCalls.length,vram:mockCore.vramModel.calls.length})')
+        self.assertTrue(self.page.locator('#randomVramBtn').is_disabled())
+        self.page.locator('#randomVramBtn').dispatch_event('click')
+        self.assertEqual(self.page.evaluate('mockCore.logic.active'),logic_before['active'])
+        self.assertEqual(self.page.evaluate('mockCore.logic.setterCalls.length'),logic_before['calls'])
+        self.assertEqual(self.page.evaluate('mockCore.vramModel.calls.length'),logic_before['vram'])
+        self.page.locator('#randomPsgBtn').dispatch_event('click')
+        self.assertNotEqual(self.page.evaluate('mockCore.psg.dataMask'),0)
+        self.assertTrue(self.page.evaluate('mockCore.logic.active'))
+        self.page.locator('#logicDisconnectBtn').click()
+        with self.page.expect_download() as info:
+            self.page.locator('#circuitConfigDownload').click()
+        saved=json.loads(Path(info.value.path()).read_text())
+        self.assertEqual(saved['configuration']['psg']['dataMask'],self.page.evaluate('mockCore.psg.dataMask'))
+        self.assertEqual(saved['configuration']['fm']['pair'],[6,7])
+
+    def test_randomiser_refuses_armed_pulse_and_momentary_vram_bridge(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        before=self.page.evaluate('mockCore.vramModel.calls.length')
+        self.page.evaluate('mockCore.logic.pulseState=1')
+        self.page.locator('#randomVramBtn').dispatch_event('click')
+        self.assertEqual(self.page.evaluate('mockCore.vramModel.calls.length'),before)
+        expect(self.page.locator('#randomiserStatus')).to_contain_text('pulse state is active')
+        self.page.evaluate('mockCore.logic.pulseState=0')
+        self.page.keyboard.down('Shift')
+        self.page.keyboard.down('Digit1')
+        self.assertTrue(self.page.locator('#randomVramBtn').is_disabled())
+        momentary_calls=self.page.evaluate('mockCore.vramModel.calls.length')
+        self.page.locator('#randomVramBtn').dispatch_event('click')
+        self.assertEqual(self.page.evaluate('mockCore.vramModel.calls.length'),momentary_calls)
+        expect(self.page.locator('#randomiserStatus')).to_contain_text('momentary VRAM bridge is active')
+        self.page.keyboard.up('Digit1')
+        self.page.keyboard.up('Shift')
+
+    def test_randomiser_legacy_audio_uses_distinct_bridges_and_unavailable_getter_disables(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True,legacy_psg_mask=True,legacy_fm_mask=True)
+        self.load_rom()
+        def randomise(selector):
+            return self.page.locator(selector).evaluate('''button=>{
+              const saved=Math.random;let calls=0;Math.random=()=>{calls++;return 0};
+              try { button.click(); return calls; } finally { Math.random=saved; }
+            }''')
+        self.assertEqual(randomise('#randomPsgBtn'),2)
+        self.assertEqual(randomise('#randomFmBtn'),2)
+        self.assertEqual(self.page.evaluate('[mockCore.psg.bridgeA,mockCore.psg.bridgeB,mockCore.fm.bridgeA,mockCore.fm.bridgeB]'),[0,1,0,1])
+        self.page.evaluate('mockCore.throwPsgState=true')
+        self.page.locator('#randomPsgBtn').dispatch_event('click')
+        self.assertTrue(self.page.locator('#randomPsgBtn').is_disabled())
+
     def test_audio_chip_inputs_are_independent_and_masks_replace_pairs(self):
         self.page.close()
         self.page=self.new_page(circuit_config=True)

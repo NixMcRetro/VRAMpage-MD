@@ -108,6 +108,7 @@
     refreshVramControls();
     refreshPsgDataControls();
     refreshFmDataControls();
+    refreshRandomiserControls();
     refreshCircuitConfigControls();
   }
 
@@ -175,6 +176,7 @@
             : `Active: D${state.bridgeA} ↔ D${state.bridgeB}; future PSG writes only.`)
           : 'No PSG data bridge is active.';
     updateAudioChip('psg',state);
+    refreshRandomiserControls();
   }
 
   function setPsgDataBridge(enabled, pairOverride=undefined) {
@@ -249,6 +251,7 @@
             : `Active: D${state.bridgeA} ↔ D${state.bridgeB}; future FM register writes only.`)
           : 'No FM data bridge is active.';
     updateAudioChip('fm',state);
+    refreshRandomiserControls();
   }
 
   function setFmDataBridge(enabled, pairOverride=undefined) {
@@ -302,6 +305,164 @@
 
   function maskLineNames(mask) {
     return Array.from({length:8},(_,bit)=>bit).filter(bit=>mask&(1<<bit)).map(bit=>`D${bit}`).join(', ');
+  }
+
+  function randomPair() {
+    const a=Math.floor(Math.random()*8), slot=Math.floor(Math.random()*7);
+    return canonical([a,slot>=a?slot+1:slot]);
+  }
+
+  function randomCutMask() { return 1+Math.floor(Math.random()*255); }
+
+  function refreshRandomiserControls() {
+    let psg=null, fm=null, psgReady=false, fmReady=false, vramReady=false;
+    try { psgReady=psgDataApiReady(); psg=currentPsgDataState(); } catch (_) { psgReady=false; }
+    try { fmReady=fmDataApiReady(); fm=currentFmDataState(); } catch (_) { fmReady=false; }
+    try { vramReady=!!emulator && (vramModelApiReady() || vramMaskApiReady() || typeof emulator._set_vram_short==='function'); } catch (_) { vramReady=false; }
+    let ramSafe=!!emulator && !logicActive && !pendingPulse && !momentary;
+    if (emulator && typeof emulator._get_logic_pulse_state==='function') {
+      try {
+        const pulse=emulator._get_logic_pulse_state();
+        ramSafe=ramSafe && Number.isInteger(pulse) && [0,2,3,4].includes(pulse);
+      }
+      catch (_) { ramSafe=false; }
+    }
+    if (vramReady) {
+      try {
+        if (!vramModelApiReady()) {
+          if (vramModelId!==1) vramReady=false;
+        } else {
+        const supported=Number(emulator._get_vram_supported_model_mask());
+        const state=emulator._get_vram_fault_model_state();
+        vramReady=!!state && Number.isInteger(supported) && (supported&(1<<vramModelId))!==0;
+        }
+      } catch (_) { vramReady=false; }
+    }
+    $('randomPsgBtn').disabled=!started || !psgReady || !psg?.supported;
+    $('randomFmBtn').disabled=!started || !fmReady || !fm?.supported;
+    $('randomVramBtn').disabled=!started || !vramReady || !ramSafe;
+  }
+
+  function randomiseAudio(kind) {
+    const isPsg=kind==='psg';
+    const status=$(isPsg?'psgBridgeStatus':'fmBridgeStatus');
+    let setterAttempted=false;
+    try {
+      const state=isPsg?currentPsgDataState():currentFmDataState();
+      if (!started || !state?.supported) {
+        $('randomiserStatus').textContent=`${kind.toUpperCase()} randomisation unavailable: runtime state or profile support could not be read.`;
+        return false;
+      }
+      let ok, result, mode;
+      const maskReady=isPsg?psgDataMaskApiReady():fmDataMaskApiReady();
+      const bridgeReady=isPsg?psgDataApiReady():fmDataApiReady();
+      if (!maskReady && !bridgeReady) throw new Error('Chip fault APIs are unavailable.');
+      mode=maskReady && bridgeReady ? (Math.random()<0.5?'cut':'bridge') : maskReady?'cut':'bridge';
+      const currentPair=state.configured && state.bridgeA>=0 && state.bridgeB>=0
+        ? canonical([state.bridgeA,state.bridgeB]) : null;
+      if (mode==='cut') {
+        result=randomCutMask();
+        ok=Number(state.dataMask)===result;
+        if (!ok) {
+          setterAttempted=true;
+          ok=isPsg?setPsgDataMask(result):setFmDataMask(result);
+        }
+      } else {
+        result=randomPair();
+        ok=Number(state.dataMask||0)===0 && samePair(currentPair,result);
+        if (!ok) {
+          setterAttempted=true;
+          ok=isPsg?setPsgDataBridge(true,result):setFmDataBridge(true,result);
+        }
+      }
+      if (!ok) {
+        let after=null;
+        try { after=isPsg?currentPsgDataState():currentFmDataState(); } catch (_) { /* State is unknown below. */ }
+        const changed=after && (after.dataMask!==state.dataMask || after.configured!==state.configured ||
+          after.bridgeA!==state.bridgeA || after.bridgeB!==state.bridgeB);
+        const unknown=setterAttempted&&!after;
+        if (changed && !paused) pauseToggle();
+        if (unknown && !paused) pauseToggle();
+        status.textContent=`Randomiser did not apply ${kind.toUpperCase()} settings; observed state refreshed.`;
+        $('randomiserStatus').textContent=`${kind.toUpperCase()} randomisation was rejected${changed?'; partial state observed and emulation paused':unknown?'; resulting state is unknown and emulation paused':''}; observed chip state is shown where available.`;
+        return false;
+      }
+      const observed=isPsg?currentPsgDataState():currentFmDataState();
+      if (!observed || (Array.isArray(result) ? !observed.configured || !samePair(canonical([observed.bridgeA,observed.bridgeB]),result)
+          : Number(observed.dataMask)!==result)) {
+        if (!paused) pauseToggle();
+        status.textContent=`${kind.toUpperCase()} randomisation could not be confirmed; displayed state is observed from the core.`;
+        isPsg?refreshPsgDataControls():refreshFmDataControls();
+        return false;
+      }
+      $(isPsg?'psgLegMode':'fmLegMode').value=mode==='cut'?'ground':'bridge';
+      const selectedState=Array.isArray(result)?`D${result[0]} ↔ D${result[1]} bridge`:`${maskLineNames(result)} forced low`;
+      $('randomiserStatus').textContent=`${kind.toUpperCase()}: ${selectedState}${setterAttempted?' applied':' already selected'}.`;
+      return true;
+    } catch (_) {
+      if (setterAttempted && !paused) pauseToggle();
+      try { isPsg?refreshPsgDataControls():refreshFmDataControls(); } catch (_) { /* Keep the failure report available. */ }
+      status.textContent=setterAttempted
+        ? `${kind.toUpperCase()} randomisation failed during the setter; emulation paused. Observed state refreshed where available.`
+        : `${kind.toUpperCase()} randomisation refused because runtime state could not be read.`;
+      $('randomiserStatus').textContent=setterAttempted
+        ? `${kind.toUpperCase()} randomisation failed during the setter; emulation paused and observed state refreshed where available.`
+        : `${kind.toUpperCase()} randomisation refused because runtime state could not be read.`;
+      return false;
+    } finally { refreshRandomiserControls(); }
+  }
+
+  function randomiseVram() {
+    let setterAttempted=false;
+    try {
+      // Check every handoff hazard before choosing or applying anything.
+      if (!started || logicActive || pendingPulse || momentary) throw new Error('RAM fault, pulse, or momentary VRAM bridge is active.');
+      if (typeof emulator?._get_logic_pulse_state==='function') {
+        const pulse=emulator._get_logic_pulse_state();
+        if (![0,2,3,4].includes(pulse)) throw new Error('RAM pulse state is active or unavailable.');
+      }
+      let state=null;
+      if (vramModelApiReady()) {
+        const supported=Number(emulator._get_vram_supported_model_mask());
+        state=emulator._get_vram_fault_model_state();
+        if (!state || !Number.isInteger(supported) || (supported&(1<<vramModelId))===0)
+          throw new Error('The selected VRAM model is unavailable.');
+      } else if (vramModelId!==1) throw new Error('The selected VRAM model is unavailable.');
+      const maskReady=vramMaskApiReady();
+      const bridgeReady=vramModelApiReady() || typeof emulator?._set_vram_short==='function';
+      if (!maskReady && !bridgeReady) throw new Error('This core has no supported VRAM fault setter.');
+      const mode=maskReady && bridgeReady ? (Math.random()<0.5?'cut':'bridge') : maskReady?'cut':'bridge';
+      const mask=mode==='cut'?randomCutMask():0, pair=mode==='bridge'?randomPair():null;
+      if (!validateVramModel(vramModelId,mask,pair).ok) throw new Error('The selected VRAM setting is unsupported.');
+      const previousPair=canonical(actualPair());
+      const sameSelectedPair=(!previousPair&&!pair) || samePair(previousPair,pair);
+      const unchanged=vramAddressMask===mask && sameSelectedPair;
+      setterAttempted=!unchanged;
+      if (!unchanged && !applyVramModel(vramModelId,mask,pair,'Randomiser')) {
+        let actual=null;
+        try { actual=vramModelApiReady()?emulator._get_vram_fault_model_state():null; }
+        catch (_) { if (!paused) pauseToggle(); }
+        const partial=!!actual && (actual.mask!==vramAddressMask || actual.bridgeA!== (previousPair?.[0]??-1) ||
+          actual.bridgeB!== (previousPair?.[1]??-1));
+        if (partial && !paused) pauseToggle();
+        $('randomiserStatus').textContent=`VRAM randomisation was rejected${partial?' after a partial mutation; emulation paused':''}; observed VRAM state refreshed where available.`;
+        return false;
+      }
+      const observed=vramModelApiReady()?emulator._get_vram_fault_model_state():null;
+      if (observed && (observed.modelId!==vramModelId || observed.mask!==mask ||
+          (pair && (observed.bridgeA!==pair[0] || observed.bridgeB!==pair[1]))))
+        throw new Error('VRAM settings could not be confirmed.');
+      $('vramMode').value=pair?'bridge':'disconnect';
+      $('randomiserStatus').textContent=pair
+        ? `VRAM: AD${pair[0]} ↔ AD${pair[1]} bridge${vramModelApiReady()?'':' (legacy core)'}${unchanged?' already selected':' applied'}.`
+        : `VRAM: ${vramLines(mask).join(', ')} forced low${unchanged?' already selected':' applied'}.`;
+      return true;
+    } catch (error) {
+      if (setterAttempted && !paused) pauseToggle();
+      $('randomiserStatus').textContent=`VRAM randomisation unavailable: ${error?.message||'runtime state could not be read'}`;
+      try { updateFaultUI(); } catch (_) { /* Keep the refusal visible. */ }
+      return false;
+    } finally { refreshRandomiserControls(); }
   }
 
   function updateAudioChip(kind,state) {
@@ -824,6 +985,7 @@
     $('logicStatus').textContent = logicStatusMessage;
     refreshLogicMetrics();
     refreshChipControls();
+    refreshRandomiserControls();
   }
 
   function refreshLogicMetrics() {
@@ -1732,6 +1894,7 @@
     $('vramModelNotice').innerHTML=vramModelId===2
       ? '<strong>Experimental transaction model.</strong> Counts are software byte-lane operations for the last completed tick, not physical bus cycles or cycle-accurate electrical behavior.'
       : '<strong>Experimental frame model.</strong> Shorts are applied around each emulated frame, not at every real VRAM bus transition. This is not yet a cycle-accurate electrical simulation.';
+    refreshRandomiserControls();
   }
 
   function latch(pair) {
@@ -2177,6 +2340,9 @@
     $('psgBridgeRemove').addEventListener('click',()=>setPsgDataBridge(false));
     $('fmBridgeApply').addEventListener('click',()=>setFmDataBridge(true));
     $('fmBridgeRemove').addEventListener('click',()=>setFmDataBridge(false));
+    $('randomPsgBtn').addEventListener('click',()=>randomiseAudio('psg'));
+    $('randomFmBtn').addEventListener('click',()=>randomiseAudio('fm'));
+    $('randomVramBtn').addEventListener('click',randomiseVram);
     setupCircuitConfigurationControls();
     setupExperimentComparison();
     $('rawVideoToggle').addEventListener('change', () => {
