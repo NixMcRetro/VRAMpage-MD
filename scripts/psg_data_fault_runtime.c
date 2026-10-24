@@ -51,14 +51,14 @@ int PSG_DATA_KEEPALIVE get_psg_data_bridge_supported(void)
     return psg_data_fault_supported();
 }
 
-double PSG_DATA_KEEPALIVE get_psg_data_bridge_input_writes(void)
+uint64_t PSG_DATA_KEEPALIVE get_psg_data_bridge_input_writes(void)
 {
-    return (double)psg_data_fault_get_state()->input_writes;
+    return psg_data_fault_get_state()->input_writes;
 }
 
-double PSG_DATA_KEEPALIVE get_psg_data_bridge_changed_writes(void)
+uint64_t PSG_DATA_KEEPALIVE get_psg_data_bridge_changed_writes(void)
 {
-    return (double)psg_data_fault_get_state()->changed_writes;
+    return psg_data_fault_get_state()->changed_writes;
 }
 
 const char *PSG_DATA_KEEPALIVE get_psg_data_bridge_version(void)

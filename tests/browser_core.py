@@ -40,7 +40,7 @@ def original_cartridge():
     byte(0xc00011, 0x8a)  # PSG channel 0 period
     byte(0xc00011, 0x10)
     byte(0xc00011, 0x90)  # Channel 0 audible
-    words.extend([0x5279, 0x00ff, 0x1000, 0x60f8])  # Increment RAM forever
+    words.extend([0x5279, 0x00ff, 0x1000, 0x60f8])  # Increment RAM forever.
     for i, value in enumerate(words):
         struct.pack_into('>H', rom, 0x200+2*i, value)
     for i, value in enumerate([0x4e72, 0x2700, 0x60fe]):
@@ -91,6 +91,19 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     expect(page.locator('#soundBtn')).to_have_text('Mute Sound')
                     page.locator('#soundBtn').click()
                     expect(page.locator('#soundBtn')).to_have_text('Enable Sound')
+                    psg_api=page.evaluate("typeof testCore._set_psg_data_bridge==='function'")
+                    if psg_api:
+                        expect(page.locator('#psgBridgeApply')).to_be_enabled()
+                        page.locator('#psgBridgeA').select_option('0')
+                        page.locator('#psgBridgeB').select_option('7')
+                        page.locator('#psgBridgeApply').click()
+                        psg_state=page.evaluate('testCore._get_psg_data_bridge_state()')
+                        self.assertTrue(psg_state['effective'])
+                        self.assertEqual((psg_state['bridgeA'],psg_state['bridgeB']),(0,7))
+                        self.assertIn('D0',page.locator('#psgBridgeStatus').inner_text())
+                    else:
+                        expect(page.locator('#psgBridgeApply')).to_be_disabled()
+                        self.assertIn('does not provide',page.locator('#psgBridgeStatus').inner_text())
                     page.locator('#screen').click()
                     page.keyboard.down('x')
                     page.wait_for_function('new Float32Array(testCore.HEAPF32.buffer,testCore._get_input_buffer_ref(),32)[11]===1')
@@ -134,8 +147,14 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     self.assertEqual(payload['rom']['name'],'original-video-tone.bin')
                     self.assertEqual(len(payload['rom']['sha256']),64)
                     self.assertNotIn('romBytes',payload)
+                    self.assertEqual(payload['psgInputFault']['available'],psg_api)
+                    if psg_api:
+                        self.assertEqual(payload['psgInputFault']['modelVersion'],'psg-data-low-dominant-v1')
+                        self.assertTrue(payload['psgInputFault']['configured'])
                     page.locator('#resetBtn').click()
                     page.wait_for_function('testCore._get_logic_address_mask()===0')
+                    if psg_api:
+                        page.wait_for_function('!testCore._get_psg_data_bridge_state().configured')
                     expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
                     self.assertEqual(errors,[])
                     browser.close()

@@ -522,33 +522,47 @@ void EMSCRIPTEN_KEEPALIVE clear_vram_tx_test_cache(void)
     return source
 
 
-def patch_psg_input_fault(source: str) -> str:
-    """Gate the low-dominant PSG data bridge at the synchronized write sink."""
-    include_anchor = '#include "blip_buf.h"'
-    include = ('#include "blip_buf.h"\n'
-               '#if defined(VRAM_TX_RUNTIME)\n'
-               '#include "psg_data_fault.h" /* VRAMpage PSG input bridge v1 */\n'
-               '#endif')
-    source = replace_pinned(source, include_anchor, include,
-                            'PSG input bridge include')
-    reset_before = 'void psg_reset()\n{\n  int i;'
-    reset_after = ('void psg_reset()\n{\n  int i;\n'
+PSG_INCLUDE_BEFORE = '#include "blip_buf.h"'
+PSG_INCLUDE_AFTER = ('#include "blip_buf.h"\n'
+                     '#if defined(VRAM_TX_RUNTIME)\n'
+                     '#include "psg_data_fault.h" /* VRAMpage PSG input bridge v1 */\n'
+                     '#endif')
+PSG_RESET_BEFORE = 'void psg_reset()\n{\n  int i;'
+PSG_RESET_AFTER = ('void psg_reset()\n{\n  int i;\n'
                    '#if defined(VRAM_TX_RUNTIME)\n'
                    '  psg_data_fault_runtime_reset();\n'
                    '#endif')
-    source = replace_pinned(source, reset_before, reset_after,
-                            'PSG reset bridge hook')
-    write_before = ('    psg.clocks += ((clocks - psg.clocks + PSG_MCYCLES_RATIO - 1) / PSG_MCYCLES_RATIO) * PSG_MCYCLES_RATIO;\n'
+PSG_WRITE_BEFORE = ('    psg.clocks += ((clocks - psg.clocks + PSG_MCYCLES_RATIO - 1) / PSG_MCYCLES_RATIO) * PSG_MCYCLES_RATIO;\n'
                     '  }\n\n'
                     '  if (data & 0x80)')
-    write_after = ('    psg.clocks += ((clocks - psg.clocks + PSG_MCYCLES_RATIO - 1) / PSG_MCYCLES_RATIO) * PSG_MCYCLES_RATIO;\n'
+PSG_WRITE_AFTER = ('    psg.clocks += ((clocks - psg.clocks + PSG_MCYCLES_RATIO - 1) / PSG_MCYCLES_RATIO) * PSG_MCYCLES_RATIO;\n'
                    '  }\n\n'
                    '#if defined(VRAM_TX_RUNTIME)\n'
                    '  data = (unsigned int)psg_data_fault_runtime_apply((int)data);\n'
                    '#endif\n\n'
                    '  if (data & 0x80)')
-    return replace_pinned(source, write_before, write_after,
-                          'PSG synchronized write bridge hook')
+
+
+def patch_psg_input_fault(source: str) -> str:
+    """Patch only pristine pinned PSG source or the exact complete result."""
+    patched = (PSG_INCLUDE_AFTER, PSG_RESET_AFTER, PSG_WRITE_AFTER)
+    pristine = (PSG_INCLUDE_BEFORE, PSG_RESET_BEFORE, PSG_WRITE_BEFORE)
+    runtime_markers = ('VRAMpage PSG input bridge', 'psg_data_fault_runtime_',
+                       '#if defined(VRAM_TX_RUNTIME)')
+    if any(marker in source for marker in runtime_markers):
+        if all(source.count(block) == 1 for block in patched) and all(
+                source.count(marker) == 1 for marker in
+                ('VRAMpage PSG input bridge v1', 'psg_data_fault_runtime_reset()',
+                 'psg_data_fault_runtime_apply((int)data)')):
+            return source
+        raise SystemExit('PSG input bridge source is partial, malformed, or modified. No changes made.')
+    if not all(source.count(block) == 1 for block in pristine):
+        raise SystemExit('Expected pinned PSG source anchors missing or ambiguous. No changes made.')
+    for before, after in zip(pristine, patched):
+        source = source.replace(before, after, 1)
+    if not all(source.count(block) == 1 for block in patched):
+        raise SystemExit('PSG input bridge patch did not produce the exact supported layout.')
+    return source
 
 
 VRAM_RENDER_V1_MARKER = 'VRAM TX MODE 5 RENDER READS v1'

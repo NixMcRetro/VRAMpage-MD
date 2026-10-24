@@ -1,11 +1,15 @@
 """Strict native and sanitizer coverage for the PSG data bridge helper."""
 from pathlib import Path
+import importlib.util
 import subprocess
 import tempfile
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
+SPEC = importlib.util.spec_from_file_location("patch_core", ROOT / "scripts/patch_core.py")
+PATCH_CORE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(PATCH_CORE)
 
 
 class PsgDataFaultHelper(unittest.TestCase):
@@ -18,6 +22,31 @@ class PsgDataFaultHelper(unittest.TestCase):
                 "tests/psg_data_fault_smoke.c", "-lm", "-o", str(executable),
             ], cwd=ROOT, check=True)
             subprocess.run([str(executable)], cwd=ROOT, check=True)
+
+    def test_patch_layout_is_idempotent_and_rejects_drift(self):
+        pristine = (
+            '#include "shared.h"\n#include "blip_buf.h"\n'
+            'void psg_reset()\n{\n  int i;\n  /* chip reset */\n}\n'
+            'void psg_write(unsigned int clocks, unsigned int data)\n{\n'
+            '  if (clocks > psg.clocks)\n  {\n'
+            '    psg_update(clocks);\n\n'
+            '    psg.clocks += ((clocks - psg.clocks + PSG_MCYCLES_RATIO - 1) / PSG_MCYCLES_RATIO) * PSG_MCYCLES_RATIO;\n'
+            '  }\n\n'
+            '  if (data & 0x80)\n    psg.latch = 0;\n}\n'
+        )
+        patched = PATCH_CORE.patch_psg_input_fault(pristine)
+        self.assertEqual(PATCH_CORE.patch_psg_input_fault(patched), patched)
+        mutations = (
+            patched.replace('input bridge v1', 'input bridge v0', 1),
+            patched.replace('psg_data_fault_runtime_reset();', 'psg_data_fault_reset();', 1),
+            patched.replace('psg_data_fault_runtime_apply((int)data)', 'psg_data_fault_apply((int)data)', 1),
+        )
+        for damaged in mutations:
+            with self.subTest(damaged=damaged), self.assertRaises(SystemExit):
+                PATCH_CORE.patch_psg_input_fault(damaged)
+        with self.assertRaises(SystemExit):
+            PATCH_CORE.patch_psg_input_fault(patched.replace('if (data & 0x80)',
+                                                               'if (data & 0x40)', 1))
 
     def test_strict_native(self):
         self.build_and_run(["-O2"], "psg-data-fault-strict-")
