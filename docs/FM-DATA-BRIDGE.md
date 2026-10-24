@@ -23,3 +23,13 @@ The API reports whether the current system profile supports the bridge. A
 configuration request on an unsupported profile is rejected without changing
 the current configuration or counters. This input bridge is independent of
 the PSG and RAM/VRAM fault controls.
+
+## Development line-disconnect extension
+
+After the public v0.4.0 release, the optional runtime adds an 8-bit data mask
+at this same write-input boundary. Each selected bit is forced low. The mask
+and bridge pair are alternatives: selecting either clears the other. A zero
+mask disconnects the fault. Full-reset and counter semantics remain as above.
+The state reports `dataMask`, and the extended model uses its v2 identifier.
+Legacy bridge-only runtimes remain usable but cannot offer line cuts. These
+controls model deterministic stuck-low inputs, not electrically floating pins.
