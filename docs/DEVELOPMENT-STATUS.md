@@ -5,6 +5,24 @@ Verified on 24 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
+Coordinated all-domain removal is implemented in development source after the
+public v0.4.1 baseline below. It pauses, cancels held/momentary restores and
+pulse callbacks, independently clears available domains and records truthful
+per-domain outcomes in `faultDisconnects`. CPU recovery keeps its existing
+RAM/VRAM clearing and explicitly preserves audio fault configurations. No new
+native model or core implementation is introduced.
+
+Independent Luna High review approves integrated implementation `96f4abd`.
+The 107-test native/SDK suite with normal sanitizers and fresh WASM profiles
+passes. Compiled-core Chromium4/4, transaction3/3 and display6/6 pass. WebKit55
+plus the final three boundary cases and final Chromium interface checks are
+recorded in the current task logs. Required PR/main CI and the same-commit
+review package remain before source integration. No public release is planned
+for this intermediate slice; retain v0.4.1 and its original artifact unchanged.
+Next after verified integration: experiment comparison, then the remaining
+workbench acceptance and stabilisation queue.
+
+
 PR #48 is merged as `e579c571f14b3549a5befa33d9e62ba3f3c9d45b`.
 [PR CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40088693320)
 and [main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40089045294)

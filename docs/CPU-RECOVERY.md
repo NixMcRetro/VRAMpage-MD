@@ -30,7 +30,8 @@ The new **Disconnect all faults** action is separate from CPU recovery and
 held/momentary restore actions, then attempts to clear VRAM, work RAM, PSG and
 FM through their existing APIs. Successful clears are retained if another
 domain fails; old faults are never reinstalled as rollback. Status distinguishes
-cleared, failed and unavailable state. Emulation remains paused, including on
+cleared, failed and unavailable state. Older cores without pulse telemetry are
+reported conservatively as unverified after an accepted RAM clear. Emulation remains paused, including on
 partial failure. Choose **Resume** explicitly when ready.
 
 This action does not resume/reset the 68000, reload the cartridge, undo earlier
