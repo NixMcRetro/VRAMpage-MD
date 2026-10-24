@@ -32,6 +32,7 @@
   let vramAddressMask=0, vramAddressLineChanges=[];
   let vramModelId=1, vramModelTransitions=[];
   let lastVramSelectorStatus=0;
+  let vramModelStatusMessage='';
   let possibleVramResidue = false;
   let displayRefreshQueued = false;
   let logicApiAvailable = false, logicActive = false, logicStatsRetained = false;
@@ -249,7 +250,9 @@
     modelSelect.disabled=!started;
     if (modelSelect.value!==String(vramModelId)) modelSelect.value=String(vramModelId);
     const modelStatus=$('vramModelStatus');
-    if (!vramModelApiReady()) {
+    if (vramModelStatusMessage) {
+      modelStatus.textContent=vramModelStatusMessage;
+    } else if (!vramModelApiReady()) {
       modelStatus.textContent='This core uses frame projection. Rebuild with the runtime profile to enable transaction mode.';
     } else if (!started) {
       modelStatus.textContent='Load a cartridge to select a VRAM model.';
@@ -308,7 +311,8 @@
     const targetPair=pair?canonical(pair):null;
     const validation=validateVramModel(modelId,mask,targetPair);
     if (!validation.ok) {
-      $('vramModelStatus').textContent=validation.message;
+      vramModelStatusMessage=validation.message;
+      $('vramModelStatus').textContent=vramModelStatusMessage;
       stamp(`VRAM request rejected: ${validation.message}`);
       return false;
     }
@@ -330,7 +334,8 @@
     const before=vramTransitionSnapshot();
     const status=callVramModel(modelId,mask,targetPair);
     if (status!==0) {
-      $('vramModelStatus').textContent=`VRAM model rejected (status ${status}); RAM settings were not changed.`;
+      vramModelStatusMessage=`VRAM model rejected (status ${status}); RAM settings were not changed.`;
+      $('vramModelStatus').textContent=vramModelStatusMessage;
       stamp(`VRAM model rejected (status ${status}); RAM fault remains unchanged.`);
       return false;
     }
@@ -362,11 +367,12 @@
         actualModelId:currentVramModelState().modelId,actualMask:currentVramModelState().mask,
         actualBridgeA:currentVramModelState().bridgeA,actualBridgeB:currentVramModelState().bridgeB,
         ramFaultStillActive:logicActive});
-      $('vramModelStatus').textContent=rollbackStatus===0
+      vramModelStatusMessage=rollbackStatus===0
         ? safeFallbackStatus===0
           ? 'RAM disconnect failed. VRAM faults were cleared in frame mode; selector rollback reset model counters.'
           : 'RAM disconnect failed. VRAM settings were restored; selector rollback reset model counters.'
         : 'RAM disconnect failed and VRAM rollback was rejected. Stop emulation and reload the cartridge.';
+      $('vramModelStatus').textContent=vramModelStatusMessage;
       stamp(rollbackStatus===0
         ? safeFallbackStatus===0
           ? 'RAM disconnect failed; VRAM faults cleared in frame mode. Selector rollback reset model counters.'
@@ -375,11 +381,13 @@
       updateFaultUI();
       if (rollbackStatus!==0) {
         if (!paused) pauseToggle();
-        $('vramModelStatus').textContent='RAM disconnect failed and VRAM rollback was rejected. Both fault states are retained; emulation was paused.';
+        vramModelStatusMessage='RAM disconnect failed and VRAM rollback was rejected. Both fault states are retained; emulation was paused.';
+        $('vramModelStatus').textContent=vramModelStatusMessage;
         stamp('Unsafe dual-domain rollback failure; emulation paused before another tick.');
       }
       return false;
     }
+    vramModelStatusMessage='';
     vramModelId=modelId;
     recordVramMask(mask,reason,before);
     latched=targetPair; momentary=null; selectedPin=null;
@@ -1097,6 +1105,7 @@
     vramAddressMask=0;vramAddressLineChanges=[];
     latched=null;momentary=null;momentaryRestorePair=null;selectedPin=null;
     vramModelId=1;vramModelTransitions=[];
+    vramModelStatusMessage='';
     logicAddressMask=0;addressLineChanges=[];
     logicActive=false; // runtime_start clears the work RAM fault and counters.
     logicStatsRetained=false;

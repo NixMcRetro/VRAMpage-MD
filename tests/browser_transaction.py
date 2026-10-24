@@ -32,7 +32,7 @@ class TransactionBrowserTests(unittest.TestCase):
         cls.addClassCleanup(cls.server.shutdown)
         cls.playwright = sync_playwright().start()
         cls.addClassCleanup(cls.playwright.stop)
-        launch = {"executable_path": OPTIONS.executable} if OPTIONS.executable else {}
+        launch = {"executable_path": OPTIONS.executable_path} if OPTIONS.executable_path else {}
         cls.browser = getattr(cls.playwright, OPTIONS.browser).launch(**launch)
         cls.addClassCleanup(cls.browser.close)
 
@@ -129,7 +129,7 @@ window.Module=opts=>originalFactory(opts).then(core=>{
         page.evaluate("window.__rejectRamDisconnect=false")
         state = page.evaluate("testCore._get_vram_fault_model_state()")
         self.assertEqual((state["modelId"], state["bridgeA"], state["bridgeB"]), (2, -1, -1))
-        expect(page.locator("#vramModelStatus")).to_contain_text("configuration restored")
+        expect(page.locator("#vramModelStatus")).to_contain_text("VRAM settings were restored")
 
         # Selector rejection happens before any RAM disconnect or model change.
         page.evaluate("window.__rejectAllVram=true")
@@ -138,7 +138,7 @@ window.Module=opts=>originalFactory(opts).then(core=>{
         page.evaluate("window.__rejectAllVram=false")
         self.assertEqual(page.evaluate("testCore._get_vram_fault_model_state().modelId"), 2)
         self.assertEqual(page.evaluate("testCore._get_vram_fault_model_state().bridgeA"), -1)
-        expect(page.locator("#logicStatus")).to_contain_text("RAM fault remains unchanged")
+        expect(page.locator("#vramModelStatus")).to_contain_text("RAM settings were not changed")
 
         # A pulse refuses a VRAM takeover and keeps its active budget.
         page.locator("#pauseBtn").click()
@@ -174,6 +174,7 @@ window.Module=opts=>originalFactory(opts).then(core=>{
             "mimeType": "application/octet-stream",
             "buffer": original_cartridge(),
         })
+        page.wait_for_function("testCore._get_vram_fault_model_state().modelId===1")
         self.assertEqual(page.evaluate("testCore._get_vram_fault_model_state().modelId"), 1)
         self.assertEqual(page.evaluate("testCore._get_vram_fault_model_state().mask"), 0)
         self.assertEqual(self.errors, [])
@@ -181,7 +182,7 @@ window.Module=opts=>originalFactory(opts).then(core=>{
     def test_normal_core_uses_legacy_frame_fallback(self):
         self.open_core(OPTIONS.normal_core)
         page = self.page
-        expect(page.locator('#vramModel option[value="2"]')).to_be_disabled()
+        self.assertTrue(page.locator('#vramModel option[value="2"]').evaluate("option=>option.disabled"))
         expect(page.locator("#transactionMetrics")).to_be_hidden()
         page.locator(".pin").nth(0).click()
         page.wait_for_function("testCore._get_vram_address_mask()===1")
