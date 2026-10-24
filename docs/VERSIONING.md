@@ -1,8 +1,8 @@
 # Versioning policy
 
-Current source milestone: **v0.4.0** (`VERSION` stores `0.4.0`).
+Current published milestone: **v0.4.0** (`VERSION` stores `0.4.0`).
 The audio-input milestone adds independent PSG/FM bridges and verified Z80 write
-routes. Publish only after final CI and package gates pass. The immutable
+routes. Required CI and the complete public package have passed verification. The immutable
 v0.3.0 transaction-VRAM release and all earlier artifacts remain unchanged.
 
 VRAMpage MD is experimental, **not version 2.x**. Use semantic-looking

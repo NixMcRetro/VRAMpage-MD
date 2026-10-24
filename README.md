@@ -6,9 +6,6 @@
 
 ## Download and play on your Mac
 
-The v0.4.0 download links are staged for publication after final release checks.
-Until publication completes, use the [verified v0.3.0 package](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.3.0/VRAMpage-MD-v0.3.0-macos.zip).
-
 **[Download VRAMpage MD v0.4.0 - complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.0/VRAMpage-MD-v0.4.0-macos.zip)**
 
 1. Download the ZIP and double-click it in Finder to extract it.
