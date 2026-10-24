@@ -1,48 +1,41 @@
 # Circuit configuration files
 
-Circuit configuration JSON saves fault settings only. It never includes a ROM,
-RAM or VRAM contents, counters, frame numbers, pulse budgets, or event history.
-The existing experiment metadata download remains separate.
+Development source after the public v0.4.0 release can save and restore stable
+circuit settings. This feature is not in the original v0.4.0 ZIP.
 
-Version 1 uses the format name `vrampage-md-circuit-config` and contains all
-four stable domains: `vram`, `ram`, `psg`, and `fm`. The VRAM entry has a model
-ID, an 8-bit stuck-low mask, and either a two-line bridge pair or `null`. The
-RAM entry is `null` or an address-mask setting or a persistent address/data
-line-pair setting. PSG and FM entries are `null` or two distinct D0-D7 inputs.
-RAM and VRAM faults cannot both be enabled. PSG and FM settings are independent
-of each other and of the memory fault domain.
+Open **Circuit configuration**, choose **Save configuration**, and keep the JSON
+file. To restore it, choose the file, review its preview and click **Apply**.
+Choosing a file only stages a preview. It does not activate faults or change the
+existing controls. Cancel discards the preview. Invalid replacement files leave
+the previous valid preview visible and report that the replacement was rejected.
 
-Files must include every domain. Unknown versions, fields, invalid ranges,
-cross-byte-lane RAM data pairs, and conflicting RAM/VRAM settings are rejected.
-The importer does not merge partial files or downgrade unsupported models.
-An unsupported enabled setting makes the whole staged configuration
-unavailable to Apply. Disabled optional PSG/FM settings remain usable with a
-core that lacks those APIs.
+The version 1 format saves the selected VRAM model and either its disconnected
+lines or bridge pair, one stable RAM fault, and independent PSG/FM bridge pairs.
+It excludes ROM identity/content, memory contents, counters, timing, pulses and
+experiment history. These are reusable settings, not emulator save states or a
+promise to reproduce the same gameplay from a different starting point. Use
+experiment exports separately to record execution metadata.
 
-Loading a file only displays a preview. The user must choose **Apply staged
-configuration** to change the running circuit. Apply checks current system
-support, core APIs, and active RAM pulses before calling any setter. Existing
-VRAM and RAM handoff functions preserve their mutual exclusion. Unchanged
-targets skip setters so their counters remain intact. If a setter fails after
-another domain has changed, the app pauses, keeps the staged file, and reports
-the tracked resulting settings. It does not claim that counters or prior chip
-state were restored.
+All domains are present in a file. A null RAM or audio entry means disconnected.
+RAM and active VRAM faults cannot coexist. Bridge endpoints are unordered: a
+reversed pair represents the same connection and must not reset live counters.
+Unknown fields, incompatible versions, invalid values and cross-byte RAM data
+pairs are rejected. Files are limited to 32 KB.
 
-For example:
+Apply checks the current core's capabilities before changing settings. It does
+not silently replace an unsupported transaction model with the frame model.
+An active RAM pulse or momentary VRAM contact must finish or be released first.
+Unchanged settings skip setters so counters are retained. Changing a setting can
+reset its counters. Existing memory-domain handoff rules remain in force, while
+PSG and FM can coexist with either memory domain.
 
-```json
-{
-  "format": "vrampage-md-circuit-config",
-  "schemaVersion": 1,
-  "configuration": {
-    "vram": {"modelId": 1, "mask": 0, "pair": [0, 1]},
-    "ram": null,
-    "psg": [0, 7],
-    "fm": [1, 6]
-  }
-}
-```
+If a later core operation rejects or throws after earlier operations succeeded,
+emulation pauses and the preview remains available. The status reports observed
+or tracked state and explicitly identifies unavailable state. This is not an
+atomic rollback: earlier changes and counter resets can remain. Removing a fault
+does not undo memory writes or restore chip registers. Clean restart remains the
+full reset path.
 
-This file describes settings only. It does not store chip registers, RAM
-contents, or game execution state, and applying a configuration does not repair
-state changed by earlier writes.
+Tests cover strict schema validation, inert staging, supported and unsupported
+cores, pulses, unchanged/reversed connections, memory handoffs, failed and
+throwing setters, and round-trips through the actual compiled runtime.

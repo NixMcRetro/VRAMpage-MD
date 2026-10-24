@@ -447,6 +447,28 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertEqual(self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]"), calls)
         self.assertEqual(self.page.evaluate("[mockCore.psg.inputWrites,mockCore.fm.inputWrites]"), ["42", "27"])
 
+    def test_circuit_config_saved_reversed_audio_selection_preserves_live_counters(self):
+        self.page.close()
+        self.page = self.new_page(circuit_config=True)
+        self.load_rom()
+        self.page.locator("#pauseBtn").click()
+        for domain, pair in [("psg", [7, 0]), ("fm", [6, 1])]:
+            self.page.locator(f"#{domain}BridgeA").select_option(str(pair[0]))
+            self.page.locator(f"#{domain}BridgeB").select_option(str(pair[1]))
+            self.page.locator(f"#{domain}BridgeApply").click()
+        self.page.evaluate("mockCore.psg.inputWrites='42'; mockCore.fm.inputWrites='27'")
+        calls = self.page.evaluate("[mockCore.psg.calls.length,mockCore.fm.calls.length]")
+        with self.page.expect_download() as info:
+            self.page.locator("#circuitConfigDownload").click()
+        saved = json.loads(Path(info.value.path()).read_text())
+        self.assertEqual(saved["configuration"]["psg"], [0, 7])
+        self.assertEqual(saved["configuration"]["fm"], [1, 6])
+        self.stage_circuit_file(saved)
+        self.page.locator("#circuitConfigApply").click()
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("already matches")
+        self.assertEqual(self.page.evaluate("[mockCore.psg.calls.length,mockCore.fm.calls.length]"), calls)
+        self.assertEqual(self.page.evaluate("[mockCore.psg.inputWrites,mockCore.fm.inputWrites]"), ["42", "27"])
+
     def test_circuit_config_reversed_ram_pair_does_not_reset_fault_or_counters(self):
         self.page.close()
         self.page = self.new_page(circuit_config=True)
