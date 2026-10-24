@@ -41,6 +41,7 @@
   let logicStatusMessage = 'Checking core support…';
   let lastLogicExperiment = null;
   let cpuInterventions = [];
+  let faultDisconnectActions = [];
   let faultPulses = [], pendingPulse = null;
   let activeRamConfiguration = null, stagedCircuitConfiguration = null;
   let circuitConfigLoadGeneration=0, circuitConfigLoading=false;
@@ -100,6 +101,7 @@
     $('powerLed').classList.toggle('on', running);
     $('powerLabel').textContent = running ? 'CONSOLE ON' : (emulator ? 'WAITING FOR ROM' : 'CORE NOT READY');
     $('resetBtn').disabled = !running;
+    $('disconnectAllFaultsBtn').disabled = !running;
     $('pauseBtn').disabled = !running;
     $('soundBtn').disabled = !running;
     updateLogicControls();
@@ -1017,9 +1019,9 @@
     const action=mode===1 ? 'force-resume' : 'cpu-only-reset';
     cpuInterventions.push({action,frame,flagsBefore,
       flagsAfter:Number(emulator._get_logic_cpu_flags())});
-    logicResetState=`${action}; faults disconnected, RAM preserved`;
-    setLogicStatus(`${mode===1 ? 'Forced resume attempted' : 'CPU-only reset issued'}. Faults disconnected; RAM preserved. Recovery is not guaranteed.`);
-    stamp(`CPU intervention: ${action}; RAM preserved, faults disconnected`);
+    logicResetState=`${action}; RAM/VRAM faults disconnected; audio faults unchanged; RAM preserved`;
+    setLogicStatus(`${mode===1 ? 'Forced resume attempted' : 'CPU-only reset issued'}. RAM/VRAM faults disconnected; audio faults unchanged; RAM preserved. Recovery is not guaranteed.`);
+    stamp(`CPU intervention: ${action}; RAM/VRAM faults disconnected; audio faults unchanged; RAM preserved`);
     refreshLogicMetrics();
     return true;
   }
@@ -1030,6 +1032,109 @@
     pendingPulse.reason=reason;
     pendingPulse.endFrame=Number(emulator._get_logic_frame());
     pendingPulse=null;
+  }
+
+  function disconnectAllFaults() {
+    if (!started) return false;
+    if (!paused) pauseToggle();
+    pressed.clear();
+    cancelPulse('all fault domains disconnected');
+    selectedPin=null; ramSelectedPin=null; psgSelectedPin=null; fmSelectedPin=null;
+    if (momentary) latched=canonical(momentary);
+    momentary=null; momentaryRestorePair=null;
+
+    const results=[];
+    const note=(domain,result,actual)=>results.push({domain,result,actual});
+    let vramState=null;
+    if (vramModelApiReady()) {
+      try { vramState=emulator._get_vram_fault_model_state(); } catch (_) { /* Use tracked state below. */ }
+    }
+    const vramActive=vramState
+      ? !!(vramState.mask || (vramState.bridgeA>=0 && vramState.bridgeB>=0))
+      : vramFaultActive();
+    if (!vramActive) note('VRAM','already off','no configured VRAM fault');
+    else {
+      try {
+        const cleared=disconnect('all fault domains disconnected');
+        let actual=null;
+        try { if (vramModelApiReady()) actual=emulator._get_vram_fault_model_state(); } catch (_) { /* Show tracked state below. */ }
+        const actualIsRuntime=!!actual;
+        actual=actual || currentVramModelState();
+        const stillActive=!!(actual.mask || (actual.bridgeA>=0 && actual.bridgeB>=0));
+        note('VRAM',cleared&&!stillActive?'cleared':'clear failed',
+          `${actualIsRuntime?'runtime':'tracked'} model ${actual.modelId}, mask ${actual.mask}, pair ${actual.bridgeA>=0&&actual.bridgeB>=0?`AD${actual.bridgeA}↔AD${actual.bridgeB}`:'none'}`);
+      } catch (_) {
+        let actual=null;
+        try { if (vramModelApiReady()) actual=emulator._get_vram_fault_model_state(); } catch (_) { /* Fall through to tracked values. */ }
+        note('VRAM','clear threw',actual
+          ? `runtime model ${actual.modelId}, ${actual.mask||(actual.bridgeA>=0&&actual.bridgeB>=0)?'fault remains configured':'no fault configured'}`
+          : vramFaultActive()?'tracked fault remains active; runtime state unknown':'tracked fault off; runtime state unknown');
+      }
+    }
+
+    let pulseArmed=false, pulseStateUnknown=false;
+    try { pulseArmed=typeof emulator._get_logic_pulse_state==='function' && Number(emulator._get_logic_pulse_state())===1; }
+    catch (_) { pulseStateUnknown=true; }
+    if (!logicActive && !pendingPulse && !pulseArmed && !pulseStateUnknown) note('RAM','already off','no tracked RAM fault');
+    else {
+      try {
+        let cleared;
+        if (logicActive) cleared=disconnectLogic({silent:true,pulseReason:'all fault domains disconnected'});
+        else {
+          const clearStatus=emulator._set_logic_fault(0,0,-1,-1);
+          cleared=clearStatus===0;
+          if (cleared) cancelPulse('all fault domains disconnected');
+        }
+        let pulseAfter=false;
+        try { pulseAfter=typeof emulator._get_logic_pulse_state==='function' && Number(emulator._get_logic_pulse_state())===1; }
+        catch (_) { /* The paused state is still reported below. */ }
+        note('RAM',cleared&&!logicActive?'cleared':'clear failed',cleared
+          ? `no tracked RAM fault; core clear accepted${pulseStateUnknown&&!pulseAfter?'; pulse state remains unverified':''}`
+          : `${logicActive?'tracked RAM fault remains active':'tracked RAM state off; core state unverified'}${pulseAfter?'; core pulse remains armed while paused':''}`);
+      } catch (_) { note('RAM','clear threw',`${logicActive?'tracked RAM fault remains active':'tracked RAM state off'}; core setter outcome and pulse state unverified while paused`); }
+    }
+
+    const clearAudio=(kind)=>{
+      const isPsg=kind==='PSG';
+      const ready=isPsg?psgDataApiReady():fmDataApiReady();
+      const getter=isPsg?emulator?._get_psg_data_bridge_state:emulator?._get_fm_data_bridge_state;
+      const bridgeSetter=isPsg?emulator?._set_psg_data_bridge:emulator?._set_fm_data_bridge;
+      const maskSetter=isPsg?emulator?._set_psg_data_mask:emulator?._set_fm_data_mask;
+      if (!ready) { note(kind,'unavailable','optional runtime API absent'); return; }
+      let state=null, readFailed=false;
+      try { state=getter.call(emulator); } catch (_) { readFailed=true; }
+      if (state && !state.configured) { note(kind,'already off','runtime state reports no configured fault'); return; }
+      const observedAudio=()=>{
+        try {
+          const after=getter.call(emulator);
+          return after ? after.configured?'configured fault remains':'no configured fault' : 'runtime state unknown';
+        } catch (_) { return 'runtime state unknown'; }
+      };
+      try {
+        const status=state?.dataMask && typeof maskSetter==='function'
+          ? maskSetter.call(emulator,0)
+          : bridgeSetter.call(emulator,0,-1,-1);
+        if (status!==0) { note(kind,`clear rejected (${status})`,observedAudio()); return; }
+        let after=null;
+        try { after=getter.call(emulator); } catch (_) { /* Setter success remains known; state is not observable. */ }
+        note(kind,after ? after.configured?'clear accepted; still configured':'cleared' : readFailed?'cleared; state unavailable':'cleared; state unreadable',
+          after ? after.configured?'configured fault remains':'no configured fault' : 'runtime state unknown');
+      } catch (_) { note(kind,'clear threw',observedAudio()); }
+    };
+    clearAudio('PSG');
+    clearAudio('FM');
+
+    const summary=results.map(item=>`${item.domain}: ${item.result} (${item.actual})`).join('; ');
+    const allClear=results.every(item=>item.result==='already off'||item.result==='cleared');
+    const status=`All-domain disconnect attempted while paused. ${summary}. No CPU recovery or full restart was issued; existing memory and chip state may persist.`;
+    $('disconnectAllFaultsStatus').textContent=status;
+    stamp(status);
+    let frame=null;
+    try { if (logicApiReady()) { const value=Number(emulator._get_logic_frame()); if(Number.isFinite(value)&&value>=0)frame=value; } }
+    catch (_) { /* Disconnect results must still be retained if telemetry is unavailable. */ }
+    faultDisconnectActions.push({action:'all-domain-disconnect',frame,results:results.map(item=>({...item}))});
+    updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls();
+    return allClear;
   }
 
   function startFaultPulse(pair=null) {
@@ -1439,6 +1544,7 @@
       addressLineChanges:addressLineChanges.map(entry=>({...entry})),
       faultPulses:faultPulses.map(entry=>({...entry})),
       cpuInterventions:cpuInterventions.map(entry=>({...entry})),
+      faultDisconnects:faultDisconnectActions.map(entry=>({...entry,results:entry.results.map(result=>({...result}))})),
       rom:{name:loadedName || null,sha256:romSha256},
       logicFault:lastLogicExperiment ? {...lastLogicExperiment} : null,
       faultActive:logicActive,
@@ -1768,6 +1874,8 @@
     setRunning(true);
     paused=false;
     $('pauseBtn').textContent='Pause';
+    faultDisconnectActions=[];
+    $('disconnectAllFaultsStatus').textContent='No all-domain disconnect has been attempted for this cartridge.';
     accumulated=0;lastFrame=0;resetStats();nextAudioTime=0;
     updateLogicControls();
     refreshPsgDataControls();
@@ -1942,6 +2050,7 @@
     $('logicResumeBtn').addEventListener('click',()=>recoverLogicCPU(1));
     $('logicCpuResetBtn').addEventListener('click',()=>recoverLogicCPU(2));
     $('logicDisconnectBtn').addEventListener('click',()=>disconnectLogic());
+    $('disconnectAllFaultsBtn').addEventListener('click',disconnectAllFaults);
     $('logicExperimentBtn').addEventListener('click',()=>downloadExperimentJSON().catch(error=>{
       setLogicStatus(`Could not create experiment metadata: ${error.message}`);
       stamp(`Metadata export failed: ${error.message}`);

@@ -18,6 +18,11 @@ window.Module = async () => {
   function setLogicFault(kind, access, a, b) {
     logic.setterCalls.push([kind, access, a, b]);
     if (kind === 0) {
+      if(window.mockCore.throwLogicClearAfter) {
+        logic.pulseState = 0;logic.budget=0;logic.addressMask=0;logic.active=false;
+        logic.config={kind:0,access:0,a:0,b:0};logic.reads=0;logic.writes=0;logic.activationFrame=0;
+        throw new Error('synthetic RAM clear trap after mutation');
+      }
       if(window.mockCore.rejectLogicClear)return 5;
       if (logic.pulseState === 1) logic.pulseState = 4;
       logic.addressMask=0;
@@ -111,6 +116,8 @@ window.Module = async () => {
     Object.assign(core, {
       _set_vram_fault_model(modelId,mask,a,b) {
         vramModel.calls.push([modelId,mask,a,b]);
+        if (window.mockCore.rejectVramModel) return 9;
+        if (window.mockCore.throwVramModel) throw new Error('synthetic VRAM selector trap');
         if (![1,2].includes(modelId) || !(vramModel.supportedModelsMask & (1<<modelId)) ||
             !Number.isInteger(mask) || mask<0 || mask>255 ||
             (mask && (a!==-1 || b!==-1)) ||
