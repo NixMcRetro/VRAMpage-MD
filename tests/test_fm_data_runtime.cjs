@@ -18,7 +18,7 @@ function fmToneCartridge() {
   const view = new DataView(rom.buffer);
   for (let offset = 0; offset < 0x100; offset += 4) view.setUint32(offset, 0x300);
   view.setUint32(0, 0xffff00);
-  view.setUint32(4, 0x400);
+  view.setUint32(4, 0x800);
   rom.set(Buffer.from('SEGA MEGA DRIVE '), 0x100);
   rom.set(Buffer.from('VRAMPAGE FM DATA TEST'), 0x120);
   view.setUint32(0x1a4, rom.length - 1);
@@ -27,13 +27,25 @@ function fmToneCartridge() {
 
   const words = [];
   const word = (address, value) => words.push(0x33fc, value, address >>> 16, address & 0xffff);
-  const byte = (address, value) => words.push(0x13fc, value, address >>> 16, address & 0xffff);
+  const fastByte = (address, value) => words.push(0x13fc, value, address >>> 16, address & 0xffff);
+  const byte = (address, value) => {
+    words.push(0x13fc, value, address >>> 16, address & 0xffff);
+    // Give YM3438 its busy interval while exercising the shared write boundary.
+    for (let i = 0; i < 16; i++) words.push(0x4e71);
+  };
   const reg = (address, value) => {
     byte(0x00a04000, address);
     byte(0x00a04001, value);
   };
   word(0x00a11100, 0x0100); // Assert BUSREQ before using the Z80/FM bus.
   word(0x00a11200, 0x0100); // Release the Z80 reset while BUSREQ is held.
+  fastByte(0x00a04000, 0x22);
+  fastByte(0x00a04001, 0x00);
+  // Record immediate and delayed FM status reads in work RAM to check that
+  // the input wrapper preserves the core's busy/status timing.
+  words.push(0x1039, 0x00a0, 0x4000, 0x13c0, 0x00ff, 0x0100);
+  for (let i = 0; i < 400; i++) words.push(0x4e71);
+  words.push(0x1039, 0x00a0, 0x4000, 0x13c0, 0x00ff, 0x0101);
   reg(0x22, 0x00); // LFO off
   reg(0x27, 0x00); // normal channel mode
   for (const offset of [0, 4, 8, 12]) {
@@ -49,8 +61,13 @@ function fmToneCartridge() {
   reg(0xa0, 0x98);
   reg(0xa4, 0x22);
   reg(0x28, 0xf0); // key on channel 0
+  words.push(0x303c, 0x7fff); // Let the tone run across frames before Z80 reset.
+  const dbra = words.length;
+  words.push(0x51c8, ((dbra * 2) - ((dbra + 2) * 2)) & 0xffff); // DBRA D0, loop
+  word(0x00a11200, 0x0000); // Assert Z80 reset after FM writes have been counted.
+  word(0x00a11200, 0x0100); // Release it; this is a chip-only partial FM reset.
   words.push(0x60fe);
-  words.forEach((value, index) => view.setUint16(0x400 + index * 2, value));
+  words.forEach((value, index) => view.setUint16(0x800 + index * 2, value));
   [0x4e72, 0x2700, 0x60fe].forEach((value, index) => view.setUint16(0x300 + index * 2, value));
   return rom;
 }
@@ -77,6 +94,12 @@ function nextAudio(core) {
   };
 }
 
+function fmStatusProbe(core) {
+  const base = core._get_logic_ram_ref() >>> 0;
+  // The 68K work RAM byte lanes are word-swapped in the exported heap view.
+  return [core.HEAPU8[base + 0x101], core.HEAPU8[base + 0x100]];
+}
+
 function testUnsignedCounterFacadeBoundaries() {
   const module = {
     postRun: [], _set_fm_data_bridge_c: () => 0,
@@ -99,15 +122,20 @@ async function main() {
   const rom = fmToneCartridge();
   let baselineCore;
   if (variant === 'ym3438') {
-    baselineCore = await createCore(runtimePath, rom);
-    assert.equal(typeof baselineCore._set_fm_data_bridge, 'function');
-    assert.equal(baselineCore._get_fm_data_bridge_state().configured, false);
+    baselineCore = await createCore(normalPath, rom);
+    assert.equal(typeof baselineCore._set_fm_data_bridge, 'undefined',
+      'normal YM3438 core does not expose the optional FM bridge');
   } else {
     baselineCore = await createCore(normalPath, rom);
     assert.equal(typeof baselineCore._set_fm_data_bridge, 'undefined',
       'normal core does not expose the optional FM bridge');
   }
   const baseline = nextAudio(baselineCore);
+  const baselineStatus = fmStatusProbe(baselineCore);
+  assert.equal(baselineStatus[0] & 0x80, 0x80,
+    'immediate FM status read observes the busy bit');
+  assert.equal(baselineStatus[1] & 0x80, 0,
+    'delayed FM status read observes busy clear');
   assert.ok(baseline.count > 0, 'synthetic FM program produces audio samples');
   assert.ok([...baseline.left, ...baseline.right].every(Number.isFinite));
   assert.ok([...baseline.left, ...baseline.right].some(value => Math.abs(value) > 0.0001),
@@ -118,6 +146,8 @@ async function main() {
   assert.equal(typeof off._set_fm_data_bridge_c, 'undefined');
   assert.equal(off._get_fm_data_bridge_state().supported, true);
   const offSamples = nextAudio(off);
+  assert.deepEqual(fmStatusProbe(off), baselineStatus,
+    'runtime-off immediate and delayed FM status reads match normal');
   assert.equal(offSamples.count, baseline.count, 'runtime-off sample count matches baseline');
   assert.deepEqual(offSamples.left, baseline.left, 'runtime-off left samples match baseline');
   assert.deepEqual(offSamples.right, baseline.right, 'runtime-off right samples match baseline');
@@ -129,18 +159,30 @@ async function main() {
     'PSG and FM bridges can be configured independently');
   const psgBeforeFmWrites = active._get_psg_data_bridge_state();
   const changed = nextAudio(active);
+  assert.deepEqual(fmStatusProbe(active), baselineStatus,
+    'FM bridge leaves the immediate and delayed busy/status reads unchanged');
   const state = active._get_fm_data_bridge_state();
   assert.deepEqual(active._get_psg_data_bridge_state(), psgBeforeFmWrites,
     'FM activity does not mutate PSG bridge configuration or counters');
   assert.equal(changed.count, baseline.count, 'active bridge preserves sample count');
   assert.ok([...changed.left, ...changed.right].every(Number.isFinite));
-  assert.ok(BigInt(state.inputWrites) > 0n, 'shared FM write sink counts 68K register bytes');
+  assert.ok(BigInt(state.inputWrites) > 0n,
+    'FM writes after the ROM bootstrap Z80-only reset reach the shared sink');
   assert.ok(BigInt(state.changedWrites) > 0n, 'bridge changes FM address or data bytes');
   assert.notDeepEqual(changed.left, baseline.left, 'active bridge changes generated FM audio');
   assert.equal(typeof active._get_fm_data_bridge_input_writes(), 'bigint',
     'compiled uint64 input counter uses exact Wasm BigInt ABI');
   assert.equal(typeof active._get_fm_data_bridge_changed_writes(), 'bigint',
     'compiled uint64 changed counter uses exact Wasm BigInt ABI');
+  const beforeZ80Reset = active._get_fm_data_bridge_state();
+  for (let frame = 0; frame < 5; frame++) nextAudio(active);
+  const afterZ80Reset = active._get_fm_data_bridge_state();
+  assert.equal(afterZ80Reset.configured, true,
+    'Z80-only reset leaves the FM bridge connected');
+  assert.equal(afterZ80Reset.inputWrites, beforeZ80Reset.inputWrites,
+    'Z80-only reset preserves aggregate FM write counters');
+  assert.equal(afterZ80Reset.changedWrites, beforeZ80Reset.changedWrites,
+    'Z80-only reset preserves changed-byte counters');
 
   const beforeInvalid = active._get_fm_data_bridge_state();
   const coercion = {valueOf() { throw new Error('must not coerce'); }};
@@ -163,8 +205,10 @@ async function main() {
     'removing FM bridge does not mutate PSG bridge state');
 
   const reset = await createCore(runtimePath, rom);
+  const resetControl = await createCore(runtimePath, rom);
   assert.equal(reset._set_fm_data_bridge(1, 0, 5), 0);
   assert.equal(reset._set_psg_data_bridge(1, 1, 7), 0);
+  nextAudio(resetControl);
   const prior = nextAudio(reset);
   assert.ok(BigInt(reset._get_fm_data_bridge_state().inputWrites) > 0n);
   reset.HEAPU8.set(rom, reset._get_rom_buffer_ref(rom.length));
@@ -176,11 +220,14 @@ async function main() {
   assert.equal(reset._get_psg_data_bridge_state().configured, false,
     'full sound reset also clears the independent PSG bridge');
   const restored = nextAudio(reset);
+  resetControl.HEAPU8.set(rom, resetControl._get_rom_buffer_ref(rom.length));
+  resetControl._start();
+  const controlAfterReset = nextAudio(resetControl);
   assert.equal(restored.count, baseline.count);
-  assert.deepEqual(restored.left, baseline.left,
-    'new cartridge returns future FM output to normal');
+  assert.deepEqual(restored.left, controlAfterReset.left,
+    'new cartridge returns future FM output to an unbridged full-reset control');
   assert.notDeepEqual(prior.left, restored.left);
-  console.log(`Synthetic 68K FM writes matched ${variant === 'ym3438' ? 'YM3438 runtime-off' : 'normal'} output while off, changed output while active, and reset cleanly.`);
+  console.log(`Synthetic 68K FM writes matched ${variant === 'ym3438' ? 'normal YM3438' : 'normal MAME'} output while off, changed output while active, and reset cleanly.`);
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1; });

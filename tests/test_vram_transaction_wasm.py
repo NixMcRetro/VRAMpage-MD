@@ -175,14 +175,16 @@ class VramTransactionWasm(unittest.TestCase):
         else:
             cls.temp = tempfile.TemporaryDirectory(prefix="vram-tx-wasm-")
             root = Path(cls.temp.name)
-        normal_source, runtime_source, diagnostic_source, alt_source, baseline_source, ym3438_source = (
+        normal_source, runtime_source, diagnostic_source, alt_source, baseline_source, normal_ym3438_source, ym3438_source = (
             root / "normal", root / "runtime", root / "diagnostic",
-            root / "diagnostic-alt", root / "baseline", root / "runtime-ym3438")
+            root / "diagnostic-alt", root / "baseline", root / "normal-ym3438",
+            root / "runtime-ym3438")
         stage_source(vendor, normal_source)
         stage_source(vendor, runtime_source)
         stage_source(vendor, diagnostic_source)
         stage_source(vendor, alt_source)
         stage_source(vendor, baseline_source)
+        stage_source(vendor, normal_ym3438_source)
         stage_source(vendor, ym3438_source)
         test_previous_diagnostic_build_upgrades(vendor, root / "previous-diagnostic")
         original_render = subprocess.check_output([
@@ -194,6 +196,7 @@ class VramTransactionWasm(unittest.TestCase):
         cls.diagnostic_js = build(diagnostic_source, diagnostic=True)
         cls.diagnostic_alt_js = build(alt_source, diagnostic=True, alt_renderer=True)
         cls.baseline_js = build(baseline_source, diagnostic=False)
+        cls.normal_ym3438_js = build(normal_ym3438_source, diagnostic=False, ym3438=True)
         cls.runtime_ym3438_js = build(ym3438_source, diagnostic=False, runtime=True, ym3438=True)
 
     @classmethod
@@ -372,7 +375,7 @@ class VramTransactionWasm(unittest.TestCase):
         command(["node", str(fixture / "tests/test_fm_data_runtime.cjs"),
                  str(runtime_paths[0]), str(normal_paths[0])], cwd=fixture)
         command(["node", str(fixture / "tests/test_fm_data_runtime.cjs"),
-                 str(self.runtime_ym3438_js), str(normal_paths[0]), "ym3438"], cwd=fixture)
+                 str(self.runtime_ym3438_js), str(self.normal_ym3438_js), "ym3438"], cwd=fixture)
 
         command(["bash", str(build_script), "normal"], cwd=fixture, env=env,
                 stdout=subprocess.DEVNULL)
