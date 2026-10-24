@@ -39,3 +39,19 @@ full reset path.
 Tests cover strict schema validation, inert staging, supported and unsupported
 cores, pulses, unchanged/reversed connections, memory handoffs, failed and
 throwing setters, and round-trips through the actual compiled runtime.
+
+For example, this version 1 file selects a frame-model VRAM bridge and two
+independent audio bridges:
+
+```json
+{
+  "format": "vrampage-md-circuit-config",
+  "schemaVersion": 1,
+  "configuration": {
+    "vram": {"modelId": 1, "mask": 0, "pair": [0, 1]},
+    "ram": null,
+    "psg": [0, 7],
+    "fm": [1, 6]
+  }
+}
+```
