@@ -50,6 +50,16 @@ uint16_t vram_tx_diagnostic_resolve_read(uint32_t logical_address) {
   return vram_tx_map_address(logical, test_mask, -1, -1);
 }
 
+static uint32_t render_trusted_snapshot_read_u32(uint32_t logical_address) {
+  /* Mirrors the generated call-site macro. These renderer-owned addresses
+   * are aligned and bounded; the separately tested helper remains the safe
+   * path for arbitrary callers. */
+  const int vram_tx_render_active_snapshot = vram_tx_diagnostic_render_active;
+  return (vram_tx_render_active_snapshot
+              ? vram_tx_render_read_u32(logical_address)
+              : VRAM_TX_RENDER_TYPED_U32(logical_address));
+}
+
 static void set_logical(uint16_t address, uint8_t value) {
 #ifdef LSB_FIRST
   vram[address ^ 1u] = value;
@@ -79,10 +89,31 @@ static void test_inactive_typed_fast_path(void) {
   assert(vram_tx_render_read_u16(0x1000) == UINT16_C(0x1133));
 #ifdef LSB_FIRST
   assert(vram_tx_render_read_u32(0x1200) == UINT32_C(0x33441111));
+  assert(render_trusted_snapshot_read_u32(0x1200) == UINT32_C(0x33441111));
 #else
   assert(vram_tx_render_read_u32(0x1200) == UINT32_C(0x11113344));
+  assert(render_trusted_snapshot_read_u32(0x1200) == UINT32_C(0x11113344));
 #endif
   assert(resolved_count == 0);
+}
+
+static void test_active_snapshot_uses_safe_mapper(void) {
+  memset(vram, 0, sizeof(vram));
+  resolved_count = 0;
+  test_mask = 0;
+  vram_tx_diagnostic_render_active = 1;
+  set_logical(0x1200, 0x11);
+  set_logical(0x1201, 0x11);
+  set_logical(0x1202, 0x33);
+  set_logical(0x1203, 0x44);
+#ifdef LSB_FIRST
+  assert(render_trusted_snapshot_read_u32(0x1200) == UINT32_C(0x33441111));
+#else
+  assert(render_trusted_snapshot_read_u32(0x1200) == UINT32_C(0x11113344));
+#endif
+  assert(resolved_count == 4);
+  assert(resolved[0] == 0x1200 && resolved[1] == 0x1201 &&
+         resolved[2] == 0x1202 && resolved[3] == 0x1203);
 }
 
 static void test_active_wrapped_mapping_and_order(void) {
@@ -137,6 +168,7 @@ static void test_wrapped_inactive_fallback(void) {
 int main(void) {
   test_packing_oracles();
   test_inactive_typed_fast_path();
+  test_active_snapshot_uses_safe_mapper();
   test_active_wrapped_mapping_and_order();
   test_wrapped_inactive_fallback();
   return 0;

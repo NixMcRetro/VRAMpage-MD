@@ -23,13 +23,16 @@
   const pinButtons = [];
   const logEl = $('experimentLog');
   let emulator = null, started = false, paused = false;
-  let loadedName = '', latched = null, momentary = null, selectedPin = null;
+  let loadedName = '', latched = null, momentary = null, momentaryRestorePair = null, selectedPin = null;
   let audioCtx = null, audioOn = false, nextAudioTime = 0;
   let romBytes = null, frameView = null, inputView = null, leftAudio = null, rightAudio = null;
   let lastFrame = 0, accumulated = 0, frames = 0, measuredAt = 0;
   let focusReleased = false;
   let lastContact = '';
   let vramAddressMask=0, vramAddressLineChanges=[];
+  let vramModelId=1, vramModelTransitions=[];
+  let lastVramSelectorStatus=0;
+  let vramModelStatusMessage='';
   let possibleVramResidue = false;
   let displayRefreshQueued = false;
   let logicApiAvailable = false, logicActive = false, logicStatsRetained = false;
@@ -41,7 +44,7 @@
   let logicResetState = 'No cartridge loaded';
   let romHashPromise = Promise.resolve(null);
   const CORE_PIN = '6090aff9e9b2f578cd28882bd4571d2e35b1d674';
-  const APPLICATION_VERSION = '0.2.8';
+  const APPLICATION_VERSION = '0.3.0';
   let buildInfo = {status:'unavailable',applicationVersion:APPLICATION_VERSION,sourceCommit:null};
   loadBuildInfo().then(info=>{buildInfo=info;});
 
@@ -104,9 +107,133 @@
   function actualPair() { return momentary || latched; }
   function describe(pair) { return pair ? `AD${pair[0]} ↔ AD${pair[1]}` : 'NONE — NORMAL ADDRESSING'; }
 
+  function vramModelApiReady(core=emulator) {
+    return typeof core?._set_vram_fault_model==='function' &&
+      typeof core?._get_vram_fault_model_state==='function' &&
+      typeof core?._get_vram_supported_model_mask==='function';
+  }
+
   function vramMaskApiReady() {
     return typeof emulator?._set_vram_address_mask==='function' &&
       typeof emulator?._get_vram_address_mask==='function';
+  }
+
+  function currentVramModelState() {
+    if (vramModelApiReady()) {
+      try { return emulator._get_vram_fault_model_state(); }
+      catch (_) { /* The legacy view below remains usable if optional metadata fails. */ }
+    }
+    return {
+      modelId:1,modelVersion:'frame-projection-v1',
+      supportedModelsMask:3,effective:vramFaultActive(),
+      reason:vramFaultActive()?'none':'no-fault',
+      mask:vramAddressMask,bridgeA:actualPair()?.[0] ?? -1,
+      bridgeB:actualPair()?.[1] ?? -1,
+      lastFrameCounts:null
+    };
+  }
+
+  function vramConfigArgs(modelId,mask,pair) {
+    if (!Number.isInteger(modelId) || (modelId!==1 && modelId!==2) ||
+        !Number.isInteger(mask) || mask<0 || mask>255) return null;
+    if (mask && pair) return null;
+    if (pair && (!Number.isInteger(pair[0]) || !Number.isInteger(pair[1]) ||
+        pair[0]<0 || pair[0]>7 || pair[1]<0 || pair[1]>7 || pair[0]===pair[1])) return null;
+    return pair ? [modelId,0,pair[0],pair[1]] : [modelId,mask,-1,-1];
+  }
+
+  function validateVramModel(modelId,mask,pair) {
+    const args=vramConfigArgs(modelId,mask,pair);
+    if (!args) return {ok:false,status:1,message:'Invalid VRAM model settings.'};
+    if (modelId===2 && !vramModelApiReady())
+      return {ok:false,status:2,message:'Transaction model needs a runtime-enabled core.'};
+    if (vramModelApiReady()) {
+      const supported=emulator._get_vram_supported_model_mask();
+      if ((supported & (1<<modelId))===0)
+        return {ok:false,status:2,message:'Transaction model is unsupported in the current VDP mode.'};
+    } else if (modelId!==1 || (mask && !vramMaskApiReady()) ||
+               (pair && typeof emulator?._set_vram_short!=='function')) {
+      return {ok:false,status:1,message:'The current core does not support this VRAM setting.'};
+    }
+    return {ok:true,status:0,args};
+  }
+
+  function vramDisconnectModel() {
+    const state=currentVramModelState();
+    return vramModelId===2 && (state.supportedModelsMask&4)===0 ? 1 : vramModelId;
+  }
+
+  function prepareVramForRamFault(reason) {
+    if (!vramFaultActive()) return {ok:true,snapshot:null};
+    const snapshot={modelId:vramModelId,mask:vramAddressMask,pair:canonical(actualPair())};
+    const targetModel=vramDisconnectModel();
+    const preflight=validateVramModel(targetModel,0,null);
+    if (!preflight.ok) {
+      setLogicStatus(`RAM fault was not applied: VRAM reconnect preflight failed. ${preflight.message}`);
+      stamp(`RAM handoff rejected before mutation: ${preflight.message}`);
+      return {ok:false,snapshot};
+    }
+    if (!applyVramModel(targetModel,0,null,reason))
+      return {ok:false,snapshot};
+    return {ok:true,snapshot};
+  }
+
+  function restoreVramAfterRamReject(snapshot,reason) {
+    if (!snapshot) return {ok:true,status:0};
+    const ok=applyVramModel(snapshot.modelId,snapshot.mask,snapshot.pair,reason);
+    const state=currentVramModelState();
+    if (!ok) vramModelTransitions.push({frame:logicApiReady()?Number(emulator._get_logic_frame()):null,
+      from:vramModelId,to:snapshot.modelId,fromMask:vramAddressMask,toMask:snapshot.mask,
+      fromPair:canonical(actualPair()),toPair:snapshot.pair,reason,result:'restore-rejected',
+      selectorStatus:lastVramSelectorStatus,actualModelId:state.modelId,actualMask:state.mask,
+      actualBridgeA:state.bridgeA,actualBridgeB:state.bridgeB});
+    return {ok,status:ok?0:lastVramSelectorStatus};
+  }
+
+  function recordRamHandoffRejection(snapshot,reason,status,rollback) {
+    const actual=currentVramModelState();
+    vramModelTransitions.push({frame:logicApiReady()?Number(emulator._get_logic_frame()):null,
+      from:snapshot?.modelId??vramModelId,to:actual.modelId,
+      fromMask:snapshot?.mask??vramAddressMask,toMask:actual.mask,
+      fromPair:snapshot?.pair??canonical(actualPair()),
+      toPair:actual.bridgeA>=0&&actual.bridgeB>=0?[actual.bridgeA,actual.bridgeB]:null,
+      reason,result:'ram-fault-rejected',ramSetterStatus:status,
+      vramRestoreStatus:rollback.status,actualModelId:actual.modelId,actualMask:actual.mask,
+      actualBridgeA:actual.bridgeA,actualBridgeB:actual.bridgeB,
+      transactionCountersReset:!!vramModelApiReady()&&!!snapshot,
+      transactionCacheInvalidated:!!vramModelApiReady()&&!!snapshot&&snapshot.modelId===2});
+  }
+
+  function callVramModel(modelId,mask,pair) {
+    const validation=validateVramModel(modelId,mask,pair);
+    if (!validation.ok) return lastVramSelectorStatus=validation.status;
+    if (vramModelApiReady())
+      return lastVramSelectorStatus=emulator._set_vram_fault_model(...validation.args);
+    // The legacy setters are retained for older cores and always mean frame projection.
+    const maskSetter=typeof emulator?._set_vram_address_mask==='function';
+    const bridgeSetter=typeof emulator?._set_vram_short==='function';
+    if (pair) {
+      const status=bridgeSetter?emulator._set_vram_short(pair[0],pair[1]):1;
+      if (status!==0 && status!==undefined) return lastVramSelectorStatus=status;
+    } else if (mask) {
+      if (!maskSetter) return lastVramSelectorStatus=1;
+      if (actualPair() && bridgeSetter) {
+        const clearStatus=emulator._set_vram_short(-1,-1);
+        if (clearStatus!==0 && clearStatus!==undefined) return lastVramSelectorStatus=clearStatus;
+      }
+      const status=emulator._set_vram_address_mask(mask);
+      if (status!==0 && status!==undefined) return lastVramSelectorStatus=status;
+    } else {
+      if (bridgeSetter) {
+        const clearStatus=emulator._set_vram_short(-1,-1);
+        if (clearStatus!==0 && clearStatus!==undefined) return lastVramSelectorStatus=clearStatus;
+      }
+      if (maskSetter) {
+        const status=emulator._set_vram_address_mask(0);
+        if (status!==0 && status!==undefined) return lastVramSelectorStatus=status;
+      }
+    }
+    return lastVramSelectorStatus=0;
   }
 
   function vramFaultActive() { return !!(vramAddressMask || actualPair()); }
@@ -114,8 +241,43 @@
     return Array.from({length:8},(_,i)=>i).filter(i=>mask & (1<<i)).map(i=>`AD${i}`);
   }
 
+  function refreshVramTelemetry() {
+    const modelState=currentVramModelState();
+    const txSupported=vramModelApiReady() && (modelState.supportedModelsMask & 4)!==0;
+    const modelSelect=$('vramModel');
+    modelSelect.querySelector('[value="2"]').disabled=!vramModelApiReady() ||
+      (!txSupported && vramModelId!==2);
+    modelSelect.disabled=!started;
+    if (modelSelect.value!==String(vramModelId)) modelSelect.value=String(vramModelId);
+    const modelStatus=$('vramModelStatus');
+    if (vramModelStatusMessage) {
+      modelStatus.textContent=vramModelStatusMessage;
+    } else if (!vramModelApiReady()) {
+      modelStatus.textContent='This core uses frame projection. Rebuild with the runtime profile to enable transaction mode.';
+    } else if (!started) {
+      modelStatus.textContent='Load a cartridge to select a VRAM model.';
+    } else if (modelState.modelId===2 && modelState.reason==='unsupported-mode') {
+      modelStatus.textContent='Transaction mode is suspended outside supported VDP Mode 5; its configuration is retained.';
+    } else if (vramModelId===2 && !txSupported) {
+      modelStatus.textContent='Transaction mode is unsupported in the current VDP mode.';
+    } else {
+      modelStatus.textContent=vramModelId===2
+        ? 'Logical-byte transaction model is selected; counters describe the last completed tick.'
+        : 'Frame-projection model is selected; legacy difference counters retain their meaning.';
+    }
+    $('transactionMetrics').hidden=!vramModelApiReady();
+    if (modelState.lastFrameCounts) {
+      $('transactionReads').textContent=modelState.lastFrameCounts.logicalByteReads.toLocaleString();
+      $('transactionWrites').textContent=modelState.lastFrameCounts.logicalByteWrites.toLocaleString();
+      $('redirectedReads').textContent=modelState.lastFrameCounts.redirectedByteReads.toLocaleString();
+      $('redirectedWrites').textContent=modelState.lastFrameCounts.redirectedByteWrites.toLocaleString();
+      $('physicalWrites').textContent=modelState.lastFrameCounts.changedPhysicalByteWrites.toLocaleString();
+    }
+  }
+
   function refreshVramControls() {
     const supported=vramMaskApiReady();
+    refreshVramTelemetry();
     $('vramMode').querySelector('[value="disconnect"]').disabled=!!emulator && !supported;
     $('vramModeHint').textContent=emulator && !supported
       ? 'This older core supports bridges only. Rebuild or download the current release for leg switches.'
@@ -145,22 +307,110 @@
     vramAddressMask=mask;
   }
 
-  function applyVramAddressMask(mask) {
-    if(!started || !vramMaskApiReady()) return;
-    const removedLogic=!!(mask && logicActive);
-    if(removedLogic && !disconnectLogic({silent:true})) {
-      stamp('VRAM leg unchanged: could not disconnect the RAM fault.');return;
+  function applyVramModel(modelId,mask,pair,reason='VRAM model changed') {
+    const targetPair=pair?canonical(pair):null;
+    const validation=validateVramModel(modelId,mask,targetPair);
+    if (!validation.ok) {
+      vramModelStatusMessage=validation.message;
+      $('vramModelStatus').textContent=vramModelStatusMessage;
+      stamp(`VRAM request rejected: ${validation.message}`);
+      return false;
     }
+    const changesFault=!!(mask || targetPair);
+    const removedLogic=changesFault && logicActive;
+    if (removedLogic && pendingPulse) {
+      setLogicStatus('Disconnect the active RAM pulse before applying a VRAM fault; its remaining budget is preserved.');
+      stamp('VRAM handoff rejected while a RAM pulse is active; pulse budget preserved.');
+      return false;
+    }
+    if (removedLogic && !logicApiReady()) {
+      setLogicStatus('RAM fault cannot be disconnected; VRAM settings were not changed.');
+      stamp('VRAM handoff rejected because RAM disconnect is unavailable.');
+      return false;
+    }
+
+    const oldModel=vramModelId, oldMask=vramAddressMask, oldPair=canonical(actualPair());
+    const oldFrame=logicApiReady()?Number(emulator._get_logic_frame()):null;
     const before=vramTransitionSnapshot();
-    const status=emulator._set_vram_address_mask(mask);
-    if(status!==0) {
-      if(removedLogic) setLogicStatus('RAM fault disconnected; VRAM leg setting rejected.');
-      stamp(`VRAM leg setting rejected (status ${status}).`);return;
+    const status=callVramModel(modelId,mask,targetPair);
+    if (status!==0) {
+      vramModelStatusMessage=`VRAM model rejected (status ${status}); RAM settings were not changed.`;
+      $('vramModelStatus').textContent=vramModelStatusMessage;
+      stamp(`VRAM model rejected (status ${status}); RAM fault remains unchanged.`);
+      return false;
     }
-    recordVramMask(mask,'VRAM leg toggled',before);
-    if (removedLogic) setLogicStatus('VRAM patch active; logic/work RAM fault disconnected.');
-    latched=null;momentary=null;selectedPin=null;
+    if (removedLogic && !disconnectLogic({silent:true})) {
+      let rollbackStatus=callVramModel(oldModel,oldMask,oldPair);
+      let safeFallbackStatus=null;
+      if (rollbackStatus!==0) {
+        safeFallbackStatus=callVramModel(1,0,null);
+        if (safeFallbackStatus===0) {
+          vramModelId=1;
+          recordVramMask(0,'VRAM rollback used frame-projection identity');
+          latched=null; momentary=null; momentaryRestorePair=null; selectedPin=null;
+          rollbackStatus=0;
+        }
+      }
+      if (rollbackStatus!==0 && vramModelApiReady()) {
+        const actual=currentVramModelState();
+        vramModelId=actual.modelId;
+        vramAddressMask=actual.mask;
+        latched=actual.bridgeA>=0&&actual.bridgeB>=0
+          ? canonical([actual.bridgeA,actual.bridgeB]) : null;
+        momentary=null;momentaryRestorePair=null;selectedPin=null;
+      }
+      vramModelTransitions.push({frame:oldFrame,from:oldModel,to:modelId,reason,
+        result:'ram-disconnect-rejected',rollbackStatus,safeFallbackStatus,
+        attemptedModelCountersReset:vramModelApiReady()?modelId:null,
+        rollbackModelCountersReset:vramModelApiReady()&&rollbackStatus===0?oldModel:null,
+        transactionCacheInvalidated:!!vramModelApiReady()&&(modelId===2||oldModel===2),
+        actualModelId:currentVramModelState().modelId,actualMask:currentVramModelState().mask,
+        actualBridgeA:currentVramModelState().bridgeA,actualBridgeB:currentVramModelState().bridgeB,
+        ramFaultStillActive:logicActive});
+      vramModelStatusMessage=rollbackStatus===0
+        ? safeFallbackStatus===0
+          ? 'RAM disconnect failed. VRAM faults were cleared in frame mode; selector rollback reset model counters.'
+          : 'RAM disconnect failed. VRAM settings were restored; selector rollback reset model counters.'
+        : 'RAM disconnect failed and VRAM rollback was rejected. Stop emulation and reload the cartridge.';
+      $('vramModelStatus').textContent=vramModelStatusMessage;
+      stamp(rollbackStatus===0
+        ? safeFallbackStatus===0
+          ? 'RAM disconnect failed; VRAM faults cleared in frame mode. Selector rollback reset model counters.'
+          : 'RAM disconnect failed; VRAM configuration restored. Selector rollback reset model counters.'
+        : `RAM disconnect failed; VRAM rollback also failed (status ${rollbackStatus}).`);
+      updateFaultUI();
+      if (rollbackStatus!==0) {
+        if (!paused) pauseToggle();
+        vramModelStatusMessage='RAM disconnect failed and VRAM rollback was rejected. Both fault states are retained; emulation was paused.';
+        $('vramModelStatus').textContent=vramModelStatusMessage;
+        stamp('Unsafe dual-domain rollback failure; emulation paused before another tick.');
+      }
+      return false;
+    }
+    vramModelStatusMessage='';
+    vramModelId=modelId;
+    recordVramMask(mask,reason,before);
+    latched=targetPair; momentary=null; selectedPin=null;
+    if (removedLogic) {
+      logicResetState='Logic fault disconnected because VRAM fault was activated';
+      logicStatusMessage='VRAM patch active; logic/work RAM fault disconnected.';
+      $('logicStatus').textContent=logicStatusMessage;
+      stamp('Logic/work RAM fault disconnected because the VRAM patch was activated');
+    }
+    if (oldModel!==modelId || oldMask!==mask || !samePair(oldPair,targetPair)) {
+      vramModelTransitions.push({frame:oldFrame,from:oldModel,to:modelId,
+        fromMask:oldMask,toMask:mask,fromPair:oldPair,toPair:targetPair,reason,result:'applied'});
+    }
+    if (oldModel!==modelId) {
+      stamp(`VRAM model changed from ${oldModel===2?'transaction':'frame projection'} to ${modelId===2?'transaction':'frame projection'}`);
+    }
     updateFaultUI();
+    return true;
+  }
+
+  function applyVramAddressMask(mask) {
+    if(!started || !Number.isInteger(mask) || mask<0 || mask>255) return false;
+    return applyVramModel(vramModelId,mask,null,'VRAM leg toggled');
   }
 
   function logicApiReady(core=emulator) {
@@ -201,15 +451,31 @@
   function applyAddressMask(mask) {
     if (!started || !addressMaskApiReady()) return;
     const access=Number($('logicAccess').value);
+    if (!Number.isInteger(mask) || mask<0 || mask>0x7fff ||
+        !Number.isInteger(access) || access<1 || access>3) {
+      setLogicStatus('Invalid RAM address mask; no fault was applied.');
+      return;
+    }
     const event=chipTransitionSnapshot();
     if (mask===0) {
       if (!disconnectLogic()) return;
       return;
     }
+    const handoff=prepareVramForRamFault('VRAM fault cleared before RAM fault activation');
+    if (!handoff.ok) return;
     const status=emulator._set_logic_address_mask(mask,access);
-    if (status!==0) {setLogicStatus(`Address-line setting rejected (status ${status}).`);return;}
+    if (status!==0) {
+      const rollback=restoreVramAfterRamReject(handoff.snapshot,'restored after RAM address-line rejection');
+      recordRamHandoffRejection(handoff.snapshot,'RAM address-line setter rejected after VRAM clear',status,rollback);
+      setLogicStatus(rollback.ok
+        ? `Address-line setting rejected (status ${status}); previous VRAM configuration restored.`
+        : `Address-line setting rejected (status ${status}); VRAM configuration restore failed.`);
+      stamp(rollback.ok
+        ? `RAM address-line request rejected (status ${status}); previous VRAM configuration restored.`
+        : `RAM address-line request rejected (status ${status}); VRAM restore also failed.`);
+      return;
+    }
     cancelPulse('replaced by address-line switches');
-    if (vramFaultActive()) disconnect();
     recordAddressMask(mask,access,'address line toggled',event); logicActive=true; logicStatsRetained=false;
     const lines=Array.from({length:15},(_,i)=>i).filter(i=>mask & (1<<i)).map(i=>`A${i+1}`);
     const accessLabel=['','read','write','read + write'][access];
@@ -324,6 +590,13 @@
   function applyLogicFault(writeLimit=null) {
     if (!started || !logicApiReady()) return false;
     const config=logicConfigFromControls();
+    const lineCount=config.kind===1?15:config.kind===2?16:0;
+    if (!lineCount || !Number.isInteger(config.access) || config.access<1 || config.access>3 ||
+        !Number.isInteger(config.a) || !Number.isInteger(config.b) ||
+        config.a<0 || config.b<0 || config.a>=lineCount || config.b>=lineCount) {
+      setLogicStatus('Invalid RAM fault configuration. No fault was applied.');
+      return false;
+    }
     if (config.a===config.b) {
       setLogicStatus('Choose two different lines. No fault was applied.');
       return false;
@@ -332,20 +605,28 @@
       setLogicStatus('Data pairs must stay within D0–D7 or D8–D15. No fault was applied.');
       return false;
     }
-    if (writeLimit!==null && (!writePulseApiReady() || config.access!==2)) {
+    if (writeLimit!==null && (!Number.isInteger(writeLimit) || ![1,2,4,8].includes(writeLimit) ||
+        !writePulseApiReady() || config.access!==2)) {
       setLogicStatus('Affected-write pulses require Access: Write and a rebuilt core.');
       return false;
     }
+    const handoff=prepareVramForRamFault('VRAM fault cleared before RAM fault activation');
+    if (!handoff.ok) return false;
     const chipBefore=chipTransitionSnapshot();
     const status=writeLimit===null
       ? emulator._set_logic_fault(config.kind,config.access,config.a,config.b)
       : emulator._arm_logic_write_pulse(config.kind,config.a,config.b,writeLimit);
     if (status!==0) {
-      setLogicStatus(`Core rejected this logic fault (status ${status}).`);
-      stamp(`Logic fault rejected: core status ${status}`);
+      const rollback=restoreVramAfterRamReject(handoff.snapshot,'restored after RAM fault rejection');
+      recordRamHandoffRejection(handoff.snapshot,'RAM fault setter rejected after VRAM clear',status,rollback);
+      setLogicStatus(rollback.ok
+        ? `Core rejected this logic fault (status ${status}); previous VRAM configuration restored.`
+        : `Core rejected this logic fault (status ${status}); VRAM configuration restore failed.`);
+      stamp(rollback.ok
+        ? `Logic fault rejected: core status ${status}; previous VRAM configuration restored.`
+        : `Logic fault rejected: core status ${status}; VRAM restore also failed.`);
       return false;
     }
-    if (vramFaultActive()) disconnect('RAM fault activated');
     cancelPulse('replaced by another fault');
     recordAddressMask(0,0,'replaced by paired fault',chipBefore);
     logicActive=true;
@@ -408,11 +689,24 @@
     if (!started || typeof emulator?._recover_logic_cpu !== 'function') return;
     const frame=Number(emulator._get_logic_frame());
     const flagsBefore=Number(emulator._get_logic_cpu_flags());
+    const hadRamFault=logicActive;
     if (!disconnectLogic({silent:true,pulseReason:'manual CPU recovery'})) {
       setLogicStatus('Recovery stopped: could not disconnect RAM fault.');
       return;
     }
-    disconnect();
+    if (!disconnect('CPU recovery disconnected VRAM fault')) {
+      const state=currentVramModelState();
+      const partial={action:'recovery-aborted',frame,flagsBefore,
+        ramFaultWasActive:hadRamFault,ramFaultDisconnected:hadRamFault&&!logicActive,
+        vramFaultDisconnected:false,reason:'VRAM clear rejected',
+        actualModelId:state.modelId,actualMask:state.mask,
+        actualBridgeA:state.bridgeA,actualBridgeB:state.bridgeB};
+      cpuInterventions.push(partial);
+      logicResetState='Recovery stopped after RAM fault disconnect; VRAM configuration remains active';
+      setLogicStatus('Recovery stopped: VRAM clear was rejected. The RAM fault is disconnected, VRAM configuration remains active, and no CPU intervention was issued.');
+      stamp('CPU recovery aborted after RAM disconnect; VRAM configuration remains active and CPU intervention was not issued.');
+      return;
+    }
     const status=emulator._recover_logic_cpu(mode);
     if (status!==0) {
       setLogicStatus(`CPU recovery rejected (status ${status}).`);
@@ -513,10 +807,13 @@
     const coreWrites=logicApiReady() ? Number(emulator._get_logic_writes()) || 0 : 0;
     const reads=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.readCount : coreReads;
     const writes=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.writeCount : coreWrites;
+    const runtimeVramState=vramModelApiReady()?currentVramModelState():null;
+    const transactionCounts=runtimeVramState?.lastFrameCounts
+      ? {...runtimeVramState.lastFrameCounts} : null;
     const data={
       schemaVersion:1,
       build:{...buildInfo},
-      modelVersion:'0.2.8-experimental',
+      modelVersion:'0.3.0-experimental',
       vramFault:{kind:vramAddressMask?'address-stuck-low':actualPair()?'address-bridge':'none',
         addressMask:vramAddressMask,lines:vramLines(vramAddressMask),bridge:actualPair()?[...actualPair()]:null},
       vramAddressLineChanges:vramAddressLineChanges.map(entry=>({...entry})),
@@ -530,6 +827,21 @@
       resetState:logicResetState,
       currentFrame,readCount:reads,writeCount:writes,
       cpuFlags:logicApiReady() ? Number(emulator._get_logic_cpu_flags()) || 0 : null,
+      logic:{schemaVersion:1,modelVersion:'work-ram-transaction-v1',active:logicActive,
+        fault:lastLogicExperiment ? {...lastLogicExperiment} : null,
+        readCount:reads,writeCount:writes,currentFrame,
+        cpuFlags:logicApiReady() ? Number(emulator._get_logic_cpu_flags()) || 0 : null},
+      vramTransaction:{schemaVersion:1,available:!!runtimeVramState,
+        modelId:runtimeVramState?.modelId ?? 1,
+        modelVersion:runtimeVramState?.modelVersion ?? 'frame-projection-v1',
+        effective:runtimeVramState?.effective ?? vramFaultActive(),
+        reason:runtimeVramState?.reason ?? (vramFaultActive()?'none':'no-fault'),
+        supportedModelsMask:runtimeVramState?.supportedModelsMask ?? 3,
+        mask:runtimeVramState?.mask ?? vramAddressMask,
+        bridgeA:runtimeVramState?.bridgeA ?? actualPair()?.[0] ?? -1,
+        bridgeB:runtimeVramState?.bridgeB ?? actualPair()?.[1] ?? -1,
+        lastFrameCounts:transactionCounts},
+      vramModelTransitions:vramModelTransitions.map(entry=>({...entry})),
       exportedAt:new Date().toISOString()
     };
     const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
@@ -562,41 +874,41 @@
     const faultHint = $('faultHint');
     if (faultHint) faultHint.hidden = !(!vramFaultActive() && possibleVramResidue && started);
     if (next !== lastContact) {
-      const removedLogic=!!(pair && started && logicActive);
-      if (removedLogic && !disconnectLogic({silent:true})) {
-        // Keep the domains exclusive if the core refuses to clear work RAM.
-        latched=null; momentary=null; selectedPin=null;
-        updateFaultUI();
-        setLogicStatus('Could not disconnect the logic fault; VRAM fault was not applied.');
-        return;
-      }
-      if (!vramAddressMask && emulator && typeof emulator._set_vram_short === 'function')
-        emulator._set_vram_short(pair ? pair[0] : -1, pair ? pair[1] : -1);
-      if (removedLogic) {
-        logicResetState='Logic fault disconnected because VRAM fault was activated';
-        logicStatusMessage='VRAM patch active; logic/work RAM fault disconnected.';
-        $('logicStatus').textContent=logicStatusMessage;
-        stamp('Logic/work RAM fault disconnected because the VRAM patch was activated');
-      }
       if (lastContact) stamp(vramAddressMask ? `VRAM lines forced low: ${vramLines(vramAddressMask).join(', ')}` : pair ? `SHORT CONNECTED: ${next}` : 'All VRAM faults removed');
       lastContact = next;
     }
+    $('vramModelNotice').innerHTML=vramModelId===2
+      ? '<strong>Experimental transaction model.</strong> Counts are software byte-lane operations for the last completed tick, not physical bus cycles or cycle-accurate electrical behavior.'
+      : '<strong>Experimental frame model.</strong> Shorts are applied around each emulated frame, not at every real VRAM bus transition. This is not yet a cycle-accurate electrical simulation.';
   }
 
   function latch(pair) {
-    recordVramMask(0,'replaced by VRAM bridge');
     const sorted = canonical(pair);
-    latched = samePair(latched, sorted) ? null : sorted;
-    selectedPin = null;
-    updateFaultUI();
+    const nextPair=samePair(latched,sorted)?null:sorted;
+    applyVramModel(vramModelId,0,nextPair,'VRAM bridge toggled');
   }
 
   function disconnect(reason='all VRAM contacts reconnected') {
-    recordVramMask(0,reason);
-    latched = null;
-    momentary = null;
-    selectedPin = null;
+    const targetModel=vramDisconnectModel();
+    return applyVramModel(targetModel,0,null,reason);
+  }
+
+  function startMomentaryBridge(pair) {
+    const sorted=canonical(pair);
+    const restorePair=canonical(latched);
+    if (!applyVramModel(vramModelId,0,sorted,'momentary VRAM bridge activated')) return false;
+    momentaryRestorePair=restorePair;
+    latched=null; momentary=sorted;
     updateFaultUI();
+    return true;
+  }
+
+  function endMomentaryBridge() {
+    if (!momentary) return;
+    const state=currentVramModelState();
+    const targetModel=vramModelId===2 && (state.supportedModelsMask&4)===0 ? 1 : vramModelId;
+    if (applyVramModel(targetModel,0,momentaryRestorePair,'momentary VRAM bridge released'))
+      momentaryRestorePair=null;
   }
 
   function setupPatchbay() {
@@ -622,6 +934,11 @@
       pinButtons.push(b);
     }
     $('vramMode').addEventListener('change',()=>{selectedPin=null;updateFaultUI();});
+    $('vramModel').addEventListener('change',()=>{
+      const modelId=Number($('vramModel').value);
+      if (!applyVramModel(modelId,vramAddressMask,actualPair(),'VRAM model selected'))
+        $('vramModel').value=String(vramModelId);
+    });
     PRESETS.forEach((pair,index) => {
       const b=document.createElement('button');
       b.type='button'; b.className='preset'; b.setAttribute('aria-pressed','false');
@@ -716,6 +1033,7 @@
       $('readCount').textContent = emulator._get_vram_changed_reads().toLocaleString();
     if (typeof emulator._get_vram_changed_writes === 'function')
       $('writeCount').textContent = emulator._get_vram_changed_writes().toLocaleString();
+    refreshVramTelemetry();
     refreshLogicMetrics();
   }
 
@@ -785,6 +1103,9 @@
     cpuInterventions=[];
     faultPulses=[]; pendingPulse=null;
     vramAddressMask=0;vramAddressLineChanges=[];
+    latched=null;momentary=null;momentaryRestorePair=null;selectedPin=null;
+    vramModelId=1;vramModelTransitions=[];
+    vramModelStatusMessage='';
     logicAddressMask=0;addressLineChanges=[];
     logicActive=false; // runtime_start clears the work RAM fault and counters.
     logicStatsRetained=false;
@@ -792,7 +1113,8 @@
     resetLogicSelection();
     logicStatusMessage=logicApiReady() ? 'Load or apply a logic fault when ready.' : 'Rebuild core for logic faults';
     ensureWasmViews();
-    emulator._set_vram_short(...(actualPair() || [-1,-1]));
+    const vramStatus=callVramModel(1,0,null);
+    if (vramStatus!==0) throw new Error(`Could not restore default frame-projection VRAM model (status ${vramStatus}).`);
     updateFaultUI();
     $('screenPlaceholder').hidden=true;
     loadedName=name;
@@ -839,7 +1161,7 @@
         if (event.repeat) return;
         const n=Number(code.slice(5));
         if (n===0)disconnect();
-        else if (event.shiftKey) { recordVramMask(0,'replaced by momentary VRAM bridge');momentary=canonical(PRESETS[n-1]);updateFaultUI(); }
+        else if (event.shiftKey) startMomentaryBridge(PRESETS[n-1]);
         else latch(PRESETS[n-1]);
       } else if (code==='KeyP' && !event.repeat) {
         event.preventDefault();pauseToggle();
@@ -847,13 +1169,11 @@
     });
     document.addEventListener('keyup', event=> {
       pressed.delete(event.code);
-      if (/^Digit[1-8]$/.test(event.code) && momentary) {
-        momentary=null;updateFaultUI();
-      }
+      if (/^Digit[1-8]$/.test(event.code) && momentary) endMomentaryBridge();
     });
     window.addEventListener('blur',()=>{
       pressed.clear();
-      if(momentary){momentary=null;updateFaultUI();}
+      if(momentary) endMomentaryBridge();
       focusReleased=true;
     });
     window.addEventListener('focus',()=>{if(focusReleased){lastFrame=0;focusReleased=false;}});

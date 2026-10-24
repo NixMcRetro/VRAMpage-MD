@@ -1,6 +1,8 @@
 # Versioning policy
 
-Current development/release version: **v0.2.8** (`VERSION` stores `0.2.8`).
+Current development version: **v0.3.0** (`VERSION` stores `0.3.0`).
+Publish the transaction-VRAM milestone only after its correctness, performance
+and package gates pass. Published versions are listed on [GitHub Releases](https://github.com/NixMcRetro/VRAMpage-MD/releases).
 
 VRAMpage MD is experimental, **not version 2.x**. Use semantic-looking
 `MAJOR.MINOR.PATCH` identifiers with leading `0` until a deliberately
@@ -27,8 +29,8 @@ v0.2.5 adds independent VRAM AD0-AD7 leg switches within the current
 frame-scoped model. v0.2.6 adds build identification to experiment exports.
 v0.2.7 adds a default-disabled metadata-only first-affected-write diagnostic.
 v0.2.8 compacts the work-RAM chip layout without changing the VRAM chip.
-Further incremental RAM-stage improvements use v0.2.9, etc. Per-access VRAM
-remains reserved for v0.3.0 and hardware-informed audio bending for v0.4.0. A leg switch does not advance either milestone.
+Further incremental RAM-stage improvements use v0.2.9, etc. The transaction-VRAM milestone uses v0.3.0; hardware-informed audio bending
+remains reserved for v0.4.0. A leg switch does not advance either milestone.
 
 ## What changes and what remains historical
 

@@ -229,3 +229,15 @@ The v1 compressed archive is 5,336,253 bytes with SHA-256
 The v2 compressed archive is 5,306,133 bytes with SHA-256
 `e5413263fe427a56cead4c8995a9169701549c605579d62d68e722c90835c8a4`.
 Both decompress to the full raw hashes and byte counts recorded above.
+
+## Public runtime integration measurement
+
+The first public-runtime five-pair run retained all samples and passed provenance
+and fixed-tick correctness, but failed the unchanged 1.05 p95 gate: runtime
+frame-default ratio 1.063492 and transaction-identity ratio 1.071070. Their median
+ratios were 1.038486 and 1.035921. Normal passed both gates. See the
+[readable record](experiments/vram-runtime-performance-2026-10-24-v1-summary.json)
+and its immutable link to the complete compressed measurements. This failed
+record remains evidence; no samples are excluded or retimed. An isolated
+inactive-renderer candidate is under specialist investigation before any second
+measurement. This is a core timing gate, not native Mac or physical validation.

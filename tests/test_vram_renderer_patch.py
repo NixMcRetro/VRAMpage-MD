@@ -42,12 +42,65 @@ class VramRendererPatch(unittest.TestCase):
         self.assertEqual(patched.count("bp = VRAM_TX_RENDER_U32("), 1)
         self.assertEqual(patched.count("object_info->attr  = VRAM_TX_RENDER_U16("), 1)
         self.assertEqual(patched.count("object_info->xpos  = VRAM_TX_RENDER_U16("), 1)
+        self.assertEqual(patched.count(
+            "const int vram_tx_render_active_snapshot = "
+            "vram_tx_diagnostic_render_active;"), 10)
+        self.assertIn(
+            "(vram_tx_render_active_snapshot ? vram_tx_render_read_u16(address) : \\\n   (*(uint16 *)&vram[(address)]))",
+            patch_core.VRAM_RENDER_READS)
+        self.assertIn(
+            "(vram_tx_render_active_snapshot ? vram_tx_render_read_u32(address) : \\\n   (*(uint32 *)&vram[(address)]))",
+            patch_core.VRAM_RENDER_READS)
         self.assertNotIn("atbuf = nt[", patched)
         self.assertNotRegex(patched, r"uint32 xscroll\s*=\s*\*\(uint32 \*\)&vram\[")
         self.assertNotIn("bp = *(uint32 *)&vram[(name << 5) | (y << 2)];", patched)
         self.assertIn("ypos = (q[link] >> im2_flag) & 0x1FF;", patched)
         self.assertIn("size = q[link + 1] >> 8;", patched)
         self.assertIn("link = (q[link + 1] & 0x7F) << 2;", patched)
+
+    def test_new_macro_caller_outside_reviewed_pure_render_functions_fails_closed(self):
+        patched = patch_core.patch_mode5_render_reads(self.source)
+        drifted = patched + "\nvoid unexpected_vram_reader(void) {\n"
+        drifted += "  (void)VRAM_TX_RENDER_U32(0x1000);\n}\n"
+        with self.assertRaises(SystemExit):
+            patch_core.patch_mode5_render_reads(drifted)
+        function = "void render_bg_m5(int line)\n{\n"
+        self.assertEqual(patched.count(function), 2)
+        drifted = patched.replace(
+            function, function + "  (void)VRAM_TX_RENDER_U32(0x1000);\n", 1)
+        with self.assertRaises(SystemExit):
+            patch_core.patch_mode5_render_reads(drifted)
+
+    def test_exact_v1_adapter_migrates_to_v2_and_partial_v1_fails_closed(self):
+        current = patch_core.patch_mode5_render_reads(self.source)
+        declaration = (
+            '#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)\n'
+            '  const int vram_tx_render_active_snapshot = '
+            'vram_tx_diagnostic_render_active;\n'
+            '#endif\n')
+        self.assertEqual(current.count(declaration), 10)
+        legacy = current.replace(patch_core.VRAM_RENDER_READS,
+                                 patch_core.VRAM_RENDER_V1_READS, 1)
+        legacy = legacy.replace(declaration, '')
+        self.assertEqual(legacy.count(patch_core.VRAM_RENDER_V1_READS), 1)
+        migrated = patch_core.patch_mode5_render_reads(legacy)
+        self.assertIn(patch_core.VRAM_RENDER_READS, migrated)
+        self.assertNotIn(patch_core.VRAM_RENDER_V1_MARKER, migrated)
+        self.assertEqual(migrated.count(declaration), 10)
+        self.assertEqual(patch_core.patch_mode5_render_reads(migrated), migrated)
+
+        partial = legacy.replace(
+            'vram_tx_render_read_u16(address)', 'vram_tx_render_read_u32(address)', 1)
+        with self.assertRaises(SystemExit):
+            patch_core.patch_mode5_render_reads(partial)
+
+        mixed = legacy.replace(
+            'void render_bg_m5(int line)\n{\n',
+            'void render_bg_m5(int line)\n{\n'
+            '  const int vram_tx_render_active_snapshot = '
+            'vram_tx_diagnostic_render_active;\n', 1)
+        with self.assertRaises(SystemExit):
+            patch_core.patch_mode5_render_reads(mixed)
 
     def test_raw_name_read_reintroduced_after_marker_fails_closed(self):
         patched = patch_core.patch_mode5_render_reads(self.source)

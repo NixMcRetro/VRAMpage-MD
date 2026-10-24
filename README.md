@@ -6,7 +6,7 @@
 
 ## Download and play on your Mac
 
-**[Download VRAMpage MD v0.2.8 - complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.8/VRAMpage-MD-v0.2.8-macos.zip)**
+**[Download VRAMpage MD v0.3.0 - complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.3.0/VRAMpage-MD-v0.3.0-macos.zip)**
 
 1. Download the ZIP and double-click it in Finder to extract it.
 2. Open the **VRAMpage-MD** folder and double-click **START.command**.
@@ -19,11 +19,11 @@ If your Mac blocks `START.command`, right-click it and choose **Open**, or follo
 
 **Important:** GitHub's green **Code → Download ZIP** gives you a *source-only* archive, not the ready-to-run application. Use the **complete Mac ZIP** above.
 
-[Previous v0.2.7 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.7/VRAMpage-MD-v0.2.7-macos.zip) remains available for reproducing earlier experiments.
+[Previous v0.2.8 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.8/VRAMpage-MD-v0.2.8-macos.zip) remains available for reproducing earlier experiments.
 
-[Latest release and checksum](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.8) · [Other runnable versions and historical source releases](docs/RELEASE-HISTORY.md)
+[Latest release and checksum](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.3.0) · [Other runnable versions and historical source releases](docs/RELEASE-HISTORY.md)
 
-**v0.2.8 update:** the work-RAM chip is more compact, with synthetic layout checks at laptop-sized browser viewports. The previous v0.2.7 release includes optional, default-disabled RAM write tracing for developer experiments. See the [RAM write trace guide](docs/RAM-WRITE-TRACE.md).
+**v0.3.0:** choose **Frame projection** or **Transaction** in the VRAM patchbay, then use the same legs and bridges. Transaction mode maps actual emulator VRAM accesses and exports separate model metadata and counters. Frame projection remains the default fallback. Both are digital approximations.
 
 **RAM research:** a [reproducible bounded experiment](docs/RAM-STATUS-FOLLOWUP.md) now shows player-trajectory divergence while recorded demo inputs continue at the same phase. This uses the existing public core and does not establish physical electrical accuracy.
 
@@ -36,14 +36,14 @@ If your Mac blocks `START.command`, right-click it and choose **Open**, or follo
 
 The interface fits different window sizes, follows your system Light/Dark preference and offers both corrected video output and raw diagnostic output. Some faults can freeze a game or leave persistent RAM corruption until a **Clean restart**.
 
-**Experimental limitations:** The VRAM model is frame-scoped; neither VRAM nor RAM faults reproduce every physical electrical effect. The circuit diagrams are conceptual, not verified motherboard pinouts. Audio circuit bending and transaction-level VRAM bending remain future milestones. Automated Linux browser/core tests are not the same as native Mac Firefox or physical-hardware validation.
+**Experimental limitations:** VRAM offers frame projection and logical-byte transaction models; neither VRAM nor RAM faults reproduce every physical electrical effect. The circuit diagrams are conceptual, not verified motherboard pinouts. Rendering remains line-batched rather than cycle-accurate. Hardware-informed audio bending is the next major milestone. Automated Linux browser/core tests are not the same as native Mac Firefox or physical-hardware validation.
 
 ## For developers, researchers and maintainers
 
 | Topic | Where to start |
 | --- | --- |
 | Source code and contributor build | [Developer build instructions](docs/DEPLOYMENT.md) |
-| Optional transaction runtime core | [Isolated build instructions](docs/VRAM-RUNTIME-BUILD.md) and [safe model API](docs/VRAM-PUBLIC-MODEL-API.md); application selection is still pending |
+| Transaction VRAM development | [Browser controls and handoff behavior](docs/LOGIC-BENDING.md#browser-transaction-vram-integration), [runtime build](docs/VRAM-RUNTIME-BUILD.md) and [model API](docs/VRAM-PUBLIC-MODEL-API.md) |
 | Technical architecture and fault assumptions | [Logic bending](docs/LOGIC-BENDING.md) · [Video output](docs/VIDEO-OUTPUT.md) |
 | Current verified state and experiments | [Development status](docs/DEVELOPMENT-STATUS.md) · [Experiment records](docs/EXPERIMENTS.md) · [RAM trace](docs/RAM-WRITE-TRACE.md) |
 | Roadmap and next work | [ROADMAP.md](ROADMAP.md) · [Work queue](docs/WORK-QUEUE.md) |
@@ -59,7 +59,8 @@ Contributors need Git, Python 3, Make, CMake and Emscripten 4.0.23. From the rep
 ```sh
 source ~/emsdk/emsdk_env.sh
 bash scripts/test.sh
-bash scripts/build-core.sh
+bash scripts/build-core.sh normal
+bash scripts/build-core.sh site-runtime
 node tests/test_wasm_logic.cjs site/core/genplus.js
 python3 scripts/serve.py --no-browser
 ```

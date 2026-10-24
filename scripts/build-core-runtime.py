@@ -15,6 +15,7 @@ MARKER_TEXT = f"VRAMpage runtime build profile v1\n{PINNED_COMMIT}\n"
 HELPER_FILES = (
     "build-core.sh",
     "build-core-runtime.py",
+    "install-runtime-site.py",
     "patch_core.py",
     "vram_fault_patch.c",
     "vram_transaction.c",

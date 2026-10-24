@@ -1,6 +1,21 @@
 # VRAMpage MD roadmap
 
-## Current delivery: v0.2.8 compact Work RAM interface
+## Active strategy: complete usable major features
+
+| Phase | Delivery |
+|---|---|
+| A, active | v0.3.0: browser transaction-VRAM selection, existing chip controls, safe RAM coordination, exports and acceptable runtime performance |
+| B | v0.4.0: hardware-informed YM2612, PSG and Z80 audio faults with clean normal audio |
+| C | Essential saved configurations, reproducible presets, coordinated faults, recovery and experiment comparison |
+| D | Feature freeze, comprehensive crash/regression fixing, browser/audio stability, performance, usability and release candidate |
+
+Reuse the merged VRAM engine, API and runtime builder. Focused correctness and
+independent specialist review remain mandatory during implementation; full
+regression and browser verification happen at integration boundaries. Do not
+repeat completed research or publish minor intermediate releases. Historical
+milestones below remain available as evidence.
+
+## Previous public delivery: v0.2.8 compact Work RAM interface
 
 The source import, display fixes and work-RAM development through v0.2.4 are
 consolidated into one runnable application. v0.2.5 adds independent VRAM leg
@@ -19,28 +34,21 @@ separate future milestones. Historical milestones below retain their original
 research context.
 
 
-## Next integration: application transaction-model controls and exports
+## Current integration: v0.3.0 transaction VRAM
 
-The developer-only Mode 5 CPU/DMA and renderer/cache integration has passed
-independent source/fixture review, 91 local tests, fresh real WASM, actual-core
-Chromium and the fixed five-pair performance gate after a reviewed guard fix.
-Both the initial failed and corrected passing measurements are preserved.
-[PR #40](https://github.com/NixMcRetro/VRAMpage-MD/pull/40) carries the integration
-and required CI; see [renderer evidence](docs/VRAM-RENDER-DIAGNOSTIC.md).
+The browser now selects the existing frame model or transaction-level Mode 5
+model using the same legs and bridges. Safe RAM/VRAM handoff, capability/status,
+completed-frame counts and separate experiment metadata are implemented and
+independently reviewed. Production packaging includes the compiled runtime and
+matching source; the normal core remains a fallback.
 
-The safe core selector, read-only model/support state and completed-frame counts
-are now implemented in an optional runtime profile, separately
-from diagnostic test bridges. [API verification](docs/VRAM-PUBLIC-MODEL-API.md)
-records independent review and acceptance. PR #41 and merged-main CI passed.
-
-The [isolated production runtime builder](docs/VRAM-RUNTIME-BUILD.md) now provides
-an explicit opt-in command while preserving normal builds. Next, add explicit application model selection and
-separate transaction experiment exports, with compatibility, browser, current
-runtime performance and milestone acceptance. The public app
-still uses frame-scoped VRAM. This diagnostic checkpoint does not complete
-v0.3.0 or establish full-field interlace timing or physical hardware fidelity.
-Audio bending remains the later v0.4.0 milestone.
-
+The 99-test full suite, fresh five-profile WASM and actual-core Chromium pass.
+The reviewed inactive renderer path passes the unchanged fixed performance gate;
+[both timing records](docs/experiments/vram-runtime-performance-2026-10-24-v2-summary.json)
+are preserved. Remaining delivery gates are final version/package verification,
+required CI, merge and public Mac download verification. Audio follows this
+usable milestone. Physical electrical fidelity and native Mac acceptance are
+separate evidence, not claims derived from browser automation.
 
 ## v0.1 | NTSC hardware-mode foundation
 

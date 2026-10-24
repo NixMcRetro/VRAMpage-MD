@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.0 - transaction-level VRAM
+
+- Select frame projection or logical-byte transaction VRAM in the browser and use the existing legs, bridges and presets. Preserve the default frame-model fallback.
+- Coordinate RAM/VRAM handoffs with prevalidation, rollback, pulse-budget protection and truthful recovery status. Export separate model metadata, transaction counts and transition results without rewriting historical records.
+- Ship the reviewed runtime with matching source and test the extracted package in Firefox/WebKit plus actual-core Chromium. Preserve normal fallback binaries.
+- Snapshot inactive render state once per synchronous renderer call; keep active mapping unchanged. Preserve the first failed performance measurement and require the unchanged gate before publication.
+
 ## Post-v0.2.8 optional runtime build
 
 - Add an explicit transaction-runtime core build with isolated source, flags and outputs, preserving the normal app and release.

@@ -1,4 +1,4 @@
-"""Keep current app, release files and documentation on one 0.2.x version."""
+"""Keep current app, release files and documentation on the current milestone version."""
 from pathlib import Path
 import re
 import unittest
@@ -11,7 +11,7 @@ ZIP = f"VRAMpage-MD-{TAG}-macos.zip"
 
 class VersioningTests(unittest.TestCase):
     def test_single_canonical_version(self):
-        self.assertEqual(VERSION, "0.2.8")
+        self.assertEqual(VERSION, "0.3.0")
         self.assertTrue((ROOT / "docs/VERSIONING.md").exists())
         self.assertIn(TAG, (ROOT / "docs/VERSIONING.md").read_text())
 
@@ -41,10 +41,15 @@ class VersioningTests(unittest.TestCase):
 
     def test_current_download_documentation(self):
         for path in ["README.md", "docs/README.md", "docs/RUNNING-LOCALLY.md",
-                     "docs/DEPLOYMENT.md"]:
+                     "docs/DEPLOYMENT.md", "docs/RELEASE-HISTORY.md"]:
             content = (ROOT / path).read_text()
             self.assertIn(TAG, content, path)
             self.assertNotIn("/releases/download/v2.4.0/", content, path)
+
+    def test_current_release_history(self):
+        history = (ROOT / "docs/RELEASE-HISTORY.md").read_text()
+        self.assertIn(f"**Current version:** {TAG}", history)
+        self.assertIn(f"/releases/download/{TAG}/{ZIP}", history)
 
     def test_historical_identifiers_remain_unchanged(self):
         # Never rewrite recorded evidence in docs/experiments/*.json.

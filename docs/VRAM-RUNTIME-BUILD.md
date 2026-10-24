@@ -5,8 +5,8 @@
 Build the reviewed transaction-model runtime through a reproducible opt-in
 production build path. Reuse the [safe model API](VRAM-PUBLIC-MODEL-API.md),
 reviewed helper and renderer integration. Preserve the default normal JS/WASM binaries,
-static hosting and immutable v0.2.8 download. This stage does not add application
-controls, change experiment exports, publish a release or declare v0.3.0.
+static hosting and immutable v0.2.8 download. The original build-only stage did not add application controls or publish a
+release. The browser integration now uses this reviewed path as described below.
 
 Integration base: `46dcc80a8d561cde4b79453300a2a1bdee3e847c`, merged
 [PR #41](https://github.com/NixMcRetro/VRAMpage-MD/pull/41).
@@ -30,12 +30,13 @@ passed all five source, browser and real-core/package jobs.
 - Require independent specialist source/test review, the full applicable suite,
   actual-WASM and browser checks and passing GitHub Actions before merge.
 
-## Next stage
+## Application integration
 
-After this build path is accepted, integrate application model selection and
-separate transaction metadata/counters in experiment exports. Prevalidate
-selection before RAM/VRAM handoff. Current-runtime performance, browser and
-milestone acceptance remain gates before v0.3.0. Native Mac, audible output and
+The application now selects frame or transaction mode through the production
+runtime, with validated RAM/VRAM handoff and separate export metadata/counters.
+The current runtime passes the fixed five-pair performance gate after independent
+review. Final browser CI, packaging and publication remain milestone gates;
+see [development status](DEVELOPMENT-STATUS.md). Native Mac, audible output and
 physical hardware fidelity require separate evidence.
 
 ## Build and reproduce
@@ -105,3 +106,15 @@ cached tools and the installed browser. The normal corresponding-source bundle
 adds the helper and shim; only the normal JS/WASM hashes are unchanged.
 Required GitHub checks remain the merge gate. These results do not establish
 runtime performance, native Mac behavior, audible output or physical fidelity.
+
+
+## Browser site profile
+
+`bash scripts/build-core.sh site-runtime` builds the isolated runtime and installs
+its JS/WASM in `site/core`. Matching runtime source, shim, notices and rebuild
+instructions are retained in the marked `site/source/runtime-profile` tree.
+The site then offers frame or transaction selection with the existing chip
+controls. Explicit `normal` remains the fallback production build; it does not
+expose the new runtime selector API. The website/release workflow verifies normal
+baseline hashes and tests both that fallback and the installed runtime in the
+browser before packaging. Diagnostic bridges remain excluded.

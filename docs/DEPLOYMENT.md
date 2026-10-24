@@ -3,7 +3,7 @@
 ## Complete local application release
 
 The normal user download is the single versioned ZIP attached to the
-[VRAMpage-MD v0.2.8 release](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.8),
+[VRAMpage-MD v0.3.0 release](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.3.0),
 not GitHub's source archive. It includes START.command, the site, compiled
 JS/WASM, complete modified core source, licence notices and launch instructions.
 It requires Python 3 on the user's Mac but no build tools or Git authentication.
@@ -13,9 +13,10 @@ regressions and actual-WASM tests, then package from a clean tracked checkout:
 
 ```sh
 bash scripts/test.sh
-bash scripts/build-core.sh
+bash scripts/build-core.sh normal
+bash scripts/build-core.sh site-runtime
 node tests/test_wasm_logic.cjs site/core/genplus.js
-python3 scripts/package-review.py --output /tmp/VRAMpage-MD-v0.2.8-macos.zip
+python3 scripts/package-review.py --output /tmp/VRAMpage-MD-v0.3.0-macos.zip
 ```
 
 Extract and launch the package before attaching it to a GitHub release. Preserve
@@ -27,7 +28,7 @@ artifact is not evidence for a different commit. Keep a SHA-256 checksum beside
 the downloadable ZIP. GitHub Actions artifacts remain useful for CI/review, but
 release assets provide a persistent direct download without nested archives.
 
-To publish without a local upload, run **Publish complete v0.2.8 local download**
+To publish without a local upload, run **Publish complete v0.3.0 local download**
 in GitHub Actions on `main` after its checks pass. It rebuilds and tests the core,
 verifies BUILD-INFO against the run commit, attaches the ZIP/checksum and publishes
 the release using the repository-scoped Actions token. It never accesses
@@ -136,7 +137,12 @@ after adding package inputs, as source/core tests alone do not validate the ZIP.
 The opt-in `bash scripts/build-core.sh runtime` builds the reviewed
 [model API](VRAM-PUBLIC-MODEL-API.md) in isolated `build/runtime-profile`, with
 matching source, shim and rebuild instructions. See [runtime build instructions](VRAM-RUNTIME-BUILD.md).
-No diagnostic bridges are enabled and the public website/release workflows
-continue using the normal profile. Application controls, experiment exports,
-performance and release acceptance remain future work. Do not enable diagnostic
-exports to ship transaction controls or silently replace an existing release.
+`bash scripts/build-core.sh site-runtime` installs that runtime and matching
+source into the browser site. Production website/release builds use this profile;
+explicit `normal` retains the previous core as a tested frame-model fallback.
+The workflow verifies the normal baseline before installation and tests both
+browser paths. No diagnostic bridges are enabled. Keep the marked runtime source,
+shim, notices and rebuild recipe with the installed binary. Application model
+selection and separate experiment counters use the reviewed runtime API.
+Milestone performance and release acceptance remain required. Do not enable
+diagnostic exports to ship controls or silently replace an existing release.

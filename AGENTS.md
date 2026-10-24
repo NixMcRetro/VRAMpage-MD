@@ -19,6 +19,22 @@ review of risky changes. State actual model availability honestly. Default to
 at most two concurrent workers. Parallel edits require isolated branches or
 worktrees and disjoint responsibilities. Avoid duplicated investigations.
 
+## Feature-first development order
+
+Complete usable transaction-level VRAM controls and exports first, reusing the
+merged engine, API and runtime builder. Then implement hardware-informed audio
+faults, then essential presets/configuration/recovery/comparison features. After
+these major features are integrated, freeze features and undertake comprehensive
+stabilisation, performance and usability refinement. Do not restart completed
+RAM research or create extended infrastructure-only sequences.
+
+During feature work run focused correctness, actual-WASM and appropriate
+sanitizer checks. Fix memory safety, broken builds and severe regressions
+immediately. Run the full applicable regression/browser suite at integration
+boundaries and require passing CI before merge. Reuse valid unchanged evidence.
+Update documentation at meaningful checkpoints with the implementation; avoid
+trivial documentation-only PRs and minor public releases.
+
 ## Implementation and review
 
 Choose the highest-priority unblocked queue item. Define its evidence, scope,
@@ -76,6 +92,9 @@ labels, new exports, tests, release tags, filenames and download links aligned.
 Preserve old commits, attribution, release artifacts and recorded experiment
 JSON. Do not silently rebuild or replace an existing public artifact.
 
+Release titles must be exactly `VRAMpage MD v0.x.x`, without subtitles. Publish
+meaningful usable milestones only; preserve historical releases unchanged.
+
 Provide complete ROM-free Mac packages with built JS/WASM, matching source,
 notices, START.command, instructions and checksum. Verify package source commit,
 version and tag. Respect upstream non-commercial/corresponding-source terms.
@@ -88,8 +107,8 @@ or post-mix distortion to fabricate hardware-fault outcomes.
 
 ## Continue and checkpoint
 
-Follow the authoritative roadmap: finish the RAM attract-mode acceptance before
-major VRAM/audio work. A stopped or static game is a result, not a reason to
+Follow the authoritative feature-first roadmap. The bounded RAM attract-mode
+criterion is already verified; do not repeat it as a prerequisite. A stopped or static game is a result, not a reason to
 silently rescue it. Continued internal demo input needs direct evidence.
 
 Keep `docs/WORK-QUEUE.md`, `docs/DEVELOPMENT-STATUS.md` and `CHANGELOG.md` current.
