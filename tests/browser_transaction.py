@@ -25,7 +25,7 @@ class TransactionBrowserTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.server = ThreadingHTTPServer(
-            ("127.0.0.1", 0), partial(QuietHandler, directory=ROOT / "site"))
+            ("127.0.0.1", 0), partial(QuietHandler, directory=OPTIONS.site_root))
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()
         cls.addClassCleanup(cls.server.server_close)
@@ -97,7 +97,7 @@ window.Module=opts=>originalFactory(opts).then(core=>{
         self.page.wait_for_function("testCore._get_logic_frame()>5")
 
     def test_runtime_model_handoffs_failures_and_export(self):
-        self.open_core(ROOT / "site/core")
+        self.open_core(OPTIONS.site_root / "core")
         page = self.page
         expect(page.locator('#vramModel option[value="2"]')).to_be_enabled()
         page.locator("#vramModel").select_option("2")
@@ -222,7 +222,7 @@ window.Module=opts=>originalFactory(opts).then(core=>{
         self.assertEqual(self.errors, [])
 
     def test_failed_rollback_pauses_and_recovery_exports_partial_cleanup(self):
-        self.open_core(ROOT / "site/core")
+        self.open_core(OPTIONS.site_root / "core")
         page = self.page
         page.locator("#vramModel").select_option("2")
         page.locator("#logicExperiment > summary").click()
@@ -279,9 +279,12 @@ def parse_args():
     parser.add_argument("--browser", choices=("chromium", "firefox", "webkit"), default="chromium")
     parser.add_argument("--executable-path")
     parser.add_argument("--normal-core", type=Path, required=True)
+    parser.add_argument("--site-root", type=Path, default=ROOT / "site",
+                        help="site tree to serve (defaults to the checked-out site)")
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     OPTIONS = parse_args()
+    OPTIONS.site_root = OPTIONS.site_root.resolve()
     unittest.main(argv=[__file__], verbosity=2)
