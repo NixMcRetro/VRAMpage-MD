@@ -31,14 +31,17 @@ def stage_source(vendor: Path, target: Path):
     names = ("patch_core.py", "vram_fault_patch.c", "vram_transaction.c",
              "vram_transaction.h", "vram_transaction_core.h", "vram_transaction_runtime.h",
              "vram_transaction_render.h",
-             "work_ram_fault.c", "work_ram_fault.h", "work_ram_runtime.c", "work_ram_runtime.h")
+             "work_ram_fault.c", "work_ram_fault.h", "work_ram_runtime.c", "work_ram_runtime.h",
+             "psg_data_fault.h", "psg_data_fault_core.c", "psg_data_fault_runtime.c")
     for name in names:
         shutil.copy2(ROOT / "scripts" / name, helpers / name)
     command([os.environ.get("PYTHON", "python3"), str(helpers / "patch_core.py"), str(target)])
     touched = (
         "src/main/c/wasm/wasm.c", "src/main/c/wasm/config.c",
         "src/main/c/wasm/vram_transaction.c", "src/main/c/wasm/vram_transaction.h",
-        "src/main/c/wasm/vram_transaction_runtime.h", "src/main/c/core/vdp_render.h",
+        "src/main/c/wasm/vram_transaction_runtime.h", "src/main/c/wasm/psg_data_fault_core.c",
+        "src/main/c/wasm/psg_data_fault_runtime.c", "src/main/c/core/sound/psg.c",
+        "src/main/c/core/vdp_render.h",
         "src/main/c/core/vdp_render.c", "src/main/c/core/vram_transaction_render.h",
         "src/main/c/core/m68k/m68kcpu.h", "src/main/c/core/memz80.c",
         "src/main/c/core/vdp_ctrl.c", "src/main/c/core/vram_transaction.h",
@@ -77,6 +80,8 @@ def build(staged: Path, diagnostic: bool, alt_renderer: bool = False, runtime: b
         flags.insert(0, 'add_compile_flags(C "-DVRAM_TX_RUNTIME")')
         api_js = ROOT / "scripts/vram_transaction_api.js"
         flags.insert(0, f'add_compile_flags(LD "--pre-js={api_js}")')
+        psg_api_js = ROOT / "scripts/psg_data_fault_api.js"
+        flags.insert(0, f'add_compile_flags(LD "--pre-js={psg_api_js}")')
     if alt_renderer:
         flags.insert(0, 'add_compile_flags(C "-DALT_RENDERER")')
     if all(flag in text for flag in flags):
@@ -326,18 +331,23 @@ class VramTransactionWasm(unittest.TestCase):
         bundle = runtime_output / "source"
         self.assertTrue((bundle / "wasm-genplus/CMakeLists.txt").is_file())
         self.assertTrue((bundle / "scripts/vram_transaction_api.js").is_file())
+        self.assertTrue((bundle / "scripts/psg_data_fault_api.js").is_file())
+        self.assertTrue((bundle / "scripts/psg_data_fault_core.c").is_file())
         self.assertTrue((bundle / "scripts/build-core-runtime.py").is_file())
         self.assertTrue((bundle / "THIRD-PARTY-NOTICES.md").is_file())
         self.assertTrue((runtime_output / "THIRD-PARTY-NOTICES.md").is_file())
         instructions = (runtime_output / "BUILDING.txt").read_text()
         self.assertIn(PIN, instructions)
-        self.assertIn("source/scripts/vram_transaction_api.js", instructions)
+        self.assertIn("adjacent source/scripts API shims", instructions)
         cmake = (bundle / "wasm-genplus/CMakeLists.txt").read_text()
         self.assertIn("-DVRAM_TX_RUNTIME", cmake)
         self.assertNotIn("-DVRAM_TX_DIAGNOSTIC", cmake)
         self.assertIn("--pre-js=${CMAKE_SOURCE_DIR}/../scripts/vram_transaction_api.js", cmake)
+        self.assertIn("--pre-js=${CMAKE_SOURCE_DIR}/../scripts/psg_data_fault_api.js", cmake)
         command(["node", str(fixture / "tests/test_runtime_build_profile.cjs"),
                  str(runtime_paths[0])], cwd=fixture)
+        command(["node", str(fixture / "tests/test_psg_data_runtime.cjs"),
+                 str(runtime_paths[0]), str(normal_paths[0])], cwd=fixture)
 
         command(["bash", str(build_script), "normal"], cwd=fixture, env=env,
                 stdout=subprocess.DEVNULL)

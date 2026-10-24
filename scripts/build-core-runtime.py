@@ -17,6 +17,10 @@ HELPER_FILES = (
     "build-core-runtime.py",
     "install-runtime-site.py",
     "patch_core.py",
+    "psg_data_fault.h",
+    "psg_data_fault_core.c",
+    "psg_data_fault_runtime.c",
+    "psg_data_fault_api.js",
     "vram_fault_patch.c",
     "vram_transaction.c",
     "vram_transaction.h",
@@ -37,6 +41,7 @@ PATCHED_FILES = (
     "src/main/c/wasm/vram_transaction_runtime.h",
     "src/main/c/core/vdp_render.h",
     "src/main/c/core/vdp_render.c",
+    "src/main/c/core/sound/psg.c",
     "src/main/c/core/vram_transaction_render.h",
     "src/main/c/core/m68k/m68kcpu.h",
     "src/main/c/core/memz80.c",
@@ -133,6 +138,7 @@ def patch_cmake(cmake: Path) -> None:
         'add_compile_flags(C "-DVRAM_TX_RUNTIME")',
         'add_compile_flags(LD "-sEXPORTED_RUNTIME_METHODS=HEAPU8,HEAPF32")',
         'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/vram_transaction_api.js")',
+        'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/psg_data_fault_api.js")',
     )
     if any(flag in text for flag in flags):
         raise RuntimeError("Pinned source already contains runtime profile flags")
@@ -188,14 +194,14 @@ def copy_package(root: Path, upstream: Path, work: Path, output: Path) -> None:
     (output / "BUILDING.txt").write_text(
         "Opt-in VRAM transaction runtime profile\n"
         f"Pinned wasm-genplus source: {PINNED_COMMIT}\n"
-        "Profile flags: VRAM_TX_RUNTIME, HEAPU8/HEAPF32 and the build-owned pre-js API shim.\n"
+        "Profile flags: VRAM_TX_RUNTIME, HEAPU8/HEAPF32 and build-owned pre-js API shims.\n"
         "No VRAM_TX_DIAGNOSTIC bridge is compiled into this profile.\n\n"
         "The matching modified source is in source/wasm-genplus and its build scripts\n"
         "and API shim are in source/scripts. With Emscripten, CMake and Make available:\n\n"
         "  cd source/wasm-genplus\n"
         "  emcmake cmake -S . -B build -DCMAKE_POLICY_VERSION_MINIMUM=3.5\n"
         "  emmake make -C build -j2\n\n"
-        "The staged CMake file points to the adjacent source/scripts/vram_transaction_api.js.\n"
+        "The staged CMake file points to the adjacent source/scripts API shims.\n"
         "The project build-core command also reproduces the staged source from the pinned\n"
         "vendor checkout with: scripts/build-core.sh runtime\n"
     )

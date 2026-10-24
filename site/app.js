@@ -100,6 +100,7 @@
     $('soundBtn').disabled = !running;
     updateLogicControls();
     refreshVramControls();
+    refreshPsgDataControls();
   }
 
   function samePair(a,b) { return !!(a && b) && a[0] === b[0] && a[1] === b[1]; }
@@ -116,6 +117,69 @@
   function vramMaskApiReady() {
     return typeof emulator?._set_vram_address_mask==='function' &&
       typeof emulator?._get_vram_address_mask==='function';
+  }
+
+  function psgDataApiReady(core=emulator) {
+    return typeof core?._set_psg_data_bridge==='function' &&
+      typeof core?._get_psg_data_bridge_state==='function';
+  }
+
+  function currentPsgDataState() {
+    if (!psgDataApiReady()) return null;
+    try { return emulator._get_psg_data_bridge_state(); }
+    catch (_) { return null; }
+  }
+
+  function refreshPsgDataControls() {
+    const available=psgDataApiReady();
+    const state=currentPsgDataState();
+    const supported=!!state?.supported;
+    $('psgBridgeApply').disabled=!started || !available || !supported;
+    $('psgBridgeRemove').disabled=!started || !available || !state?.configured;
+    $('psgBridgeA').disabled=!started || !available || !supported;
+    $('psgBridgeB').disabled=!started || !available || !supported;
+    $('psgInputWrites').textContent=state?.inputWrites ?? '0';
+    $('psgChangedWrites').textContent=state?.changedWrites ?? '0';
+    $('psgBridgeStatus').textContent=!available
+      ? 'This core does not provide the optional PSG runtime API.'
+      : !state
+        ? 'PSG runtime state is unavailable; controls are disabled.'
+      : !supported
+        ? (state.configured ? 'Configured, but inactive in this system profile.' : 'PSG bridge is unavailable in this system profile.')
+        : state.configured
+          ? `Active: D${state.bridgeA} ↔ D${state.bridgeB}; future PSG writes only.`
+          : 'No PSG data bridge is active.';
+  }
+
+  function setPsgDataBridge(enabled) {
+    if (!psgDataApiReady()) {
+      $('psgBridgeStatus').textContent='This core does not provide the optional PSG runtime API.';
+      return;
+    }
+    const state=currentPsgDataState();
+    if (enabled && !state?.supported) {
+      $('psgBridgeStatus').textContent='PSG bridge request rejected: unsupported system profile.';
+      return;
+    }
+    const a=enabled ? Number($('psgBridgeA').value) : -1;
+    const b=enabled ? Number($('psgBridgeB').value) : -1;
+    if (enabled && (!Number.isInteger(a) || !Number.isInteger(b) || a<0 || a>7 || b<0 || b>7 || a===b)) {
+      $('psgBridgeStatus').textContent='Choose two distinct PSG data inputs from D0 to D7.';
+      return;
+    }
+    const status=emulator._set_psg_data_bridge(enabled?1:0,a,b);
+    if (status!==0) {
+      $('psgBridgeStatus').textContent=status===2
+        ? 'PSG bridge request rejected: unsupported system profile.'
+        : 'PSG bridge request rejected: invalid settings.';
+      stamp(`PSG bridge request rejected (status ${status})`);
+      refreshPsgDataControls();
+      return;
+    }
+    refreshPsgDataControls();
+    stamp(enabled
+      ? `PSG data bridge applied: D${a} ↔ D${b}; existing chip state was not repaired.`
+      : 'PSG data bridge removed; existing chip state was not repaired.');
   }
 
   function currentVramModelState() {
@@ -808,6 +872,7 @@
     const reads=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.readCount : coreReads;
     const writes=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.writeCount : coreWrites;
     const runtimeVramState=vramModelApiReady()?currentVramModelState():null;
+    const psgState=currentPsgDataState();
     const transactionCounts=runtimeVramState?.lastFrameCounts
       ? {...runtimeVramState.lastFrameCounts} : null;
     const data={
@@ -841,6 +906,16 @@
         bridgeA:runtimeVramState?.bridgeA ?? actualPair()?.[0] ?? -1,
         bridgeB:runtimeVramState?.bridgeB ?? actualPair()?.[1] ?? -1,
         lastFrameCounts:transactionCounts},
+      psgInputFault:{schemaVersion:1,available:!!psgState,
+        modelVersion:psgState?.modelVersion ?? null,
+        supported:psgState?.supported ?? false,
+        configured:psgState?.configured ?? false,
+        effective:psgState?.effective ?? false,
+        reason:psgState?.reason ?? 'api-unavailable',
+        bridgeA:psgState?.bridgeA ?? -1,
+        bridgeB:psgState?.bridgeB ?? -1,
+        inputWrites:psgState?.inputWrites ?? '0',
+        changedWrites:psgState?.changedWrites ?? '0'},
       vramModelTransitions:vramModelTransitions.map(entry=>({...entry})),
       exportedAt:new Date().toISOString()
     };
@@ -1035,6 +1110,7 @@
       $('writeCount').textContent = emulator._get_vram_changed_writes().toLocaleString();
     refreshVramTelemetry();
     refreshLogicMetrics();
+    refreshPsgDataControls();
   }
 
   function animationFrame(time) {
@@ -1078,6 +1154,7 @@
     nextAudioTime=0;
     $('soundBtn').textContent=audioOn?'Mute Sound':'Enable Sound';
     $('soundBtn').setAttribute('aria-pressed',String(audioOn));
+    refreshPsgDataControls();
     stamp(audioOn?'Audio enabled (FM + PSG; no sound-chip faults yet)':'Audio muted');
   }
 
@@ -1124,6 +1201,7 @@
     $('pauseBtn').textContent='Pause';
     accumulated=0;lastFrame=0;resetStats();nextAudioTime=0;
     updateLogicControls();
+    refreshPsgDataControls();
     stamp(`Cartridge inserted: ${name} (forced NTSC-U)`);
     // Browser audio is unlocked by a separate Sound button after user gesture.
   }
@@ -1261,6 +1339,17 @@
   }
 
   function setup() {
+    for (const id of ['psgBridgeA','psgBridgeB']) {
+      const select=$(id);
+      for (let bit=0;bit<8;bit++) {
+        const option=document.createElement('option');
+        option.value=String(bit);option.textContent=`D${bit}`;select.append(option);
+      }
+    }
+    // These selects are editable drafts. Refreshes report the live core state
+    // without overwriting a pair the user is preparing to apply.
+    $('psgBridgeA').value='0';
+    $('psgBridgeB').value='1';
     setupPatchbay();installKeyboard();
     configureLogicLines();
     $('logicKind').addEventListener('change',()=>{
@@ -1280,6 +1369,8 @@
       setLogicStatus(`Could not create experiment metadata: ${error.message}`);
       stamp(`Metadata export failed: ${error.message}`);
     }));
+    $('psgBridgeApply').addEventListener('click',()=>setPsgDataBridge(true));
+    $('psgBridgeRemove').addEventListener('click',()=>setPsgDataBridge(false));
     $('rawVideoToggle').addEventListener('change', () => {
       previousVideoStatus = "";
       drawActiveVideo();

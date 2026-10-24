@@ -1,5 +1,6 @@
 import importlib.util
 from pathlib import Path
+import re
 import tempfile
 import unittest
 from unittest import mock
@@ -11,6 +12,17 @@ SPEC.loader.exec_module(MOD)
 
 
 class StoreOriginDiagnosticTests(unittest.TestCase):
+    def test_staging_carries_every_helper_read_by_patch_core(self):
+        patch_source = (ROOT / "scripts/patch_core.py").read_text()
+        copied = set(MOD.PATCH_CORE_HELPERS)
+        required = set(re.findall(r"scripts\s*/\s*['\"]([^'\"]+)['\"]", patch_source))
+        self.assertTrue(required, "patcher helper reads should remain discoverable")
+        self.assertTrue(required.issubset(copied), f"diagnostic stage omits patcher helpers: {sorted(required-copied)}")
+        self.assertIn("psg_data_fault.h", copied)
+        self.assertIn("psg_data_fault_core.c", copied)
+        self.assertIn("psg_data_fault_runtime.c", copied)
+        self.assertTrue(all((ROOT / "scripts" / name).is_file() for name in copied))
+
     def test_patch_is_fail_closed_and_idempotent(self):
         original = "decode();"
         patched = MOD.replace_once(original, "decode();", "decode(); /* marker */", "fixture")

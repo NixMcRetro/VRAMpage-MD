@@ -1,3 +1,52 @@
+# PSG audio development verification
+
+The runtime-only PSG input-data bridge has strict native/sanitizer and patch
+layout/drift tests. Actual-WASM checks compare generated 68K PSG tones against
+the normal core: exact clean samples with the bridge off, changed samples with
+the bridge on, equal sample counts, finite output and clean restart restoration.
+Compiled uint64 getters use the BigInt ABI; exported decimal strings preserve
+values above 2^53 without putting BigInt into JSON. Production profile switching
+retains the exact normal core hashes. Chromium covers runtime and normal fallback,
+throwing optional state getters, editing active pair drafts, export and reset.
+The full 103-test integrated suite passes with normal LeakSanitizer, fresh WASM
+and production profile switching. Final Chromium core and transaction suites
+pass. Required CI also exercises packaged audio controls in Firefox/WebKit.
+The first CI build exposed missing PSG helpers in the existing isolated RAM
+diagnostic staging list. The shared helper/provenance manifest now includes them;
+four focused contract checks and freshly compiled store-origin (9 groups) and
+VBlank-wait (18 groups) WASM tests pass independently. Historical evidence is
+unchanged. [PR #44](https://github.com/NixMcRetro/VRAMpage-MD/pull/44) tracks the
+feature and required final checks.
+
+Packaged Firefox Web Audio checks provision a PulseAudio virtual output at
+44.1 kHz on the ephemeral Linux runner. A native-context probe found `resume()`
+pending with a suspended context at time zero before this explicit device setup.
+The test retains the enable/mute assertions and requires the genuine context's
+clock to advance; CI must verify the device setup before merge. This checks
+software audio routing, not audible output or native macOS.
+
+Z80-origin PSG traffic, audible
+output and physical electrical fidelity are not claimed. This is a bounded
+unreleased audio feature, not full v0.4.0 acceptance.
+
+# v0.3.0 transaction VRAM verification
+
+[PR #43](https://github.com/NixMcRetro/VRAMpage-MD/pull/43) and merged-main
+CI40062903294 pass all seven checks: source, three browser suites, fresh compiled
+core/package and extracted actual-core Firefox/WebKit. Independent specialist
+reviews covered the model/handoff code and renderer optimization. The full
+source checkpoint passed 99 tests with normal native sanitizers; six current
+version checks and actual-core Chromium were repeated after version changes.
+
+The unchanged five-pair runtime performance gate passes; both failed and passing
+records remain available in the experiment summaries. Fresh public v0.3.0 ZIP
+checksum, tag, manifests and source agree. Its runtime hashes match the measured
+candidate; three extracted Chromium transaction tests and API checks pass, as do
+launcher asset serving and clean Ctrl+C shutdown. See the current
+[development status](DEVELOPMENT-STATUS.md) for immutable links and checksum.
+These are Linux synthetic/core checks, not native Mac, audible or physical tests.
+The older stage records below describe acceptance at their original checkpoints.
+
 # Browser CI provisioning
 
 Browser binaries use the existing pinned Playwright cache. OS libraries are still

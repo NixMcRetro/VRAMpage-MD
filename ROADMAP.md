@@ -4,8 +4,8 @@
 
 | Phase | Delivery |
 |---|---|
-| A, active | v0.3.0: browser transaction-VRAM selection, existing chip controls, safe RAM coordination, exports and acceptable runtime performance |
-| B | v0.4.0: hardware-informed YM2612, PSG and Z80 audio faults with clean normal audio |
+| A, delivered | v0.3.0: browser transaction-VRAM selection, existing chip controls, safe RAM coordination, exports and acceptable runtime performance |
+| B, active | v0.4.0: hardware-informed YM2612, PSG and Z80 audio faults with clean normal audio |
 | C | Essential saved configurations, reproducible presets, coordinated faults, recovery and experiment comparison |
 | D | Feature freeze, comprehensive crash/regression fixing, browser/audio stability, performance, usability and release candidate |
 
@@ -45,10 +45,14 @@ matching source; the normal core remains a fallback.
 The 99-test full suite, fresh five-profile WASM and actual-core Chromium pass.
 The reviewed inactive renderer path passes the unchanged fixed performance gate;
 [both timing records](docs/experiments/vram-runtime-performance-2026-10-24-v2-summary.json)
-are preserved. Remaining delivery gates are final version/package verification,
-required CI, merge and public Mac download verification. Audio follows this
-usable milestone. Physical electrical fidelity and native Mac acceptance are
-separate evidence, not claims derived from browser automation.
+are preserved. PR #43 is merged as `4cfb983`; all seven PR/main checks pass. The complete
+v0.3.0 Mac download is published and freshly verified against its checksum,
+source, tag, compiled core and launcher. Audio is the next active milestone.
+Physical electrical fidelity and native Mac acceptance remain separate evidence.
+
+The first bounded audio slice is an off-by-default PSG input-data bridge with
+native/sanitizer, real-WASM and browser coverage. YM2612 and independently
+verified Z80 paths remain necessary before v0.4.0 is complete.
 
 ## v0.1 | NTSC hardware-mode foundation
 

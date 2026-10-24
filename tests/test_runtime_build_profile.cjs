@@ -38,6 +38,9 @@ function installMode5Rom(core) {
   assert.equal(typeof core._set_vram_fault_model_c, 'undefined');
   assert.equal(typeof core._get_vram_fault_model_state, 'function');
   assert.equal(typeof core._get_vram_supported_model_mask, 'function');
+  assert.equal(typeof core._set_psg_data_bridge, 'function');
+  assert.equal(typeof core._set_psg_data_bridge_c, 'undefined');
+  assert.equal(typeof core._get_psg_data_bridge_state, 'function');
   const diagnosticOnly = [
     '_run_vram_tx_test', '_get_vram_tx_counter', '_set_vram_transaction_diagnostic',
     '_get_vram_tx_test_physical_byte', '_get_vram_tx_test_sat_byte',
@@ -55,6 +58,14 @@ function installMode5Rom(core) {
   assert.equal(core._get_vram_supported_model_mask(), 3);
   installMode5Rom(core);
   core._wasm_input_update(); core._tick(); core._sound();
+  const psgState = core._get_psg_data_bridge_state();
+  assert.equal(psgState.modelVersion, 'psg-data-low-dominant-v1');
+  assert.equal(psgState.supported, true);
+  assert.equal(psgState.configured, false);
+  assert.equal(core._set_psg_data_bridge(1, 0, 0), 1,
+    'invalid same-input bridge is rejected');
+  assert.deepEqual(core._get_psg_data_bridge_state(), psgState,
+    'invalid bridge request is atomic');
   assert.equal(core._get_vram_supported_model_mask(), 7);
   assert.equal(core._set_vram_fault_model(2, 8, -1, -1), 0);
   core._tick();

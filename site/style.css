@@ -81,7 +81,11 @@ h3 { font-size:13px; margin:0; }
 .metrics strong { display:block; padding-top:4px; font:700 21px ui-monospace,SFMono-Regular,Consolas,monospace; }
 .notice { margin:14px 16px 16px; padding:10px 12px; border-left:3px solid #a3a29a; background:var(--surface-2); color:#555953; font-size:11px; line-height:1.55; }
 .notice strong { color:var(--ink); }
-.bottom-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:18px; }
+.bottom-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; margin-top:18px; }
+.psg-panel > p { padding:11px 16px 0; color:#535954; font-size:12px; }
+.psg-panel > .small-note { color:#6b7069; font-size:11px; padding-bottom:14px; }
+.psg-controls { grid-template-columns:repeat(2,minmax(0,1fr)); padding-top:10px; }
+.psg-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .logic-panel { margin-top:11px; background:var(--surface); border:1px solid var(--rule); min-width:0; }
 .logic-panel summary { cursor:pointer; list-style:none; user-select:none; }
 .logic-panel summary::-webkit-details-marker { display:none; }

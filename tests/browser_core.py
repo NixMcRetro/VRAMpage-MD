@@ -4,6 +4,7 @@ No commercial ROM, mock emulator, or game-derived data is used.
 """
 import argparse
 import json
+import os
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -40,7 +41,7 @@ def original_cartridge():
     byte(0xc00011, 0x8a)  # PSG channel 0 period
     byte(0xc00011, 0x10)
     byte(0xc00011, 0x90)  # Channel 0 audible
-    words.extend([0x5279, 0x00ff, 0x1000, 0x60f8])  # Increment RAM forever
+    words.extend([0x5279, 0x00ff, 0x1000, 0x60f8])  # Increment RAM forever.
     for i, value in enumerate(words):
         struct.pack_into('>H', rom, 0x200+2*i, value)
     for i, value in enumerate([0x4e72, 0x2700, 0x60fe]):
@@ -48,9 +49,26 @@ def original_cartridge():
     return bytes(rom)
 
 
+class AnnotatedBrowserResult(unittest.TextTestResult):
+    """Keep CI failures readable when signed job-log downloads are unavailable."""
+    def annotate(self, test, error):
+        if os.environ.get('GITHUB_ACTIONS') == 'true':
+            message = self._exc_info_to_string(error, test)[-12000:]
+            message = message.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+            print(f'::error title=Actual-core browser failure::{message}', flush=True)
+
+    def addFailure(self, test, error):
+        super().addFailure(test, error)
+        self.annotate(test, error)
+
+    def addError(self, test, error):
+        super().addError(test, error)
+        self.annotate(test, error)
+
+
 class ActualCoreBrowserTests(unittest.TestCase):
     def test_original_video_audio_and_controls(self):
-        handler = partial(SimpleHTTPRequestHandler, directory=ROOT / 'site')
+        handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
         with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:
             thread = threading.Thread(target=server.serve_forever, daemon=True)
             thread.start()
@@ -61,8 +79,22 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     page = browser.new_page(viewport={'width': 1366, 'height': 768}, accept_downloads=True)
                     errors = []
                     page.on('pageerror', lambda e: errors.append(str(e)))
+                    console_messages = []
+                    page.on('console', lambda entry: console_messages.append(f'{entry.type}: {entry.text}'))
+                    # Observe the genuine context without replacing its audio implementation.
+                    page.add_init_script("""
+                        const audioKey = window.AudioContext ? 'AudioContext' : 'webkitAudioContext';
+                        const NativeAudioContext = window[audioKey];
+                        if (NativeAudioContext) window[audioKey] = new Proxy(NativeAudioContext, {
+                            construct(target, args) {
+                                const context = Reflect.construct(target, args);
+                                window.testAudioContext = context;
+                                return context;
+                            }
+                        });
+                    """)
                     # Capture the real instantiated module without replacing its behavior.
-                    core_js = (ROOT / 'site/core/genplus.js').read_text()
+                    core_js = (OPTIONS.site_root / 'core/genplus.js').read_text()
                     core_js += '\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\n'
                     page.route('**/core/genplus.js', lambda route: route.fulfill(content_type='text/javascript', body=core_js))
                     # A fixture manifest exercises provenance without mocking the real core.
@@ -88,9 +120,50 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         return a.every(Number.isFinite) && a.some(x=>Math.abs(x)>0.0001);
                     }'''), 'Actual PSG must generate nonzero finite samples')
                     page.locator('#soundBtn').click()
-                    expect(page.locator('#soundBtn')).to_have_text('Mute Sound')
+                    try:
+                        expect(page.locator('#soundBtn')).to_have_text('Mute Sound')
+                    except AssertionError as error:
+                        audio_state = page.evaluate("""() => {
+                            const c = window.testAudioContext;
+                            return c ? {state:c.state,sampleRate:c.sampleRate,currentTime:c.currentTime} : null;
+                        }""")
+                        self.fail(f"{error}\nNative audio state: {audio_state}\nBrowser console: {console_messages}"
+                                  f"\nApplication event log:\n{page.locator('#experimentLog').text_content()}")
+                    page.wait_for_function("window.testAudioContext?.state==='running' && window.testAudioContext.currentTime>0")
                     page.locator('#soundBtn').click()
                     expect(page.locator('#soundBtn')).to_have_text('Enable Sound')
+                    psg_api=page.evaluate("typeof testCore._set_psg_data_bridge==='function'")
+                    if psg_api:
+                        page.evaluate('''() => {
+                            window.__nativePsgState=testCore._get_psg_data_bridge_state;
+                            testCore._get_psg_data_bridge_state=()=>{throw new Error('injected state failure')};
+                        }''')
+                        expect(page.locator('#psgBridgeStatus')).to_contain_text('runtime state is unavailable')
+                        expect(page.locator('#psgBridgeApply')).to_be_disabled()
+                        self.assertEqual(errors,[], 'optional PSG state failure does not break the page')
+                        page.evaluate('testCore._get_psg_data_bridge_state=window.__nativePsgState')
+                        expect(page.locator('#psgBridgeApply')).to_be_enabled()
+                        page.locator('#psgBridgeA').select_option('0')
+                        page.locator('#psgBridgeB').select_option('7')
+                        page.locator('#psgBridgeApply').click()
+                        psg_state=page.evaluate('testCore._get_psg_data_bridge_state()')
+                        self.assertTrue(psg_state['effective'])
+                        self.assertEqual((psg_state['bridgeA'],psg_state['bridgeB']),(0,7))
+                        self.assertIn('D0',page.locator('#psgBridgeStatus').inner_text())
+                        frame_before=page.evaluate('testCore._get_logic_frame()')
+                        page.locator('#psgBridgeA').select_option('2')
+                        page.locator('#psgBridgeB').select_option('6')
+                        page.wait_for_function('frame=>testCore._get_logic_frame()>=frame+4',arg=frame_before)
+                        self.assertEqual((page.locator('#psgBridgeA').input_value(),page.locator('#psgBridgeB').input_value()),('2','6'),
+                                         'frame refresh preserves the uncommitted pair draft')
+                        page.locator('#psgBridgeApply').click()
+                        psg_state=page.evaluate('testCore._get_psg_data_bridge_state()')
+                        self.assertTrue(psg_state['effective'])
+                        self.assertEqual((psg_state['bridgeA'],psg_state['bridgeB']),(2,6),
+                                         'Apply commits the retained pair draft to the core')
+                    else:
+                        expect(page.locator('#psgBridgeApply')).to_be_disabled()
+                        self.assertIn('does not provide',page.locator('#psgBridgeStatus').inner_text())
                     page.locator('#screen').click()
                     page.keyboard.down('x')
                     page.wait_for_function('new Float32Array(testCore.HEAPF32.buffer,testCore._get_input_buffer_ref(),32)[11]===1')
@@ -134,8 +207,14 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     self.assertEqual(payload['rom']['name'],'original-video-tone.bin')
                     self.assertEqual(len(payload['rom']['sha256']),64)
                     self.assertNotIn('romBytes',payload)
+                    self.assertEqual(payload['psgInputFault']['available'],psg_api)
+                    if psg_api:
+                        self.assertEqual(payload['psgInputFault']['modelVersion'],'psg-data-low-dominant-v1')
+                        self.assertTrue(payload['psgInputFault']['configured'])
                     page.locator('#resetBtn').click()
                     page.wait_for_function('testCore._get_logic_address_mask()===0')
+                    if psg_api:
+                        page.wait_for_function('!testCore._get_psg_data_bridge_state().configured')
                     expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
                     self.assertEqual(errors,[])
                     browser.close()
@@ -147,5 +226,7 @@ if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--browser',choices=['chromium','firefox','webkit'],default='chromium')
     parser.add_argument('--executable')
+    parser.add_argument('--site-root',type=Path,default=ROOT / 'site')
     OPTIONS, remaining=parser.parse_known_args()
-    unittest.main(argv=[__file__,*remaining],verbosity=2)
+    unittest.main(argv=[__file__,*remaining],verbosity=2,
+                  testRunner=unittest.TextTestRunner(verbosity=2,resultclass=AnnotatedBrowserResult))

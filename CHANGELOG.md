@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased: audio development
+
+- Add an off-by-default PSG input-data bridge in the optional runtime, before register decoding and synthesis.
+- Add browser pair controls, truthful support/reset status and exact decimal counters in experiment exports; retain clean normal audio and legacy-core fallback.
+- This is the first audio slice, not the completed v0.4.0 milestone. YM2612 and separately verified Z80 traffic remain outstanding. No new public release.
+
 ## v0.3.0 - transaction-level VRAM
 
 - Select frame projection or logical-byte transaction VRAM in the browser and use the existing legs, bridges and presets. Preserve the default frame-model fallback.

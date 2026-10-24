@@ -216,3 +216,24 @@ jobs:
             --browser ${{ matrix.browser }} \
             --site-root "$RUNNER_TEMP/extracted-review/VRAMpage-MD/site" \
             --normal-core "$RUNNER_TEMP/extracted-review/VRAMpage-MD/site/source/src/main/js"
+      - name: Provide native headless Firefox audio output
+        if: matrix.browser == 'firefox'
+        timeout-minutes: 6
+        shell: bash
+        run: |
+          if ! command -v pulseaudio >/dev/null || ! command -v pactl >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y pulseaudio pulseaudio-utils
+          fi
+          pulseaudio --start --exit-idle-time=-1
+          pactl info
+          pactl list short sinks
+          pactl load-module module-null-sink sink_name=vrampage_ci rate=44100
+          pactl set-default-sink vrampage_ci
+          test "$(pactl get-default-sink)" = vrampage_ci
+          pactl list short sinks
+      - name: Verify packaged audio and controls in ${{ matrix.browser }}
+        run: |
+          python3 tests/browser_core.py \
+            --browser ${{ matrix.browser }} \
+            --site-root "$RUNNER_TEMP/extracted-review/VRAMpage-MD/site"

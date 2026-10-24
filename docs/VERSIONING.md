@@ -1,13 +1,14 @@
 # Versioning policy
 
-Current development version: **v0.3.0** (`VERSION` stores `0.3.0`).
-Publish the transaction-VRAM milestone only after its correctness, performance
-and package gates pass. Published versions are listed on [GitHub Releases](https://github.com/NixMcRetro/VRAMpage-MD/releases).
+Current published milestone: **v0.3.0** (`VERSION` stores `0.3.0`).
+The transaction-VRAM milestone passed its correctness, performance and package
+gates. Development after this tag is identified by its source commit; the
+partial PSG audio slice does not declare or publish the full v0.4.0 milestone. Published versions are listed on [GitHub Releases](https://github.com/NixMcRetro/VRAMpage-MD/releases).
 
 VRAMpage MD is experimental, **not version 2.x**. Use semantic-looking
 `MAJOR.MINOR.PATCH` identifiers with leading `0` until a deliberately
-approved stable release. Future feature groups planned by the roadmap are
-`v0.3.0` (per-access VRAM) and `v0.4.0` (hardware-informed audio faults).
+approved stable release. The delivered VRAM milestone is `v0.3.0`; the next major feature milestone is
+`v0.4.0` (hardware-informed audio faults).
 Do not declare `v1.0.0` solely because a new patchbay control was added.
 
 ## Corrected feature history
@@ -36,7 +37,7 @@ remains reserved for v0.4.0. A leg switch does not advance either milestone.
 
 - New app titles, export `modelVersion`, generated protocols, release assets,
   download URLs, GitHub release titles/tags and living documentation use the
-  canonical `0.2.x` identifiers.
+  canonical version in `VERSION`.
 - Past commits, pull request numbers/titles, closed branches, already recorded
   experimental JSON files, original tool outputs and old review artifacts
   are immutable historical evidence. Their old `2.1-experimental`,

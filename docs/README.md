@@ -39,6 +39,10 @@ older standalone-model descriptions are historical development records.
 | [Source import](IMPORTING.md) | How the original v0.1 working prototype entered GitHub |
 | [Prototype notes](PROTOTYPE-V0.1-NOTES.md) | Historical first-stage implementation and technical assumptions |
 
+The development source after v0.3.0 adds an optional
+[PSG input-data bridge](PSG-INPUT-DATA-SEMANTICS.md). The public v0.3.0 ZIP
+remains unchanged; the full audio milestone is not yet complete.
+
 ## Documentation conventions
 
 - **Describe what works today separately from what is planned.** Mark features as Implemented, Experimental, Planned or Unverified. Label the v0.2 work-RAM model Experimental until genuine-game checks are recorded; do not imply a verified Sonic outcome or sound bending.
