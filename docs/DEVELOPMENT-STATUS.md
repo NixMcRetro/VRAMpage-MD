@@ -8,7 +8,16 @@ from checkpoint `d44c063`, with documentation in a separate worktree. Reuse the
 verified models and apply paths; preserve Work RAM and every unselected chip.
 This user request precedes the combined workbench acceptance task below. No
 native model, version bump, public release or McRetro.net deployment is planned.
-Implementation, independent review and required CI remain before integration.
+Implementation `5be6d9e` and independent Luna High review/fixes `2cc4914` are
+complete. The full 107-test native/SDK suite with normal sanitizers and fresh
+WASM profiles and source script pass; core implementation is unchanged.
+Final Chromium interfaces66/66 and focused WebKit Randomiser5/5 pass. The
+compiled-core5/5, transaction3/3 and display6/6 checks pass, including actual
+native Randomiser settings and configuration export. Visual checks put the
+Randomiser row below all four chips within 1366 by 768, with no horizontal page
+overflow at 1366, 768 or 390 pixels. A nondeterministic new test was corrected
+to force the expected mode; the failed log is retained. Required PR/main CI
+and matching review-package verification remain before integration.
 
 ## PR #50 integration checkpoint — 25 October 2026
 

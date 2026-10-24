@@ -17,6 +17,12 @@ evidence and run applicable full regression and actual-core checks. Independent
 specialist review and passing PR/main CI remain required. Preserve v0.4.1 and
 McRetro.net; return to combined workbench acceptance after this requested slice.
 
+Implemented `5be6d9e`, independently reviewed/fixed `2cc4914`. The full native/SDK107
+and source script pass. Final Chromium66/66, WebKit focused5/5, compiled-core5/5,
+transaction3/3 and display6/6 pass. Required PR/main CI remains before integration.
+Keep the corrected deterministic selection test and held-key restoration test;
+do not weaken assertions to accommodate unforced random outcomes.
+
 ## PR #50 integration checkpoint — 25 October 2026
 
 [PR #50](https://github.com/NixMcRetro/VRAMpage-MD/pull/50) merged as

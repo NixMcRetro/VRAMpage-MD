@@ -1032,3 +1032,13 @@ must not claim success or silently resume a paused emulator. Verify existing
 configuration/experiment exports and staged-preview preservation, keyboard
 activation, compact layout and the actual compiled runtime. Reuse unchanged
 core correctness evidence; record executed results in the final checkpoint.
+
+Source `2cc4914` passes independent Luna High review and focused Randomiser cases
+in Chromium and WebKit. The complete final Chromium suite passes66/66; compiled
+core5/5, transaction3/3 and display6/6 pass. The new compiled-core case checks
+selected PSG/FM/VRAM settings, isolation, selected VRAM model, a paused frame
+counter and exported configuration. Negative cases exercise partial mutation,
+unreadable pulse state and held-bridge restoration after refusal. A first full
+64-case run had one nondeterministic test expectation; it was replaced with an
+explicit mode choice, and the failed log remains under `/workspace/scratch/randomise`.
+The native/SDK107 and source script pass with unchanged native model code.
