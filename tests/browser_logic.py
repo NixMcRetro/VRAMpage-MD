@@ -192,6 +192,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.locator("#logicAccess").select_option("3")
         self.page.locator("#logicApplyBtn").click()
         expect(self.page.locator("#logicStatus")).to_have_text("Applied data D0 ↔ D7 on read + write.")
+        expect(self.page.locator("#ramChipState")).to_contain_text("Data bridge D0 ↔ D7 active")
         self.assertEqual(
             self.page.evaluate("window.mockCore.logic.setterCalls.at(-1)"), [2, 3, 0, 7])
         active = self.page.evaluate("({ ...window.mockCore.logic.config })")

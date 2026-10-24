@@ -708,7 +708,9 @@
       ? `${Array.from({length:15},(_,i)=>i).filter(i=>logicAddressMask&(1<<i)).map(i=>`A${i+1}`).join(', ')} forced low`
       : logicActive && activeRamConfiguration?.type==='line-pair' && activeRamConfiguration.kind===1
         ? `A${activeRamConfiguration.a+1} ↔ A${activeRamConfiguration.b+1} bridge`
-        : 'Address lines are connected.';
+        : logicActive && activeRamConfiguration?.type==='line-pair' && activeRamConfiguration.kind===2
+          ? `Data bridge D${activeRamConfiguration.a} ↔ D${activeRamConfiguration.b} active; see RAM settings.`
+          : 'Address lines are connected.';
   }
 
   function chipTransitionSnapshot() {
