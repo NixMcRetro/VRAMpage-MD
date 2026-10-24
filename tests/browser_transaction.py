@@ -102,6 +102,15 @@ window.Module=opts=>originalFactory(opts).then(core=>{
         page.locator(".pin").nth(0).click()
         page.locator(".pin").nth(1).click()
         self.assertEqual(page.evaluate("testCore._get_vram_fault_model_state().bridgeA"), 0)
+        self.assertEqual(page.evaluate("testCore._get_vram_fault_model_state().bridgeB"), 1)
+        page.evaluate("window.__rejectRamApply=true")
+        page.locator("#logicApplyBtn").click()
+        page.evaluate("window.__rejectRamApply=false")
+        rejected = page.evaluate("testCore._get_vram_fault_model_state()")
+        self.assertEqual((rejected["modelId"], rejected["bridgeA"], rejected["bridgeB"]), (2, 0, 1))
+        expect(page.locator("#logicStatus")).to_contain_text("previous VRAM configuration restored")
+
+        # A successful RAM activation clears the bridge after validation.
         page.locator("#logicApplyBtn").click()
         self.assertEqual(page.evaluate("testCore._get_vram_fault_model_state().bridgeA"), -1)
         self.assertEqual(page.evaluate("testCore._get_vram_fault_model_state().modelId"), 2)
@@ -144,10 +153,20 @@ window.Module=opts=>originalFactory(opts).then(core=>{
             page.locator("#logicExperimentBtn").click()
         data = json.loads(Path(download.value.path()).read_text())
         self.assertEqual(data["schemaVersion"], 1)
+        self.assertEqual(data["modelVersion"], "0.2.8-experimental")
         self.assertIn("readCount", data)
+        self.assertIn("vramFault", data)
+        self.assertIn("vramAddressLineChanges", data)
         self.assertEqual(data["logic"]["modelVersion"], "work-ram-transaction-v1")
         self.assertEqual(data["vramTransaction"]["modelId"], 2)
         self.assertTrue(data["vramModelTransitions"])
+        self.assertTrue(any(change["result"]=="ram-fault-rejected"
+                            for change in data["vramModelTransitions"]))
+        counts=data["vramTransaction"]["lastFrameCounts"]
+        self.assertEqual(set(counts),{"logicalByteReads","logicalByteWrites",
+                                      "redirectedByteReads","redirectedByteWrites",
+                                      "changedPhysicalByteWrites"})
+        self.assertTrue(all(isinstance(value,int) and value>=0 for value in counts.values()))
 
         # Cartridge start restores the default model and identity settings.
         page.locator("#romFile").set_input_files({

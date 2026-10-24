@@ -189,6 +189,20 @@
     return {ok,status:ok?0:lastVramSelectorStatus};
   }
 
+  function recordRamHandoffRejection(snapshot,reason,status,rollback) {
+    const actual=currentVramModelState();
+    vramModelTransitions.push({frame:logicApiReady()?Number(emulator._get_logic_frame()):null,
+      from:snapshot?.modelId??vramModelId,to:actual.modelId,
+      fromMask:snapshot?.mask??vramAddressMask,toMask:actual.mask,
+      fromPair:snapshot?.pair??canonical(actualPair()),
+      toPair:actual.bridgeA>=0&&actual.bridgeB>=0?[actual.bridgeA,actual.bridgeB]:null,
+      reason,result:'ram-fault-rejected',ramSetterStatus:status,
+      vramRestoreStatus:rollback.status,actualModelId:actual.modelId,actualMask:actual.mask,
+      actualBridgeA:actual.bridgeA,actualBridgeB:actual.bridgeB,
+      transactionCountersReset:!!vramModelApiReady()&&!!snapshot,
+      transactionCacheInvalidated:!!vramModelApiReady()&&!!snapshot&&snapshot.modelId===2});
+  }
+
   function callVramModel(modelId,mask,pair) {
     const validation=validateVramModel(modelId,mask,pair);
     if (!validation.ok) return lastVramSelectorStatus=validation.status;
@@ -430,6 +444,7 @@
     const status=emulator._set_logic_address_mask(mask,access);
     if (status!==0) {
       const rollback=restoreVramAfterRamReject(handoff.snapshot,'restored after RAM address-line rejection');
+      recordRamHandoffRejection(handoff.snapshot,'RAM address-line setter rejected after VRAM clear',status,rollback);
       setLogicStatus(rollback.ok
         ? `Address-line setting rejected (status ${status}); previous VRAM configuration restored.`
         : `Address-line setting rejected (status ${status}); VRAM configuration restore failed.`);
@@ -581,6 +596,7 @@
       : emulator._arm_logic_write_pulse(config.kind,config.a,config.b,writeLimit);
     if (status!==0) {
       const rollback=restoreVramAfterRamReject(handoff.snapshot,'restored after RAM fault rejection');
+      recordRamHandoffRejection(handoff.snapshot,'RAM fault setter rejected after VRAM clear',status,rollback);
       setLogicStatus(rollback.ok
         ? `Core rejected this logic fault (status ${status}); previous VRAM configuration restored.`
         : `Core rejected this logic fault (status ${status}); VRAM configuration restore failed.`);
