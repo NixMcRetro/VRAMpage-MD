@@ -106,7 +106,10 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         return a.every(Number.isFinite) && a.some(x=>Math.abs(x)>0.0001);
                     }'''), 'Actual PSG must generate nonzero finite samples')
                     page.locator('#soundBtn').click()
-                    expect(page.locator('#soundBtn')).to_have_text('Mute Sound')
+                    try:
+                        expect(page.locator('#soundBtn')).to_have_text('Mute Sound')
+                    except AssertionError as error:
+                        self.fail(f"{error}\nApplication event log:\n{page.locator('#experimentLog').inner_text()}")
                     page.locator('#soundBtn').click()
                     expect(page.locator('#soundBtn')).to_have_text('Enable Sound')
                     psg_api=page.evaluate("typeof testCore._set_psg_data_bridge==='function'")
