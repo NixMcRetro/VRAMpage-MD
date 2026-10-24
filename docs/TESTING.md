@@ -8,7 +8,10 @@ Compiled uint64 getters use the BigInt ABI; exported decimal strings preserve
 values above 2^53 without putting BigInt into JSON. Production profile switching
 retains the exact normal core hashes. Chromium covers runtime and normal fallback,
 throwing optional state getters, editing active pair drafts, export and reset.
-Full integrated checks and CI remain merge gates. Z80-origin PSG traffic, audible
+The full 103-test integrated suite passes with normal LeakSanitizer, fresh WASM
+and production profile switching. Final Chromium core and transaction suites
+pass. Required CI also exercises packaged audio controls in Firefox/WebKit.
+Z80-origin PSG traffic, audible
 output and physical electrical fidelity are not claimed. This is a bounded
 unreleased audio feature, not full v0.4.0 acceptance.
 

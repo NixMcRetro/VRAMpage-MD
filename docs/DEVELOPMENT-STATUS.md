@@ -44,8 +44,11 @@ own model metadata. Clearing changes future writes; full PSG reset clears the
 configuration/counters, while CPU-only reset does not promise chip repair.
 Native strict/sanitizer, production normal/runtime/normal builds, actual-WASM
 clean-tone equivalence/active change/reset and runtime/normal Chromium checks
-pass. Independent review required additional patch-drift guards; final review,
-full integration regression and CI remain gates before merge.
+pass. Independent specialist review approved the final patch-drift guards, actual
+WASM behavior and exact counter ABI. The full integrated 103-test suite passes
+with normal LeakSanitizer, fresh WASM and production profile switching; final
+actual-core Chromium and transaction tests pass. Required CI remains the merge
+gate, including packaged audio/controls in Firefox and WebKit.
 
 Keep v0.3.0 as the public milestone. Next audio work is YM2612 and verified Z80
 paths before calling v0.4.0 complete; do not release a partial audio slice under
