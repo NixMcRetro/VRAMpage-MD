@@ -52,7 +52,7 @@ class BrowserLogicTests(unittest.TestCase):
             context.close()
         self.assertEqual(self.errors, [], "Uncaught application errors")
 
-    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False):
+    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False):
         context = self.browser.new_context(
             viewport={"width": 1366, "height": 768},
             color_scheme="light",
@@ -61,6 +61,12 @@ class BrowserLogicTests(unittest.TestCase):
         self.contexts.append(context)
         page = context.new_page()
         page.on("pageerror", lambda error: self.errors.append(str(error)))
+        if circuit_config:
+            page.add_init_script("window.__circuitConfigCore = true;")
+        if legacy_psg_data:
+            page.add_init_script("window.__legacyPsgDataCore = true;")
+        if legacy_fm_data:
+            page.add_init_script("window.__legacyFmDataCore = true;")
         if legacy_vram_chip:
             page.add_init_script("window.__legacyVramChipCore = true;")
         if legacy_chip:
@@ -275,6 +281,189 @@ class BrowserLogicTests(unittest.TestCase):
         with self.page.expect_download() as info:
             self.page.locator("#logicExperimentBtn").click()
         return json.loads(Path(info.value.path()).read_text())
+
+    @staticmethod
+    def circuit_configuration(vram_pair=None, vram_mask=0, model_id=1, ram=None, psg=None, fm=None):
+        return {
+            "format": "vrampage-md-circuit-config",
+            "schemaVersion": 1,
+            "configuration": {
+                "vram": {"modelId": model_id, "mask": vram_mask, "pair": vram_pair},
+                "ram": ram,
+                "psg": psg,
+                "fm": fm,
+            },
+        }
+
+    def stage_circuit_file(self, payload, page=None):
+        page = page or self.page
+        raw = payload if isinstance(payload, str) else json.dumps(payload)
+        page.locator("#circuitConfigFile").set_input_files({
+            "name": "circuit-config.json", "mimeType": "application/json", "buffer": raw.encode()
+        })
+
+    def test_circuit_config_import_is_inert_then_explicit_apply_roundtrips(self):
+        self.page.close()
+        self.page = self.new_page(circuit_config=True)
+        self.load_rom()
+        payload = self.circuit_configuration(vram_pair=[2, 5], psg=[1, 6], fm=[0, 7])
+        before = self.page.evaluate("""() => ({
+            vramCalls: mockCore.vramModel.calls.length,
+            psgCalls: mockCore.psg.calls.length, fmCalls: mockCore.fm.calls.length,
+            vramSelector: document.querySelector('#vramModel').value,
+            psgA: document.querySelector('#psgBridgeA').value,
+            logicCalls: mockCore.logic.setterCalls.length
+        })""")
+        self.stage_circuit_file(payload)
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("Nothing has been applied")
+        expect(self.page.locator("#circuitConfigPreview")).to_contain_text("VRAM AD2↔AD5")
+        after_import = self.page.evaluate("""() => ({
+            vramCalls: mockCore.vramModel.calls.length,
+            psgCalls: mockCore.psg.calls.length, fmCalls: mockCore.fm.calls.length,
+            vramSelector: document.querySelector('#vramModel').value,
+            psgA: document.querySelector('#psgBridgeA').value,
+            logicCalls: mockCore.logic.setterCalls.length
+        })""")
+        self.assertEqual(after_import, before, "preview does not call setters or change selectors")
+
+        self.page.locator("#circuitConfigApply").click()
+        self.page.wait_for_function("mockCore.psg.configured && mockCore.fm.configured")
+        self.assertEqual(self.page.evaluate("mockCore.vramModel.bridgeA"), 2)
+        self.assertEqual(self.page.evaluate("mockCore.vramModel.bridgeB"), 5)
+        self.assertEqual(self.page.evaluate("[mockCore.psg.bridgeA,mockCore.psg.bridgeB]"), [1, 6])
+        self.assertEqual(self.page.evaluate("[mockCore.fm.bridgeA,mockCore.fm.bridgeB]"), [0, 7])
+        expect(self.page.locator("#circuitConfigApply")).to_be_disabled()
+
+        with self.page.expect_download() as info:
+            self.page.locator("#circuitConfigDownload").click()
+        saved = json.loads(Path(info.value.path()).read_text())
+        self.assertEqual(saved, payload)
+        self.assertEqual(set(saved), {"format", "schemaVersion", "configuration"})
+        self.assertNotIn("rom", saved)
+        self.assertNotIn("inputWrites", json.dumps(saved))
+
+        self.page.evaluate("""() => {
+            mockCore.psg.inputWrites='42';
+            mockCore.fm.inputWrites='27';
+        }""")
+        calls = self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]")
+        self.stage_circuit_file(payload)
+        self.page.locator("#circuitConfigApply").click()
+        self.assertEqual(self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]"), calls,
+                         "applying an identical configuration skips selectors and preserves counters")
+        self.assertEqual(self.page.evaluate("mockCore.psg.inputWrites"), "42")
+        self.assertEqual(self.page.evaluate("mockCore.fm.inputWrites"), "27")
+
+    def test_circuit_config_rejects_invalid_unsupported_and_pulse_before_mutation(self):
+        self.page.close()
+        self.page = self.new_page(circuit_config=True)
+        self.load_rom()
+        valid = self.circuit_configuration(vram_pair=[0, 1], psg=[0, 3])
+        self.stage_circuit_file(valid)
+        expect(self.page.locator("#circuitConfigApply")).to_be_enabled()
+        before = self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length]")
+        conflict = self.circuit_configuration(vram_pair=[0, 1],
+            ram={"type":"line-pair","kind":1,"access":1,"a":0,"b":1})
+        self.stage_circuit_file(conflict)
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("not staged")
+        self.assertEqual(self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length]"), before)
+        self.assertIn("VRAM AD0↔AD1", self.page.locator("#circuitConfigPreview").inner_text(),
+                      "invalid replacement preserves the last valid staged preview")
+
+        unsupported = self.circuit_configuration(model_id=2)
+        self.page.evaluate("mockCore.vramModel.supportedModelsMask=3")
+        self.stage_circuit_file(unsupported)
+        before = self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]")
+        selector = self.page.locator("#vramModel").input_value()
+        self.page.locator("#circuitConfigApply").click()
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("refused before mutation")
+        self.assertEqual(self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]"), before)
+        self.assertEqual(self.page.locator("#vramModel").input_value(), selector)
+        expect(self.page.locator("#circuitConfigApply")).to_be_enabled()
+
+        self.page.evaluate("mockCore.logic.pulseState=1")
+        self.stage_circuit_file(valid)
+        before = self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length]")
+        self.page.locator("#circuitConfigApply").click()
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("active RAM pulse")
+        self.assertEqual(self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length]"), before)
+
+    def test_circuit_config_ram_handoff_late_audio_failure_pauses_and_keeps_draft(self):
+        self.page.close()
+        self.page = self.new_page(circuit_config=True)
+        self.load_rom()
+        self.page.locator("#logicApplyBtn").click()
+        self.page.wait_for_function("mockCore.logic.active")
+        payload = self.circuit_configuration(vram_pair=[3, 6], psg=[0, 5])
+        self.stage_circuit_file(payload)
+        self.page.evaluate("mockCore.rejectPsgBridge=true")
+        self.page.locator("#circuitConfigApply").click()
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("Apply stopped at PSG")
+        expect(self.page.locator("#pauseBtn")).to_have_text("Resume")
+        self.assertEqual(self.page.evaluate("mockCore.logic.active"), False,
+                         "VRAM handoff disconnected the prior RAM fault before the later audio rejection")
+        self.assertEqual(self.page.evaluate("[mockCore.vramModel.bridgeA,mockCore.vramModel.bridgeB]"), [3, 6])
+        self.assertEqual(self.page.evaluate("mockCore.psg.configured"), False)
+        expect(self.page.locator("#circuitConfigApply")).to_be_enabled()
+        self.assertIn("VRAM AD3↔AD6", self.page.locator("#circuitConfigPreview").inner_text(),
+                      "late failure retains the staged configuration for review")
+
+    def test_circuit_config_saves_applied_ram_not_unapplied_selector_draft(self):
+        self.page.close()
+        self.page = self.new_page(circuit_config=True)
+        self.load_rom()
+        self.page.locator("#logicApplyBtn").click()
+        self.page.wait_for_function("mockCore.logic.active")
+        self.page.locator("#logicKind").select_option("2")
+        self.page.locator("#logicAccess").select_option("2")
+        self.page.locator("#logicLineA").select_option("0")
+        self.page.locator("#logicLineB").select_option("1")
+        with self.page.expect_download() as info:
+            self.page.locator("#circuitConfigDownload").click()
+        saved = json.loads(Path(info.value.path()).read_text())
+        self.assertEqual(saved["configuration"]["ram"],
+                         {"type":"line-pair","kind":1,"access":1,"a":0,"b":1},
+                         "file captures the actual applied fault, not changed form controls")
+        mask_config = self.circuit_configuration(ram={"type":"address-mask","mask":5,"access":2})
+        self.stage_circuit_file(mask_config)
+        self.page.locator("#circuitConfigApply").click()
+        self.assertEqual(self.page.evaluate("mockCore.logic.addressMask"), 5)
+        with self.page.expect_download() as info:
+            self.page.locator("#circuitConfigDownload").click()
+        saved_mask = json.loads(Path(info.value.path()).read_text())
+        self.assertEqual(saved_mask["configuration"]["ram"],
+                         {"type":"address-mask","mask":5,"access":2})
+
+    def test_circuit_config_legacy_core_allows_disabled_optional_domains_only(self):
+        self.page.close()
+        self.page = self.new_page(circuit_config=True, legacy_psg_data=True, legacy_fm_data=True)
+        self.load_rom()
+        before = self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.logic.setterCalls.length]")
+        self.stage_circuit_file(self.circuit_configuration())
+        self.page.locator("#circuitConfigApply").click()
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("already matches")
+        self.assertEqual(self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.logic.setterCalls.length]"), before)
+
+        self.stage_circuit_file(self.circuit_configuration(psg=[0, 5]))
+        self.page.locator("#circuitConfigApply").click()
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("does not support the requested PSG")
+        self.assertEqual(self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.logic.setterCalls.length]"), before,
+                         "unsupported optional input API is rejected before memory selectors change")
+
+    def test_circuit_config_refuses_live_pending_pulse_before_setters(self):
+        self.page.close()
+        self.page = self.new_page(circuit_config=True)
+        self.load_rom()
+        self.page.locator("#pauseBtn").click()
+        self.page.locator("#logicAccess").select_option("2")
+        self.page.locator("#logicPulseFrames").select_option("writes:1")
+        self.page.locator("#logicPulseBtn").click()
+        self.assertEqual(self.page.evaluate("mockCore.logic.pulseState"), 1)
+        self.stage_circuit_file(self.circuit_configuration(vram_pair=[0, 1], psg=[1, 4]))
+        before = self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]")
+        self.page.locator("#circuitConfigApply").click()
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("active RAM pulse")
+        self.assertEqual(self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]"), before)
 
     def test_pulses_end_on_exact_emulated_frame_and_preserve_writes(self):
         self.load_rom()

@@ -9,7 +9,11 @@ window.Module = async () => {
     reads: 0, writes: 0, frame: 0, activationFrame: 0, cpuFlags: 0,
     setterCalls: [], storedWrites: 0, recoveries: [], pulseState: 0, budget: 0, writesPerTick: 1, addressMask:0,
   };
-  window.mockCore = {starts: 0, ticks: 0, lastStartTick: 0, short: [-1, -1], vramAddressMask:0, vramMaskCalls:[], inputs: [], logic};
+  const psg = {configured:false,bridgeA:-1,bridgeB:-1,supported:true,inputWrites:'0',changedWrites:'0',calls:[]};
+  const fm = {configured:false,bridgeA:-1,bridgeB:-1,supported:true,inputWrites:'0',changedWrites:'0',calls:[]};
+  const vramModel = {modelId:1,mask:0,bridgeA:-1,bridgeB:-1,supportedModelsMask:7,calls:[]};
+  window.mockCore = {starts: 0, ticks: 0, lastStartTick: 0, short: [-1, -1], vramAddressMask:0,
+    vramMaskCalls:[], inputs: [], logic, psg, fm, vramModel};
 
   function setLogicFault(kind, access, a, b) {
     logic.setterCalls.push([kind, access, a, b]);
@@ -70,6 +74,8 @@ window.Module = async () => {
     _start() {
       window.mockCore.starts++;
       resetLogic();window.mockCore.short=[-1,-1];window.mockCore.vramAddressMask=0;
+      Object.assign(vramModel,{modelId:1,mask:0,bridgeA:-1,bridgeB:-1});
+      for (const state of [psg,fm]) Object.assign(state,{configured:false,bridgeA:-1,bridgeB:-1,inputWrites:'0',changedWrites:'0'});
       window.mockCore.lastStartTick = window.mockCore.ticks;
     },
     _tick() {
@@ -101,6 +107,54 @@ window.Module = async () => {
     _get_vram_changed_reads: () => 0,
     _get_vram_changed_writes: () => 0,
   };
+  if (window.__circuitConfigCore) {
+    Object.assign(core, {
+      _set_vram_fault_model(modelId,mask,a,b) {
+        vramModel.calls.push([modelId,mask,a,b]);
+        if (![1,2].includes(modelId) || !(vramModel.supportedModelsMask & (1<<modelId)) ||
+            !Number.isInteger(mask) || mask<0 || mask>255 ||
+            (mask && (a!==-1 || b!==-1)) ||
+            !((a===-1&&b===-1)||(a>=0&&a<=7&&b>=0&&b<=7&&a!==b))) return 2;
+        Object.assign(vramModel,{modelId,mask,bridgeA:a,bridgeB:b});
+        window.mockCore.vramAddressMask=mask;
+        window.mockCore.short=a<0?[-1,-1]:[a,b];
+        return 0;
+      },
+      _get_vram_fault_model_state:()=>({modelId:vramModel.modelId,modelVersion:vramModel.modelId===2
+        ?'logical-byte-transaction-v1':'frame-projection-v1',mask:vramModel.mask,
+        bridgeA:vramModel.bridgeA,bridgeB:vramModel.bridgeB,supportedModelsMask:vramModel.supportedModelsMask,
+        effective:!!(vramModel.mask||vramModel.bridgeA>=0),reason:vramModel.mask||vramModel.bridgeA>=0?'active':'no-fault',
+        lastFrameCounts:{logicalByteReads:0,logicalByteWrites:0,redirectedByteReads:0,
+          redirectedByteWrites:0,changedPhysicalByteWrites:0}}),
+      _get_vram_supported_model_mask:()=>vramModel.supportedModelsMask
+    });
+  }
+  if (window.__circuitConfigCore && !window.__legacyPsgDataCore) {
+    Object.assign(core, {
+      _set_psg_data_bridge(enabled,a,b) {
+        psg.calls.push([enabled,a,b]);
+        if (window.mockCore.rejectPsgBridge) return 1;
+        if (enabled && (!psg.supported || a<0 || b<0 || a>7 || b>7 || a===b)) return 2;
+        Object.assign(psg,{configured:!!enabled,bridgeA:enabled?a:-1,bridgeB:enabled?b:-1,
+          inputWrites:'0',changedWrites:'0'});
+        return 0;
+      },
+      _get_psg_data_bridge_state:()=>({...psg,modelVersion:'psg-data-bridge-test-v1'})
+    });
+  }
+  if (window.__circuitConfigCore && !window.__legacyFmDataCore) {
+    Object.assign(core, {
+      _set_fm_data_bridge(enabled,a,b) {
+        fm.calls.push([enabled,a,b]);
+        if (window.mockCore.rejectFmBridge) return 1;
+        if (enabled && (!fm.supported || a<0 || b<0 || a>7 || b>7 || a===b)) return 2;
+        Object.assign(fm,{configured:!!enabled,bridgeA:enabled?a:-1,bridgeB:enabled?b:-1,
+          inputWrites:'0',changedWrites:'0'});
+        return 0;
+      },
+      _get_fm_data_bridge_state:()=>({...fm,modelVersion:'fm-data-bridge-test-v1'})
+    });
+  }
   if (!window.__legacyLogicCore) {
     // Expose the same setter on the instrumentation object so tests can
     // verify the core-level guard independently of UI validation.

@@ -330,5 +330,6 @@ footer { padding-top:9px; font-size:10px; }
 .transaction-metrics > div { min-width:0; border-top:1px solid var(--rule); padding:7px 2px 0; }
 .transaction-metrics span { display:block; color:var(--muted); font-size:10px; }
 .transaction-metrics strong { display:block; padding-top:3px; overflow-wrap:anywhere; font:700 14px ui-monospace,SFMono-Regular,Consolas,monospace; }
+.circuit-config-preview { max-height:220px; overflow:auto; padding:10px; border:1px solid var(--rule); border-radius:5px; background:var(--surface); white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace; }
 .pin.cut { color:var(--accent); background:var(--surface); border-color:var(--rule); }
 .pin.cut .chip-cut { visibility:visible; }
