@@ -391,6 +391,9 @@ async function main() {
   assert.equal(maskedBeforeFrame.dataMask, 0x80);
   assert.equal(maskedBeforeFrame.bridgeA, -1);
   assert.equal(maskedBeforeFrame.bridgeB, -1);
+  assert.equal(masked._set_fm_data_mask(256), 1, 'C API rejects masks above one byte');
+  assert.deepEqual(masked._get_fm_data_bridge_state(), maskedBeforeFrame,
+    'out-of-range mask rejection preserves active configuration and counters');
   const maskedSamples = nextAudio(masked);
   const maskedState = masked._get_fm_data_bridge_state();
   assert.equal(maskedSamples.count, baseline.count);
