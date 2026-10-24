@@ -250,7 +250,7 @@ class BrowserLogicTests(unittest.TestCase):
         expect(self.page.locator("#logicStatus")).to_contain_text("Applied address")
 
         self.page.locator("#vramMode").select_option("bridge")
-        pins = self.page.locator(".pin")
+        pins = self.page.locator("#pinGrid .pin")
         pins.nth(0).click()
         pins.nth(1).click()
         expect(self.page.locator("#connectionLabel")).to_have_text("AD0 ↔ AD1")
@@ -871,7 +871,7 @@ class BrowserLogicTests(unittest.TestCase):
         expect(page.locator("#logicStatus")).to_contain_text("Forced resume attempted")
 
     def test_vram_legs_mouse_keyboard_crosses_and_export(self):
-        legs=self.page.locator('.pin')
+        legs=self.page.locator('#pinGrid .pin')
         expect(legs.first).to_be_disabled()
         self.load_rom()
         expect(self.page.locator('#vramMode')).to_have_value('disconnect')
@@ -908,7 +908,7 @@ class BrowserLogicTests(unittest.TestCase):
 
     def test_vram_masks_bridges_ram_pulses_and_recovery_replace(self):
         self.load_rom()
-        legs=self.page.locator('.pin')
+        legs=self.page.locator('#pinGrid .pin')
         legs.nth(1).click()
         self.page.locator('#vramMode').select_option('bridge')
         self.assertEqual(self.page.evaluate('mockCore.vramAddressMask'),2,'Mode changes alone do not apply a fault')
@@ -917,7 +917,7 @@ class BrowserLogicTests(unittest.TestCase):
         legs.nth(3).click()
         self.assertEqual(self.page.evaluate('mockCore.vramAddressMask'),0)
         self.assertEqual(self.page.evaluate('mockCore.short'),[0,3])
-        expect(self.page.locator('.pin.cut')).to_have_count(0)
+        expect(self.page.locator('#pinGrid .pin.cut')).to_have_count(0)
         self.page.locator('#vramMode').select_option('disconnect')
         legs.nth(4).click()
         self.assertEqual(self.page.evaluate('mockCore.short'),[-1,-1])
@@ -947,7 +947,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.open_vram_settings()
         self.page.locator('.preset').first.click()
         self.assertEqual(self.page.evaluate('mockCore.vramAddressMask'),0)
-        expect(self.page.locator('.pin.connected')).to_have_count(2)
+        expect(self.page.locator('#pinGrid .pin.connected')).to_have_count(2)
         legs.nth(7).click()
         # Remove focus from the button before global shortcuts.
         self.page.locator('#screen').click()
@@ -961,21 +961,21 @@ class BrowserLogicTests(unittest.TestCase):
 
     def test_vram_mask_rejection_and_failed_ram_disconnect(self):
         self.load_rom()
-        self.page.locator('.pin').first.click()
+        self.page.locator('#pinGrid .pin').first.click()
         self.page.evaluate('mockCore.rejectVramMask=true')
-        self.page.locator('.pin').nth(1).click()
+        self.page.locator('#pinGrid .pin').nth(1).click()
         self.assertEqual(self.page.evaluate('mockCore.vramAddressMask'),1)
-        expect(self.page.locator('.pin').nth(1)).to_have_attribute('aria-pressed','false')
+        expect(self.page.locator('#pinGrid .pin').nth(1)).to_have_attribute('aria-pressed','false')
         self.page.evaluate('mockCore.rejectVramMask=false')
         self.page.locator('#logicApplyBtn').click()
         self.page.locator('#pauseBtn').click()
         self.page.locator('#logicPulseFrames').select_option('8')
         self.page.locator('#logicPulseBtn').click()
         self.page.evaluate('mockCore.rejectLogicClear=true')
-        self.page.locator('.pin').nth(3).click()
+        self.page.locator('#pinGrid .pin').nth(3).click()
         self.assertEqual(self.page.evaluate('mockCore.vramAddressMask'),0)
         self.assertTrue(self.page.evaluate('mockCore.logic.active'))
-        expect(self.page.locator('.pin.cut')).to_have_count(0)
+        expect(self.page.locator('#pinGrid .pin.cut')).to_have_count(0)
         self.assertEqual(self.export_payload()['faultPulses'][-1]['status'],'active',
                          'Failed takeover must preserve the armed pulse timer')
         self.page.locator('#logicResumeBtn').click()
@@ -991,13 +991,13 @@ class BrowserLogicTests(unittest.TestCase):
         expect(page.locator('#vramMode')).to_have_value('bridge')
         self.assertTrue(page.locator('#vramMode option[value="disconnect"]').evaluate('e=>e.disabled'))
         expect(page.locator('#vramModeHint')).to_contain_text('older core')
-        page.locator('.pin').nth(0).click()
-        page.locator('.pin').nth(1).click()
-        expect(page.locator('.pin.connected')).to_have_count(2)
-        expect(page.locator('.pin .chip-cut').first).to_have_css('visibility','hidden')
+        page.locator('#pinGrid .pin').nth(0).click()
+        page.locator('#pinGrid .pin').nth(1).click()
+        expect(page.locator('#pinGrid .pin.connected')).to_have_count(2)
+        expect(page.locator('#pinGrid .pin .chip-cut').first).to_have_css('visibility','hidden')
         self.open_vram_settings(page)
         page.locator('#disconnectBtn').click()
-        expect(page.locator('.pin.connected')).to_have_count(0)
+        expect(page.locator('#pinGrid .pin.connected')).to_have_count(0)
 
     def test_compact_chip_geometry_and_bridge_controls(self):
         self.load_rom()
@@ -1033,13 +1033,13 @@ class BrowserLogicTests(unittest.TestCase):
                     self.assertTrue(geometry['targets'], (scheme, width, container))
                     self.assertEqual(geometry['count'], 8 if container == '#pinGrid' else 15)
         self.page.locator('#vramMode').select_option('bridge')
-        self.page.locator('.pin').nth(0).click()
-        self.page.locator('.pin').nth(7).focus()
+        self.page.locator('#pinGrid .pin').nth(0).click()
+        self.page.locator('#pinGrid .pin').nth(7).focus()
         self.page.keyboard.press('Enter')
-        expect(self.page.locator('.pin.connected')).to_have_count(2)
+        expect(self.page.locator('#pinGrid .pin.connected')).to_have_count(2)
         self.open_vram_settings()
         self.page.locator('#disconnectBtn').click()
-        expect(self.page.locator('.pin.connected')).to_have_count(0)
+        expect(self.page.locator('#pinGrid .pin.connected')).to_have_count(0)
 
     def test_chip_multiple_lines_keyboard_restore_and_export(self):
         self.load_rom()

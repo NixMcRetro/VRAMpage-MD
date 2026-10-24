@@ -105,6 +105,7 @@ window.Module=opts=>originalFactory(opts).then(core=>{
         self.assertEqual(page.evaluate("testCore._get_vram_supported_model_mask()"), 7)
         page.evaluate("window.__forceUnsupported=true")
         expect(page.locator("#vramModelStatus")).to_contain_text("suspended outside supported VDP Mode 5")
+        page.locator("#vramSettings").evaluate("details=>{details.open=true}")
         page.locator("#disconnectBtn").click()
         unsupported_disconnect=page.evaluate("testCore._get_vram_fault_model_state()")
         self.assertEqual((unsupported_disconnect["modelId"],unsupported_disconnect["mask"],
@@ -115,8 +116,8 @@ window.Module=opts=>originalFactory(opts).then(core=>{
 
         # A transaction bridge is cleared before RAM activation; RAM is then active.
         page.locator("#vramMode").select_option("bridge")
-        page.locator(".pin").nth(0).click()
-        page.locator(".pin").nth(1).click()
+        page.locator("#pinGrid .pin").nth(0).click()
+        page.locator("#pinGrid .pin").nth(1).click()
         self.assertEqual(page.evaluate("testCore._get_vram_fault_model_state().bridgeA"), 0)
         self.assertEqual(page.evaluate("testCore._get_vram_fault_model_state().bridgeB"), 1)
         page.evaluate("window.__rejectRamApply=true")
@@ -132,17 +133,18 @@ window.Module=opts=>originalFactory(opts).then(core=>{
         self.assertEqual(page.evaluate("testCore._get_vram_fault_model_state().modelId"), 2)
 
         # A later VRAM bridge disconnects RAM first.
-        page.locator(".pin").nth(0).click()
-        page.locator(".pin").nth(1).click()
+        page.locator("#pinGrid .pin").nth(0).click()
+        page.locator("#pinGrid .pin").nth(1).click()
         self.assertEqual(page.evaluate("testCore._get_vram_fault_model_state().bridgeA"), 0)
         expect(page.locator("#logicStatus")).to_contain_text("RAM fault disconnected")
 
         # If RAM rejects its disconnect, a selector target must be rolled back.
+        page.locator("#vramSettings").evaluate("details=>{details.open=true}")
         page.locator("#disconnectBtn").click()
         page.locator("#logicApplyBtn").click()
         page.evaluate("window.__rejectRamDisconnect=true")
-        page.locator(".pin").nth(2).click()
-        page.locator(".pin").nth(3).click()
+        page.locator("#pinGrid .pin").nth(2).click()
+        page.locator("#pinGrid .pin").nth(3).click()
         page.evaluate("window.__rejectRamDisconnect=false")
         state = page.evaluate("testCore._get_vram_fault_model_state()")
         self.assertEqual((state["modelId"], state["bridgeA"], state["bridgeB"]), (2, -1, -1))
@@ -150,8 +152,8 @@ window.Module=opts=>originalFactory(opts).then(core=>{
 
         # Selector rejection happens before any RAM disconnect or model change.
         page.evaluate("window.__rejectAllVram=true")
-        page.locator(".pin").nth(4).click()
-        page.locator(".pin").nth(5).click()
+        page.locator("#pinGrid .pin").nth(4).click()
+        page.locator("#pinGrid .pin").nth(5).click()
         page.evaluate("window.__rejectAllVram=false")
         self.assertEqual(page.evaluate("testCore._get_vram_fault_model_state().modelId"), 2)
         self.assertEqual(page.evaluate("testCore._get_vram_fault_model_state().bridgeA"), -1)
@@ -161,8 +163,8 @@ window.Module=opts=>originalFactory(opts).then(core=>{
         page.locator("#pauseBtn").click()
         page.locator("#logicPulseBtn").click()
         expect(page.locator("#logicStatus")).to_contain_text("RAM pulse active")
-        page.locator(".pin").nth(6).click()
-        page.locator(".pin").nth(7).click()
+        page.locator("#pinGrid .pin").nth(6).click()
+        page.locator("#pinGrid .pin").nth(7).click()
         expect(page.locator("#logicStatus")).to_contain_text("remaining budget is preserved")
 
         # Export preserves historical top-level data and adds versioned namespaces.
@@ -201,9 +203,9 @@ window.Module=opts=>originalFactory(opts).then(core=>{
         page = self.page
         self.assertTrue(page.locator('#vramModel option[value="2"]').evaluate("option=>option.disabled"))
         expect(page.locator("#transactionMetrics")).to_be_hidden()
-        page.locator(".pin").nth(0).click()
+        page.locator("#pinGrid .pin").nth(0).click()
         page.wait_for_function("testCore._get_vram_address_mask()===1")
-        expect(page.locator(".pin").nth(0).locator(".chip-cut")).to_have_css("visibility", "visible")
+        expect(page.locator("#pinGrid .pin").nth(0).locator(".chip-cut")).to_have_css("visibility", "visible")
         with page.expect_download() as download:
             page.locator("#logicExperiment > summary").click()
             page.locator("#logicExperimentBtn").click()
@@ -211,14 +213,16 @@ window.Module=opts=>originalFactory(opts).then(core=>{
         self.assertEqual(data["vramFault"]["addressMask"], 1)
         self.assertEqual(data["vramAddressLineChanges"][-1]["mask"], 1)
         page.locator("#logicExperiment > summary").click()
+        page.locator("#vramSettings").evaluate("details=>{details.open=true}")
         page.locator("#disconnectBtn").click()
         page.wait_for_function("testCore._get_vram_address_mask()===0")
         page.locator("#vramMode").select_option("bridge")
-        page.locator(".pin").nth(0).click()
-        page.locator(".pin").nth(1).click()
-        expect(page.locator(".pin.connected")).to_have_count(2)
+        page.locator("#pinGrid .pin").nth(0).click()
+        page.locator("#pinGrid .pin").nth(1).click()
+        expect(page.locator("#pinGrid .pin.connected")).to_have_count(2)
+        page.locator("#vramSettings").evaluate("details=>{details.open=true}")
         page.locator("#disconnectBtn").click()
-        expect(page.locator(".pin.connected")).to_have_count(0)
+        expect(page.locator("#pinGrid .pin.connected")).to_have_count(0)
         self.assertEqual(self.errors, [])
 
     def test_failed_rollback_pauses_and_recovery_exports_partial_cleanup(self):
@@ -229,8 +233,8 @@ window.Module=opts=>originalFactory(opts).then(core=>{
         page.locator("#logicApplyBtn").click()
         page.evaluate("window.__rejectRamDisconnect=true; window.__vramAllowedCalls=1")
         page.locator("#vramMode").select_option("bridge")
-        page.locator(".pin").nth(0).click()
-        page.locator(".pin").nth(1).click()
+        page.locator("#pinGrid .pin").nth(0).click()
+        page.locator("#pinGrid .pin").nth(1).click()
         page.evaluate("window.__rejectRamDisconnect=false")
         expect(page.locator("#pauseBtn")).to_have_text("Resume")
         expect(page.locator("#vramModelStatus")).to_contain_text("Both fault states are retained")

@@ -164,7 +164,7 @@ class BrowserDisplayTests(unittest.TestCase):
 
     def test_patchbay_keyboard_mouse_and_clean_restart(self):
         self.page.locator('#vramMode').select_option('bridge')
-        pins = self.page.locator('.pin')
+        pins = self.page.locator('#pinGrid .pin')
         pins.nth(0).focus()
         self.page.keyboard.press('Enter')
         expect(pins.nth(0)).to_have_class('pin selected')
