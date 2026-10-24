@@ -136,10 +136,6 @@
     const supported=!!state?.supported;
     $('psgBridgeApply').disabled=!started || !available || !supported;
     $('psgBridgeRemove').disabled=!started || !available || !state?.configured;
-    if (state?.configured && Number.isInteger(state.bridgeA) && Number.isInteger(state.bridgeB)) {
-      $('psgBridgeA').value=String(state.bridgeA);
-      $('psgBridgeB').value=String(state.bridgeB);
-    }
     $('psgBridgeA').disabled=!started || !available || !supported;
     $('psgBridgeB').disabled=!started || !available || !supported;
     $('psgInputWrites').textContent=state?.inputWrites ?? '0';
@@ -1350,6 +1346,10 @@
         option.value=String(bit);option.textContent=`D${bit}`;select.append(option);
       }
     }
+    // These selects are editable drafts. Refreshes report the live core state
+    // without overwriting a pair the user is preparing to apply.
+    $('psgBridgeA').value='0';
+    $('psgBridgeB').value='1';
     setupPatchbay();installKeyboard();
     configureLogicLines();
     $('logicKind').addEventListener('change',()=>{

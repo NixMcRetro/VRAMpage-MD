@@ -109,6 +109,17 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         self.assertTrue(psg_state['effective'])
                         self.assertEqual((psg_state['bridgeA'],psg_state['bridgeB']),(0,7))
                         self.assertIn('D0',page.locator('#psgBridgeStatus').inner_text())
+                        frame_before=page.evaluate('testCore._get_logic_frame()')
+                        page.locator('#psgBridgeA').select_option('2')
+                        page.locator('#psgBridgeB').select_option('6')
+                        page.wait_for_function('frame=>testCore._get_logic_frame()>=frame+4',arg=frame_before)
+                        self.assertEqual((page.locator('#psgBridgeA').input_value(),page.locator('#psgBridgeB').input_value()),('2','6'),
+                                         'frame refresh preserves the uncommitted pair draft')
+                        page.locator('#psgBridgeApply').click()
+                        psg_state=page.evaluate('testCore._get_psg_data_bridge_state()')
+                        self.assertTrue(psg_state['effective'])
+                        self.assertEqual((psg_state['bridgeA'],psg_state['bridgeB']),(2,6),
+                                         'Apply commits the retained pair draft to the core')
                     else:
                         expect(page.locator('#psgBridgeApply')).to_be_disabled()
                         self.assertIn('does not provide',page.locator('#psgBridgeStatus').inner_text())
