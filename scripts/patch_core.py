@@ -554,6 +554,8 @@ def patch_psg_input_fault(source: str) -> str:
                 source.count(marker) == 1 for marker in
                 ('VRAMpage PSG input bridge v1', 'psg_data_fault_runtime_reset()',
                  'psg_data_fault_runtime_apply((int)data)')) and \
+                source.count('psg_data_fault_runtime_') == 2 and \
+                source.count('psg_data_fault_') == 2 and \
                 source.count('VRAM_TX_RUNTIME') == 3 and \
                 source.count('#if defined(VRAM_TX_RUNTIME)') == 3 and \
                 source.count('#include "psg_data_fault.h"') == 1:

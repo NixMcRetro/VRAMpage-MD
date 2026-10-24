@@ -42,6 +42,8 @@ class PsgDataFaultHelper(unittest.TestCase):
             patched.replace('psg_data_fault_runtime_apply((int)data)', 'psg_data_fault_apply((int)data)', 1),
             patched + '\n#if defined(VRAM_TX_RUNTIME)\n#include "psg_data_fault.h"\n#endif\n',
             patched + '\n#if defined(VRAM_TX_RUNTIME)\n/* partial PSG bridge */\n#endif\n',
+            patched + '\n  psg_data_fault_runtime_apply(data);\n',
+            patched + '\n  psg_data_fault_apply(data);\n',
         )
         for damaged in mutations:
             with self.subTest(damaged=damaged), self.assertRaises(SystemExit):
