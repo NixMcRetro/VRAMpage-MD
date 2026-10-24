@@ -31,8 +31,14 @@ and [versioning](VERSIONING.md). Status describes evidence, not promised effects
 | Done B2 | Actual Z80-to-PSG route | Original bootstrap under BUSREQ/RESET, no 68K PSG writes, normal/off equal, active mapping/tone change, reset baseline, independent review | Luna High test author; FM author independent review | Implemented with encoded bootstrap-store validation; independent review and actual FM-enabled runtime pass: exactly three Z80 writes, two changed bytes; included with FM integration |
 
 | Done B3 | Complete audio acceptance | Actual Z80-to-FM and simultaneous FM/PSG traffic; repeated-active determinism, bounded queue/pause behavior and concise audio model overview | Luna High implementation/review; coordinator docs | Implemented and independently reviewed; both FM backend mixed/deterministic tests and Chromium scheduling pass locally; all seven PR/main checks, complete public package and downloaded-core verification passed |
-
 | Active C | Essential workbench configurations | Versioned save/restore settings with validation, reproducible presets, combined recovery and useful experiment comparison; preserve existing defaults | Luna High architecture/implementation and independent review; basic UI/docs support | Configuration save/preview/apply implemented, including exception-safe pause, unknown-state reporting and normalized pair comparisons. Independent review, full 107-test native/SDK suite, 40 browser logic cases and four actual-core cases pass. GitHub CI is required before merge. Do not add Z80 RAM faults or speculative features first |
+
+Next bounded C task: coordinate fault disconnection and recovery across memory
+and audio controls, reusing existing setters. Clarify which controls clear only
+memory faults and which clear every domain; preserve CPU-only versus clean-reset
+semantics. Require partial-failure reporting and existing pulse protections.
+Configuration integration is tracked in [PR #47](https://github.com/NixMcRetro/VRAMpage-MD/pull/47);
+merge only after its required checks pass.
 
 ## Feature-first continuation
 
