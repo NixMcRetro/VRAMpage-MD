@@ -19,6 +19,9 @@
       }
       return nativeSetter.apply(Module, arguments);
     };
+    function unsignedCounterString(value) {
+      return String(typeof value === "bigint" ? BigInt.asUintN(64, value) : value);
+    }
     Module["_get_psg_data_bridge_state"] = function () {
       var versionPointer = Module["_get_psg_data_bridge_version"]();
       var heap = Module["HEAPU8"];
@@ -34,8 +37,8 @@
         reason: !supported ? "unsupported-system" : (enabled ? "active" : "disabled"),
         bridgeA: Module["_get_psg_data_bridge_a"](),
         bridgeB: Module["_get_psg_data_bridge_b"](),
-        inputWrites: String(Module["_get_psg_data_bridge_input_writes"]()),
-        changedWrites: String(Module["_get_psg_data_bridge_changed_writes"]())
+        inputWrites: unsignedCounterString(Module["_get_psg_data_bridge_input_writes"]()),
+        changedWrites: unsignedCounterString(Module["_get_psg_data_bridge_changed_writes"]())
       };
     };
   }
