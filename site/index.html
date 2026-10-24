@@ -53,6 +53,13 @@
       <aside class="bender-panel" aria-label="VRAM patchbay">
         <div class="section-heading"><h2>02 <span>/</span> VRAM patchbay</h2><span>AD0–AD7</span></div>
         <p class="explain">Click a leg to disconnect or reconnect its address signal. Use Bridge mode or presets 1–8 for shorts.</p>
+        <label class="vram-mode">VRAM model
+          <select id="vramModel" aria-describedby="vramModelStatus">
+            <option value="1">Frame projection</option>
+            <option value="2">Logical-byte transaction</option>
+          </select>
+        </label>
+        <p id="vramModelStatus" class="explain" role="status" aria-live="polite">Frame projection is the default model.</p>
         <label class="vram-mode">Leg action <select id="vramMode"><option value="disconnect">Disconnect / reconnect</option><option value="bridge">Bridge two nets</option></select></label>
         <p id="vramModeHint" class="explain"></p>
         <div class="chip-box">
@@ -69,7 +76,14 @@
           <div><span>Projected differences</span><strong id="readCount">0</strong></div>
           <div><span>Changed bytes</span><strong id="writeCount">0</strong></div>
         </div>
-        <p class="notice"><strong>Experimental model.</strong> Shorts are applied around each emulated frame, not at every real VRAM bus transition. This is not yet a cycle-accurate electrical simulation.</p>
+        <div id="transactionMetrics" class="transaction-metrics" hidden>
+          <div><span>Logical byte reads</span><strong id="transactionReads">0</strong></div>
+          <div><span>Logical byte writes</span><strong id="transactionWrites">0</strong></div>
+          <div><span>Redirected reads</span><strong id="redirectedReads">0</strong></div>
+          <div><span>Redirected writes</span><strong id="redirectedWrites">0</strong></div>
+          <div><span>Changed physical writes</span><strong id="physicalWrites">0</strong></div>
+        </div>
+        <p id="vramModelNotice" class="notice"><strong>Experimental model.</strong> Shorts are applied around each emulated frame, not at every real VRAM bus transition. This is not yet a cycle-accurate electrical simulation.</p>
       </aside>
     </div>
 
