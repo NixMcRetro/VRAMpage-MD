@@ -34,7 +34,7 @@ older standalone-model descriptions are historical development records.
 | [Pulse survey](PULSE-EXPERIMENTS.md) | Repeated actual-core survey of all adjacent address write pairs |
 | [RAM pulses](RAM-PULSES.md) | Short contacts, quick address write pairs, frame timing and cancellation |
 | [CPU recovery](CPU-RECOVERY.md) | v0.2.1 force-resume/reset semantics, metadata and limits |
-| [Experiments](EXPERIMENTS.md) | Repeatable zero-fault and RAM-fault attract-mode procedure |
+| [Experiments](EXPERIMENTS.md) | Read-only saved-export comparison and repeatable zero-fault/RAM-fault procedure |
 | [Build and deployment](DEPLOYMENT.md) | Versioned local downloads and separately authorised website deployment |
 | [Source import](IMPORTING.md) | How the original v0.1 working prototype entered GitHub |
 | [Prototype notes](PROTOTYPE-V0.1-NOTES.md) | Historical first-stage implementation and technical assumptions |

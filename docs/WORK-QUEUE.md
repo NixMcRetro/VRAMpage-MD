@@ -1,5 +1,23 @@
 # Development work queue
 
+## PR #49 integration checkpoint — 25 October 2026
+
+[PR #49](https://github.com/NixMcRetro/VRAMpage-MD/pull/49) merged as
+`1bb92a5d6055f78b8d002c45f6d3b9102adac5c7` after all seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40094544657)
+passed on reviewed head `a6a3f34a3cb69dde813d04ec711b346f01386236`.
+All seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40104216774)
+passed, including source, three-browser interfaces, compiled-core/package and
+packaged Firefox/WebKit. The merge tree exactly matches the reviewed head.
+The original v0.4.1 release metadata, tag and asset digests remain unchanged;
+McRetro.net was not modified or deployed. No integration blocker remains.
+Next bounded task: experiment comparison. Preserve this checkpoint with the
+next implementation rather than opening a documentation-only PR.
+Shell Git fetch was unavailable because the executor proxy could not connect;
+latest remote main/PR/CI were fetched through the connected GitHub API.
+No additional local/native Mac, audible or physical checks were run.
+
+
 Read with [development status](DEVELOPMENT-STATUS.md), [roadmap](../ROADMAP.md)
 and [versioning](VERSIONING.md). Status describes evidence, not promised effects.
 
@@ -97,7 +115,7 @@ No minor cosmetic/documentation releases or repeated completed research.
    commercial ROM or claim synthetic tests satisfy the attract-mode milestone.
 5. Record exact tested commits, evidence and limitations. Preserve earlier results.
 
-## Active bounded task: coordinated removal and recovery
+## Completed bounded task: coordinated removal and recovery
 
 Build on verified public v0.4.1/source `e579c57`. Reuse existing setters and
 native fault semantics; no emulator-core rewrite or new hardware model.
@@ -113,3 +131,37 @@ exported metadata does not confuse fault removal with a CPU intervention.
 Preserve the small-screen chip budget and existing strict configuration import.
 Run full applicable regression and compiled-core browser checks before merge.
 No public release or version bump for this intermediate workbench slice.
+
+PR #49 and its merged-main run passed all seven checks; the integration
+checkpoint above records the exact source and evidence. Do not repeat that
+implementation.
+
+## Active bounded task: saved experiment comparison
+
+Build on merged `1bb92a5` and include checkpoint `ec5756e`. Compare two saved
+browser experiment exports without applying settings or calling emulator APIs.
+Distinguish recorded ROM/core/build/model matches, mismatches and unknown
+metadata; keep settings, active state and recorded counters/outcomes separate.
+Preserve legacy exports and identify missing fields rather than inferring them.
+Matching metadata does not establish replay, gameplay or causal equivalence.
+
+Acceptance: bounded JSON input; text-only rendering; inert local file handling;
+stale-read/cancel protection; clear identity and settings comparisons; no live
+fault, pulse, CPU, cartridge or counter changes. Cover valid current/legacy
+exports, mismatches, unavailable metadata, invalid input, hostile strings and
+responsive display with focused tests and independent Luna High review.
+Require full applicable source/browser/compiled-package CI before merging.
+Preserve public v0.4.1, its original tag/assets and all recorded evidence. No
+version bump or intermediate release; no McRetro.net work. After verified
+integration, review combined workbench acceptance before the Phase D freeze.
+
+Implemented and independently reviewed through `64ae7a3`. The full 107-test
+native/SDK suite and source script pass; unchanged core evidence is reused.
+Chromium interface59/59, compiled-core4/4, transaction3/3 and display6/6 pass;
+final focused WebKit comparison2/2 passes. Final Chromium and required GitHub
+PR/main checks remain before integration. The implementation includes bounded
+input validation, explicit unavailable values, a readable scrollable table and
+the additive logic-availability export flag while retaining schema versions.
+Final Chromium60/60 and extracted package core4/4 plus transaction3/3 pass.
+Independent review approves final keyboard fix `2d29d0a`; focused comparison3/3
+passes in both Chromium and WebKit. Required final-head PR/main CI remains.

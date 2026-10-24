@@ -1476,6 +1476,113 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertEqual(payload["logicFault"]["lines"], ["A1", "A2"])
         self.assertEqual(payload["cpuFlags"], 3)
 
+    def test_read_only_experiment_comparison_uses_unknown_and_inert_text(self):
+        first={"schemaVersion":1,"corePin":"d"*40,"build":{"applicationVersion":"0.4.1","sourceCommit":"a"*40},
+               "modelVersion":"0.4.1-experimental","rom":{"name":"<img src=x onerror=alert(1)>","sha256":"b"*64},
+               "vramFault":{"kind":"none","addressMask":0,"bridge":None},"logic":{"fault":None,"active":False,"readCount":0,"writeCount":0},
+               "currentFrame":10,"cpuFlags":0,"psgInputFault":{"available":False},"fmInputFault":{"available":False}}
+        second=json.loads(json.dumps(first));second["rom"]["sha256"]="c"*64
+        before=self.page.locator("#powerLabel").inner_text()
+        self.page.evaluate("""() => {
+          const nativeText=File.prototype.text;
+          File.prototype.text=function(){return this.name==='slow.json'
+            ?new Promise(resolve=>window.__finishCompareRead=()=>resolve('{"rom":{"name":"stale"}}'))
+            :this.name==='stale.json'
+              ?new Promise(resolve=>window.__finishStaleRead=()=>resolve('{"rom":{"name":"stale replacement"}}'))
+              :nativeText.call(this);};
+        }""")
+        self.page.locator("#compareFileA").set_input_files({"name":"slow.json","mimeType":"application/json","buffer":b'{"rom":{"name":"slow"}}'})
+        expect(self.page.locator("#compareStatus")).to_contain_text("Reading export A")
+        self.page.locator("#compareCancel").click()
+        self.page.evaluate("window.__finishCompareRead()")
+        expect(self.page.locator("#compareOutput table")).to_have_count(0)
+        self.page.locator("#compareFileA").set_input_files({"name":"a.json","mimeType":"application/json","buffer":json.dumps(first).encode()})
+        self.page.locator("#compareFileB").set_input_files({"name":"b.json","mimeType":"application/json","buffer":json.dumps(second).encode()})
+        expect(self.page.locator("#compareOutput")).to_contain_text("mismatch")
+        expect(self.page.locator("#compareOutput")).to_contain_text("unknown")
+        self.assertEqual(self.page.locator("#compareOutput img").count(),0)
+        self.assertEqual(self.page.locator("#powerLabel").inner_text(),before)
+        self.page.locator("#compareFileA").set_input_files({"name":"stale.json","mimeType":"application/json","buffer":b'{"rom":{"name":"slow"}}'})
+        self.page.locator("#compareFileA").set_input_files({"name":"fresh.json","mimeType":"application/json","buffer":json.dumps(first).encode()})
+        expect(self.page.locator("#compareOutput")).to_contain_text("img src=x")
+        self.page.evaluate("window.__finishStaleRead()")
+        expect(self.page.locator("#compareOutput")).to_contain_text("img src=x")
+        self.page.locator("#compareCancel").click()
+        expect(self.page.locator("#compareOutput table")).to_have_count(0)
+
+    def test_actual_experiment_export_roundtrips_without_mutators_or_mobile_overflow(self):
+        self.load_rom()
+        self.page.locator("#ramLegAction").select_option("cut")
+        self.page.locator("#ramChip [data-chip-line]").nth(0).click()
+        with self.page.expect_download() as mask_download:
+            self.page.locator("#logicExperimentBtn").click()
+        mask_payload=json.loads(Path(mask_download.value.path()).read_text())
+        self.assertEqual(mask_payload["schemaVersion"],1)
+        self.assertTrue(mask_payload["logic"]["available"])
+        self.assertEqual(mask_payload["logic"]["fault"]["kind"],"address-stuck-low")
+        self.assertEqual(mask_payload["logic"]["fault"]["lines"],["A1"])
+        self.page.locator("#logicDisconnectBtn").click()
+        self.page.locator("#logicKind").select_option("2")
+        self.page.locator("#logicLineA").select_option("0")
+        self.page.locator("#logicLineB").select_option("7")
+        self.page.locator("#logicApplyBtn").click()
+        with self.page.expect_download() as pair_download:
+            self.page.locator("#logicExperimentBtn").click()
+        pair_payload=json.loads(Path(pair_download.value.path()).read_text())
+        self.assertEqual(pair_payload["logic"]["fault"]["kind"],"data")
+        self.assertEqual(pair_payload["logic"]["fault"]["lines"],["D0","D7"])
+        snapshot=self.page.evaluate("""() => JSON.stringify({
+          logic:mockCore.logic.setterCalls, vram:mockCore.vramModel.calls,
+          psg:mockCore.psg.calls, psgMask:mockCore.psg.maskCalls,
+          fm:mockCore.fm.calls, fmMask:mockCore.fm.maskCalls
+        })""")
+        self.page.locator("#compareFileA").set_input_files({"name":"export-a.json","mimeType":"application/json","buffer":json.dumps(mask_payload).encode()})
+        self.page.locator("#compareFileB").set_input_files({"name":"export-b.json","mimeType":"application/json","buffer":json.dumps(pair_payload).encode()})
+        expect(self.page.locator("#compareOutput table")).to_be_visible()
+        expect(self.page.locator("#compareOutput")).to_contain_text("ROM SHA-256")
+        expect(self.page.locator("#compareOutput")).to_contain_text("RAM recorded kind")
+        expect(self.page.locator("#compareOutput")).to_contain_text("mismatch")
+        self.assertLessEqual(self.page.locator("#compareOutput").evaluate("el=>el.clientHeight"),460)
+        self.assertGreater(self.page.locator("#compareOutput table").evaluate("el=>el.scrollWidth"),
+                           self.page.locator("#compareOutput").evaluate("el=>el.clientWidth"))
+        self.assertEqual(self.page.evaluate("""() => JSON.stringify({
+          logic:mockCore.logic.setterCalls, vram:mockCore.vramModel.calls,
+          psg:mockCore.psg.calls, psgMask:mockCore.psg.maskCalls,
+          fm:mockCore.fm.calls, fmMask:mockCore.fm.maskCalls
+        })"""),snapshot)
+        self.page.set_viewport_size({"width":390,"height":844})
+        self.assertLessEqual(self.page.evaluate("document.documentElement.scrollWidth"),390)
+        self.assertLessEqual(self.page.locator("#compareOutput").evaluate("el=>el.clientWidth"),390)
+
+    def test_comparison_results_focus_keeps_keyboard_scroll_and_blocks_game_hotkeys(self):
+        self.load_rom()
+        export={"schemaVersion":1,"rom":{"name":"keyboard test","sha256":"a"*64},
+                "faultDisconnects":[{"action":"disconnect","results":[]} for _ in range(50)]}
+        encoded=json.dumps(export).encode()
+        self.page.locator("#compareFileA").set_input_files({"name":"keyboard-a.json","mimeType":"application/json","buffer":encoded})
+        self.page.locator("#compareFileB").set_input_files({"name":"keyboard-b.json","mimeType":"application/json","buffer":encoded})
+        output=self.page.locator("#compareOutput")
+        expect(output.locator("table")).to_be_visible()
+        output.focus()
+        before_scroll=output.evaluate("el=>el.scrollTop")
+        before_state=self.page.evaluate("""() => JSON.stringify({
+          pause:document.querySelector('#pauseBtn').textContent,
+          starts:mockCore.starts, logic:mockCore.logic.setterCalls,
+          vram:mockCore.vramModel.calls, masks:mockCore.vramMaskCalls,
+          psg:mockCore.psg.calls, fm:mockCore.fm.calls, input:mockCore.inputs
+        })""")
+        self.page.keyboard.press("ArrowDown")
+        self.page.wait_for_function("before=>document.querySelector('#compareOutput').scrollTop>before",arg=before_scroll)
+        self.page.keyboard.press("1")
+        self.page.keyboard.press("P")
+        after_state=self.page.evaluate("""() => JSON.stringify({
+          pause:document.querySelector('#pauseBtn').textContent,
+          starts:mockCore.starts, logic:mockCore.logic.setterCalls,
+          vram:mockCore.vramModel.calls, masks:mockCore.vramMaskCalls,
+          psg:mockCore.psg.calls, fm:mockCore.fm.calls, input:mockCore.inputs
+        })""")
+        self.assertEqual(after_state,before_state)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)

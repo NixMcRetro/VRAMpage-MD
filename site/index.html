@@ -11,6 +11,7 @@
   <script src="core/genplus.js" defer onerror="window.__coreMissing = true"></script>
   <script src="framebuffer.js" defer></script>
   <script src="circuit-config.js" defer></script>
+  <script src="experiment-comparison.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -224,6 +225,17 @@
         </div>
         <p id="circuitConfigStatus" class="logic-status" role="status" aria-live="polite">No configuration staged.</p>
         <pre id="circuitConfigPreview" class="circuit-config-preview" hidden></pre>
+      </section>
+      <section class="notes-block experiment-comparison" aria-label="Experiment comparison">
+        <div class="section-heading"><h2>09 <span>/</span> Compare exports</h2><span>Local · read-only</span></div>
+        <p>Load two experiment JSON exports to compare recorded identity, fault settings, counters and outcomes. Files are read in this browser only. Unknown values may be absent, invalid, or unavailable; long values are shortened. Comparison does not establish causal or gameplay equivalence.</p>
+        <div class="logic-actions">
+          <label id="compareFileALabel" class="load-btn" for="compareFileA" role="button" tabindex="0">Load export A</label><input id="compareFileA" type="file" accept=".json,application/json" aria-label="Load experiment export A">
+          <label id="compareFileBLabel" class="load-btn" for="compareFileB" role="button" tabindex="0">Load export B</label><input id="compareFileB" type="file" accept=".json,application/json" aria-label="Load experiment export B">
+          <button id="compareCancel" type="button">Cancel / clear</button>
+        </div>
+        <p id="compareStatus" class="logic-status" role="status" aria-live="polite">Choose two exported experiment JSON files.</p>
+        <div id="compareOutput" role="region" tabindex="0" aria-label="Comparison results; scroll to see all fields" aria-live="polite"></div>
       </section>
       <details class="log-block">
         <summary class="section-heading"><h2>03 <span>/</span> Event log</h2><span>View activity</span></summary>
