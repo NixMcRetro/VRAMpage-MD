@@ -36,7 +36,9 @@ clear memory faults but leave audio fault configurations unchanged. The separate
 development-source **Disconnect all faults** action pauses and attempts every
 domain without resetting the CPU or repairing chip registers; inspect its
 per-domain status and explicitly resume when ready. Export experiments to retain the
-separate settings, exact decimal counters and source identification.
+separate settings, exact decimal counters and source identification. As with
+the existing per-chip removal controls, clearing an active audio configuration
+resets its counters; export first if those measurements need to be retained.
 
 Click **Enable Sound** after loading a cartridge. Browsers require a user
 gesture; if audio remains blocked, check site permissions and retry. **Mute

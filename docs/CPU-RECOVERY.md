@@ -52,6 +52,12 @@ healthy CPU/game. Fault access counters and activation/current frame survive
 recovery. Clean restart or loading a cartridge clears intervention history.
 No RAM contents are exported. Download the record before restarting.
 
+Development-source exports also include `faultDisconnects`, a separate list of
+all-domain removal attempts and per-domain results. These are not CPU
+interventions. Status identifies observed runtime state versus tracked or
+unavailable state; a failed clear must not be interpreted as restored gameplay.
+Clean restart/new-ROM initialization clears this attempt history.
+
 An older core with work-RAM hooks but without `_recover_logic_cpu` can still
 play/apply faults; only recovery controls remain disabled. Rebuild the WASM to
 use the new controls. No automatic or repeated recovery is performed.
