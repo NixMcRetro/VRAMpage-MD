@@ -369,7 +369,7 @@ async function main() {
   }));
   const performanceGatePass = args.preflightOnly ? null : Object.values(gateSummary).every(value => value.pass);
   const artifactsUnchanged = Object.fromEntries(Object.entries(artifactManifest).map(([role, artifact]) => {
-    const js = factories[role].p;
+    const js = roleFactories[role].p;
     const wasm = js.replace(/\.js$/, '.wasm');
     return [role, artifact.jsSha256 === sha256(js) && artifact.wasmSha256 === sha256(wasm)];
   }));
