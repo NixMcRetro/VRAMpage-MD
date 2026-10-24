@@ -21,6 +21,9 @@ class StoreOriginDiagnosticTests(unittest.TestCase):
         self.assertIn("psg_data_fault.h", copied)
         self.assertIn("psg_data_fault_core.c", copied)
         self.assertIn("psg_data_fault_runtime.c", copied)
+        self.assertIn("fm_data_fault.h", copied)
+        self.assertIn("fm_data_fault_core.c", copied)
+        self.assertIn("fm_data_fault_runtime.c", copied)
         self.assertTrue(all((ROOT / "scripts" / name).is_file() for name in copied))
 
     def test_patch_is_fail_closed_and_idempotent(self):

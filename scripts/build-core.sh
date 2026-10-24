@@ -120,6 +120,10 @@ cp "$ROOT/scripts/psg_data_fault.h" "$ROOT/site/source/"
 cp "$ROOT/scripts/psg_data_fault_core.c" "$ROOT/site/source/"
 cp "$ROOT/scripts/psg_data_fault_runtime.c" "$ROOT/site/source/"
 cp "$ROOT/scripts/psg_data_fault_api.js" "$ROOT/site/source/"
+cp "$ROOT/scripts/fm_data_fault.h" "$ROOT/site/source/"
+cp "$ROOT/scripts/fm_data_fault_core.c" "$ROOT/site/source/"
+cp "$ROOT/scripts/fm_data_fault_runtime.c" "$ROOT/site/source/"
+cp "$ROOT/scripts/fm_data_fault_api.js" "$ROOT/site/source/"
 cat > "$ROOT/site/source/README.txt" <<'TEXT'
 Source for the modified Genesis Plus GX WebAssembly binary in ../core/.
 Upstream: https://github.com/h1romas4/wasm-genplus
