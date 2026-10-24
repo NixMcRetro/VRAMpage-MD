@@ -70,19 +70,7 @@ class BrowserDisplayTests(unittest.TestCase):
         return self.page.evaluate('''() => {
           const rect = s => { const r = document.querySelector(s).getBoundingClientRect();
             return {width:r.width, height:r.height, top:r.top, bottom:r.bottom}; };
-          const scrollWidth=document.documentElement.scrollWidth;
-          const overflowProbes={};
-          if (scrollWidth>innerWidth) {
-            for (const selector of ['#vramSettings','.chip-workbench-grid',
-                                     '.chip-compact-control select','#fmChip','#psgChip']) {
-              const els=[...document.querySelectorAll(selector)];
-              const styles=els.map(el=>el.getAttribute('style'));
-              els.forEach(el=>el.style.display='none');
-              overflowProbes[selector]=document.documentElement.scrollWidth;
-              els.forEach((el,i)=>styles[i]===null ? el.removeAttribute('style') : el.setAttribute('style',styles[i]));
-            }
-          }
-          return {scrollWidth,overflowProbes,frame:rect('#displayViewport'), canvas:rect('#screen'),
+          return {scrollWidth:document.documentElement.scrollWidth,frame:rect('#displayViewport'), canvas:rect('#screen'),
             section:rect('.screen-section'), toolbar:rect('.toolbar'),
             availableWidth:document.querySelector('.screen-well').clientWidth -
               parseFloat(getComputedStyle(document.querySelector('.screen-well')).paddingLeft) -

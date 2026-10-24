@@ -964,3 +964,11 @@ legacy mask-capability rejection and RAM/VRAM handoffs. Actual browser-core test
 activate cuts on both audio chips, save their independent masks and restore
 legacy pairs. Advanced VRAM controls are opened before testing their buttons.
 This is software/synthetic-cartridge evidence, not native Mac or physical tests.
+
+The compact-chip CI checks also cover native select sizing in narrow two-column
+layouts. WebKit exposed horizontal scroll overflow at 1024 by 600 and 844 by 390
+when the controls used only a percentage maximum width. Explicit percentage
+width keeps their intrinsic native content within the chip cards. The four-chip
+viewport assertion starts at scroll position zero after the shared logic fixture
+opens lower diagnostics. Browser failures, including subtests, are exposed as
+CI annotations when signed job-log downloads are unavailable.
