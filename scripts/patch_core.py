@@ -525,7 +525,7 @@ void EMSCRIPTEN_KEEPALIVE clear_vram_tx_test_cache(void)
 PSG_INCLUDE_BEFORE = '#include "blip_buf.h"'
 PSG_INCLUDE_AFTER = ('#include "blip_buf.h"\n'
                      '#if defined(VRAM_TX_RUNTIME)\n'
-                     '#include "psg_data_fault.h" /* VRAMpage PSG input bridge v1 */\n'
+                     '#include "psg_data_fault.h" /* VRAMpage PSG input bridge v2 */\n'
                      '#endif')
 PSG_RESET_BEFORE = 'void psg_reset()\n{\n  int i;'
 PSG_RESET_AFTER = ('void psg_reset()\n{\n  int i;\n'
@@ -545,14 +545,14 @@ PSG_WRITE_AFTER = ('    psg.clocks += ((clocks - psg.clocks + PSG_MCYCLES_RATIO 
 FM_INCLUDE_BEFORE = '#include "blip_buf.h"'
 FM_INCLUDE_AFTER = ('#include "blip_buf.h"\n'
                     '#if defined(VRAM_TX_RUNTIME)\n'
-                    '#include "fm_data_fault.h" /* VRAMpage FM register input bridge v1 */\n'
+                    '#include "fm_data_fault.h" /* VRAMpage FM register input bridge v2 */\n'
                     '#endif')
 FM_POINTERS_BEFORE = ('void (*fm_reset)(unsigned int cycles);\n'
                        'void (*fm_write)(unsigned int cycles, unsigned int address, unsigned int data);\n'
                        'unsigned int (*fm_read)(unsigned int cycles, unsigned int address);')
 FM_ADAPTER = (FM_POINTERS_BEFORE + '\n'
               '#if defined(VRAM_TX_RUNTIME)\n'
-              '/* VRAMpage FM register input bridge v1 */\n'
+              '/* VRAMpage FM register input bridge v2 */\n'
               'static void (*fm_write_native)(unsigned int cycles, unsigned int address, unsigned int data);\n'
               'static void fm_data_bridge_write(unsigned int cycles, unsigned int address, unsigned int data)\n'
               '{\n'
@@ -574,6 +574,25 @@ FM_HANDLERS = ('YM3438_Write', 'YM2612_Write', 'OPLL2413_Write', 'YM2413_Write')
 def patch_fm_data_fault(source: str) -> str:
     """Wrap the selected FM handler at the shared pointer boundary in runtime builds."""
     if 'VRAMpage FM register input bridge' in source or 'fm_data_fault_runtime_' in source:
+        old_include = FM_INCLUDE_AFTER.replace('bridge v2', 'bridge v1')
+        old_adapter = FM_ADAPTER.replace('bridge v2', 'bridge v1')
+        old_reset = FM_RESET_AFTER
+        old_result = source
+        if (old_result.count(old_include) == 1 and old_result.count(old_adapter) == 1 and
+                old_result.count(old_reset) == 1 and
+                all(old_result.count(f'FM_WRITE_HANDLER({name});') == 1 for name in FM_HANDLERS) and
+                old_result.replace(old_adapter, '', 1).count('FM_WRITE_HANDLER(') == len(FM_HANDLERS) and
+                all(old_result.count(f'fm_write = {name};') == 0 for name in FM_HANDLERS) and
+                old_result.replace(old_adapter, '', 1).count('fm_write =') == 0 and
+                old_result.count('fm_data_fault_runtime_') == 2 and
+                old_result.count('fm_data_fault_') == 2 and
+                old_result.count('#if defined(VRAM_TX_RUNTIME)') == 3 and
+                old_result.count('VRAM_TX_RUNTIME') == 3 and
+                old_result.count('#include "fm_data_fault.h"') == 1):
+            source = source.replace(old_include, FM_INCLUDE_AFTER, 1)
+            source = source.replace(old_adapter, FM_ADAPTER, 1)
+        elif any(token in source for token in ('FM input bridge v1', 'register input bridge v1')):
+            raise SystemExit('FM input bridge V1 source is partial or modified. No changes made.')
         if (source.count(FM_INCLUDE_AFTER) == 1 and source.count(FM_ADAPTER) == 1 and
                 source.count(FM_RESET_AFTER) == 1 and
                 all(source.count(f'FM_WRITE_HANDLER({name});') == 1 for name in FM_HANDLERS) and
@@ -618,9 +637,21 @@ def patch_psg_input_fault(source: str) -> str:
     runtime_markers = ('VRAMpage PSG input bridge', 'psg_data_fault_runtime_',
                        '#if defined(VRAM_TX_RUNTIME)')
     if any(marker in source for marker in runtime_markers):
+        old_patched = tuple(block.replace('bridge v2', 'bridge v1') for block in patched)
+        if all(source.count(block) == 1 for block in old_patched) and \
+                all(source.count(marker) == 1 for marker in
+                    ('VRAMpage PSG input bridge v1', 'psg_data_fault_runtime_reset()',
+                     'psg_data_fault_runtime_apply((int)data)')) and \
+                source.count('psg_data_fault_runtime_') == 2 and \
+                source.count('psg_data_fault_') == 2 and \
+                source.count('VRAM_TX_RUNTIME') == 3 and \
+                source.count('#if defined(VRAM_TX_RUNTIME)') == 3 and \
+                source.count('#include "psg_data_fault.h"') == 1:
+            for old, new in zip(old_patched, patched):
+                source = source.replace(old, new, 1)
         if all(source.count(block) == 1 for block in patched) and all(
                 source.count(marker) == 1 for marker in
-                ('VRAMpage PSG input bridge v1', 'psg_data_fault_runtime_reset()',
+                ('VRAMpage PSG input bridge v2', 'psg_data_fault_runtime_reset()',
                  'psg_data_fault_runtime_apply((int)data)')) and \
                 source.count('psg_data_fault_runtime_') == 2 and \
                 source.count('psg_data_fault_') == 2 and \

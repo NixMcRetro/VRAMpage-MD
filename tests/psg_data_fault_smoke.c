@@ -9,6 +9,7 @@ static void same_state(psg_data_fault_state left, psg_data_fault_state right)
     assert(left.enabled == right.enabled);
     assert(left.bridge_a == right.bridge_a);
     assert(left.bridge_b == right.bridge_b);
+    assert(left.data_mask == right.data_mask);
     assert(left.input_writes == right.input_writes);
     assert(left.changed_writes == right.changed_writes);
 }
@@ -65,10 +66,44 @@ int main(void)
     assert(psg_data_fault_apply(0x01, 1) == 0x00);
     assert(psg_data_fault_get_state()->input_writes == 2);
     assert(psg_data_fault_get_state()->changed_writes == 1);
+    {
+        unsigned int mask;
+        for (mask = 1; mask < 256; ++mask) {
+            unsigned int value;
+            uint64_t expected_changed = 0;
+            assert(psg_data_fault_configure_mask(mask, 1) == PSG_DATA_FAULT_OK);
+            assert(psg_data_fault_get_state()->enabled == 1);
+            assert(psg_data_fault_get_state()->bridge_a == -1);
+            assert(psg_data_fault_get_state()->bridge_b == -1);
+            assert(psg_data_fault_get_state()->data_mask == mask);
+            for (value = 0; value < 256; ++value) {
+                uint8_t input = (uint8_t)value;
+                uint8_t expected = (uint8_t)(input & (uint8_t)~mask);
+                assert(psg_data_fault_apply(input, 1) == expected);
+                expected_changed += expected != input;
+            }
+            assert(psg_data_fault_get_state()->input_writes == 256);
+            assert(psg_data_fault_get_state()->changed_writes == expected_changed);
+        }
+    }
+    saved = *psg_data_fault_get_state();
+    assert(psg_data_fault_configure_mask(-1, 1) == PSG_DATA_FAULT_INVALID);
+    assert(psg_data_fault_configure_mask(1.5, 1) == PSG_DATA_FAULT_INVALID);
+    assert(psg_data_fault_configure_mask(256, 1) == PSG_DATA_FAULT_INVALID);
+    assert(psg_data_fault_configure_mask(NAN, 1) == PSG_DATA_FAULT_INVALID);
+    assert(psg_data_fault_configure_mask(INFINITY, 1) == PSG_DATA_FAULT_INVALID);
+    assert(psg_data_fault_configure_mask(1, 0) == PSG_DATA_FAULT_UNSUPPORTED);
+    same_state(saved, *psg_data_fault_get_state());
+    assert(psg_data_fault_configure(1, 2, 5, 1) == PSG_DATA_FAULT_OK);
+    assert(psg_data_fault_get_state()->data_mask == 0);
+    assert(psg_data_fault_configure_mask(0, 0) == PSG_DATA_FAULT_OK);
+    assert(psg_data_fault_get_state()->enabled == 0);
+    assert(psg_data_fault_get_state()->data_mask == 0);
     psg_data_fault_reset();
     assert(psg_data_fault_get_state()->enabled == 0);
     assert(psg_data_fault_get_state()->bridge_a == -1);
     assert(psg_data_fault_get_state()->bridge_b == -1);
+    assert(psg_data_fault_get_state()->data_mask == 0);
     assert(psg_data_fault_get_state()->input_writes == 0);
     assert(psg_data_fault_get_state()->changed_writes == 0);
     return 0;
