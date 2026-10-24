@@ -36,7 +36,7 @@ and [versioning](VERSIONING.md). Status describes evidence, not promised effects
 Configuration slice verified: PR #47 merged `ccc80e12`; PR CI40083076183 and
 main CI40083371467 pass all seven checks. Do not rebuild this completed feature.
 
-## Current user priority: compact chip workbench
+## Completed user priority: compact chip workbench
 
 Show VRAM, Work RAM, FM and PSG together in the existing sidebar as compact
 conceptual chip diagrams. Connections stay within each individual chip, as
@@ -64,11 +64,13 @@ it; extend its strict format only as needed for audio masks, retaining v1 import
 Local verification passes: 107 native/SDK tests, 45 browser logic cases, four
 actual-core cases, three transaction cases and six display cases. Both source
 reviews approve. Required GitHub checks and same-commit package verification
-remain the delivery gate. PR #48 is now merged as `e579c57` after all seven
-PR checks passed in run40088693320. Verify main CI40089045294, then publish and
-freshly verify v0.4.1 from that exact source before starting new work. The
+passed. PR #48 is merged as `e579c57`; PR40088693320 and main40089045294
+pass all seven checks. Publication40089373232 passes all four jobs. Fresh public
+v0.4.1 ZIP provenance, SHA-256, 681-entry source/notices, launcher, downloaded
+API/audio and extracted actual-core4/4 plus transaction3/3 checks pass. The
 continuation branch `experiment/chip-workbench-delivery-checkpoint` records
-post-merge evidence; bundle it with the next implementation.
+post-merge evidence; bundle it with the next implementation. No delivery blocker.
+Reuse cached Chromium, WebKit and SDK; see the environment notes linked in status.
 
 After this user priority, resume coordinated fault-disconnect/recovery using
 existing setters and pulse protections, then experiment comparison.

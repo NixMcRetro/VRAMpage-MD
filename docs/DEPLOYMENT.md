@@ -1,8 +1,5 @@
 # Releases and deployment
 
-The v0.4.1 links are staged for publication after final checks. Until then,
-use the [verified v0.4.0 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.0/VRAMpage-MD-v0.4.0-macos.zip).
-
 ## Complete local application release
 
 The normal user download is the single versioned ZIP attached to the

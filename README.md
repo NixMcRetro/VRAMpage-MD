@@ -1,8 +1,5 @@
 # VRAMpage MD
 
-The v0.4.1 links are staged for publication after final checks. Until then,
-use the [verified v0.4.0 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.0/VRAMpage-MD-v0.4.0-macos.zip).
-
 **Play Sega Mega Drive / Genesis games in your browser and experiment with simulated hardware faults.** VRAMpage MD is an experimental, hardware-informed circuit-bending workbench built from a modified Genesis Plus GX emulator. Supply your own legally usable game cartridge file. No game ROMs are included or uploaded.
 
 > **New here? Start with the Mac download below.** You do not need to know Git, install a developer application or compile an emulator.
