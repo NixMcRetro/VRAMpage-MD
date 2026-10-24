@@ -967,8 +967,10 @@ This is software/synthetic-cartridge evidence, not native Mac or physical tests.
 
 The compact-chip CI checks also cover native select sizing in narrow two-column
 layouts. WebKit exposed horizontal scroll overflow at 1024 by 600 and 844 by 390
-when the controls used only a percentage maximum width. Explicit percentage
-width keeps their intrinsic native content within the chip cards. The four-chip
+from the long Work RAM action options even though the visible controls fit.
+Independent local probes isolated that native select; shorter labels shared with
+VRAM eliminate its intrinsic overflow without replacing or clipping the control.
+An explicit percentage width alone did not fix it and was reverted. The four-chip
 viewport assertion starts at scroll position zero after the shared logic fixture
 opens lower diagnostics. Browser failures, including subtests, are exposed as
 CI annotations when signed job-log downloads are unavailable.

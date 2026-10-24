@@ -34,19 +34,18 @@ The 679-entry extracted review package also passes three transaction cases.
 A transient GitHub API HTTP 503 affected status polling only and recovered;
 no failed workflow was hidden or rerun to bypass a failure.
 
-Public v0.4.0 remains unchanged at its original tag/source below. The
-configuration feature is development source and a CI review artifact, not a
-replacement public release. No external repository was modified or deployed.
+Public v0.4.0 remains unchanged at its original tag/source below. The new
+configuration and chip workbench features are staged together for v0.4.1 in
+[PR #48](https://github.com/NixMcRetro/VRAMpage-MD/pull/48). Do not describe that
+new download as published until its main/publication gates pass. No external
+repository was modified or deployed.
 
-Current user priority is the compact four-chip workbench with chip-local
-bridges and visible disconnected lines. PSG/FM line masks need native runtime
-support; VRAM and Work RAM address cuts already exist. Resume the work queue's
-coordinated fault-disconnect/recovery task after this requested work.
+The compact four-chip workbench and native PSG/FM line masks are implemented.
+Resume the work queue's coordinated fault-disconnect/recovery task after the
+requested work passes its remaining delivery gates.
 Use existing setters and pulse protections, distinguish memory-only CPU recovery
 from all-domain disconnection and clean restart, and require truthful partial
 failure status. Do not repeat configuration, VRAM or audio implementation.
-This checkpoint branch contains notes only above verified main; bundle them
-with the next implementation rather than opening a documentation-only PR.
 
 Audio-input milestone **v0.4.0** is merged and publicly verified.
 [PR #46](https://github.com/NixMcRetro/VRAMpage-MD/pull/46) merged as
