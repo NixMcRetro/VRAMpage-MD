@@ -40,6 +40,7 @@
   let lastLogicExperiment = null;
   let cpuInterventions = [];
   let faultPulses = [], pendingPulse = null;
+  let activeRamConfiguration = null, stagedCircuitConfiguration = null;
   let logicAddressMask = 0, addressLineChanges = [];
   let logicResetState = 'No cartridge loaded';
   let romHashPromise = Promise.resolve(null);
@@ -102,6 +103,7 @@
     refreshVramControls();
     refreshPsgDataControls();
     refreshFmDataControls();
+    refreshCircuitConfigControls();
   }
 
   function samePair(a,b) { return !!(a && b) && a[0] === b[0] && a[1] === b[1]; }
@@ -163,21 +165,21 @@
           : 'No PSG data bridge is active.';
   }
 
-  function setPsgDataBridge(enabled) {
+  function setPsgDataBridge(enabled, pairOverride=undefined) {
     if (!psgDataApiReady()) {
       $('psgBridgeStatus').textContent='This core does not provide the optional PSG runtime API.';
-      return;
+      return false;
     }
     const state=currentPsgDataState();
     if (enabled && !state?.supported) {
       $('psgBridgeStatus').textContent='PSG bridge request rejected: unsupported system profile.';
-      return;
+      return false;
     }
-    const a=enabled ? Number($('psgBridgeA').value) : -1;
-    const b=enabled ? Number($('psgBridgeB').value) : -1;
+    const a=enabled ? Number(pairOverride===undefined ? $('psgBridgeA').value : pairOverride[0]) : -1;
+    const b=enabled ? Number(pairOverride===undefined ? $('psgBridgeB').value : pairOverride[1]) : -1;
     if (enabled && (!Number.isInteger(a) || !Number.isInteger(b) || a<0 || a>7 || b<0 || b>7 || a===b)) {
       $('psgBridgeStatus').textContent='Choose two distinct PSG data inputs from D0 to D7.';
-      return;
+      return false;
     }
     const status=emulator._set_psg_data_bridge(enabled?1:0,a,b);
     if (status!==0) {
@@ -186,12 +188,16 @@
         : 'PSG bridge request rejected: invalid settings.';
       stamp(`PSG bridge request rejected (status ${status})`);
       refreshPsgDataControls();
-      return;
+      return false;
+    }
+    if (enabled && pairOverride!==undefined) {
+      $('psgBridgeA').value=String(a); $('psgBridgeB').value=String(b);
     }
     refreshPsgDataControls();
     stamp(enabled
       ? `PSG data bridge applied: D${a} ↔ D${b}; existing chip state was not repaired.`
       : 'PSG data bridge removed; existing chip state was not repaired.');
+    return true;
   }
 
   function refreshFmDataControls() {
@@ -215,21 +221,21 @@
           : 'No FM data bridge is active.';
   }
 
-  function setFmDataBridge(enabled) {
+  function setFmDataBridge(enabled, pairOverride=undefined) {
     if (!fmDataApiReady()) {
       $('fmBridgeStatus').textContent='This core does not provide the optional FM runtime API.';
-      return;
+      return false;
     }
     const state=currentFmDataState();
     if (enabled && !state?.supported) {
       $('fmBridgeStatus').textContent='FM bridge request rejected: unsupported system profile.';
-      return;
+      return false;
     }
-    const a=enabled ? Number($('fmBridgeA').value) : -1;
-    const b=enabled ? Number($('fmBridgeB').value) : -1;
+    const a=enabled ? Number(pairOverride===undefined ? $('fmBridgeA').value : pairOverride[0]) : -1;
+    const b=enabled ? Number(pairOverride===undefined ? $('fmBridgeB').value : pairOverride[1]) : -1;
     if (enabled && (!Number.isInteger(a) || !Number.isInteger(b) || a<0 || a>7 || b<0 || b>7 || a===b)) {
       $('fmBridgeStatus').textContent='Choose two distinct FM data inputs from D0 to D7.';
-      return;
+      return false;
     }
     const status=emulator._set_fm_data_bridge(enabled?1:0,a,b);
     if (status!==0) {
@@ -238,12 +244,16 @@
         : 'FM bridge request rejected: invalid settings.';
       stamp(`FM bridge request rejected (status ${status})`);
       refreshFmDataControls();
-      return;
+      return false;
+    }
+    if (enabled && pairOverride!==undefined) {
+      $('fmBridgeA').value=String(a); $('fmBridgeB').value=String(b);
     }
     refreshFmDataControls();
     stamp(enabled
       ? `FM data bridge applied: D${a} ↔ D${b}; existing chip state was not repaired.`
       : 'FM data bridge removed; existing chip state was not repaired.');
+    return true;
   }
 
   function currentVramModelState() {
@@ -576,21 +586,21 @@
     logicAddressMask=mask;
   }
 
-  function applyAddressMask(mask) {
-    if (!started || !addressMaskApiReady()) return;
-    const access=Number($('logicAccess').value);
+  function applyAddressMask(mask, accessOverride=undefined) {
+    if (!started || !addressMaskApiReady()) return false;
+    const access=Number(accessOverride===undefined ? $('logicAccess').value : accessOverride);
     if (!Number.isInteger(mask) || mask<0 || mask>0x7fff ||
         !Number.isInteger(access) || access<1 || access>3) {
       setLogicStatus('Invalid RAM address mask; no fault was applied.');
-      return;
+      return false;
     }
     const event=chipTransitionSnapshot();
     if (mask===0) {
-      if (!disconnectLogic()) return;
-      return;
+      if (!disconnectLogic()) return false;
+      return true;
     }
     const handoff=prepareVramForRamFault('VRAM fault cleared before RAM fault activation');
-    if (!handoff.ok) return;
+    if (!handoff.ok) return false;
     const status=emulator._set_logic_address_mask(mask,access);
     if (status!==0) {
       const rollback=restoreVramAfterRamReject(handoff.snapshot,'restored after RAM address-line rejection');
@@ -601,10 +611,11 @@
       stamp(rollback.ok
         ? `RAM address-line request rejected (status ${status}); previous VRAM configuration restored.`
         : `RAM address-line request rejected (status ${status}); VRAM restore also failed.`);
-      return;
+      return false;
     }
     cancelPulse('replaced by address-line switches');
     recordAddressMask(mask,access,'address line toggled',event); logicActive=true; logicStatsRetained=false;
+    activeRamConfiguration={type:'address-mask',mask,access};
     const lines=Array.from({length:15},(_,i)=>i).filter(i=>mask & (1<<i)).map(i=>`A${i+1}`);
     const accessLabel=['','read','write','read + write'][access];
     lastLogicExperiment={kind:'address-stuck-low',access:accessLabel,lines,addressMask:mask,
@@ -612,6 +623,7 @@
       currentFrame:event.frame,readCount:0,writeCount:0,cpuFlags:Number(emulator._get_logic_cpu_flags())};
     setLogicStatus(`${lines.join(', ')} forced low on ${accessLabel}. Click crossed wires to reconnect; stored writes persist.`);
     stamp(`Address lines forced low: ${lines.join(', ')} (${accessLabel})`);
+    return true;
   }
 
   function setupAddressChip() {
@@ -715,9 +727,9 @@
 
   function logicLineName(kind,line) { return kind===1 ? `A${line+1}` : `D${line}`; }
 
-  function applyLogicFault(writeLimit=null) {
+  function applyLogicFault(writeLimit=null, configOverride=null) {
     if (!started || !logicApiReady()) return false;
-    const config=logicConfigFromControls();
+    const config=configOverride || logicConfigFromControls();
     const lineCount=config.kind===1?15:config.kind===2?16:0;
     if (!lineCount || !Number.isInteger(config.access) || config.access<1 || config.access>3 ||
         !Number.isInteger(config.a) || !Number.isInteger(config.b) ||
@@ -758,6 +770,7 @@
     cancelPulse('replaced by another fault');
     recordAddressMask(0,0,'replaced by paired fault',chipBefore);
     logicActive=true;
+    activeRamConfiguration={type:'line-pair',...config};
     logicStatsRetained=false;
     const activation=Number(emulator._get_logic_activation_frame());
     const kindLabel=config.kind===1 ? 'address' : 'data';
@@ -795,6 +808,7 @@
     }
     cancelPulse(pulseReason);
     logicActive=false;
+    activeRamConfiguration=null;
     recordAddressMask(0,0,'fault disconnected',{frame:finalFrame,previousMask:logicAddressMask,
       readCountBefore:finalReads,writeCountBefore:finalWrites});
     logicStatsRetained=true;
@@ -919,6 +933,236 @@
   function resetLogicSelection() {
     $('logicKind').value='1'; $('logicAccess').value='1';
     configureLogicLines();
+  }
+
+  function circuitPulseIsArmed() {
+    if (pendingPulse) return true;
+    if (!writePulseApiReady()) return false;
+    try { return Number(emulator._get_logic_pulse_state())===1; }
+    catch (_) { return true; }
+  }
+
+  function currentCircuitConfiguration() {
+    const api=window.VRAMpageCircuitConfig;
+    if (!api) throw new Error('Circuit configuration support is unavailable.');
+    if (momentary) throw new Error('Release the momentary VRAM bridge before saving a configuration.');
+    if (circuitPulseIsArmed()) throw new Error('Wait for or cancel the active RAM pulse before saving a configuration.');
+    if (logicActive && !activeRamConfiguration)
+      throw new Error('The active RAM fault settings are unavailable; no file was created.');
+    let psg=null, fm=null;
+    if (psgDataApiReady()) {
+      const state=currentPsgDataState();
+      if (!state) throw new Error('PSG state is unavailable; no file was created.');
+      if (state.configured) psg=[state.bridgeA,state.bridgeB];
+    }
+    if (fmDataApiReady()) {
+      const state=currentFmDataState();
+      if (!state) throw new Error('FM state is unavailable; no file was created.');
+      if (state.configured) fm=[state.bridgeA,state.bridgeB];
+    }
+    let pair=canonical(actualPair());
+    if (vramModelApiReady()) {
+      let state;
+      try { state=emulator._get_vram_fault_model_state(); }
+      catch (_) { throw new Error('VRAM selector state is unavailable; no file was created.'); }
+      const selectedPair=state&&state.bridgeA>=0&&state.bridgeB>=0
+        ? canonical([state.bridgeA,state.bridgeB]) : null;
+      if (!state || state.modelId!==vramModelId || state.mask!==vramAddressMask ||
+          JSON.stringify(selectedPair)!==JSON.stringify(pair))
+        throw new Error('VRAM selector state differs from the app state; no file was created.');
+    }
+    return api.validate({format:api.format,schemaVersion:api.version,configuration:{
+      vram:{modelId:vramModelId,mask:vramAddressMask,pair},
+      ram:logicActive?{...activeRamConfiguration}:null,psg,fm
+    }});
+  }
+
+  function circuitConfigSummary(config) {
+    const c=config.configuration;
+    const vram=c.vram.pair?`VRAM AD${c.vram.pair[0]}↔AD${c.vram.pair[1]}`
+      :c.vram.mask?`VRAM mask 0x${c.vram.mask.toString(16).toUpperCase()}`:'VRAM identity';
+    const model=c.vram.modelId===2?'transaction':'frame projection';
+    const ram=!c.ram?'RAM off':c.ram.type==='address-mask'
+      ?`RAM address mask 0x${c.ram.mask.toString(16).toUpperCase()}, access ${c.ram.access}`
+      :`RAM ${c.ram.kind===1?'address':'data'} pair ${c.ram.a}↔${c.ram.b}, access ${c.ram.access}`;
+    const audio=(name,pair)=>pair?`${name} D${pair[0]}↔D${pair[1]}`:`${name} off`;
+    return `${vram} (${model})\n${ram}\n${audio('PSG',c.psg)}\n${audio('FM',c.fm)}`;
+  }
+
+  function refreshCircuitConfigControls() {
+    $('circuitConfigApply').disabled=!stagedCircuitConfiguration || !started;
+    $('circuitConfigCancel').disabled=!stagedCircuitConfiguration;
+    const preview=$('circuitConfigPreview');
+    preview.hidden=!stagedCircuitConfiguration;
+    preview.textContent=stagedCircuitConfiguration?circuitConfigSummary(stagedCircuitConfiguration):'';
+  }
+
+  function stageCircuitConfigurationFile(file) {
+    if (!file) return;
+    Promise.resolve().then(async()=>{
+      if (file.size>32768) throw new Error('Circuit configuration must be at most 32 KB.');
+      const parsed=window.VRAMpageCircuitConfig.parse(await file.text());
+      stagedCircuitConfiguration=parsed;
+      $('circuitConfigStatus').textContent='Preview loaded. Nothing has been applied; choose Apply when ready.';
+      refreshCircuitConfigControls();
+    }).catch(error=>{
+      $('circuitConfigStatus').textContent=`Configuration not staged: ${error.message}`;
+    });
+  }
+
+  function downloadCircuitConfiguration() {
+    let config;
+    try { config=currentCircuitConfiguration(); }
+    catch (error) { $('circuitConfigStatus').textContent=error.message; return; }
+    const blob=new Blob([JSON.stringify(config,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement('a');
+    link.href=url; link.download='vram-page-md-circuit-v1.json';
+    document.body.append(link); link.click(); link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    $('circuitConfigStatus').textContent='Circuit configuration downloaded. ROM and execution history are not included.';
+  }
+
+  function sameCircuitRam(a,b) { return JSON.stringify(a)===JSON.stringify(b); }
+
+  function circuitBridgeNeedsChange(target,state,available) {
+    if (!available) return target!==null;
+    if (!state) return true;
+    if (!target) return !!state.configured;
+    return !state.configured || state.bridgeA!==target[0] || state.bridgeB!==target[1];
+  }
+
+  function preflightCircuitConfiguration(config) {
+    if (!started || !emulator) return 'Load a ROM before applying a circuit configuration.';
+    if (momentary) return 'Release the momentary VRAM bridge before applying a configuration.';
+    if (circuitPulseIsArmed()) return 'Wait for or cancel the active RAM pulse before applying a configuration.';
+    if (logicActive && (!activeRamConfiguration || !logicApiReady()))
+      return 'The active RAM fault cannot be safely identified or disconnected.';
+    if (logicActive && vramFaultActive()) return 'RAM and VRAM faults are both active; no setters were called.';
+    const c=config.configuration;
+    let vram;
+    try { vram=validateVramModel(c.vram.modelId,c.vram.mask,c.vram.pair); }
+    catch (_) { return 'VRAM capability state is unavailable; no setters were called.'; }
+    if (!vram.ok) return vram.message;
+    if (c.ram && !logicApiReady()) return 'This core cannot safely apply and clear the requested RAM model.';
+    if (c.ram?.type==='address-mask' && !addressMaskApiReady())
+      return 'This core cannot apply the requested RAM address-mask model.';
+    for (const [name,target,ready,getState] of [
+      ['PSG',c.psg,psgDataApiReady,currentPsgDataState],
+      ['FM',c.fm,fmDataApiReady,currentFmDataState]
+    ]) {
+      if (!ready()) { if (target) return `This core does not support the requested ${name} bridge.`; continue; }
+      const state=getState();
+      if (!state) return `${name} runtime state is unavailable; no setters were called.`;
+      if (target && !state.supported) return `The requested ${name} bridge is unsupported in this system profile.`;
+    }
+    return null;
+  }
+
+  function circuitTargetsMatch(config) {
+    const c=config.configuration;
+    if (c.vram.modelId!==vramModelId || c.vram.mask!==vramAddressMask ||
+        JSON.stringify(c.vram.pair)!==JSON.stringify(canonical(actualPair()))) return false;
+    if (!sameCircuitRam(c.ram,logicActive?activeRamConfiguration:null)) return false;
+    return !circuitBridgeNeedsChange(c.psg,psgDataApiReady()?currentPsgDataState():null,psgDataApiReady()) &&
+      !circuitBridgeNeedsChange(c.fm,fmDataApiReady()?currentFmDataState():null,fmDataApiReady());
+  }
+
+  function syncCircuitSelectors(config) {
+    const c=config.configuration;
+    $('vramModel').value=String(c.vram.modelId);
+    $('vramMode').value=c.vram.pair?'bridge':'disconnect';
+    if (c.ram) {
+      $('logicKind').value=String(c.ram.type==='address-mask'?1:c.ram.kind);
+      $('logicAccess').value=String(c.ram.access); configureLogicLines();
+      if (c.ram.type==='line-pair') {
+        $('logicLineA').value=String(c.ram.a); $('logicLineB').value=String(c.ram.b);
+      }
+    }
+    if (c.psg) { $('psgBridgeA').value=String(c.psg[0]); $('psgBridgeB').value=String(c.psg[1]); }
+    if (c.fm) { $('fmBridgeA').value=String(c.fm[0]); $('fmBridgeB').value=String(c.fm[1]); }
+    updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls();
+  }
+
+  function pauseAfterCircuitApplyFailure(domain) {
+    if (!paused) pauseToggle();
+    const ram=logicActive?JSON.stringify(activeRamConfiguration):'off';
+    const psg=psgDataApiReady()?currentPsgDataState():null;
+    const fm=fmDataApiReady()?currentFmDataState():null;
+    const actual=`Tracked state: VRAM model ${vramModelId}, mask ${vramAddressMask}, pair ${JSON.stringify(canonical(actualPair()))}; RAM ${ram}; PSG ${psg?.configured?`D${psg.bridgeA}↔D${psg.bridgeB}`:'off'}; FM ${fm?.configured?`D${fm.bridgeA}↔D${fm.bridgeB}`:'off'}.`;
+    const message=`Apply stopped at ${domain}; earlier settings may have changed. ${actual} The staged file is retained and emulation is paused.`;
+    $('circuitConfigStatus').textContent=message; stamp(message);
+    updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls();
+  }
+
+  function applyStagedCircuitConfiguration() {
+    const config=stagedCircuitConfiguration;
+    if (!config) return false;
+    const error=preflightCircuitConfiguration(config);
+    if (error) { $('circuitConfigStatus').textContent=`Apply refused before mutation: ${error}`; return false; }
+    if (circuitTargetsMatch(config)) {
+      $('circuitConfigStatus').textContent='Configuration already matches. No setters were called; live counters were preserved.';
+      stagedCircuitConfiguration=null; refreshCircuitConfigControls(); return true;
+    }
+    const c=config.configuration;
+    const currentPsg=psgDataApiReady()?currentPsgDataState():null;
+    const currentFm=fmDataApiReady()?currentFmDataState():null;
+    const changePsg=circuitBridgeNeedsChange(c.psg,currentPsg,psgDataApiReady());
+    const changeFm=circuitBridgeNeedsChange(c.fm,currentFm,fmDataApiReady());
+    const changeRam=!sameCircuitRam(c.ram,logicActive?activeRamConfiguration:null);
+    const changeVram=c.vram.modelId!==vramModelId || c.vram.mask!==vramAddressMask ||
+      JSON.stringify(c.vram.pair)!==JSON.stringify(canonical(actualPair()));
+    const vramActive=!!(c.vram.mask||c.vram.pair);
+
+    const applyRamTarget=()=>{
+      if (!changeRam) return true;
+      if (!c.ram) return disconnectLogic({silent:true});
+      if (c.ram.type==='address-mask') return applyAddressMask(c.ram.mask,c.ram.access);
+      return applyLogicFault(null,{kind:c.ram.kind,access:c.ram.access,a:c.ram.a,b:c.ram.b});
+    };
+    if (vramActive) {
+      if (changeVram && !applyVramModel(c.vram.modelId,c.vram.mask,c.vram.pair,'Circuit configuration applied')) {
+        pauseAfterCircuitApplyFailure('VRAM'); return false;
+      }
+      if (!applyRamTarget()) { pauseAfterCircuitApplyFailure('RAM disconnect'); return false; }
+    } else if (c.ram) {
+      // Let the established RAM handoff own VRAM clearing and rollback first.
+      if (!applyRamTarget()) { pauseAfterCircuitApplyFailure('RAM'); return false; }
+      const vramStillDiffers=c.vram.modelId!==vramModelId || vramAddressMask!==0 || actualPair()!==null;
+      if (vramStillDiffers && !applyVramModel(c.vram.modelId,0,null,'Circuit configuration applied')) {
+        pauseAfterCircuitApplyFailure('VRAM model'); return false;
+      }
+    } else {
+      if (changeVram && !applyVramModel(c.vram.modelId,0,null,'Circuit configuration applied')) {
+        pauseAfterCircuitApplyFailure('VRAM model'); return false;
+      }
+      if (!applyRamTarget()) { pauseAfterCircuitApplyFailure('RAM disconnect'); return false; }
+    }
+    if (changePsg && !setPsgDataBridge(!!c.psg,c.psg||undefined)) {
+      pauseAfterCircuitApplyFailure('PSG'); return false;
+    }
+    if (changeFm && !setFmDataBridge(!!c.fm,c.fm||undefined)) {
+      pauseAfterCircuitApplyFailure('FM'); return false;
+    }
+    syncCircuitSelectors(config);
+    stagedCircuitConfiguration=null;
+    $('circuitConfigStatus').textContent='Configuration applied. Disconnecting a bridge does not repair previous chip or memory state.';
+    refreshCircuitConfigControls(); stamp('Versioned circuit configuration applied.');
+    return true;
+  }
+
+  function setupCircuitConfigurationControls() {
+    $('circuitConfigDownload').addEventListener('click',downloadCircuitConfiguration);
+    $('circuitConfigFile').addEventListener('change',event=>{
+      stageCircuitConfigurationFile(event.target.files?.[0]); event.target.value='';
+    });
+    $('circuitConfigApply').addEventListener('click',applyStagedCircuitConfiguration);
+    $('circuitConfigCancel').addEventListener('click',()=>{
+      stagedCircuitConfiguration=null;
+      $('circuitConfigStatus').textContent='Staged configuration discarded; no core settings changed.';
+      refreshCircuitConfigControls();
+    });
+    refreshCircuitConfigControls();
   }
 
   async function sha256Hex(bytes) {
@@ -1262,6 +1506,7 @@
     vramModelStatusMessage='';
     logicAddressMask=0;addressLineChanges=[];
     logicActive=false; // runtime_start clears the work RAM fault and counters.
+    activeRamConfiguration=null;
     logicStatsRetained=false;
     logicResetState=cleanRestart ? 'Clean restart; work RAM fault and counters reset' : 'Cartridge loaded; work RAM fault and counters reset';
     resetLogicSelection();
@@ -1457,6 +1702,7 @@
     $('psgBridgeRemove').addEventListener('click',()=>setPsgDataBridge(false));
     $('fmBridgeApply').addEventListener('click',()=>setFmDataBridge(true));
     $('fmBridgeRemove').addEventListener('click',()=>setFmDataBridge(false));
+    setupCircuitConfigurationControls();
     $('rawVideoToggle').addEventListener('change', () => {
       previousVideoStatus = "";
       drawActiveVideo();

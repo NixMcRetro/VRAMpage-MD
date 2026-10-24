@@ -4,6 +4,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 node --check site/app.js
+node --check site/circuit-config.js
+node tests/test_circuit_config_schema.cjs
 node --check site/framebuffer.js
 node tests/test_framebuffer.cjs
 node tests/test_framebuffer_properties.cjs
