@@ -16,12 +16,20 @@ function parseArgs(argv) {
     const key = argv[i];
     if (!key.startsWith('--')) throw new Error(`Invalid argument: ${key}`);
     if (key === '--preflight-only') { args.preflightOnly = true; continue; }
+    if (key === '--runtime') { args.runtime = true; continue; }
     if (i + 1 >= argv.length || argv[i + 1].startsWith('--'))
       throw new Error(`Missing value for ${key}`);
     args[key.slice(2)] = argv[++i];
   }
-  for (const key of ['baseline', 'normal', 'diagnostic', 'out']) {
+  for (const key of ['baseline', 'normal', 'out']) {
     if (!args[key]) throw new Error(`Missing required --${key}`);
+  }
+  if (args.runtime) {
+    if (!args['runtime-core']) throw new Error('Missing required --runtime-core for --runtime');
+    if (args.diagnostic) throw new Error('--diagnostic cannot be combined with --runtime');
+  } else {
+    if (args['runtime-core']) throw new Error('--runtime-core requires --runtime');
+    if (!args.diagnostic) throw new Error('Missing required --diagnostic');
   }
   args.pairs = Number(args.pairs || 5);
   args.durationMs = Number(args['duration-ms'] || 30000);
@@ -29,6 +37,41 @@ function parseArgs(argv) {
   if (!Number.isInteger(args.durationMs) || args.durationMs !== 30000)
     throw new Error('--duration-ms is fixed at 30000');
   return args;
+}
+
+function profileDefinition(runtime) {
+  if (runtime) {
+    return {
+      protocolName: 'visible-mode5-recurring-32-word-dma-runtime-v1',
+      runtime: true,
+      variants: [
+        ['baseline', null], ['normal', null], ['runtime-default', null],
+        ['runtime-identity', 0], ['runtime-active-ad3', 8]
+      ],
+      preflightVariants: [
+        ['baseline', null], ['normal', null], ['runtime-default', null],
+        ['runtime-identity', 0], ['runtime-active-ad3', 8]
+      ],
+      comparisonVariants: ['normal', 'runtime-default', 'runtime-identity'],
+      noFaultVariants: ['normal', 'runtime-default', 'runtime-identity'],
+      activeVariant: 'runtime-active-ad3'
+    };
+  }
+  return {
+    protocolName: 'visible-mode5-recurring-32-word-dma-paired-v1',
+    runtime: false,
+    variants: [
+      ['baseline', null], ['normal', null], ['diagnostic-off', null],
+      ['identity', 0], ['active-ad3', 8]
+    ],
+    preflightVariants: [
+      ['baseline', null], ['normal', null], ['diagnostic-off', null],
+      ['identity', 0], ['active-ad3', 8]
+    ],
+    comparisonVariants: ['normal', 'diagnostic-off', 'identity'],
+    noFaultVariants: ['normal', 'diagnostic-off', 'identity'],
+    activeVariant: 'active-ad3'
+  };
 }
 
 function sha256(file) {
@@ -63,25 +106,80 @@ function tick(core) {
 
 function cpuLoopCount(state) { return state.ram.readUInt16BE(0); }
 
-async function runPreflightVariant(name, factory, rom, mask, ticksAfterSelection) {
+function runtimeModelSnapshot(core) {
+  const state = core._get_vram_fault_model_state();
+  return {
+    modelId: state.modelId,
+    modelVersion: state.modelVersion,
+    effective: state.effective,
+    reason: state.reason,
+    supportedModelsMask: state.supportedModelsMask,
+    mask: state.mask,
+    bridgeA: state.bridgeA,
+    bridgeB: state.bridgeB,
+    lastFrameCounts: {...state.lastFrameCounts}
+  };
+}
+
+function selectProfileModel(core, profile, mask, name) {
+  if (!profile.runtime) {
+    if (mask === null) return null;
+    const result = core._set_vram_transaction_diagnostic(2, mask, -1, -1);
+    if (result !== 0) throw new Error(`${name}: transaction configuration rejected (${result})`);
+    return null;
+  }
+
+  for (const method of ['_set_vram_fault_model', '_get_vram_fault_model_state',
+    '_get_vram_supported_model_mask']) {
+    if (typeof core[method] !== 'function')
+      throw new Error(`${name}: runtime module missing public ${method} API`);
+  }
+  const supported = Number(core._get_vram_supported_model_mask());
+  if ((supported & 4) === 0)
+    throw new Error(`${name}: transaction model unsupported in the active VDP mode (mask ${supported})`);
+
+  if (mask === null) {
+    const state = runtimeModelSnapshot(core);
+    if (state.modelId !== 1 || state.modelVersion !== 'frame-projection-v1')
+      throw new Error(`${name}: runtime default is not frame-projection-v1`);
+    return state;
+  }
+
+  const result = core._set_vram_fault_model(2, mask, -1, -1);
+  if (result !== 0) throw new Error(`${name}: public transaction configuration rejected (${result})`);
+  const state = runtimeModelSnapshot(core);
+  if (state.modelId !== 2 || state.modelVersion !== 'logical-byte-transaction-v1' ||
+      state.mask !== mask || state.bridgeA !== -1 || state.bridgeB !== -1)
+    throw new Error(`${name}: public runtime state does not match the requested transaction model`);
+  return state;
+}
+
+async function runPreflightVariant(name, factory, rom, mask, ticksAfterSelection, profile) {
   const core = await makeCore(factory, rom);
   let samples = tick(core); // Mode 5 support is established by the first tick.
   const loopBeforeSelection = cpuLoopCount(observable(core, samples));
-  if (mask !== null) {
-    const result = core._set_vram_transaction_diagnostic(2, mask, -1, -1);
-    if (result !== 0) throw new Error(`${name}: transaction configuration rejected (${result})`);
-  }
+  const selectedModel = selectProfileModel(core, profile, mask, name);
   for (let i = 0; i < ticksAfterSelection; i++) samples = tick(core);
   const state = observable(core, samples);
   const loopAfterSelection = cpuLoopCount(state);
   if (loopAfterSelection <= loopBeforeSelection)
     throw new Error(`${name}: recurring DMA CPU loop did not advance during preflight`);
-  const counters = typeof core._get_vram_tx_counter === 'function'
+  const diagnosticCounters = !profile.runtime && typeof core._get_vram_tx_counter === 'function'
     ? [0, 1, 2, 3, 4].map(i => String(core._get_vram_tx_counter(i))) : null;
-  if (mask === 8 && (!counters || BigInt(counters[1]) === 0n))
-    throw new Error('active-ad3: fixed-tick preflight observed no mapped DMA writes');
-  if (mask === 0 && counters && BigInt(counters[1]) !== 0n)
-    throw new Error('identity: fixed-tick preflight unexpectedly counted mapped writes');
+  const runtimeState = profile.runtime ? runtimeModelSnapshot(core) : null;
+  const counters = runtimeState ? runtimeState.lastFrameCounts : diagnosticCounters;
+  const active = name === profile.activeVariant;
+  const identity = profile.runtime ? name === 'runtime-identity' : name === 'identity';
+  const writes = runtimeState ? Number(counters.logicalByteWrites) :
+    diagnosticCounters ? Number(diagnosticCounters[1]) : 0;
+  if (active && (!counters || writes === 0))
+    throw new Error(`${name}: fixed-tick preflight observed no mapped DMA writes`);
+  if (identity && runtimeState && Object.values(counters).some(value => Number(value) !== 0))
+    throw new Error(`${name}: runtime identity unexpectedly counted transaction accesses`);
+  if (identity && diagnosticCounters && Number(diagnosticCounters[1]) !== 0)
+    throw new Error(`${name}: identity unexpectedly counted mapped writes`);
+  if (runtimeState && name === 'runtime-default' && selectedModel.modelId !== 1)
+    throw new Error('runtime-default: public model changed without an explicit selection');
   return {
     variant: name,
     setupTicksBeforeSelection: 1,
@@ -94,6 +192,7 @@ async function runPreflightVariant(name, factory, rom, mask, ticksAfterSelection
     logicFrame: state.logicFrame,
     cpuFlags: state.cpuFlags,
     transactionCounters: counters,
+    ...(runtimeState ? {vramModel: runtimeState} : {}),
     state // Removed before JSON serialization; used only for exact in-process comparison.
   };
 }
@@ -109,13 +208,10 @@ function comparePreflightState(actual, expected, label) {
   assert.equal(actual.cpuFlags, expected.cpuFlags, `${label}: CPU flags`);
 }
 
-async function runVariant(name, factory, rom, mask, ticksAfterSelection) {
+async function runVariant(name, factory, rom, mask, ticksAfterSelection, profile) {
   const core = await makeCore(factory, rom);
   let samples = tick(core); // Let every variant enter Mode 5 before selection.
-  if (mask !== null) {
-    const result = core._set_vram_transaction_diagnostic(2, mask, -1, -1);
-    if (result !== 0) throw new Error(`${name}: transaction configuration rejected (${result})`);
-  }
+  selectProfileModel(core, profile, mask, name);
   for (let i = 0; i < ticksAfterSelection; i++) samples = tick(core);
 
   const frameMs = [];
@@ -134,8 +230,10 @@ async function runVariant(name, factory, rom, mask, ticksAfterSelection) {
     .update(Buffer.from(state.audioLeft.buffer, state.audioLeft.byteOffset, state.audioLeft.byteLength))
     .update(Buffer.from(state.audioRight.buffer, state.audioRight.byteOffset, state.audioRight.byteLength))
     .digest('hex');
-  const counters = typeof core._get_vram_tx_counter === 'function'
-    ? [0, 1, 2, 3, 4].map(i => String(core._get_vram_tx_counter(i))) : null;
+  const runtimeState = profile.runtime ? runtimeModelSnapshot(core) : null;
+  const counters = runtimeState ? runtimeState.lastFrameCounts :
+    typeof core._get_vram_tx_counter === 'function'
+      ? [0, 1, 2, 3, 4].map(i => String(core._get_vram_tx_counter(i))) : null;
   return {
     variant: name,
     elapsedMs,
@@ -148,12 +246,14 @@ async function runVariant(name, factory, rom, mask, ticksAfterSelection) {
     finalAudioSha256: audioHash,
     logicFrame: core._get_logic_frame(),
     cpuFlags: core._get_logic_cpu_flags(),
-    transactionCounters: counters
+    transactionCounters: counters,
+    ...(runtimeState ? {vramModel: runtimeState} : {})
   };
 }
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  const profile = profileDefinition(!!args.runtime);
   const root = path.resolve(__dirname, '..');
   const git = (command, ...argv) => execFileSync('git', [command, ...argv], {
     cwd: root, encoding: 'utf8'
@@ -172,18 +272,32 @@ async function main() {
   };
   if (!sourceBefore.trackedClean)
     throw new Error('Benchmark source checkout has tracked modifications; commit the reviewed snapshot first');
-  const factories = {
-    baseline: entry(args.baseline),
-    normal: entry(args.normal),
-    diagnostic: entry(args.diagnostic),
-    'diagnostic-off': entry(args.diagnostic),
-    identity: entry(args.diagnostic),
-    'active-ad3': entry(args.diagnostic)
+  const baselineFactory = entry(args.baseline);
+  const normalFactory = entry(args.normal);
+  const profileFactory = entry(args.runtime ? args['runtime-core'] : args.diagnostic);
+  const factories = profile.runtime ? {
+    baseline: baselineFactory,
+    normal: normalFactory,
+    'runtime-default': profileFactory,
+    'runtime-identity': profileFactory,
+    'runtime-active-ad3': profileFactory
+  } : {
+    baseline: baselineFactory,
+    normal: normalFactory,
+    diagnostic: profileFactory,
+    'diagnostic-off': profileFactory,
+    identity: profileFactory,
+    'active-ad3': profileFactory
   };
   const coreBasenames = Object.fromEntries(Object.entries(factories)
     .map(([key, value]) => [key, path.basename(value.p)]));
-  const artifactManifest = Object.fromEntries(['baseline', 'normal', 'diagnostic'].map(role => {
-    const js = factories[role].p;
+  const artifactRoles = profile.runtime ? ['baseline', 'normal', 'runtime']
+    : ['baseline', 'normal', 'diagnostic'];
+  const roleFactories = profile.runtime
+    ? {baseline: baselineFactory, normal: normalFactory, runtime: profileFactory}
+    : {baseline: baselineFactory, normal: normalFactory, diagnostic: profileFactory};
+  const artifactManifest = Object.fromEntries(artifactRoles.map(role => {
+    const js = roleFactories[role].p;
     const wasm = js.replace(/\.js$/, '.wasm');
     return [role, {jsBasename: path.basename(js), jsSha256: sha256(js), wasmBasename: path.basename(wasm), wasmSha256: sha256(wasm)}];
   }));
@@ -198,22 +312,16 @@ async function main() {
     emscripten: commandVersion('emcc', ['--version']),
     cmake: commandVersion('cmake', ['--version'])
   };
-  const variants = [
-    ['baseline', null], ['normal', null], ['diagnostic-off', null],
-    ['identity', 0], ['active-ad3', 8]
-  ];
+  const variants = profile.variants;
   const forward = variants.map(([name]) => name);
   const pairs = [];
   const rom = visibleCartridge(0, {recurringDma: true});
-  const preflightVariants = [
-    ['baseline', null], ['normal', null], ['diagnostic-off', null],
-    ['identity', 0], ['active-ad3', 8]
-  ];
+  const preflightVariants = profile.preflightVariants;
   const preflight = {};
   for (const [name, mask] of preflightVariants) {
-    preflight[name] = await runPreflightVariant(name, factories[name], rom, mask, 120);
+    preflight[name] = await runPreflightVariant(name, factories[name], rom, mask, 120, profile);
   }
-  for (const name of ['normal', 'diagnostic-off', 'identity']) {
+  for (const name of profile.comparisonVariants) {
     comparePreflightState(preflight[name].state, preflight.baseline.state,
       `fixed-tick preflight ${name} vs baseline`);
   }
@@ -224,7 +332,7 @@ async function main() {
       const runs = [];
       for (const name of order) {
         const [, mask] = variants.find(([variant]) => variant === name);
-        runs.push(await runVariant(name, factories[name], rom, mask, 120));
+        runs.push(await runVariant(name, factories[name], rom, mask, 120, profile));
       }
       pairs.push({pair: pair + 1, order, runs});
     }
@@ -245,7 +353,7 @@ async function main() {
       });
     }
   }
-  const noFaultVariants = ['normal', 'diagnostic-off', 'identity'];
+  const noFaultVariants = profile.noFaultVariants;
   const gateSummary = args.preflightOnly ? null : Object.fromEntries(noFaultVariants.map(name => {
     const paired = byVariant[name];
     const medianRatio = median(paired.map(run => run.medianRatioToBaseline));
@@ -275,18 +383,20 @@ async function main() {
   const report = {
     recordedAt: new Date().toISOString(),
     protocol: {
-      name: 'visible-mode5-recurring-32-word-dma-paired-v1',
+      name: profile.protocolName,
       mode: args.preflightOnly ? 'preflight-only' : 'timed-benchmark',
       measured: !args.preflightOnly,
       fixedPairs: args.preflightOnly ? null : 5,
       fixedDurationMsPerRun: args.preflightOnly ? null : 30000,
       warmupTicks: 120,
-      preflight: 'one common first Mode 5 tick, then diagnostic selection where applicable, then exactly 120 fixed ticks; recurring CPU loop counter must advance; baseline, normal, diagnostic-off, and identity must match full frame/audio/RAM/CPU-flag observations',
+      preflight: profile.runtime
+        ? 'one common first Mode 5 tick, then public runtime selection where applicable, then exactly 120 fixed ticks; transaction support bit must be present; recurring CPU loop counter must advance; baseline, normal, runtime-default and runtime-identity must match full frame/audio/RAM/CPU-flag observations'
+        : 'one common first Mode 5 tick, then diagnostic selection where applicable, then exactly 120 fixed ticks; recurring CPU loop counter must advance; baseline, normal, diagnostic-off, and identity must match full frame/audio/RAM/CPU-flag observations',
       timedUnit: 'one input-update + emulator tick + audio render; per-frame hrtime duration in milliseconds',
       pairOrder: 'pairs 1,3,5 forward; pairs 2,4 reverse; no result-based reordering or exclusion',
       percentile: 'nearest-rank: sorted[Math.ceil(p*n)-1]; median is nearest-rank p=0.50; p95 is per-run frame p=0.95',
       statisticUse: 'report raw five per-run medians and p95s; do not pool frame samples across runs',
-      performanceGate: 'For normal, diagnostic-off, and identity, median of five paired run ratios to baseline must be <=1.05 for both per-run median frame duration and per-run p95 frame duration. Active AD3 is descriptive and does not determine the no-fault gate.',
+      performanceGate: `For ${noFaultVariants.join(', ')}, median of five paired run ratios to baseline must be <=1.05 for both per-run median frame duration and per-run p95 frame duration. ${profile.activeVariant} is descriptive and does not determine the no-fault gate.`,
       workload: 'visible synthetic Mode 5 tile scene plus original 68K ROM loop issuing recurring 32-word VRAM DMA from ROM byte 0x4000 to VRAM 0x6000',
       variants: forward,
       quietPeriodRequired: true,
@@ -323,4 +433,8 @@ async function main() {
   else if (performanceGatePass === false) process.exitCode = 2;
 }
 
-main().catch(error => { process.stderr.write(`${error.stack}\n`); process.exitCode = 1; });
+if (require.main === module) {
+  main().catch(error => { process.stderr.write(`${error.stack}\n`); process.exitCode = 1; });
+}
+
+module.exports = {parseArgs, profileDefinition, runtimeModelSnapshot, selectProfileModel};
