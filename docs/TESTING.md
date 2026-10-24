@@ -18,6 +18,13 @@ VBlank-wait (18 groups) WASM tests pass independently. Historical evidence is
 unchanged. [PR #44](https://github.com/NixMcRetro/VRAMpage-MD/pull/44) tracks the
 feature and required final checks.
 
+Packaged Firefox Web Audio checks provision a PulseAudio virtual output at
+44.1 kHz on the ephemeral Linux runner. A native-context probe found `resume()`
+pending with a suspended context at time zero before this explicit device setup.
+The test retains the enable/mute assertions and requires the genuine context's
+clock to advance; CI must verify the device setup before merge. This checks
+software audio routing, not audible output or native macOS.
+
 Z80-origin PSG traffic, audible
 output and physical electrical fidelity are not claimed. This is a bounded
 unreleased audio feature, not full v0.4.0 acceptance.

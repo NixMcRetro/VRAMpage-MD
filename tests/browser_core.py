@@ -129,6 +129,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         }""")
                         self.fail(f"{error}\nNative audio state: {audio_state}\nBrowser console: {console_messages}"
                                   f"\nApplication event log:\n{page.locator('#experimentLog').text_content()}")
+                    page.wait_for_function("window.testAudioContext?.state==='running' && window.testAudioContext.currentTime>0")
                     page.locator('#soundBtn').click()
                     expect(page.locator('#soundBtn')).to_have_text('Enable Sound')
                     psg_api=page.evaluate("typeof testCore._set_psg_data_bridge==='function'")
