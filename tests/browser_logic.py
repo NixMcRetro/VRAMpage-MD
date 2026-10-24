@@ -661,6 +661,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.page=self.new_page(circuit_config=True)
         self.load_rom()
         self.assertEqual(self.page.locator('.randomiser-row button').all_text_contents(),['PSG','FM','VRAM'])
+        expect(self.page.locator('#randomiserStatus')).to_have_text('Choose PSG, FM, or VRAM to randomise a chip.')
         before=self.page.evaluate('({starts:mockCore.starts,ramCalls:mockCore.logic.setterCalls.length,fm:mockCore.fm.calls.length,vram:mockCore.vramModel.calls.length})')
         def randomise(selector, value):
             return self.page.locator(selector).evaluate('''(button,value)=>{
@@ -685,11 +686,15 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.locator('#logicApplyBtn').click()
         logic_before=self.page.evaluate('({active:mockCore.logic.active,calls:mockCore.logic.setterCalls.length,vram:mockCore.vramModel.calls.length})')
         self.assertTrue(self.page.locator('#randomVramBtn').is_disabled())
+        self.assertEqual(self.page.locator('#randomVramBtn').get_attribute('title'),'Disconnect the active Work RAM fault first.')
         self.page.locator('#randomVramBtn').dispatch_event('click')
         self.assertEqual(self.page.evaluate('mockCore.logic.active'),logic_before['active'])
         self.assertEqual(self.page.evaluate('mockCore.logic.setterCalls.length'),logic_before['calls'])
         self.assertEqual(self.page.evaluate('mockCore.vramModel.calls.length'),logic_before['vram'])
-        self.page.locator('#randomPsgBtn').dispatch_event('click')
+        self.page.locator('#randomPsgBtn').evaluate('''button=>{
+          const saved=Math.random;Math.random=()=>0;
+          try { button.click(); } finally { Math.random=saved; }
+        }''')
         self.assertNotEqual(self.page.evaluate('mockCore.psg.dataMask'),0)
         self.assertTrue(self.page.evaluate('mockCore.logic.active'))
         self.page.locator('#logicDisconnectBtn').click()
@@ -708,16 +713,24 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.locator('#randomVramBtn').dispatch_event('click')
         self.assertEqual(self.page.evaluate('mockCore.vramModel.calls.length'),before)
         expect(self.page.locator('#randomiserStatus')).to_contain_text('pulse state is active')
+        self.assertEqual(self.page.locator('#randomVramBtn').get_attribute('title'),
+                         'An active RAM pulse prevents VRAM randomisation.')
         self.page.evaluate('mockCore.logic.pulseState=0')
+        restore_state=self.page.evaluate('''()=>({model:mockCore.vramModel.modelId,mask:mockCore.vramModel.mask,
+          a:mockCore.vramModel.bridgeA,b:mockCore.vramModel.bridgeB})''')
         self.page.keyboard.down('Shift')
         self.page.keyboard.down('Digit1')
         self.assertTrue(self.page.locator('#randomVramBtn').is_disabled())
+        self.assertEqual(self.page.locator('#randomVramBtn').get_attribute('title'),'Release the held VRAM bridge first.')
         momentary_calls=self.page.evaluate('mockCore.vramModel.calls.length')
         self.page.locator('#randomVramBtn').dispatch_event('click')
         self.assertEqual(self.page.evaluate('mockCore.vramModel.calls.length'),momentary_calls)
         expect(self.page.locator('#randomiserStatus')).to_contain_text('momentary VRAM bridge is active')
         self.page.keyboard.up('Digit1')
         self.page.keyboard.up('Shift')
+        self.assertEqual(self.page.evaluate('''()=>({model:mockCore.vramModel.modelId,mask:mockCore.vramModel.mask,
+          a:mockCore.vramModel.bridgeA,b:mockCore.vramModel.bridgeB})'''),restore_state,
+          'a refused Randomiser press must preserve the held bridge restore action')
 
     def test_randomiser_legacy_audio_uses_distinct_bridges_and_unavailable_getter_disables(self):
         self.page.close()
@@ -734,6 +747,44 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.evaluate('mockCore.throwPsgState=true')
         self.page.locator('#randomPsgBtn').dispatch_event('click')
         self.assertTrue(self.page.locator('#randomPsgBtn').is_disabled())
+
+    def test_randomiser_partial_setter_changes_refresh_observed_chip_and_pause(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        self.page.evaluate('mockCore.rejectPsgMaskAfterMutation=true')
+        self.page.locator('#randomPsgBtn').evaluate('''button=>{
+          const saved=Math.random;Math.random=()=>0;
+          try { button.click(); } finally { Math.random=saved; }
+        }''')
+        self.assertEqual(self.page.evaluate('mockCore.psg.dataMask'),1)
+        self.assertTrue(self.page.locator('#psgChip .pin').nth(0).get_attribute('class').endswith('cut'))
+        expect(self.page.locator('#randomiserStatus')).to_contain_text('partial state observed and emulation paused')
+        expect(self.page.locator('#pauseBtn')).to_have_text('Resume')
+
+        self.page.locator('#pauseBtn').click()
+        self.page.evaluate('mockCore.rejectVramModelAfterMutation=true')
+        self.page.locator('#randomVramBtn').evaluate('''button=>{
+          const saved=Math.random;Math.random=()=>0;
+          try { button.click(); } finally { Math.random=saved; }
+        }''')
+        self.assertEqual(self.page.evaluate('mockCore.vramModel.mask'),1)
+        self.assertEqual(self.page.locator('#vramModel').input_value(),'1')
+        self.assertIn('cut',self.page.locator('#pinGrid .pin').nth(0).get_attribute('class'))
+        expect(self.page.locator('#randomiserStatus')).to_contain_text('partial runtime state observed and emulation paused')
+        expect(self.page.locator('#pauseBtn')).to_have_text('Resume')
+
+    def test_randomiser_refuses_unreadable_pulse_state_before_mutating(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        self.page.evaluate('mockCore.logic.pulseState=undefined')
+        self.page.locator('#psgLegMode').dispatch_event('change')
+        calls=self.page.evaluate('[mockCore.vramModel.calls.length,mockCore.logic.setterCalls.length]')
+        self.assertTrue(self.page.locator('#randomVramBtn').is_disabled())
+        self.page.locator('#randomVramBtn').dispatch_event('click')
+        self.assertEqual(self.page.evaluate('[mockCore.vramModel.calls.length,mockCore.logic.setterCalls.length]'),calls)
+        expect(self.page.locator('#randomiserStatus')).to_contain_text('pulse state is active or unavailable')
 
     def test_audio_chip_inputs_are_independent_and_masks_replace_pairs(self):
         self.page.close()
