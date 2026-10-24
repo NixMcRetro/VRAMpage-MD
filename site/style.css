@@ -332,9 +332,12 @@ footer { padding-top:9px; font-size:10px; }
 .transaction-metrics span { display:block; color:var(--muted); font-size:10px; }
 .transaction-metrics strong { display:block; padding-top:3px; overflow-wrap:anywhere; font:700 14px ui-monospace,SFMono-Regular,Consolas,monospace; }
 .circuit-config-preview { max-height:220px; overflow:auto; padding:10px; border:1px solid var(--rule); border-radius:5px; background:var(--surface); white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace; }
-.experiment-comparison table { display:block; max-width:100%; overflow:auto; border-collapse:collapse; font-size:12px; }
-.experiment-comparison th,.experiment-comparison td { padding:6px 8px; border:1px solid var(--rule); text-align:left; vertical-align:top; overflow-wrap:anywhere; }
-.experiment-comparison td:nth-child(2),.experiment-comparison td:nth-child(3) { max-width:240px; }
+#compareOutput { max-height:460px; overflow:auto; }
+.experiment-comparison table { display:table; width:760px; table-layout:fixed; border-collapse:collapse; font-size:12px; }
+.experiment-comparison th,.experiment-comparison td { padding:7px 9px; border:1px solid var(--rule); text-align:left; vertical-align:top; overflow-wrap:anywhere; }
+.experiment-comparison th:first-child,.experiment-comparison td:first-child { width:190px; }
+.experiment-comparison th:nth-child(2),.experiment-comparison td:nth-child(2),.experiment-comparison th:nth-child(3),.experiment-comparison td:nth-child(3) { width:220px; }
+.experiment-comparison th:last-child,.experiment-comparison td:last-child { width:100px; white-space:nowrap; }
 .pin.cut { color:var(--accent); background:var(--surface); border-color:var(--rule); }
 .pin.cut .chip-cut { visibility:visible; }
 

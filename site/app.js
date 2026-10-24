@@ -1593,7 +1593,7 @@
         body.append(tr);
       }
       table.append(body); output.append(table);
-      status.textContent='Both exports loaded. Unknown fields mean one or both exports did not record that value.';
+      status.textContent='Both exports loaded. Unknown means a value is absent, invalid, or unavailable. Long values are shortened.';
     }
     for (let i=0;i<2;i++) $(i?'compareFileB':'compareFileA').addEventListener('change',event=>{
       const file=event.target.files?.[0]; event.target.value='';
@@ -1657,7 +1657,7 @@
       resetState:logicResetState,
       currentFrame,readCount:reads,writeCount:writes,
       cpuFlags:logicApiReady() ? Number(emulator._get_logic_cpu_flags()) || 0 : null,
-      logic:{schemaVersion:1,modelVersion:'work-ram-transaction-v1',active:logicActive,
+      logic:{schemaVersion:1,modelVersion:'work-ram-transaction-v1',available:logicApiReady(),active:logicActive,
         fault:lastLogicExperiment ? {...lastLogicExperiment} : null,
         readCount:reads,writeCount:writes,currentFrame,
         cpuFlags:logicApiReady() ? Number(emulator._get_logic_cpu_flags()) || 0 : null},
