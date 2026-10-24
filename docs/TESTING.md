@@ -26,9 +26,9 @@ clock to advance. Final PR CI40066559119 and merged-main CI40066918601 pass all
 seven checks, including packaged Firefox/WebKit audio and controls. This checks
 software audio routing, not audible output or native macOS.
 
-Z80-origin PSG traffic, audible
-output and physical electrical fidelity are not claimed. This is a bounded
-unreleased audio feature, not full v0.4.0 acceptance.
+At the PR #44 checkpoint, Z80-origin PSG traffic was not yet demonstrated.
+The later v0.4.0 acceptance section records actual Z80 PSG/FM route tests.
+Audible output and physical electrical fidelity remain unclaimed.
 
 # v0.3.0 transaction VRAM verification
 

@@ -1,5 +1,8 @@
 # Releases and deployment
 
+The v0.4.0 download links are staged for publication after final release checks.
+Until publication completes, use the [verified v0.3.0 package](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.3.0/VRAMpage-MD-v0.3.0-macos.zip).
+
 ## Complete local application release
 
 The normal user download is the single versioned ZIP attached to the

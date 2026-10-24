@@ -30,8 +30,8 @@ v0.2.5 adds independent VRAM AD0-AD7 leg switches within the current
 frame-scoped model. v0.2.6 adds build identification to experiment exports.
 v0.2.7 adds a default-disabled metadata-only first-affected-write diagnostic.
 v0.2.8 compacts the work-RAM chip layout without changing the VRAM chip.
-Further incremental RAM-stage improvements use v0.2.9, etc. The transaction-VRAM milestone uses v0.3.0; hardware-informed audio bending
-remains reserved for v0.4.0. A leg switch does not advance either milestone.
+Further incremental RAM-stage improvements use v0.2.9, etc. The transaction-VRAM milestone uses v0.3.0; the audio-input milestone
+uses v0.4.0. A leg switch does not advance either milestone.
 
 ## What changes and what remains historical
 
