@@ -23,6 +23,17 @@ Verified on 24 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
+The next source slice adds read-only comparison of two saved experiment exports.
+Implementation is on `experiment/experiment-comparison`, based on merged PR #49
+and its checkpoint `ec5756e`. It reuses exported metadata rather than introducing
+a new emulator model or changing the export schema. The comparison must separate
+ROM/core/build/model identity, recorded settings, active state and results, with
+missing legacy metadata explicitly unknown. No public release or version bump
+is planned. See [comparison usage](EXPERIMENTS.md#compare-saved-exports-development-source).
+Independent review and required PR/main CI remain integration gates until the
+final verification record is added below. The next bounded task after that gate
+is combined workbench acceptance before the Phase D feature freeze.
+
 Coordinated all-domain removal is implemented in development source after the
 public v0.4.1 baseline below. It pauses, cancels held/momentary restores and
 pulse callbacks, independently clears available domains and records truthful

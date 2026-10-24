@@ -2,6 +2,7 @@
 
 ## Unreleased workbench improvements
 
+- Compare two saved experiment exports locally without changing emulation; distinguish matching, different and unavailable identities and inspect recorded settings, counters and recovery outcomes.
 - Add a distinct pause-and-disconnect action for all fault domains, with pulse/held-action cancellation and per-domain partial-failure reporting.
 - Clarify that CPU recovery clears RAM/VRAM faults while leaving audio faults unchanged. Preserve explicit resume and clean restart as separate actions.
 - Keep the public v0.4.1 package and historical evidence unchanged.

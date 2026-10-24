@@ -115,7 +115,7 @@ No minor cosmetic/documentation releases or repeated completed research.
    commercial ROM or claim synthetic tests satisfy the attract-mode milestone.
 5. Record exact tested commits, evidence and limitations. Preserve earlier results.
 
-## Active bounded task: coordinated removal and recovery
+## Completed bounded task: coordinated removal and recovery
 
 Build on verified public v0.4.1/source `e579c57`. Reuse existing setters and
 native fault semantics; no emulator-core rewrite or new hardware model.
@@ -131,3 +131,26 @@ exported metadata does not confuse fault removal with a CPU intervention.
 Preserve the small-screen chip budget and existing strict configuration import.
 Run full applicable regression and compiled-core browser checks before merge.
 No public release or version bump for this intermediate workbench slice.
+
+PR #49 and its merged-main run passed all seven checks; the integration
+checkpoint above records the exact source and evidence. Do not repeat that
+implementation.
+
+## Active bounded task: saved experiment comparison
+
+Build on merged `1bb92a5` and include checkpoint `ec5756e`. Compare two saved
+browser experiment exports without applying settings or calling emulator APIs.
+Distinguish recorded ROM/core/build/model matches, mismatches and unknown
+metadata; keep settings, active state and recorded counters/outcomes separate.
+Preserve legacy exports and identify missing fields rather than inferring them.
+Matching metadata does not establish replay, gameplay or causal equivalence.
+
+Acceptance: bounded JSON input; text-only rendering; inert local file handling;
+stale-read/cancel protection; clear identity and settings comparisons; no live
+fault, pulse, CPU, cartridge or counter changes. Cover valid current/legacy
+exports, mismatches, unavailable metadata, invalid input, hostile strings and
+responsive display with focused tests and independent Luna High review.
+Require full applicable source/browser/compiled-package CI before merging.
+Preserve public v0.4.1, its original tag/assets and all recorded evidence. No
+version bump or intermediate release; no McRetro.net work. After verified
+integration, review combined workbench acceptance before the Phase D freeze.

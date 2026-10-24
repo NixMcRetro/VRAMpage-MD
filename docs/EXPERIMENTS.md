@@ -1,5 +1,30 @@
 # Work RAM experiment procedure
 
+## Compare saved exports (development source)
+
+The experiment comparison panel loads two locally saved **Download experiment
+JSON** files. Select export A and export B to inspect their recorded identities,
+fault settings, counters and recovery outcomes. Comparison is read-only: loading
+a record does not apply settings, load a cartridge, pause, restart or recover the
+emulator. Clear the comparison to discard the in-memory records and cancel
+pending reads. Nothing is uploaded or saved by the comparison panel.
+
+Check the ROM SHA-256, pinned core revision, application build commit and model
+versions first. Missing or unavailable metadata is unknown, not a match. A source
+commit identifies the application build separately from the pinned upstream
+core. Preserve original exports; older records may omit newer audio, transaction
+or recovery fields.
+
+Recorded counters and CPU flags describe the saved observation, not a replay.
+Equal identifiers and settings do not prove equal input timing, run length,
+gameplay, audio or physical behavior. Different counters can reflect different
+observation windows. A disconnected RAM fault can retain the last experiment's
+settings and counters; compare its active state and reset/recovery history too.
+
+This panel is an unreleased source improvement. The public v0.4.1 ZIP remains
+unchanged. The attract-mode procedure below remains a separate experiment
+protocol; the panel does not infer its acceptance criteria.
+
 This is an initial protocol for comparing an attract-mode baseline with one
 modeled work-RAM fault. It records observations without assuming a desired
 glitch. A game crash or stopped CPU is a result to record, not something the
