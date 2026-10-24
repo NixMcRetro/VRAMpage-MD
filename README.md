@@ -29,6 +29,8 @@ If your Mac blocks `START.command`, right-click it and choose **Open**, or follo
 
 **v0.4.1:** [four compact chip diagrams](docs/CHIP-WORKBENCH.md) keep VRAM, Work RAM, FM and PSG visible together. Click legs to disconnect supported lines or join a pair within that chip. Audio cuts use a new stuck-low input model. [Configuration files](docs/CIRCUIT-CONFIGURATIONS.md) save masks and bridges; loading previews settings before explicit Apply. Older configuration files remain importable.
 
+**Development source after v0.4.1:** coordinated fault removal adds a separate pause-and-disconnect action for every modeled domain. CPU recovery still clears RAM/VRAM faults and preserves audio faults. These unreleased controls are not in the public ZIP above; see [recovery semantics](docs/CPU-RECOVERY.md).
+
 **RAM research:** a [reproducible bounded experiment](docs/RAM-STATUS-FOLLOWUP.md) now shows player-trajectory divergence while recorded demo inputs continue at the same phase. This uses the existing public core and does not establish physical electrical accuracy.
 
 ## What can it do?
