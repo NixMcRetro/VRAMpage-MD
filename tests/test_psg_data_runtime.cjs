@@ -65,6 +65,7 @@ function testUnsignedCounterFacadeBoundaries() {
   const module = {
     postRun: [],
     _set_psg_data_bridge_c: () => 0,
+    _set_psg_data_mask_c: () => 0,
     _get_psg_data_bridge_version: () => 0,
     HEAPU8: new Uint8Array([0]),
     _get_psg_data_bridge_supported: () => 1,

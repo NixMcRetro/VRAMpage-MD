@@ -39,6 +39,10 @@ class PsgDataFaultHelper(unittest.TestCase):
         previous = patched.replace('input bridge v2', 'input bridge v1')
         migrated = PATCH_CORE.patch_psg_input_fault(previous)
         self.assertEqual(migrated, patched, 'exact V1 bridge layout upgrades to V2')
+        partial_previous = previous.replace('psg_data_fault_runtime_reset();',
+                                             'psg_data_fault_reset();', 1)
+        with self.assertRaises(SystemExit):
+            PATCH_CORE.patch_psg_input_fault(partial_previous)
         mutations = (
             patched.replace('input bridge v2', 'input bridge v0', 1),
             patched.replace('psg_data_fault_runtime_reset();', 'psg_data_fault_reset();', 1),

@@ -282,7 +282,7 @@ function fmZ80ResetMarker(core) {
 
 function testUnsignedCounterFacadeBoundaries() {
   const module = {
-    postRun: [], _set_fm_data_bridge_c: () => 0,
+    postRun: [], _set_fm_data_bridge_c: () => 0, _set_fm_data_mask_c: () => 0,
     _get_fm_data_bridge_version: () => 0, HEAPU8: new Uint8Array([0]),
     _get_fm_data_bridge_supported: () => 1, _get_fm_data_bridge_enabled: () => 1,
     _get_fm_data_bridge_a: () => 0, _get_fm_data_bridge_b: () => 5,
