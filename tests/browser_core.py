@@ -93,6 +93,14 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     expect(page.locator('#soundBtn')).to_have_text('Enable Sound')
                     psg_api=page.evaluate("typeof testCore._set_psg_data_bridge==='function'")
                     if psg_api:
+                        page.evaluate('''() => {
+                            window.__nativePsgState=testCore._get_psg_data_bridge_state;
+                            testCore._get_psg_data_bridge_state=()=>{throw new Error('injected state failure')};
+                        }''')
+                        expect(page.locator('#psgBridgeStatus')).to_contain_text('runtime state is unavailable')
+                        expect(page.locator('#psgBridgeApply')).to_be_disabled()
+                        self.assertEqual(errors,[], 'optional PSG state failure does not break the page')
+                        page.evaluate('testCore._get_psg_data_bridge_state=window.__nativePsgState')
                         expect(page.locator('#psgBridgeApply')).to_be_enabled()
                         page.locator('#psgBridgeA').select_option('0')
                         page.locator('#psgBridgeB').select_option('7')

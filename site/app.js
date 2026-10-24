@@ -146,6 +146,8 @@
     $('psgChangedWrites').textContent=state?.changedWrites ?? '0';
     $('psgBridgeStatus').textContent=!available
       ? 'This core does not provide the optional PSG runtime API.'
+      : !state
+        ? 'PSG runtime state is unavailable; controls are disabled.'
       : !supported
         ? (state.configured ? 'Configured, but inactive in this system profile.' : 'PSG bridge is unavailable in this system profile.')
         : state.configured
