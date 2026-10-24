@@ -50,7 +50,7 @@ def original_cartridge():
 
 class ActualCoreBrowserTests(unittest.TestCase):
     def test_original_video_audio_and_controls(self):
-        handler = partial(SimpleHTTPRequestHandler, directory=ROOT / 'site')
+        handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
         with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:
             thread = threading.Thread(target=server.serve_forever, daemon=True)
             thread.start()
@@ -62,7 +62,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     errors = []
                     page.on('pageerror', lambda e: errors.append(str(e)))
                     # Capture the real instantiated module without replacing its behavior.
-                    core_js = (ROOT / 'site/core/genplus.js').read_text()
+                    core_js = (OPTIONS.site_root / 'core/genplus.js').read_text()
                     core_js += '\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\n'
                     page.route('**/core/genplus.js', lambda route: route.fulfill(content_type='text/javascript', body=core_js))
                     # A fixture manifest exercises provenance without mocking the real core.
@@ -185,5 +185,6 @@ if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--browser',choices=['chromium','firefox','webkit'],default='chromium')
     parser.add_argument('--executable')
+    parser.add_argument('--site-root',type=Path,default=ROOT / 'site')
     OPTIONS, remaining=parser.parse_known_args()
     unittest.main(argv=[__file__,*remaining],verbosity=2)
