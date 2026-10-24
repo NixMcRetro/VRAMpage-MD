@@ -770,7 +770,8 @@
     cancelPulse('replaced by another fault');
     recordAddressMask(0,0,'replaced by paired fault',chipBefore);
     logicActive=true;
-    activeRamConfiguration={type:'line-pair',...config};
+    activeRamConfiguration={type:'line-pair',kind:config.kind,access:config.access,
+      a:Math.min(config.a,config.b),b:Math.max(config.a,config.b)};
     logicStatsRetained=false;
     const activation=Number(emulator._get_logic_activation_frame());
     const kindLabel=config.kind===1 ? 'address' : 'data';
@@ -1089,7 +1090,17 @@
     const ram=logicActive?JSON.stringify(activeRamConfiguration):'off';
     const psg=psgDataApiReady()?currentPsgDataState():null;
     const fm=fmDataApiReady()?currentFmDataState():null;
-    const actual=`Tracked state: VRAM model ${vramModelId}, mask ${vramAddressMask}, pair ${JSON.stringify(canonical(actualPair()))}; RAM ${ram}; PSG ${psg?.configured?`D${psg.bridgeA}↔D${psg.bridgeB}`:'off'}; FM ${fm?.configured?`D${fm.bridgeA}↔D${fm.bridgeB}`:'off'}.`;
+    let vram=null;
+    if (vramModelApiReady()) {
+      try { vram=emulator._get_vram_fault_model_state(); } catch (_) { /* Report tracked state below. */ }
+    }
+    const vramDescription=vram
+      ? `runtime VRAM model ${vram.modelId}, mask ${vram.mask}, pair ${JSON.stringify(vram.bridgeA>=0&&vram.bridgeB>=0?canonical([vram.bridgeA,vram.bridgeB]):null)}`
+      : `tracked VRAM model ${vramModelId}, mask ${vramAddressMask}, pair ${JSON.stringify(canonical(actualPair()))}`;
+    const bridgeDescription=(state,name)=>state
+      ? `${name} ${state.configured?`D${state.bridgeA}↔D${state.bridgeB}`:'off'}`
+      : `${name} state unavailable`;
+    const actual=`Observed state: ${vramDescription}; tracked RAM ${ram}; ${bridgeDescription(psg,'PSG')}; ${bridgeDescription(fm,'FM')}.`;
     const message=`Apply stopped at ${domain}; earlier settings may have changed. ${actual} The staged file is retained and emulation is paused.`;
     $('circuitConfigStatus').textContent=message; stamp(message);
     updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls();
@@ -1098,15 +1109,26 @@
   function applyStagedCircuitConfiguration() {
     const config=stagedCircuitConfiguration;
     if (!config) return false;
-    const error=preflightCircuitConfiguration(config);
+    let error;
+    try { error=preflightCircuitConfiguration(config); }
+    catch (_) { error='Runtime state could not be read; no setters were called.'; }
     if (error) { $('circuitConfigStatus').textContent=`Apply refused before mutation: ${error}`; return false; }
-    if (circuitTargetsMatch(config)) {
+    let alreadyMatches;
+    try { alreadyMatches=circuitTargetsMatch(config); }
+    catch (_) { $('circuitConfigStatus').textContent='Apply refused before mutation: runtime state could not be read.'; return false; }
+    if (alreadyMatches) {
       $('circuitConfigStatus').textContent='Configuration already matches. No setters were called; live counters were preserved.';
       stagedCircuitConfiguration=null; refreshCircuitConfigControls(); return true;
     }
     const c=config.configuration;
-    const currentPsg=psgDataApiReady()?currentPsgDataState():null;
-    const currentFm=fmDataApiReady()?currentFmDataState():null;
+    let currentPsg,currentFm;
+    try {
+      currentPsg=psgDataApiReady()?currentPsgDataState():null;
+      currentFm=fmDataApiReady()?currentFmDataState():null;
+    } catch (_) {
+      $('circuitConfigStatus').textContent='Apply refused before mutation: runtime state could not be read.';
+      return false;
+    }
     const changePsg=circuitBridgeNeedsChange(c.psg,currentPsg,psgDataApiReady());
     const changeFm=circuitBridgeNeedsChange(c.fm,currentFm,fmDataApiReady());
     const changeRam=!sameCircuitRam(c.ram,logicActive?activeRamConfiguration:null);
@@ -1120,27 +1142,38 @@
       if (c.ram.type==='address-mask') return applyAddressMask(c.ram.mask,c.ram.access);
       return applyLogicFault(null,{kind:c.ram.kind,access:c.ram.access,a:c.ram.a,b:c.ram.b});
     };
+    let currentDomain='configuration';
+    let mutationStarted=false;
+    try {
     if (vramActive) {
+      if (changeVram) { currentDomain='VRAM'; mutationStarted=true; }
       if (changeVram && !applyVramModel(c.vram.modelId,c.vram.mask,c.vram.pair,'Circuit configuration applied')) {
         pauseAfterCircuitApplyFailure('VRAM'); return false;
       }
+      if (changeRam) { currentDomain='RAM'; mutationStarted=true; }
       if (!applyRamTarget()) { pauseAfterCircuitApplyFailure('RAM disconnect'); return false; }
     } else if (c.ram) {
       // Let the established RAM handoff own VRAM clearing and rollback first.
+      if (changeRam) { currentDomain='RAM'; mutationStarted=true; }
       if (!applyRamTarget()) { pauseAfterCircuitApplyFailure('RAM'); return false; }
       const vramStillDiffers=c.vram.modelId!==vramModelId || vramAddressMask!==0 || actualPair()!==null;
+      if (vramStillDiffers) { currentDomain='VRAM model'; mutationStarted=true; }
       if (vramStillDiffers && !applyVramModel(c.vram.modelId,0,null,'Circuit configuration applied')) {
         pauseAfterCircuitApplyFailure('VRAM model'); return false;
       }
     } else {
+      if (changeVram) { currentDomain='VRAM model'; mutationStarted=true; }
       if (changeVram && !applyVramModel(c.vram.modelId,0,null,'Circuit configuration applied')) {
         pauseAfterCircuitApplyFailure('VRAM model'); return false;
       }
+      if (changeRam) { currentDomain='RAM disconnect'; mutationStarted=true; }
       if (!applyRamTarget()) { pauseAfterCircuitApplyFailure('RAM disconnect'); return false; }
     }
+    if (changePsg) { currentDomain='PSG'; mutationStarted=true; }
     if (changePsg && !setPsgDataBridge(!!c.psg,c.psg||undefined)) {
       pauseAfterCircuitApplyFailure('PSG'); return false;
     }
+    if (changeFm) { currentDomain='FM'; mutationStarted=true; }
     if (changeFm && !setFmDataBridge(!!c.fm,c.fm||undefined)) {
       pauseAfterCircuitApplyFailure('FM'); return false;
     }
@@ -1149,10 +1182,18 @@
     $('circuitConfigStatus').textContent='Configuration applied. Disconnecting a bridge does not repair previous chip or memory state.';
     refreshCircuitConfigControls(); stamp('Versioned circuit configuration applied.');
     return true;
+    } catch (failure) {
+      if (mutationStarted) pauseAfterCircuitApplyFailure(`${currentDomain} setter/runtime error`);
+      else $('circuitConfigStatus').textContent=`Apply refused before mutation: ${failure?.message||'runtime state could not be read'}.`;
+      return false;
+    }
   }
 
   function setupCircuitConfigurationControls() {
     $('circuitConfigDownload').addEventListener('click',downloadCircuitConfiguration);
+    $('circuitConfigFileLabel').addEventListener('keydown',event=>{
+      if (event.key==='Enter' || event.key===' ') { event.preventDefault(); $('circuitConfigFile').click(); }
+    });
     $('circuitConfigFile').addEventListener('change',event=>{
       stageCircuitConfigurationFile(event.target.files?.[0]); event.target.value='';
     });

@@ -22,7 +22,7 @@
     const a = integer(value[0], 0, 7, `${label}[0]`);
     const b = integer(value[1], 0, 7, `${label}[1]`);
     if (a === b) fail(`${label} inputs must be distinct`);
-    return [a, b];
+    return a < b ? [a, b] : [b, a];
   }
 
   function validate(value) {
@@ -55,7 +55,8 @@
         if (a === b) fail('RAM lines must be distinct');
         if (kind === 2 && Math.floor(a / 8) !== Math.floor(b / 8))
           fail('RAM data pair must stay within one byte lane');
-        ram = {type: raw.type, kind, access: integer(raw.access, 1, 3, 'RAM access'), a, b};
+        ram = {type: raw.type, kind, access: integer(raw.access, 1, 3, 'RAM access'),
+          a: Math.min(a, b), b: Math.max(a, b)};
       } else {
         fail('RAM type must be address-mask or line-pair');
       }

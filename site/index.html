@@ -187,7 +187,7 @@
         <p>Save fault settings without ROM data or execution history. Loading a file only stages a preview; faults change only after you choose Apply.</p>
         <div class="logic-actions">
           <button id="circuitConfigDownload" type="button">Download configuration</button>
-          <label class="load-btn" for="circuitConfigFile">Load configuration</label>
+          <label id="circuitConfigFileLabel" class="load-btn" for="circuitConfigFile" role="button" tabindex="0">Load configuration</label>
           <input id="circuitConfigFile" type="file" accept=".json,application/json" aria-label="Load circuit configuration JSON">
           <button id="circuitConfigApply" type="button" disabled>Apply staged configuration</button>
           <button id="circuitConfigCancel" type="button" disabled>Discard preview</button>
