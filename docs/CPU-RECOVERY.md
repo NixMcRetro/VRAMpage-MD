@@ -1,6 +1,6 @@
 # v0.2.1 experimental CPU recovery
 
-The work-RAM panel offers two explicit interventions after a fault. They are
+The workbench offers two explicit interventions after a fault. They are
 emulator debugging actions, not additional simulated hardware shorts. Neither
 repairs corrupted RAM or guarantees that gameplay continues.
 
