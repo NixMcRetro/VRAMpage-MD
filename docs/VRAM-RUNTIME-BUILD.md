@@ -30,12 +30,13 @@ passed all five source, browser and real-core/package jobs.
 - Require independent specialist source/test review, the full applicable suite,
   actual-WASM and browser checks and passing GitHub Actions before merge.
 
-## Next stage
+## Application integration
 
-After this build path is accepted, integrate application model selection and
-separate transaction metadata/counters in experiment exports. Prevalidate
-selection before RAM/VRAM handoff. Current-runtime performance, browser and
-milestone acceptance remain gates before v0.3.0. Native Mac, audible output and
+The application now selects frame or transaction mode through the production
+runtime, with validated RAM/VRAM handoff and separate export metadata/counters.
+The current runtime passes the fixed five-pair performance gate after independent
+review. Final browser CI, packaging and publication remain milestone gates;
+see [development status](DEVELOPMENT-STATUS.md). Native Mac, audible output and
 physical hardware fidelity require separate evidence.
 
 ## Build and reproduce

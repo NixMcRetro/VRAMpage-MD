@@ -5,45 +5,38 @@ Verified on 24 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
-Verified integration base: `d074bdf88585e87406b589f7513d00cb7d034e1d` (PR #42).
-[Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40043483063)
-passed source, Chromium, Firefox, WebKit and actual-core/package checks.
-The immutable [v0.2.8 Mac package](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.8/VRAMpage-MD-v0.2.8-macos.zip)
-was published by [workflow 39972454348](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/39972454348)
-from `f1aad11f331e772e6ec786be020d54b36905c7ba`. Its tag, manifests and checksum agree.
-PR #39 subsequently aligned the release catalog and editorial links without
-rebuilding or replacing the public package; the release curator passed. The downloaded
-ZIP passed actual-core Chromium and unmocked local launcher checks, including
-clean Ctrl+C shutdown. No new native macOS validation is claimed.
-Playwright caches remain enabled. Browser OS dependencies use official Ubuntu
-mirrors with bounded retries; no tests or pinned browser versions were removed.
-The public app retains the existing frame-scoped VRAM model.
-The first affected write is identified at PC `$B46`; bounded actual-bus evidence
-now shows wait/caller release one tick later. The eight-write follow-up now meets the bounded same-input-phase trajectory
-criterion. The [transaction-level VRAM plan](TRANSACTION-VRAM-PLAN.md) maps
-CPU/Z80 ports, DMA, renderer/cache and sprite-table paths. The developer-only
-[access diagnostic](VRAM-ACCESS-DIAGNOSTIC.md) now connects CPU/Z80 ports and DMA
-to the helper in a separately compiled test variant. The [semantics protocol](TRANSACTION-VRAM-SEMANTICS.md) now fixes
-byte/lane ordering, cache dependencies, supported modes, sprite-table policy and
-explicit model compatibility. An isolated native helper implements those byte-access and dependency
-primitives. Diagnostic core hooks preserve the normal access path by default;
-renderer/cache reads are now implemented and locally verified in the separately
-compiled diagnostic. [PR #40](https://github.com/NixMcRetro/VRAMpage-MD/pull/40)
-merged after all required CI passed, and merged-main CI passed too. The [safe core model API](VRAM-PUBLIC-MODEL-API.md) is now implemented in a
-harness-built runtime profile with separate diagnostic exports. Independent
-review and the integrated 91-test suite, normal leak checking, five real-WASM
-profiles, normal Chromium and real packaging passed locally.
-[PR #41](https://github.com/NixMcRetro/VRAMpage-MD/pull/41) merged after all
-required checks passed, and merged-main CI passed too. The normal app/release remains v0.2.8; the [isolated runtime builder](VRAM-RUNTIME-BUILD.md) now passes independent
-review, normal/runtime/normal actual build checks, source-bundle reproduction and
-the full 94-test suite locally. Normal core hashes and actual-core Chromium are
-unchanged. PR #42 and merged-main CI passed. Browser model selection, chip controls,
-safe RAM handoff and transaction exports are now the active coherent feature
-assignment. Current-runtime performance and v0.3.0 acceptance accompany this
-integration; no intermediate release is planned. Read the first unfinished
-[work-queue](WORK-QUEUE.md) item and relevant protocol before older history.
-Reuse unchanged passing evidence; new diagnostic code needs focused tests,
-independent specialist review, final regression and CI before merge.
+Integration branch `integration/transaction-app` builds on verified main
+`d074bdf88585e87406b589f7513d00cb7d034e1d` (PR #42). Public v0.2.8 remains
+unchanged until the v0.3.0 release passes CI and publication checks.
+
+Implemented: explicit frame/transaction selector, existing VRAM legs and bridges,
+capability/effectiveness reporting, five completed-frame transaction counters,
+separate experiment metadata, and validated RAM/VRAM handoff with rollback and
+fail-closed pause. Active RAM pulses reject takeover without losing their budget.
+The production site bundles the runtime plus corresponding source; the normal
+core remains a supported fallback with unchanged binary hashes.
+
+Independent Luna High implementation/review covered the app and core changes.
+The final core/source checkpoint passed 99 Python tests without skips, normal
+LeakSanitizer, strict/native and JavaScript suites, five fresh actual-WASM
+profiles, production normal/runtime builds, runtime API checks, three actual-core
+transaction Chromium tests and the existing actual-core Chromium smoke test.
+Version-label changes require focused rechecks; packaged Firefox/WebKit CI and
+final release verification remain pending. No native macOS or audible test is
+claimed.
+
+The first runtime timing failed and is preserved. A reviewed per-render-call
+inactive fast path fixes the measured overhead without changing active mapping.
+The [second fixed five-pair record](experiments/vram-runtime-performance-2026-10-24-v2-summary.json)
+passes independent raw-data/provenance audit and all unchanged 1.05 gates:
+runtime default median/p95 ratios 1.00890/1.02977, transaction identity
+1.00966/1.01988. Every sample and both complete records are retained on immutable
+evidence commits. These synthetic timings do not establish game-wide performance.
+
+Next: complete version/package checks, open the coherent v0.3.0 feature PR,
+require all CI, merge, and verify the complete public Mac download from that
+merged commit. Then begin bounded hardware-informed audio implementation for
+v0.4.0. Read this checkpoint before older historical sections below.
 
 ## Compact Work RAM interface
 

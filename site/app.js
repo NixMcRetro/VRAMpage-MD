@@ -44,7 +44,7 @@
   let logicResetState = 'No cartridge loaded';
   let romHashPromise = Promise.resolve(null);
   const CORE_PIN = '6090aff9e9b2f578cd28882bd4571d2e35b1d674';
-  const APPLICATION_VERSION = '0.2.8';
+  const APPLICATION_VERSION = '0.3.0';
   let buildInfo = {status:'unavailable',applicationVersion:APPLICATION_VERSION,sourceCommit:null};
   loadBuildInfo().then(info=>{buildInfo=info;});
 
@@ -813,7 +813,7 @@
     const data={
       schemaVersion:1,
       build:{...buildInfo},
-      modelVersion:'0.2.8-experimental',
+      modelVersion:'0.3.0-experimental',
       vramFault:{kind:vramAddressMask?'address-stuck-low':actualPair()?'address-bridge':'none',
         addressMask:vramAddressMask,lines:vramLines(vramAddressMask),bridge:actualPair()?[...actualPair()]:null},
       vramAddressLineChanges:vramAddressLineChanges.map(entry=>({...entry})),

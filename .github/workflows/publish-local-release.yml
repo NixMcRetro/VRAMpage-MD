@@ -1,4 +1,4 @@
-name: Publish complete v0.2.8 local download
+name: Publish complete v0.3.0 local download
 
 # Explicitly dispatched after main passes review. Only this repository is used.
 on:
@@ -30,30 +30,30 @@ jobs:
           cd download
           python3 - <<'PY'
           import json, os, zipfile
-          with zipfile.ZipFile('VRAMpage-MD-v0.2.8-macos.zip') as bundle:
+          with zipfile.ZipFile('VRAMpage-MD-v0.3.0-macos.zip') as bundle:
               root_info = bundle.read('VRAMpage-MD/BUILD-INFO.json')
               assert root_info == bundle.read('VRAMpage-MD/site/build-info.json')
               assert len(bundle.namelist()) == len(set(bundle.namelist()))
               info = json.loads(root_info)
               assert info['source_commit'] == os.environ['GITHUB_SHA'], info
-              assert info['application_version'] == '0.2.8', info
+              assert info['application_version'] == '0.3.0', info
           PY
-          sha256sum VRAMpage-MD-v0.2.8-macos.zip > SHA256SUMS.txt
+          sha256sum VRAMpage-MD-v0.3.0-macos.zip > SHA256SUMS.txt
       - name: Attach the complete ZIP and publish the release
         run: |
           # Earlier canonical releases retain their original assets and notes.
           # The deleted legacy v2.4.0 retains only its source tag. See:
           # https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.4
           # Never replace assets or metadata of an already-public release.
-          if gh release view v0.2.8 >/dev/null 2>&1 &&
-             [ "$(gh release view v0.2.8 --json isDraft --jq '.isDraft')" = 'false' ]; then
-            echo 'v0.2.8 is already public; publish a new version instead of replacing it.' >&2
+          if gh release view v0.3.0 >/dev/null 2>&1 &&
+             [ "$(gh release view v0.3.0 --json isDraft --jq '.isDraft')" = 'false' ]; then
+            echo 'v0.3.0 is already public; publish a new version instead of replacing it.' >&2
             exit 1
           fi
-          if ! gh release view v0.2.8 >/dev/null 2>&1; then
-            gh release create v0.2.8 --draft --target "$GITHUB_SHA" --title 'VRAMpage MD v0.2.8' --notes 'Download the complete Mac ZIP below, extract it and open START.command. Python 3 is required. Load your own legally usable cartridge. See the included README and third-party non-commercial terms.'
+          if ! gh release view v0.3.0 >/dev/null 2>&1; then
+            gh release create v0.3.0 --draft --target "$GITHUB_SHA" --title 'VRAMpage MD v0.3.0' --notes 'Download the complete Mac ZIP below, extract it and open START.command. Python 3 is required. Load your own legally usable cartridge. See the included README and third-party non-commercial terms.'
           fi
-          gh release view v0.2.8 --json body --jq .body > /tmp/release-notes.md
+          gh release view v0.3.0 --json body --jq .body > /tmp/release-notes.md
           python3 - <<'PY'
           import os
           from pathlib import Path
@@ -64,6 +64,6 @@ jobs:
                         'Release validation: https://github.com/' + os.environ['GITHUB_REPOSITORY'] + '/actions/runs/' + os.environ['GITHUB_RUN_ID']])
           p.write_text('\n'.join(lines) + '\n')
           PY
-          gh release edit v0.2.8 --target "$GITHUB_SHA" --notes-file /tmp/release-notes.md
-          gh release upload v0.2.8 download/VRAMpage-MD-v0.2.8-macos.zip download/SHA256SUMS.txt --clobber
-          gh release edit v0.2.8 --draft=false --latest
+          gh release edit v0.3.0 --target "$GITHUB_SHA" --notes-file /tmp/release-notes.md
+          gh release upload v0.3.0 download/VRAMpage-MD-v0.3.0-macos.zip download/SHA256SUMS.txt --clobber
+          gh release edit v0.3.0 --draft=false --latest

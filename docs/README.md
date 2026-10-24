@@ -1,10 +1,10 @@
 # VRAMpage MD documentation
 
-VRAMpage MD is a browser-based NTSC Mega Drive/Genesis experiment. It runs a locally selected cartridge through a modified Genesis Plus GX core and explores hardware-*informed* circuit faults. The current VRAM model is **frame-scoped**, not electrically or cycle-accurate.
+VRAMpage MD is a browser-based NTSC Mega Drive/Genesis experiment. It runs a locally selected cartridge through a modified Genesis Plus GX core and explores hardware-*informed* circuit faults. The browser offers **frame projection** and **logical-byte transaction** VRAM models. Neither establishes electrical or cycle accuracy.
 
 ## Start here
 
-**[Download the complete v0.2.8 Mac app](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.8/VRAMpage-MD-v0.2.8-macos.zip)**,
+**[Download the complete v0.3.0 Mac app](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.3.0/VRAMpage-MD-v0.3.0-macos.zip)**,
 extract it and open START.command. See [Run locally](RUNNING-LOCALLY.md) for Python
 and macOS launch help. The work-RAM controls are implemented and experimental;
 older standalone-model descriptions are historical development records.
