@@ -9,6 +9,27 @@ function locate(file) {
   return {locateFile: name => path.join(path.dirname(file), name)};
 }
 
+function validateBootstrapStores(words, z80Length) {
+  const busRegisters = new Set([0x00a11100, 0x00a11200]);
+  for (let index = 0; index < words.length;) {
+    const opcode = words[index];
+    if (opcode === 0x33fc || opcode === 0x13fc) {
+      assert.ok(index + 3 < words.length, 'complete immediate absolute store');
+      const address = words[index + 2] * 0x10000 + words[index + 3];
+      const allowed = busRegisters.has(address) ||
+        (address >= 0x00a00000 && address < 0x00a00000 + z80Length);
+      assert.ok(allowed, `68K bootstrap store targets allowed bus/RAM address, got $${address.toString(16)}`);
+      index += 4;
+      continue;
+    }
+    if (opcode === 0x60fe && index === words.length - 1) {
+      ++index;
+      continue;
+    }
+    assert.fail(`unexpected 68K bootstrap opcode $${opcode.toString(16)} at word ${index}`);
+  }
+}
+
 function z80ToneCartridge() {
   const rom = new Uint8Array(0x10000);
   const view = new DataView(rom.buffer);
@@ -44,7 +65,14 @@ function z80ToneCartridge() {
   words.push(0x60fe); // Keep the 68K alive while the Z80 runs.
 
   // The 68K bootstrap writes only the bus-control registers and Z80 RAM.
-  assert.equal(words.includes(0xc00011), false);
+  // Exercise the validator against an explicit forbidden PSG-port store too.
+  validateBootstrapStores(words, z80.length);
+  const forbiddenPsgStore = words.slice();
+  forbiddenPsgStore[2] = 0xc000;
+  forbiddenPsgStore[3] = 0x0011;
+  assert.throws(() => validateBootstrapStores(forbiddenPsgStore, z80.length),
+    /bootstrap store targets allowed bus\/RAM address/,
+    'the proof rejects a 68K store to the PSG port');
   words.forEach((value, index) => view.setUint16(0x200 + index * 2, value));
   [0x4e72, 0x2700, 0x60fe].forEach((value, index) => view.setUint16(0x300 + index * 2, value));
   return rom;
