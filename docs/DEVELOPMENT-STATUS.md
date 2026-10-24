@@ -37,25 +37,32 @@ passes the unchanged fixed five-pair gate with independent raw-data audit.
 See [both retained records](experiments/vram-runtime-performance-2026-10-24-v2-summary.json).
 These synthetic timings do not establish game-wide performance.
 
-The first bounded PSG input-data bridge is implemented in development source,
-not the immutable v0.3.0 download. It defaults off, reports exact decimal counters,
-handles missing/unavailable APIs, preserves editable pair drafts, and exports its
-own model metadata. Clearing changes future writes; full PSG reset clears the
-configuration/counters, while CPU-only reset does not promise chip repair.
-Native strict/sanitizer, production normal/runtime/normal builds, actual-WASM
-clean-tone equivalence/active change/reset and runtime/normal Chromium checks
-pass. Independent specialist review approved the final patch-drift guards, actual
-WASM behavior and exact counter ABI. The full integrated 103-test suite passes
-with normal LeakSanitizer, fresh WASM and production profile switching; final
-actual-core Chromium and transaction tests pass. Required CI remains the merge
-gate, including packaged audio/controls in Firefox and WebKit; see
-[PR #44](https://github.com/NixMcRetro/VRAMpage-MD/pull/44). Its first CI found
-an isolated diagnostic staging dependency omission. The reviewed manifest fix
-passes focused checks and fresh store-origin/VBlank actual-WASM suites.
+The first PSG input-data bridge is merged in development source through
+[PR #44](https://github.com/NixMcRetro/VRAMpage-MD/pull/44), as
+`c26c19f7272eb16ee711b48d997ecc19fde79e89`.
+[Final PR CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40066559119)
+and [merged-main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40066918601)
+pass all seven checks, including extracted actual-core audio/controls in Firefox
+and WebKit. The immutable public v0.3.0 ZIP is unchanged and does not include PSG.
 
-Keep v0.3.0 as the public milestone. Next audio work is YM2612 and verified Z80
-paths before calling v0.4.0 complete; do not release a partial audio slice under
-that tag. Read the queue before older historical records below.
+PSG defaults off, reports exact unsigned decimal counters, handles unavailable
+APIs, preserves editable pair drafts, and exports separate metadata. Clearing
+changes future writes; full PSG reset clears its configuration/counters, while
+CPU-only reset does not promise chip repair. Independent specialist review,
+normal sanitizers, fresh WASM, normal/runtime/normal builds and actual browser
+checks pass. A diagnostic builder dependency omission was repaired and fresh
+store-origin/VBlank WASM suites pass. Native Firefox was suspended at time zero
+on the headless runner; an explicit 44.1 kHz PulseAudio virtual output resolves
+it with unchanged enable/mute assertions and a stronger advancing-clock check.
+This validates software routing, not audible output or native macOS.
+
+Next bounded work: FM input-data bridge on the shared YM2612/YM3438 write
+boundary and actual Z80-to-PSG route tests. Luna High implementation and
+independent review use separate `experiment/audio-fm-input` and
+`experiment/audio-z80-psg-tests` branches. The original Z80 test checkpoint
+`c8c00d8` passes against existing cores; independent author review and integration
+remain. Do not declare v0.4.0 complete or publish until the full audio acceptance
+criteria pass. Read the work queue before older historical records below.
 
 ## Compact Work RAM interface
 

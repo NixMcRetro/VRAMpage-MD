@@ -22,7 +22,8 @@ Packaged Firefox Web Audio checks provision a PulseAudio virtual output at
 44.1 kHz on the ephemeral Linux runner. A native-context probe found `resume()`
 pending with a suspended context at time zero before this explicit device setup.
 The test retains the enable/mute assertions and requires the genuine context's
-clock to advance; CI must verify the device setup before merge. This checks
+clock to advance. Final PR CI40066559119 and merged-main CI40066918601 pass all
+seven checks, including packaged Firefox/WebKit audio and controls. This checks
 software audio routing, not audible output or native macOS.
 
 Z80-origin PSG traffic, audible
