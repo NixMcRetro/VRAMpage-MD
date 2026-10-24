@@ -408,6 +408,63 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertIn("VRAM AD3↔AD6", self.page.locator("#circuitConfigPreview").inner_text(),
                       "late failure retains the staged configuration for review")
 
+    def test_circuit_config_setter_trap_pauses_and_reports_observed_state(self):
+        self.page.close()
+        self.page = self.new_page(circuit_config=True)
+        self.load_rom()
+        payload = self.circuit_configuration(vram_pair=[2, 7], psg=[0, 5])
+        self.stage_circuit_file(payload)
+        self.page.evaluate("mockCore.throwPsgBridge=true")
+        self.page.locator("#circuitConfigApply").click()
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("PSG setter/runtime error")
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("runtime VRAM model 1")
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("PSG state unavailable")
+        expect(self.page.locator("#pauseBtn")).to_have_text("Resume")
+        self.assertEqual(self.page.evaluate("[mockCore.vramModel.bridgeA,mockCore.vramModel.bridgeB]"), [2, 7])
+        expect(self.page.locator("#circuitConfigApply")).to_be_enabled()
+        self.assertIn("VRAM AD2↔AD7", self.page.locator("#circuitConfigPreview").inner_text())
+        if not self.page.locator("#logicExperiment").evaluate("element => element.open"):
+            self.page.locator("#logicExperiment > summary").click()
+        with self.page.expect_download() as info:
+            self.page.locator("#logicExperimentBtn").click()
+        experiment = json.loads(Path(info.value.path()).read_text())
+        self.assertEqual(experiment["vramTransaction"]["bridgeA"], 2)
+        self.assertEqual(experiment["vramTransaction"]["bridgeB"], 7)
+        self.assertFalse(experiment["psgInputFault"]["available"], "a failed optional getter is exported as unavailable")
+
+    def test_circuit_config_unordered_pairs_do_not_reset_live_counters(self):
+        self.page.close()
+        self.page = self.new_page(circuit_config=True)
+        self.load_rom()
+        self.stage_circuit_file(self.circuit_configuration(vram_pair=[2, 5], psg=[1, 6], fm=[0, 7]))
+        self.page.locator("#circuitConfigApply").click()
+        self.page.evaluate("mockCore.psg.inputWrites='42'; mockCore.fm.inputWrites='27'")
+        calls = self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]")
+        self.stage_circuit_file(self.circuit_configuration(vram_pair=[5, 2], psg=[6, 1], fm=[7, 0]))
+        expect(self.page.locator("#circuitConfigPreview")).to_contain_text("VRAM AD2↔AD5")
+        self.page.locator("#circuitConfigApply").click()
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("already matches")
+        self.assertEqual(self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]"), calls)
+        self.assertEqual(self.page.evaluate("[mockCore.psg.inputWrites,mockCore.fm.inputWrites]"), ["42", "27"])
+
+    def test_circuit_config_reversed_ram_pair_does_not_reset_fault_or_counters(self):
+        self.page.close()
+        self.page = self.new_page(circuit_config=True)
+        self.load_rom()
+        self.page.locator("#pauseBtn").click()
+        active = self.circuit_configuration(ram={"type":"line-pair","kind":1,"access":3,"a":1,"b":0})
+        self.stage_circuit_file(active)
+        self.page.locator("#circuitConfigApply").click()
+        self.assertTrue(self.page.evaluate("mockCore.logic.active"))
+        self.page.evaluate("mockCore.logic.reads=17; mockCore.logic.writes=9")
+        calls = self.page.evaluate("mockCore.logic.setterCalls.length")
+        reversed_pair = self.circuit_configuration(ram={"type":"line-pair","kind":1,"access":3,"a":0,"b":1})
+        self.stage_circuit_file(reversed_pair)
+        self.page.locator("#circuitConfigApply").click()
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("already matches")
+        self.assertEqual(self.page.evaluate("mockCore.logic.setterCalls.length"), calls)
+        self.assertEqual(self.page.evaluate("[mockCore.logic.active,mockCore.logic.reads,mockCore.logic.writes]"), [True,17,9])
+
     def test_circuit_config_saves_applied_ram_not_unapplied_selector_draft(self):
         self.page.close()
         self.page = self.new_page(circuit_config=True)

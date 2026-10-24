@@ -24,6 +24,21 @@ linePair.configuration.vram = {modelId: 1, mask: 0, pair: null};
 linePair.configuration.ram = {type: 'line-pair', kind: 2, access: 1, a: 1, b: 7};
 assert.deepEqual(validate(linePair).configuration.ram, linePair.configuration.ram);
 
+const reversedPairs = structuredClone(valid);
+reversedPairs.configuration.vram = {modelId: 1, mask: 0, pair: [5, 2]};
+reversedPairs.configuration.psg = [7, 0];
+reversedPairs.configuration.fm = [6, 1];
+assert.deepEqual(validate(reversedPairs).configuration, {
+  vram: {modelId: 1, mask: 0, pair: [2, 5]},
+  ram: null,
+  psg: [0, 7], fm: [1, 6]
+});
+
+const reversedRam = structuredClone(linePair);
+reversedRam.configuration.ram = {type: 'line-pair', kind: 2, access: 3, a: 7, b: 1};
+assert.deepEqual(validate(reversedRam).configuration.ram,
+  {type: 'line-pair', kind: 2, access: 3, a: 1, b: 7});
+
 const invalid = [];
 invalid.push({...valid, extra: true});
 invalid.push({...valid, schemaVersion: 2});

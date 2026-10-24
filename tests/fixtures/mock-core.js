@@ -133,13 +133,20 @@ window.Module = async () => {
     Object.assign(core, {
       _set_psg_data_bridge(enabled,a,b) {
         psg.calls.push([enabled,a,b]);
+        if (window.mockCore.throwPsgBridge) {
+          window.mockCore.throwPsgState=true;
+          throw new Error('synthetic PSG setter trap');
+        }
         if (window.mockCore.rejectPsgBridge) return 1;
         if (enabled && (!psg.supported || a<0 || b<0 || a>7 || b>7 || a===b)) return 2;
         Object.assign(psg,{configured:!!enabled,bridgeA:enabled?a:-1,bridgeB:enabled?b:-1,
           inputWrites:'0',changedWrites:'0'});
         return 0;
       },
-      _get_psg_data_bridge_state:()=>({...psg,modelVersion:'psg-data-bridge-test-v1'})
+      _get_psg_data_bridge_state:()=>{
+        if(window.mockCore.throwPsgState) throw new Error('synthetic PSG state trap');
+        return {...psg,modelVersion:'psg-data-bridge-test-v1'};
+      }
     });
   }
   if (window.__circuitConfigCore && !window.__legacyFmDataCore) {
