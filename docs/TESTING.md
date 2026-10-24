@@ -944,3 +944,10 @@ including reversed live audio connections, and pause/status after rejected or
 throwing core calls. `tests/browser_core.py` exercises the actual runtime with an
 original cartridge through VRAM/audio apply, RAM handoff and configuration/export
 round-trips. These files contain settings only, without ROM or memory contents.
+
+Configuration integration checkpoint: full 107-test Python suite with fresh
+WebAssembly profiles and normal native sanitizer checks passes, followed by all
+JavaScript/schema and native smoke checks. Chromium browser logic passes 40/40;
+compiled runtime/normal-core browser checks pass 4/4. Deferred File.text tests
+cover latest-selection precedence, Apply refusal during reads, cancellation and
+invalid replacement. No core code or compiler flags changed from v0.4.0.

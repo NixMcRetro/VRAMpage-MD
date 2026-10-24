@@ -32,7 +32,11 @@ must preflight capabilities and preserve counter state for unchanged settings.
 Thrown-setter pause, unavailable-state reporting and undirected-pair
 normalization are implemented, including reversed live audio selections.
 Actual-runtime configuration staging, RAM/VRAM handoff and export tests pass;
-final review and full integration checks remain pending. No new public release is
+independent specialist review and the full 107-test native/SDK regression
+suite pass. Browser logic passes 40 tests; actual runtime and normal-core
+configuration, audio and control tests pass all four cases. Async selection
+tokens prevent stale reads or canceled files from replacing the preview.
+GitHub checks remain the merge gate; no new public release is planned. No new public release is
 planned for this development slice. Read the work queue before older checkpoints.
 
 Transaction VRAM v0.3.0 is merged and publicly verified. [PR #43](https://github.com/NixMcRetro/VRAMpage-MD/pull/43)
