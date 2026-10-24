@@ -1030,7 +1030,7 @@
     if (!available) return target!==null;
     if (!state) return true;
     if (!target) return !!state.configured;
-    return !state.configured || state.bridgeA!==target[0] || state.bridgeB!==target[1];
+    return !state.configured || !samePair(canonical([state.bridgeA,state.bridgeB]),canonical(target));
   }
 
   function preflightCircuitConfiguration(config) {
