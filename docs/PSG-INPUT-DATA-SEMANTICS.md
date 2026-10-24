@@ -31,3 +31,20 @@ Original synthetic cartridges exercise both the 68000 PSG route and Z80
 verifies simultaneous FM/PSG counters and repeated fresh-core output for both
 FM backends. These are software route tests, not commercial-game or physical
 hardware evidence.
+
+## Development line-disconnect extension
+
+After the public v0.4.0 release, the optional runtime adds an 8-bit data mask
+at this same write-input boundary. Each selected bit is forced low. The mask
+and bridge pair are alternatives: selecting either clears the other. A zero
+mask disconnects the fault. Full-reset and counter semantics remain as above.
+The state reports `dataMask`, and the extended model uses its v2 identifier.
+Legacy bridge-only runtimes remain usable but cannot offer line cuts. These
+controls model deterministic stuck-low inputs, not electrically floating pins.
+
+The safe JavaScript setter is `_set_psg_data_mask(mask)`. It accepts only a
+JavaScript number that is an integer from 0 through 255. Invalid arguments
+return 1; an enabled mask on an unsupported profile returns 2. Rejected calls
+leave the configuration and counters unchanged. Zero clears the fault, even
+on an unsupported profile. The existing bridge setter clears the mask when
+changing the pair. New experiment audio subsections use schemaVersion 2.

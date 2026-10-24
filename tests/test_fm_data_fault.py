@@ -31,6 +31,13 @@ class FmDataFaultHelper(unittest.TestCase):
                     '}\n' + PATCH_CORE.FM_RESET_BEFORE + '\n  fm_reset(0);\n}\n')
         patched = PATCH_CORE.patch_fm_data_fault(pristine)
         self.assertEqual(PATCH_CORE.patch_fm_data_fault(patched), patched)
+        previous = patched.replace('input bridge v2', 'input bridge v1')
+        migrated = PATCH_CORE.patch_fm_data_fault(previous)
+        self.assertEqual(migrated, patched, 'exact V1 bridge layout upgrades to V2')
+        partial_previous = previous.replace('fm_data_fault_runtime_reset();',
+                                             'fm_data_fault_reset();', 1)
+        with self.assertRaises(SystemExit):
+            PATCH_CORE.patch_fm_data_fault(partial_previous)
         self.assertEqual(sum(patched.count(f'FM_WRITE_HANDLER({name});')
                              for name in PATCH_CORE.FM_HANDLERS), 4)
         self.assertEqual(patched.count('fm_data_fault_runtime_apply((int)data)'), 1)
@@ -39,7 +46,7 @@ class FmDataFaultHelper(unittest.TestCase):
         self.assertIn('fm_write_native(cycles, address,', patched,
                       'wrapper preserves cycle and port arguments at the shared boundary')
         mutations = (
-            patched.replace('input bridge v1', 'input bridge v0', 1),
+            patched.replace('input bridge v2', 'input bridge v0', 1),
             patched.replace('fm_data_fault_runtime_reset();', 'fm_data_fault_reset();', 1),
             patched.replace('fm_data_fault_runtime_apply((int)data)', 'fm_data_fault_apply((int)data)', 1),
             patched + '\n#if defined(VRAM_TX_RUNTIME)\n#include "fm_data_fault.h"\n#endif\n',

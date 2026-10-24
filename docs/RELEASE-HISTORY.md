@@ -1,10 +1,13 @@
 # VRAMpage MD releases and source history
 
-**[Download the current ready-to-run Mac package: v0.4.0](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.0/VRAMpage-MD-v0.4.0-macos.zip)**
+The v0.4.1 links are staged for publication after final checks. Until then,
+use the [verified v0.4.0 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.0/VRAMpage-MD-v0.4.0-macos.zip).
+
+**[Download the current ready-to-run Mac package: v0.4.1](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip)**
 
 For ordinary use, download the complete ZIP, extract it, open **START.command** and load your own legally usable cartridge. Python 3 is required; you do not need Git or WebAssembly build tools. See [Mac launch help](RUNNING-LOCALLY.md).
 
-**Current version:** v0.4.0 adds independent FM/PSG write-input bridges and audio experiment metadata.
+**Current version:** v0.4.1 adds the compact four-chip workbench, audio line cuts and saved configurations.
 
 There are **two kinds of GitHub release** here. The complete Mac downloads include the compiled emulator; older *source-history milestones* do not. GitHub's automatically generated **Source code (zip)** is not a playable Mac application.
 
@@ -12,7 +15,8 @@ There are **two kinds of GitHub release** here. The complete Mac downloads inclu
 
 | Version | What changed | Download |
 | --- | --- | --- |
-| **[v0.4.0](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.4.0)** (current) | FM/PSG write-input bridges and verified Z80 routes | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.0/VRAMpage-MD-v0.4.0-macos.zip) |
+| **[v0.4.1](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.4.1)** (current) | Compact chip controls, audio line masks and saved configurations | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip) |
+| **[v0.4.0](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.4.0)** | FM/PSG write-input bridges and verified Z80 routes | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.0/VRAMpage-MD-v0.4.0-macos.zip) |
 | **[v0.3.0](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.3.0)** | Transaction-level VRAM controls and exports | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.3.0/VRAMpage-MD-v0.3.0-macos.zip) |
 | **[v0.2.8](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.8)** | Compact work-RAM chip layout | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.8/VRAMpage-MD-v0.2.8-macos.zip) |
 | **[v0.2.7](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.7)** | Optional first affected RAM write diagnostics | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.7/VRAMpage-MD-v0.2.7-macos.zip) |
@@ -20,7 +24,7 @@ There are **two kinds of GitHub release** here. The complete Mac downloads inclu
 | [v0.2.5](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.5) | Independent VRAM leg switches | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.5/VRAMpage-MD-v0.2.5-macos.zip) |
 | [v0.2.4](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.4) | Consolidated workbench, RAM controls and core display fixes | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.4/VRAMpage-MD-v0.2.4-macos.zip) |
 
-Each runnable release has its own `SHA256SUMS.txt`, release-specific source commit, original compiled core and corresponding modified emulator source. Previous packages remain available for reproducibility; use v0.4.0 for new installations.
+Each runnable release has its own `SHA256SUMS.txt`, release-specific source commit, original compiled core and corresponding modified emulator source. Previous packages remain available for reproducibility; use v0.4.1 for new installations.
 
 ## Earlier milestones: source history only
 

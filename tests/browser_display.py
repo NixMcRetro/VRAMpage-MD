@@ -9,6 +9,8 @@ from pathlib import Path
 import threading
 import unittest
 
+from browser_result import AnnotatedBrowserResult
+
 from playwright.sync_api import sync_playwright, expect
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -68,19 +70,25 @@ class BrowserDisplayTests(unittest.TestCase):
         return self.page.evaluate('''() => {
           const rect = s => { const r = document.querySelector(s).getBoundingClientRect();
             return {width:r.width, height:r.height, top:r.top, bottom:r.bottom}; };
-          return {frame:rect('#displayViewport'), canvas:rect('#screen'),
+          return {scrollWidth:document.documentElement.scrollWidth,frame:rect('#displayViewport'), canvas:rect('#screen'),
             section:rect('.screen-section'), toolbar:rect('.toolbar'),
             availableWidth:document.querySelector('.screen-well').clientWidth -
               parseFloat(getComputedStyle(document.querySelector('.screen-well')).paddingLeft) -
               parseFloat(getComputedStyle(document.querySelector('.screen-well')).paddingRight),
             buffer:[document.getElementById('screen').width, document.getElementById('screen').height],
-            overflow:document.documentElement.scrollWidth > innerWidth};
+            overflow:document.documentElement.scrollWidth > innerWidth,
+            viewport:[innerWidth,innerHeight],
+            overflowNodes:document.documentElement.scrollWidth > innerWidth
+              ? [...document.querySelectorAll('body *')].map(el=>({
+                  tag:el.tagName,id:el.id,classes:el.className,
+                  right:el.getBoundingClientRect().right,width:el.getBoundingClientRect().width
+                })).filter(el=>el.right>innerWidth).slice(0,20) : []};
         }''')
 
     def assert_native(self, geometry):
         self.assertEqual(geometry['buffer'], [320, 224])
         self.assertAlmostEqual(geometry['canvas']['width'] / geometry['canvas']['height'], 10 / 7, delta=0.002)
-        self.assertFalse(geometry['overflow'], 'Horizontal page overflow')
+        self.assertFalse(geometry['overflow'], f'Horizontal page overflow: {geometry}')
 
     def screenshot(self, name):
         if OPTIONS.artifacts:
@@ -164,7 +172,7 @@ class BrowserDisplayTests(unittest.TestCase):
 
     def test_patchbay_keyboard_mouse_and_clean_restart(self):
         self.page.locator('#vramMode').select_option('bridge')
-        pins = self.page.locator('.pin')
+        pins = self.page.locator('#pinGrid .pin')
         pins.nth(0).focus()
         self.page.keyboard.press('Enter')
         expect(pins.nth(0)).to_have_class('pin selected')
@@ -216,4 +224,5 @@ if __name__ == '__main__':
     parser.add_argument('--executable', help='Optional local browser executable (e.g. /usr/bin/chromium)')
     parser.add_argument('--artifacts', type=Path, help='Screenshot directory outside the source tree')
     OPTIONS, remaining = parser.parse_known_args()
-    unittest.main(argv=[__file__, *remaining], verbosity=2)
+    unittest.main(argv=[__file__, *remaining], verbosity=2,
+                  testRunner=unittest.TextTestRunner(verbosity=2, resultclass=AnnotatedBrowserResult))

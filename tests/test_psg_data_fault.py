@@ -36,8 +36,15 @@ class PsgDataFaultHelper(unittest.TestCase):
         )
         patched = PATCH_CORE.patch_psg_input_fault(pristine)
         self.assertEqual(PATCH_CORE.patch_psg_input_fault(patched), patched)
+        previous = patched.replace('input bridge v2', 'input bridge v1')
+        migrated = PATCH_CORE.patch_psg_input_fault(previous)
+        self.assertEqual(migrated, patched, 'exact V1 bridge layout upgrades to V2')
+        partial_previous = previous.replace('psg_data_fault_runtime_reset();',
+                                             'psg_data_fault_reset();', 1)
+        with self.assertRaises(SystemExit):
+            PATCH_CORE.patch_psg_input_fault(partial_previous)
         mutations = (
-            patched.replace('input bridge v1', 'input bridge v0', 1),
+            patched.replace('input bridge v2', 'input bridge v0', 1),
             patched.replace('psg_data_fault_runtime_reset();', 'psg_data_fault_reset();', 1),
             patched.replace('psg_data_fault_runtime_apply((int)data)', 'psg_data_fault_apply((int)data)', 1),
             patched + '\n#if defined(VRAM_TX_RUNTIME)\n#include "psg_data_fault.h"\n#endif\n',

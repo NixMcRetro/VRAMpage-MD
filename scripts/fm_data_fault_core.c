@@ -3,7 +3,7 @@
 #include <math.h>
 #include <string.h>
 
-static fm_data_fault_state fm_state = {0, -1, -1, 0, 0};
+static fm_data_fault_state fm_state = {0, -1, -1, 0, 0, 0};
 
 static void fm_increment_saturated(uint64_t *value)
 {
@@ -21,6 +21,7 @@ void fm_data_fault_reset(void)
     fm_state.enabled = 0;
     fm_state.bridge_a = -1;
     fm_state.bridge_b = -1;
+    fm_state.data_mask = 0;
     fm_state.input_writes = 0;
     fm_state.changed_writes = 0;
 }
@@ -54,6 +55,26 @@ int fm_data_fault_configure(double enabled, double bridge_a, double bridge_b,
     fm_state.enabled = next_enabled;
     fm_state.bridge_a = next_enabled ? next_a : -1;
     fm_state.bridge_b = next_enabled ? next_b : -1;
+    fm_state.data_mask = 0;
+    fm_state.input_writes = 0;
+    fm_state.changed_writes = 0;
+    return FM_DATA_FAULT_OK;
+}
+
+int fm_data_fault_configure_mask(double data_mask, int supported)
+{
+    unsigned int next_mask;
+
+    if (!fm_exact_integer(data_mask) || data_mask < 0.0 || data_mask > 255.0)
+        return FM_DATA_FAULT_INVALID;
+    next_mask = (unsigned int)data_mask;
+    if (next_mask && !supported)
+        return FM_DATA_FAULT_UNSUPPORTED;
+
+    fm_state.enabled = next_mask != 0;
+    fm_state.bridge_a = -1;
+    fm_state.bridge_b = -1;
+    fm_state.data_mask = next_mask;
     fm_state.input_writes = 0;
     fm_state.changed_writes = 0;
     return FM_DATA_FAULT_OK;
@@ -67,8 +88,13 @@ uint8_t fm_data_fault_apply(uint8_t data, int supported)
         return data;
 
     fm_increment_saturated(&fm_state.input_writes);
-    mask = (uint8_t)((1u << fm_state.bridge_a) | (1u << fm_state.bridge_b));
-    result = (data & mask) == mask ? data : (uint8_t)(data & (uint8_t)~mask);
+    if (fm_state.data_mask) {
+        mask = (uint8_t)fm_state.data_mask;
+        result = (uint8_t)(data & (uint8_t)~mask);
+    } else {
+        mask = (uint8_t)((1u << fm_state.bridge_a) | (1u << fm_state.bridge_b));
+        result = (data & mask) == mask ? data : (uint8_t)(data & (uint8_t)~mask);
+    }
     if (result != data)
         fm_increment_saturated(&fm_state.changed_writes);
     return result;

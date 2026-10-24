@@ -8,6 +8,8 @@ from pathlib import Path
 import threading
 import unittest
 
+from browser_result import AnnotatedBrowserResult
+
 from playwright.sync_api import expect, sync_playwright
 
 
@@ -52,7 +54,7 @@ class BrowserLogicTests(unittest.TestCase):
             context.close()
         self.assertEqual(self.errors, [], "Uncaught application errors")
 
-    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False):
+    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False):
         context = self.browser.new_context(
             viewport={"width": 1366, "height": 768},
             color_scheme="light",
@@ -67,6 +69,10 @@ class BrowserLogicTests(unittest.TestCase):
             page.add_init_script("window.__legacyPsgDataCore = true;")
         if legacy_fm_data:
             page.add_init_script("window.__legacyFmDataCore = true;")
+        if legacy_psg_mask:
+            page.add_init_script("window.__legacyPsgMaskCore = true;")
+        if legacy_fm_mask:
+            page.add_init_script("window.__legacyFmMaskCore = true;")
         if legacy_vram_chip:
             page.add_init_script("window.__legacyVramChipCore = true;")
         if legacy_chip:
@@ -188,6 +194,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.locator("#logicAccess").select_option("3")
         self.page.locator("#logicApplyBtn").click()
         expect(self.page.locator("#logicStatus")).to_have_text("Applied data D0 ↔ D7 on read + write.")
+        expect(self.page.locator("#ramChipState")).to_contain_text("Data bridge D0 ↔ D7 active")
         self.assertEqual(
             self.page.evaluate("window.mockCore.logic.setterCalls.at(-1)"), [2, 3, 0, 7])
         active = self.page.evaluate("({ ...window.mockCore.logic.config })")
@@ -246,7 +253,7 @@ class BrowserLogicTests(unittest.TestCase):
         expect(self.page.locator("#logicStatus")).to_contain_text("Applied address")
 
         self.page.locator("#vramMode").select_option("bridge")
-        pins = self.page.locator(".pin")
+        pins = self.page.locator("#pinGrid .pin")
         pins.nth(0).click()
         pins.nth(1).click()
         expect(self.page.locator("#connectionLabel")).to_have_text("AD0 ↔ AD1")
@@ -283,15 +290,16 @@ class BrowserLogicTests(unittest.TestCase):
         return json.loads(Path(info.value.path()).read_text())
 
     @staticmethod
-    def circuit_configuration(vram_pair=None, vram_mask=0, model_id=1, ram=None, psg=None, fm=None):
+    def circuit_configuration(vram_pair=None, vram_mask=0, model_id=1, ram=None, psg=None, fm=None, psg_mask=0, fm_mask=0):
+        audio = lambda pair, mask: {"pair": pair, "dataMask": mask}
         return {
             "format": "vrampage-md-circuit-config",
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "configuration": {
                 "vram": {"modelId": model_id, "mask": vram_mask, "pair": vram_pair},
                 "ram": ram,
-                "psg": psg,
-                "fm": fm,
+                "psg": audio(psg, psg_mask),
+                "fm": audio(fm, fm_mask),
             },
         }
 
@@ -301,6 +309,12 @@ class BrowserLogicTests(unittest.TestCase):
         page.locator("#circuitConfigFile").set_input_files({
             "name": "circuit-config.json", "mimeType": "application/json", "buffer": raw.encode()
         })
+
+    def open_vram_settings(self, page=None):
+        page = page or self.page
+        details = page.locator("#vramSettings")
+        if not details.evaluate("element => element.open"):
+            details.locator("summary").click()
 
     @staticmethod
     def defer_circuit_file_reads(page):
@@ -367,6 +381,119 @@ class BrowserLogicTests(unittest.TestCase):
                          "applying an identical configuration skips selectors and preserves counters")
         self.assertEqual(self.page.evaluate("mockCore.psg.inputWrites"), "42")
         self.assertEqual(self.page.evaluate("mockCore.fm.inputWrites"), "27")
+
+    def test_chip_workbench_shows_four_compact_chips_at_mac_viewport(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        # The shared logic fixture opens diagnostics below the chip workbench.
+        self.page.evaluate('window.scrollTo(0,0)')
+        self.page.wait_for_function('window.scrollY === 0')
+        bodies=self.page.evaluate("""() => ['#pinGrid .chip-middle','#ramChip .ram-chip-body',
+          '#fmChip .chip-middle','#psgChip .chip-middle'].map(selector=>{
+            const r=document.querySelector(selector).getBoundingClientRect();
+            return {selector,top:r.top,bottom:r.bottom,width:r.width,height:r.height};
+          })""")
+        self.assertEqual(len(bodies),4)
+        for body in bodies:
+            self.assertGreater(body['width'],50,body)
+            self.assertGreater(body['height'],20,body)
+            self.assertGreaterEqual(body['top'],0,body)
+            self.assertLessEqual(body['bottom'],768,body)
+        for selector in ('#ramChip [data-chip-line]','#pinGrid .pin','#fmChip .pin','#psgChip .pin'):
+            self.assertGreaterEqual(self.page.locator(selector).first.evaluate('el=>el.getBoundingClientRect().height'),24)
+
+    def test_audio_chip_inputs_are_independent_and_masks_replace_pairs(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        self.page.locator('#psgChip .pin').nth(0).click()
+        self.page.locator('#fmChip .pin').nth(1).click()
+        self.assertEqual(self.page.evaluate('[mockCore.psg.configured,mockCore.fm.configured]'),[False,False],
+                         'a first selection stays local to its chip')
+        self.page.locator('#psgChip .pin').nth(7).click()
+        self.assertEqual(self.page.evaluate('[mockCore.psg.bridgeA,mockCore.psg.bridgeB]'),[0,7])
+        self.assertFalse(self.page.evaluate('mockCore.fm.configured'))
+        self.page.locator('#fmChip .pin').nth(6).click()
+        self.assertEqual(self.page.evaluate('[mockCore.fm.bridgeA,mockCore.fm.bridgeB]'),[1,6])
+
+        self.page.locator('#psgLegMode').select_option('ground')
+        self.page.locator('#psgChip .pin').nth(0).click()
+        self.page.locator('#psgChip .pin').nth(7).click()
+        self.assertEqual(self.page.evaluate('[mockCore.psg.configured,mockCore.psg.bridgeA,mockCore.psg.dataMask]'),[True,-1,129])
+        self.assertTrue(self.page.evaluate('mockCore.fm.configured'))
+        self.page.locator('#fmLegMode').select_option('ground')
+        self.page.locator('#fmChip .pin').nth(3).click()
+        self.assertEqual(self.page.evaluate('[mockCore.fm.bridgeA,mockCore.fm.dataMask]'),[-1,8])
+        self.assertEqual(self.page.evaluate('mockCore.psg.dataMask'),129)
+
+        self.page.evaluate("mockCore.psg.inputWrites='91';mockCore.fm.inputWrites='37'")
+        calls=self.page.evaluate('[mockCore.vramModel.calls.length,mockCore.logic.setterCalls.length,mockCore.psg.calls.length,mockCore.fm.calls.length,mockCore.psg.maskCalls.length,mockCore.fm.maskCalls.length]')
+        with self.page.expect_download() as info:
+            self.page.locator('#circuitConfigDownload').click()
+        saved=json.loads(Path(info.value.path()).read_text())
+        self.assertEqual(saved['schemaVersion'],2)
+        self.assertEqual(saved['configuration']['psg'],{'pair':None,'dataMask':129})
+        self.assertEqual(saved['configuration']['fm'],{'pair':None,'dataMask':8})
+        experiment=self.export_payload()
+        self.assertEqual(experiment['psgInputFault']['dataMask'],129)
+        self.assertEqual(experiment['fmInputFault']['dataMask'],8)
+        self.assertEqual(self.page.evaluate('[mockCore.psg.configured,mockCore.psg.bridgeA,mockCore.psg.bridgeB,mockCore.psg.dataMask,mockCore.fm.configured,mockCore.fm.bridgeA,mockCore.fm.bridgeB,mockCore.fm.dataMask]'),
+                         [True,-1,-1,129,True,-1,-1,8])
+        self.stage_circuit_file(saved)
+        self.page.locator('#circuitConfigApply').click()
+        self.assertEqual(self.page.evaluate('[mockCore.vramModel.calls.length,mockCore.logic.setterCalls.length,mockCore.psg.calls.length,mockCore.fm.calls.length,mockCore.psg.maskCalls.length,mockCore.fm.maskCalls.length]'),
+                         calls, 'identical config should not invoke any setter')
+        expect(self.page.locator('#circuitConfigStatus')).to_contain_text('already matches')
+        self.assertEqual(self.page.evaluate('[mockCore.vramModel.calls.length,mockCore.logic.setterCalls.length,mockCore.psg.calls.length,mockCore.fm.calls.length,mockCore.psg.maskCalls.length,mockCore.fm.maskCalls.length]'),calls)
+        self.assertEqual(self.page.evaluate('[mockCore.psg.inputWrites,mockCore.fm.inputWrites]'),['91','37'])
+
+    def test_pair_selections_stay_local_to_each_chip(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        self.page.locator('#ramLegAction').select_option('bridge')
+        self.page.locator('#ramChip [data-chip-line]').nth(0).click()
+        self.page.locator('#psgChip .pin').nth(0).click()
+        self.page.locator('#fmChip .pin').nth(2).click()
+        self.assertEqual(self.page.evaluate('[mockCore.logic.active,mockCore.psg.configured,mockCore.fm.configured]'),
+                         [False,False,False], 'one leg on each bank is only a local pending selection')
+        self.page.locator('#ramChip [data-chip-line]').nth(2).click()
+        self.assertEqual(self.page.evaluate('[mockCore.logic.config.kind,mockCore.logic.config.a,mockCore.logic.config.b]'),[1,0,2])
+        self.assertEqual(self.page.evaluate('[mockCore.psg.configured,mockCore.fm.configured]'),[False,False])
+        self.page.locator('#psgChip .pin').nth(7).click()
+        self.page.locator('#fmChip .pin').nth(6).click()
+        self.assertEqual(self.page.evaluate('[mockCore.psg.bridgeA,mockCore.psg.bridgeB,mockCore.fm.bridgeA,mockCore.fm.bridgeB]'),
+                         [0,7,2,6])
+        self.assertEqual(self.page.evaluate('[mockCore.logic.config.a,mockCore.logic.config.b]'),[0,2])
+
+    def test_audio_mask_unavailable_keeps_pair_bridge_mode_available(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True,legacy_psg_mask=True)
+        self.load_rom()
+        self.assertTrue(self.page.locator('#psgLegMode option[data-audio-mask]').evaluate('e=>e.disabled'))
+        expect(self.page.locator('#psgChip .pin').first).to_be_enabled()
+        self.page.locator('#psgChip .pin').nth(0).click()
+        self.page.locator('#psgChip .pin').nth(7).click()
+        self.assertEqual(self.page.evaluate('[mockCore.psg.bridgeA,mockCore.psg.bridgeB]'),[0,7])
+        self.assertEqual(self.page.locator('#psgLegMode').input_value(),'bridge')
+
+    def test_circuit_config_imports_v1_pairs_and_preflights_mask_capability(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True,legacy_psg_mask=True)
+        self.load_rom()
+        old={"format":"vrampage-md-circuit-config","schemaVersion":1,"configuration":{
+            "vram":{"modelId":1,"mask":0,"pair":None},"ram":None,"psg":[0,7],"fm":None}}
+        self.stage_circuit_file(old)
+        self.page.locator('#circuitConfigApply').click()
+        self.assertEqual(self.page.evaluate('[mockCore.psg.bridgeA,mockCore.psg.bridgeB]'),[0,7])
+        requested=self.circuit_configuration(vram_pair=[1,5],psg_mask=128)
+        before=self.page.evaluate('[mockCore.vramModel.calls.length,mockCore.psg.calls.length]')
+        self.stage_circuit_file(requested)
+        self.page.locator('#circuitConfigApply').click()
+        expect(self.page.locator('#circuitConfigStatus')).to_contain_text('does not support the requested PSG input cuts')
+        self.assertEqual(self.page.evaluate('[mockCore.vramModel.calls.length,mockCore.psg.calls.length]'),before,
+                         'missing mask capability is rejected before VRAM or PSG mutation')
 
     def test_circuit_config_rejects_invalid_unsupported_and_pulse_before_mutation(self):
         self.page.close()
@@ -475,8 +602,8 @@ class BrowserLogicTests(unittest.TestCase):
         with self.page.expect_download() as info:
             self.page.locator("#circuitConfigDownload").click()
         saved = json.loads(Path(info.value.path()).read_text())
-        self.assertEqual(saved["configuration"]["psg"], [0, 7])
-        self.assertEqual(saved["configuration"]["fm"], [1, 6])
+        self.assertEqual(saved["configuration"]["psg"], {"pair":[0,7],"dataMask":0})
+        self.assertEqual(saved["configuration"]["fm"], {"pair":[1,6],"dataMask":0})
         self.stage_circuit_file(saved)
         self.page.locator("#circuitConfigApply").click()
         expect(self.page.locator("#circuitConfigStatus")).to_contain_text("already matches")
@@ -750,7 +877,7 @@ class BrowserLogicTests(unittest.TestCase):
         expect(page.locator("#logicStatus")).to_contain_text("Forced resume attempted")
 
     def test_vram_legs_mouse_keyboard_crosses_and_export(self):
-        legs=self.page.locator('.pin')
+        legs=self.page.locator('#pinGrid .pin')
         expect(legs.first).to_be_disabled()
         self.load_rom()
         expect(self.page.locator('#vramMode')).to_have_value('disconnect')
@@ -770,6 +897,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertEqual(payload['vramFault'],{'kind':'address-stuck-low','addressMask':128,'lines':['AD7'],'bridge':None})
         self.assertEqual([e['mask'] for e in payload['vramAddressLineChanges']],[1,129,128])
         self.assertTrue(all(isinstance(e['reason'],str) for e in payload['vramAddressLineChanges']))
+        self.open_vram_settings()
         self.page.locator('#disconnectBtn').click()
         self.assertEqual(self.page.evaluate('mockCore.vramAddressMask'),0)
         self.assertEqual(self.export_payload()['vramAddressLineChanges'][-1]['mask'],0)
@@ -786,7 +914,7 @@ class BrowserLogicTests(unittest.TestCase):
 
     def test_vram_masks_bridges_ram_pulses_and_recovery_replace(self):
         self.load_rom()
-        legs=self.page.locator('.pin')
+        legs=self.page.locator('#pinGrid .pin')
         legs.nth(1).click()
         self.page.locator('#vramMode').select_option('bridge')
         self.assertEqual(self.page.evaluate('mockCore.vramAddressMask'),2,'Mode changes alone do not apply a fault')
@@ -795,7 +923,7 @@ class BrowserLogicTests(unittest.TestCase):
         legs.nth(3).click()
         self.assertEqual(self.page.evaluate('mockCore.vramAddressMask'),0)
         self.assertEqual(self.page.evaluate('mockCore.short'),[0,3])
-        expect(self.page.locator('.pin.cut')).to_have_count(0)
+        expect(self.page.locator('#pinGrid .pin.cut')).to_have_count(0)
         self.page.locator('#vramMode').select_option('disconnect')
         legs.nth(4).click()
         self.assertEqual(self.page.evaluate('mockCore.short'),[-1,-1])
@@ -822,9 +950,10 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.locator('#logicCpuResetBtn').click()
         self.assertEqual(self.page.evaluate('mockCore.vramAddressMask'),0)
         legs.nth(2).click()
+        self.open_vram_settings()
         self.page.locator('.preset').first.click()
         self.assertEqual(self.page.evaluate('mockCore.vramAddressMask'),0)
-        expect(self.page.locator('.pin.connected')).to_have_count(2)
+        expect(self.page.locator('#pinGrid .pin.connected')).to_have_count(2)
         legs.nth(7).click()
         # Remove focus from the button before global shortcuts.
         self.page.locator('#screen').click()
@@ -838,21 +967,21 @@ class BrowserLogicTests(unittest.TestCase):
 
     def test_vram_mask_rejection_and_failed_ram_disconnect(self):
         self.load_rom()
-        self.page.locator('.pin').first.click()
+        self.page.locator('#pinGrid .pin').first.click()
         self.page.evaluate('mockCore.rejectVramMask=true')
-        self.page.locator('.pin').nth(1).click()
+        self.page.locator('#pinGrid .pin').nth(1).click()
         self.assertEqual(self.page.evaluate('mockCore.vramAddressMask'),1)
-        expect(self.page.locator('.pin').nth(1)).to_have_attribute('aria-pressed','false')
+        expect(self.page.locator('#pinGrid .pin').nth(1)).to_have_attribute('aria-pressed','false')
         self.page.evaluate('mockCore.rejectVramMask=false')
         self.page.locator('#logicApplyBtn').click()
         self.page.locator('#pauseBtn').click()
         self.page.locator('#logicPulseFrames').select_option('8')
         self.page.locator('#logicPulseBtn').click()
         self.page.evaluate('mockCore.rejectLogicClear=true')
-        self.page.locator('.pin').nth(3).click()
+        self.page.locator('#pinGrid .pin').nth(3).click()
         self.assertEqual(self.page.evaluate('mockCore.vramAddressMask'),0)
         self.assertTrue(self.page.evaluate('mockCore.logic.active'))
-        expect(self.page.locator('.pin.cut')).to_have_count(0)
+        expect(self.page.locator('#pinGrid .pin.cut')).to_have_count(0)
         self.assertEqual(self.export_payload()['faultPulses'][-1]['status'],'active',
                          'Failed takeover must preserve the armed pulse timer')
         self.page.locator('#logicResumeBtn').click()
@@ -868,12 +997,13 @@ class BrowserLogicTests(unittest.TestCase):
         expect(page.locator('#vramMode')).to_have_value('bridge')
         self.assertTrue(page.locator('#vramMode option[value="disconnect"]').evaluate('e=>e.disabled'))
         expect(page.locator('#vramModeHint')).to_contain_text('older core')
-        page.locator('.pin').nth(0).click()
-        page.locator('.pin').nth(1).click()
-        expect(page.locator('.pin.connected')).to_have_count(2)
-        expect(page.locator('.pin .chip-cut').first).to_have_css('visibility','hidden')
+        page.locator('#pinGrid .pin').nth(0).click()
+        page.locator('#pinGrid .pin').nth(1).click()
+        expect(page.locator('#pinGrid .pin.connected')).to_have_count(2)
+        expect(page.locator('#pinGrid .pin .chip-cut').first).to_have_css('visibility','hidden')
+        self.open_vram_settings(page)
         page.locator('#disconnectBtn').click()
-        expect(page.locator('.pin.connected')).to_have_count(0)
+        expect(page.locator('#pinGrid .pin.connected')).to_have_count(0)
 
     def test_compact_chip_geometry_and_bridge_controls(self):
         self.load_rom()
@@ -909,12 +1039,13 @@ class BrowserLogicTests(unittest.TestCase):
                     self.assertTrue(geometry['targets'], (scheme, width, container))
                     self.assertEqual(geometry['count'], 8 if container == '#pinGrid' else 15)
         self.page.locator('#vramMode').select_option('bridge')
-        self.page.locator('.pin').nth(0).click()
-        self.page.locator('.pin').nth(7).focus()
+        self.page.locator('#pinGrid .pin').nth(0).click()
+        self.page.locator('#pinGrid .pin').nth(7).focus()
         self.page.keyboard.press('Enter')
-        expect(self.page.locator('.pin.connected')).to_have_count(2)
+        expect(self.page.locator('#pinGrid .pin.connected')).to_have_count(2)
+        self.open_vram_settings()
         self.page.locator('#disconnectBtn').click()
-        expect(self.page.locator('.pin.connected')).to_have_count(0)
+        expect(self.page.locator('#pinGrid .pin.connected')).to_have_count(0)
 
     def test_chip_multiple_lines_keyboard_restore_and_export(self):
         self.load_rom()
@@ -949,7 +1080,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.locator("[data-chip-line]").nth(1).click()
         self.assertEqual(self.export_payload()["faultPulses"][0]["status"], "cancelled")
         self.page.locator("#logicApplyBtn").click()
-        expect(self.page.locator("[data-chip-line]").nth(1)).to_have_attribute("aria-pressed", "false")
+        expect(self.page.locator("[data-chip-line]").nth(1)).to_have_attribute("aria-pressed", "true")
         self.page.locator("[data-chip-line]").nth(2).click()
         self.page.locator("#logicResumeBtn").click()
         self.assertEqual(self.page.evaluate("window.mockCore.logic.addressMask"), 0)
@@ -1019,7 +1150,7 @@ class BrowserLogicTests(unittest.TestCase):
         payload=self.export_payload()
         self.assertEqual(payload['schemaVersion'],1)
         self.assertEqual(payload['build'],expected)
-        self.assertEqual(payload['modelVersion'],'0.4.0-experimental')
+        self.assertEqual(payload['modelVersion'],'0.4.1-experimental')
         self.assertEqual(payload['rom']['sha256'],hashlib.sha256(rom).hexdigest())
         self.assertEqual(payload['logicFault']['kind'],'address')
         self.assertTrue(payload['faultActive'])
@@ -1028,21 +1159,21 @@ class BrowserLogicTests(unittest.TestCase):
 
     @staticmethod
     def valid_build_info():
-        return {'application':'VRAMpage MD','application_version':'0.4.0',
+        return {'application':'VRAMpage MD','application_version':'0.4.1',
                 'source_commit':'a'*40,'package_format':1}
 
     def test_export_provenance_valid_and_filters_unknown_fields(self):
         info=self.valid_build_info()
         info.update({'token':'must-not-be-exported','private':{'secret':'ignore'}})
         self.page=self.new_page(build_info=info)
-        payload=self.assert_build_export({'status':'available','applicationVersion':'0.4.0','sourceCommit':'a'*40})
+        payload=self.assert_build_export({'status':'available','applicationVersion':'0.4.1','sourceCommit':'a'*40})
         self.assertNotIn('must-not-be-exported',json.dumps(payload))
         self.assertNotIn('private',payload['build'])
         self.page.locator('#resetBtn').click()
         self.assertEqual(self.export_payload()['build']['sourceCommit'],'a'*40)
 
     def test_export_provenance_missing(self):
-        self.assert_build_export({'status':'unavailable','applicationVersion':'0.4.0','sourceCommit':None})
+        self.assert_build_export({'status':'unavailable','applicationVersion':'0.4.1','sourceCommit':None})
 
     def test_export_provenance_malformed(self):
         for malformed in ('{broken', 'null', [], self.valid_build_info() | {'source_commit':'A'*40},
@@ -1050,18 +1181,18 @@ class BrowserLogicTests(unittest.TestCase):
                           self.valid_build_info() | {'package_format':'1'}):
             with self.subTest(metadata=malformed):
                 self.page=self.new_page(build_info=malformed)
-                self.assert_build_export({'status':'unavailable','applicationVersion':'0.4.0','sourceCommit':None})
+                self.assert_build_export({'status':'unavailable','applicationVersion':'0.4.1','sourceCommit':None})
 
     def test_export_provenance_mismatched_application_or_version(self):
         for mismatch in ({'application':'Other app'},{'application_version':'0.2.5'},
                          {'package_format':2}):
             with self.subTest(metadata=mismatch):
                 self.page=self.new_page(build_info=self.valid_build_info() | mismatch)
-                self.assert_build_export({'status':'unavailable','applicationVersion':'0.4.0','sourceCommit':None})
+                self.assert_build_export({'status':'unavailable','applicationVersion':'0.4.1','sourceCommit':None})
 
     def test_export_provenance_timeout_never_blocks_play_or_export(self):
         self.page=self.new_page(stalled_build_info=True)
-        self.assert_build_export({'status':'unavailable','applicationVersion':'0.4.0','sourceCommit':None})
+        self.assert_build_export({'status':'unavailable','applicationVersion':'0.4.1','sourceCommit':None})
         self.assertEqual(self.page.evaluate('window.__buildInfoRequests'),1)
         self.assertEqual(self.page.evaluate('window.__buildInfoOptions'),{'credentials':'omit','cache':'no-store'})
         self.assertGreater(self.page.evaluate('mockCore.ticks'),0)
@@ -1079,7 +1210,7 @@ class BrowserLogicTests(unittest.TestCase):
             self.page.locator("#logicExperimentBtn").click()
         download = download_info.value
         payload = json.loads(Path(download.path()).read_text())
-        self.assertEqual(payload["modelVersion"], "0.4.0-experimental")
+        self.assertEqual(payload["modelVersion"], "0.4.1-experimental")
         self.assertEqual(payload["rom"]["name"], "synthetic-test.bin")
         self.assertEqual(payload["rom"]["sha256"], hashlib.sha256(rom).hexdigest())
         self.assertNotIn("bytes", payload["rom"])
@@ -1099,4 +1230,5 @@ if __name__ == "__main__":
     parser.add_argument("--executable", help="Optional local browser executable")
     parser.add_argument("--artifacts", type=Path, help="Screenshot directory outside the source tree")
     OPTIONS, remaining = parser.parse_known_args()
-    unittest.main(argv=[__file__, *remaining], verbosity=2)
+    unittest.main(argv=[__file__, *remaining], verbosity=2,
+                  testRunner=unittest.TextTestRunner(verbosity=2, resultclass=AnnotatedBrowserResult))

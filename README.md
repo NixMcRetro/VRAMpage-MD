@@ -1,12 +1,15 @@
 # VRAMpage MD
 
+The v0.4.1 links are staged for publication after final checks. Until then,
+use the [verified v0.4.0 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.0/VRAMpage-MD-v0.4.0-macos.zip).
+
 **Play Sega Mega Drive / Genesis games in your browser and experiment with simulated hardware faults.** VRAMpage MD is an experimental, hardware-informed circuit-bending workbench built from a modified Genesis Plus GX emulator. Supply your own legally usable game cartridge file. No game ROMs are included or uploaded.
 
 > **New here? Start with the Mac download below.** You do not need to know Git, install a developer application or compile an emulator.
 
 ## Download and play on your Mac
 
-**[Download VRAMpage MD v0.4.0 - complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.0/VRAMpage-MD-v0.4.0-macos.zip)**
+**[Download VRAMpage MD v0.4.1 - complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip)**
 
 1. Download the ZIP and double-click it in Finder to extract it.
 2. Open the **VRAMpage-MD** folder and double-click **START.command**.
@@ -21,13 +24,13 @@ If your Mac blocks `START.command`, right-click it and choose **Open**, or follo
 
 [Previous v0.2.8 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.8/VRAMpage-MD-v0.2.8-macos.zip) remains available for reproducing earlier experiments.
 
-[Latest release and checksum](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.4.0) · [Other runnable versions and historical source releases](docs/RELEASE-HISTORY.md)
+[Latest release and checksum](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.4.1) · [Other runnable versions and historical source releases](docs/RELEASE-HISTORY.md)
 
 **v0.3.0:** choose **Frame projection** or **Transaction** in the VRAM patchbay, then use the same legs and bridges. Transaction mode maps actual emulator VRAM accesses and exports separate model metadata and counters. Frame projection remains the default fallback. Both are digital approximations.
 
 **v0.4.0:** [audio input bridges](docs/AUDIO-BENDING.md) add independent PSG and FM D0-D7 pair controls, exact counters and experiment metadata. They change future chip-input writes before synthesis. Both the 68000 and Z80 routes are covered by synthetic tests; Z80 RAM/arbitration faults and physical electrical fidelity remain outside this model. Enable sound, choose a pair and apply it. Removing a bridge does not repair prior chip state; use clean restart when needed.
 
-**Development source after v0.4.0:** [circuit configuration files](docs/CIRCUIT-CONFIGURATIONS.md) save stable RAM/VRAM and audio settings. Loading a file previews it; an explicit Apply changes the circuit. This is not included in the immutable v0.4.0 ZIP.
+**v0.4.1:** [four compact chip diagrams](docs/CHIP-WORKBENCH.md) keep VRAM, Work RAM, FM and PSG visible together. Click legs to disconnect supported lines or join a pair within that chip. Audio cuts use a new stuck-low input model. [Configuration files](docs/CIRCUIT-CONFIGURATIONS.md) save masks and bridges; loading previews settings before explicit Apply. Older configuration files remain importable.
 
 **RAM research:** a [reproducible bounded experiment](docs/RAM-STATUS-FOLLOWUP.md) now shows player-trajectory divergence while recorded demo inputs continue at the same phase. This uses the existing public core and does not establish physical electrical accuracy.
 

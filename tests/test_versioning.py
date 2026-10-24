@@ -11,7 +11,7 @@ ZIP = f"VRAMpage-MD-{TAG}-macos.zip"
 
 class VersioningTests(unittest.TestCase):
     def test_single_canonical_version(self):
-        self.assertEqual(VERSION, "0.4.0")
+        self.assertEqual(VERSION, "0.4.1")
         self.assertTrue((ROOT / "docs/VERSIONING.md").exists())
         self.assertIn(TAG, (ROOT / "docs/VERSIONING.md").read_text())
 

@@ -1,7 +1,9 @@
 # Changelog
 
-## Unreleased: workbench configurations
+## v0.4.1 - compact chip workbench
 
+- Bring the four modeled circuits into a compact chip-local workbench, retaining VRAM/Work RAM controls and adding FM/PSG leg controls.
+- Add runtime-only FM/PSG stuck-low data masks alongside existing pair bridges, preserving normal synthesis and reset semantics.
 - Save stable VRAM, RAM, PSG and FM settings in a strict versioned JSON file, separate from experiment exports and ROM/memory data.
 - Preview imports without changing the circuit; explicitly apply after capability and pulse checks. Retain existing memory-domain handoffs and independent audio controls.
 - Preserve counters when configurations differ only in bridge endpoint order. Pause on later rejected or throwing core operations and report unavailable state honestly.

@@ -4,7 +4,6 @@ No commercial ROM, mock emulator, or game-derived data is used.
 """
 import argparse
 import json
-import os
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -13,6 +12,7 @@ import threading
 import unittest
 
 from playwright.sync_api import sync_playwright, expect
+from browser_result import AnnotatedBrowserResult
 
 ROOT = Path(__file__).resolve().parents[1]
 OPTIONS = None
@@ -47,23 +47,6 @@ def original_cartridge():
     for i, value in enumerate([0x4e72, 0x2700, 0x60fe]):
         struct.pack_into('>H', rom, 0x300+2*i, value)
     return bytes(rom)
-
-
-class AnnotatedBrowserResult(unittest.TextTestResult):
-    """Keep CI failures readable when signed job-log downloads are unavailable."""
-    def annotate(self, test, error):
-        if os.environ.get('GITHUB_ACTIONS') == 'true':
-            message = self._exc_info_to_string(error, test)[-12000:]
-            message = message.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
-            print(f'::error title=Actual-core browser failure::{message}', flush=True)
-
-    def addFailure(self, test, error):
-        super().addFailure(test, error)
-        self.annotate(test, error)
-
-    def addError(self, test, error):
-        super().addError(test, error)
-        self.annotate(test, error)
 
 
 class ActualCoreBrowserTests(unittest.TestCase):
@@ -134,9 +117,10 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     with page.expect_download() as download_info:
                         page.locator('#circuitConfigDownload').click()
                     saved = json.loads(Path(download_info.value.path()).read_text())
+                    self.assertEqual(saved['schemaVersion'], 2)
                     self.assertEqual(saved['configuration'], {
                         'vram': {'modelId': 1, 'mask': 0, 'pair': None},
-                        'ram': None, 'psg': None, 'fm': None
+                        'ram': None, 'psg': {'pair':None,'dataMask':0}, 'fm': {'pair':None,'dataMask':0}
                     })
                     self.assertNotIn('rom', saved)
                     self.assertNotIn('inputWrites', json.dumps(saved))
@@ -215,10 +199,28 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     self.assertEqual((state['psg']['bridgeA'], state['psg']['bridgeB']), (1, 6))
                     self.assertTrue(state['fm']['configured'])
                     self.assertEqual((state['fm']['bridgeA'], state['fm']['bridgeB']), (0, 7))
+                    # The chip-leg UI must call the production mask API. Grounding
+                    # PSG inputs replaces its bridge while FM stays independent.
+                    page.locator('#psgLegMode').select_option('ground')
+                    page.locator('#psgChip .pin').nth(0).click()
+                    page.locator('#psgChip .pin').nth(7).click()
+                    masked = page.evaluate('testCore._get_psg_data_bridge_state()')
+                    self.assertTrue(masked['configured'])
+                    self.assertEqual(masked['dataMask'], 129)
+                    self.assertEqual((masked['bridgeA'], masked['bridgeB']), (-1, -1))
+                    self.assertEqual((page.evaluate('testCore._get_fm_data_bridge_state().bridgeA'),
+                                      page.evaluate('testCore._get_fm_data_bridge_state().bridgeB')), (0, 7))
+                    page.locator('#fmLegMode').select_option('ground')
+                    page.locator('#fmChip .pin').nth(2).click()
+                    self.assertEqual(page.evaluate('testCore._get_fm_data_bridge_state().dataMask'), 4)
+                    self.assertEqual(page.evaluate('testCore._get_psg_data_bridge_state().dataMask'), 129,
+                                     'FM leg changes preserve the independent PSG mask')
                     with page.expect_download() as download_info:
                         page.locator('#circuitConfigDownload').click()
                     saved = json.loads(Path(download_info.value.path()).read_text())
-                    self.assertEqual(saved, payload)
+                    self.assertEqual(saved['schemaVersion'], 2)
+                    self.assertEqual(saved['configuration']['fm'], {'pair':None,'dataMask':4})
+                    self.assertEqual(saved['configuration']['psg'], {'pair':None,'dataMask':129})
                     self.assertNotIn('rom', saved)
                     self.assertNotIn('lastFrameCounts', json.dumps(saved))
                     ram_payload = {
@@ -242,11 +244,18 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     })''')
                     self.assertEqual(ram_state['mask'], 1)
                     self.assertEqual((ram_state['vram']['mask'],ram_state['vram']['bridgeA'],ram_state['vram']['bridgeB']), (0,-1,-1))
+                    self.assertEqual(ram_state['fm']['dataMask'],0,
+                                     'legacy pair import replaces the FM mask')
                     self.assertTrue(ram_state['psg']['configured'] and ram_state['fm']['configured'],
                                     'RAM handoff leaves independent PSG and FM configurations intact')
+                    self.assertEqual(ram_state['psg']['dataMask'],0,
+                                     'the imported pair replaces the previous PSG data mask')
                     with page.expect_download() as download_info:
                         page.locator('#circuitConfigDownload').click()
-                    self.assertEqual(json.loads(Path(download_info.value.path()).read_text()), ram_payload)
+                    ram_saved=json.loads(Path(download_info.value.path()).read_text())
+                    self.assertEqual(ram_saved['schemaVersion'], 2)
+                    self.assertEqual(ram_saved['configuration']['psg'], {'pair':[1,6],'dataMask':0})
+                    self.assertEqual(ram_saved['configuration']['fm'], {'pair':[0,7],'dataMask':0})
                     if not page.locator('#logicExperiment').evaluate('element => element.open'):
                         page.locator('#logicExperiment > summary').click()
                     with page.expect_download() as export_info:
@@ -327,7 +336,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     core_js += '\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\n'
                     page.route('**/core/genplus.js', lambda route: route.fulfill(
                         content_type='text/javascript', body=core_js))
-                    build_info={'application':'VRAMpage MD','application_version':'0.4.0',
+                    build_info={'application':'VRAMpage MD','application_version':'0.4.1',
                                 'source_commit':'b'*40,'package_format':1}
                     page.route('**/build-info.json',lambda route:route.fulfill(
                         content_type='application/json',body=json.dumps(build_info)))
@@ -428,7 +437,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     core_js += '\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\n'
                     page.route('**/core/genplus.js', lambda route: route.fulfill(content_type='text/javascript', body=core_js))
                     # A fixture manifest exercises provenance without mocking the real core.
-                    build_info={'application':'VRAMpage MD','application_version':'0.4.0',
+                    build_info={'application':'VRAMpage MD','application_version':'0.4.1',
                                 'source_commit':'b'*40,'package_format':1}
                     page.route('**/build-info.json',lambda route:route.fulfill(
                         content_type='application/json',body=json.dumps(build_info)))
@@ -535,17 +544,18 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     page.wait_for_function('new Float32Array(testCore.HEAPF32.buffer,testCore._get_input_buffer_ref(),32)[9]===1')
                     page.evaluate('navigator.getGamepads=()=>[]')
                     page.locator('#vramMode').select_option('bridge')
-                    page.locator('.pin').nth(0).click()
-                    page.locator('.pin').nth(1).click()
-                    expect(page.locator('.pin.connected')).to_have_count(2)
+                    page.locator('#pinGrid .pin').nth(0).click()
+                    page.locator('#pinGrid .pin').nth(1).click()
+                    expect(page.locator('#pinGrid .pin.connected')).to_have_count(2)
+                    page.locator('#vramSettings').evaluate('(details)=>{details.open=true}')
                     page.locator('#disconnectBtn').click()
-                    expect(page.locator('.pin.connected')).to_have_count(0)
+                    expect(page.locator('#pinGrid .pin.connected')).to_have_count(0)
                     page.locator('#vramMode').select_option('disconnect')
-                    page.locator('.pin').nth(0).click()
-                    page.locator('.pin').nth(7).focus()
+                    page.locator('#pinGrid .pin').nth(0).click()
+                    page.locator('#pinGrid .pin').nth(7).focus()
                     page.keyboard.press('Space')
                     page.wait_for_function('testCore._get_vram_address_mask()===129')
-                    expect(page.locator('.pin').nth(7).locator('.chip-cut')).to_have_css('visibility','visible')
+                    expect(page.locator('#pinGrid .pin').nth(7).locator('.chip-cut')).to_have_css('visibility','visible')
                     page.locator('#disconnectBtn').click()
                     page.wait_for_function('testCore._get_vram_address_mask()===0')
                     page.locator('#logicExperiment > summary').click()
@@ -560,21 +570,23 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     with page.expect_download() as download:
                         page.locator('#logicExperimentBtn').click()
                     payload=json.loads(Path(download.value.path()).read_text())
-                    self.assertEqual(payload['modelVersion'],'0.4.0-experimental')
+                    self.assertEqual(payload['modelVersion'],'0.4.1-experimental')
                     self.assertEqual(payload['schemaVersion'],1)
-                    self.assertEqual(payload['build'],{'status':'available','applicationVersion':'0.4.0','sourceCommit':'b'*40})
+                    self.assertEqual(payload['build'],{'status':'available','applicationVersion':'0.4.1','sourceCommit':'b'*40})
                     self.assertEqual(payload['vramFault']['addressMask'],0)
                     self.assertEqual([e['mask'] for e in payload['vramAddressLineChanges']],[1,129,0])
                     self.assertEqual(payload['rom']['name'],'original-video-tone.bin')
                     self.assertEqual(len(payload['rom']['sha256']),64)
                     self.assertNotIn('romBytes',payload)
+                    self.assertEqual(payload['psgInputFault']['schemaVersion'],2)
                     self.assertEqual(payload['psgInputFault']['available'],psg_api)
                     if psg_api:
-                        self.assertEqual(payload['psgInputFault']['modelVersion'],'psg-data-low-dominant-v1')
+                        self.assertEqual(payload['psgInputFault']['modelVersion'],'psg-data-low-dominant-v2')
                         self.assertTrue(payload['psgInputFault']['configured'])
+                    self.assertEqual(payload['fmInputFault']['schemaVersion'],2)
                     self.assertEqual(payload['fmInputFault']['available'],fm_api)
                     if fm_api:
-                        self.assertEqual(payload['fmInputFault']['modelVersion'],'fm-register-data-low-dominant-v1')
+                        self.assertEqual(payload['fmInputFault']['modelVersion'],'fm-register-data-low-dominant-v2')
                         self.assertTrue(payload['fmInputFault']['configured'])
                     page.locator('#resetBtn').click()
                     page.wait_for_function('testCore._get_logic_address_mask()===0')

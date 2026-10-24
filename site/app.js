@@ -21,6 +21,8 @@
   let previousVideoStatus = "";
   const pressed = new Set();
   const pinButtons = [];
+  const psgPinButtons = [], fmPinButtons = [];
+  let ramSelectedPin=null, psgSelectedPin=null, fmSelectedPin=null;
   const logEl = $('experimentLog');
   let emulator = null, started = false, paused = false;
   let loadedName = '', latched = null, momentary = null, momentaryRestorePair = null, selectedPin = null;
@@ -46,7 +48,7 @@
   let logicResetState = 'No cartridge loaded';
   let romHashPromise = Promise.resolve(null);
   const CORE_PIN = '6090aff9e9b2f578cd28882bd4571d2e35b1d674';
-  const APPLICATION_VERSION = '0.4.0';
+  const APPLICATION_VERSION = '0.4.1';
   let buildInfo = {status:'unavailable',applicationVersion:APPLICATION_VERSION,sourceCommit:null};
   loadBuildInfo().then(info=>{buildInfo=info;});
 
@@ -133,6 +135,9 @@
       typeof core?._get_fm_data_bridge_state==='function';
   }
 
+  function psgDataMaskApiReady(core=emulator) { return typeof core?._set_psg_data_mask==='function'; }
+  function fmDataMaskApiReady(core=emulator) { return typeof core?._set_fm_data_mask==='function'; }
+
   function currentPsgDataState() {
     if (!psgDataApiReady()) return null;
     try { return emulator._get_psg_data_bridge_state(); }
@@ -153,17 +158,21 @@
     $('psgBridgeRemove').disabled=!started || !available || !state?.configured;
     $('psgBridgeA').disabled=!started || !available || !supported;
     $('psgBridgeB').disabled=!started || !available || !supported;
+    $('psgLegMode').querySelector('[data-audio-mask]').disabled=!psgDataMaskApiReady();
     $('psgInputWrites').textContent=state?.inputWrites ?? '0';
     $('psgChangedWrites').textContent=state?.changedWrites ?? '0';
     $('psgBridgeStatus').textContent=!available
       ? 'This core does not provide the optional PSG runtime API.'
       : !state
         ? 'PSG runtime state is unavailable; controls are disabled.'
-      : !supported
+        : !supported
         ? (state.configured ? 'Configured, but inactive in this system profile.' : 'PSG bridge is unavailable in this system profile.')
         : state.configured
-          ? `Active: D${state.bridgeA} ↔ D${state.bridgeB}; future PSG writes only.`
+          ? (Number(state.dataMask||0)
+            ? `Active: ${maskLineNames(Number(state.dataMask))} forced low on future writes.`
+            : `Active: D${state.bridgeA} ↔ D${state.bridgeB}; future PSG writes only.`)
           : 'No PSG data bridge is active.';
+    updateAudioChip('psg',state);
   }
 
   function setPsgDataBridge(enabled, pairOverride=undefined) {
@@ -201,6 +210,20 @@
     return true;
   }
 
+  function setPsgDataMask(mask) {
+    if (!psgDataMaskApiReady() || !Number.isInteger(mask) || mask<0 || mask>255) return false;
+    const state=currentPsgDataState();
+    if (!state || (mask && !state.supported)) return false;
+    const status=emulator._set_psg_data_mask(mask);
+    if (status!==0) {
+      $('psgBridgeStatus').textContent=status===2?'PSG mask request rejected: unsupported system profile.':'PSG mask request rejected: invalid settings.';
+      refreshPsgDataControls(); return false;
+    }
+    refreshPsgDataControls();
+    stamp(mask?`PSG data inputs ${maskLineNames(mask)} forced low for future writes.`:'PSG data fault removed; existing chip state was not repaired.');
+    return true;
+  }
+
   function refreshFmDataControls() {
     const available=fmDataApiReady();
     const state=currentFmDataState();
@@ -209,6 +232,7 @@
     $('fmBridgeRemove').disabled=!started || !available || !state?.configured;
     $('fmBridgeA').disabled=!started || !available || !supported;
     $('fmBridgeB').disabled=!started || !available || !supported;
+    $('fmLegMode').querySelector('[data-audio-mask]').disabled=!fmDataMaskApiReady();
     $('fmInputWrites').textContent=state?.inputWrites ?? '0';
     $('fmChangedWrites').textContent=state?.changedWrites ?? '0';
     $('fmBridgeStatus').textContent=!available
@@ -218,8 +242,11 @@
       : !supported
         ? (state.configured ? 'Configured, but inactive in this system profile.' : 'FM bridge is unavailable in this system profile.')
         : state.configured
-          ? `Active: D${state.bridgeA} ↔ D${state.bridgeB}; future FM register writes only.`
+          ? (Number(state.dataMask||0)
+            ? `Active: ${maskLineNames(Number(state.dataMask))} forced low before register decode.`
+            : `Active: D${state.bridgeA} ↔ D${state.bridgeB}; future FM register writes only.`)
           : 'No FM data bridge is active.';
+    updateAudioChip('fm',state);
   }
 
   function setFmDataBridge(enabled, pairOverride=undefined) {
@@ -255,6 +282,100 @@
       ? `FM data bridge applied: D${a} ↔ D${b}; existing chip state was not repaired.`
       : 'FM data bridge removed; existing chip state was not repaired.');
     return true;
+  }
+
+  function setFmDataMask(mask) {
+    if (!fmDataMaskApiReady() || !Number.isInteger(mask) || mask<0 || mask>255) return false;
+    const state=currentFmDataState();
+    if (!state || (mask && !state.supported)) return false;
+    const status=emulator._set_fm_data_mask(mask);
+    if (status!==0) {
+      $('fmBridgeStatus').textContent=status===2?'FM mask request rejected: unsupported system profile.':'FM mask request rejected: invalid settings.';
+      refreshFmDataControls(); return false;
+    }
+    refreshFmDataControls();
+    stamp(mask?`FM data inputs ${maskLineNames(mask)} forced low before register decode.`:'FM data fault removed; existing chip state was not repaired.');
+    return true;
+  }
+
+  function maskLineNames(mask) {
+    return Array.from({length:8},(_,bit)=>bit).filter(bit=>mask&(1<<bit)).map(bit=>`D${bit}`).join(', ');
+  }
+
+  function updateAudioChip(kind,state) {
+    const isPsg=kind==='psg', buttons=isPsg?psgPinButtons:fmPinButtons;
+    const mode=$(isPsg?'psgLegMode':'fmLegMode').value;
+    const selected=isPsg?psgSelectedPin:fmSelectedPin;
+    const ready=isPsg?psgDataApiReady():fmDataApiReady();
+    const maskReady=isPsg?psgDataMaskApiReady():fmDataMaskApiReady();
+    const mask=Number.isInteger(state?.dataMask)?state.dataMask:0;
+    const pair=state?.configured && state.bridgeA>=0 && state.bridgeB>=0?[state.bridgeA,state.bridgeB]:null;
+    buttons.forEach((button,bit)=>{
+      const grounded=!!(mask&(1<<bit)), bridged=!!(pair&&pair.includes(bit)), pending=selected===bit;
+      button.disabled=!started || !ready || !state?.supported || (mode==='ground'&&!maskReady);
+      button.classList.toggle('cut',grounded);
+      button.classList.toggle('bridged',bridged);
+      button.classList.toggle('selected',pending);
+      button.querySelector('.chip-cut').textContent=grounded?'×':bridged?'↔':'×';
+      button.setAttribute('aria-pressed',String(grounded||bridged||pending));
+      button.setAttribute('aria-label',`${kind.toUpperCase()} D${bit}${grounded?', forced low':bridged?', bridged':pending?', selected for bridge':''}`);
+    });
+    const stateText=$(isPsg?'psgChipState':'fmChipState');
+    if (stateText) stateText.textContent=mask
+      ? `× ${maskLineNames(mask)} low`
+      : pair?`D${pair[0]} ↔ D${pair[1]} bridge`:'No data fault';
+  }
+
+  function setupAudioChip(kind) {
+    const isPsg=kind==='psg', id=isPsg?'psgChip':'fmChip';
+    const buttons=isPsg?psgPinButtons:fmPinButtons;
+    const state=()=>isPsg?currentPsgDataState():currentFmDataState();
+    const mode=()=>$(isPsg?'psgLegMode':'fmLegMode').value;
+    const refresh=()=>isPsg?refreshPsgDataControls():refreshFmDataControls();
+    const selectPair=pair=>isPsg?setPsgDataBridge(true,pair):setFmDataBridge(true,pair);
+    const setMask=mask=>isPsg?setPsgDataMask(mask):setFmDataMask(mask);
+    for (let bit=0;bit<8;bit++) {
+      const button=document.createElement('button');
+      button.type='button';button.className='pin';
+      button.style.gridColumn=bit<4?'1':'3';button.style.gridRow=String(bit<4?bit+1:bit-3);
+      const label=document.createElement('span');label.className='chip-signal';label.textContent=`D${bit}`;
+      const wire=document.createElement('span');wire.className='chip-wire';wire.setAttribute('aria-hidden','true');
+      const cut=document.createElement('span');cut.className='chip-cut';cut.textContent='×';wire.append(cut);
+      button.append(...(bit<4?[wire,label]:[label,wire]));
+      button.title=`${kind.toUpperCase()} D${bit}; select two bits to bridge, or force the line low.`;
+      button.setAttribute('aria-pressed','false');
+      button.addEventListener('click',()=>{
+        const live=state();
+        if (!live?.supported) return;
+        if (mode()==='ground') {
+          if (! (isPsg?psgDataMaskApiReady():fmDataMaskApiReady())) return;
+          const current=Number.isInteger(live.dataMask)?live.dataMask:0;
+          if (isPsg) psgSelectedPin=null; else fmSelectedPin=null;
+          setMask(current^(1<<bit));
+          return;
+        }
+        const current=isPsg?psgSelectedPin:fmSelectedPin;
+        if (current===null) {
+          if (isPsg) psgSelectedPin=bit; else fmSelectedPin=bit;
+        } else if (current===bit) {
+          if (isPsg) psgSelectedPin=null; else fmSelectedPin=null;
+        } else {
+          if (isPsg) psgSelectedPin=null; else fmSelectedPin=null;
+          selectPair([current,bit]);
+        }
+        refresh();
+      });
+      $(id).append(button);buttons.push(button);
+    }
+    const middle=document.createElement('div');middle.className='chip-middle';
+    const title=document.createElement('strong');title.textContent=isPsg?'PSG / VDP':'YM2612';
+    const subtitle=document.createElement('span');subtitle.textContent='D0–D7';
+    middle.append(title,subtitle);$(id).append(middle);
+    $(isPsg?'psgLegMode':'fmLegMode').addEventListener('change',()=>{
+      if (isPsg) psgSelectedPin=null; else fmSelectedPin=null;
+      refresh();
+    });
+    refresh();
   }
 
   function currentVramModelState() {
@@ -569,12 +690,27 @@
   function refreshChipControls() {
     const ready=started && addressMaskApiReady();
     for (const button of document.querySelectorAll('[data-chip-line]')) {
-      const line=Number(button.dataset.chipLine), disabled=!!(logicAddressMask & (1<<line));
+      const line=Number(button.dataset.chipLine), forced=!!(logicAddressMask & (1<<line));
+      const bridged=logicActive && activeRamConfiguration?.type==='line-pair' && activeRamConfiguration.kind===1 &&
+        [activeRamConfiguration.a,activeRamConfiguration.b].includes(line);
+      const pending=ramSelectedPin===line;
       button.disabled=!ready;
-      button.setAttribute('aria-pressed',String(disabled));
-      button.setAttribute('aria-label',`A${line+1}: ${disabled?'forced low; reconnect':'enabled; force low'}`);
+      button.classList.toggle('cut',forced);
+      button.classList.toggle('bridged',bridged);
+      button.classList.toggle('selected',pending);
+      button.querySelector('.chip-cut').textContent=forced?'×':bridged?'↔':'×';
+      button.setAttribute('aria-pressed',String(forced||bridged||pending));
+      button.setAttribute('aria-label',`A${line+1}: ${forced?'forced low; reconnect':bridged?'bridged; select another leg action to change':'connected'}`);
     }
-    $('chipRestoreBtn').disabled=!ready || logicAddressMask===0;
+    $('chipRestoreBtn').disabled=!ready || (logicAddressMask===0 && !(logicActive && activeRamConfiguration?.type==='line-pair' && activeRamConfiguration.kind===1));
+    $('ramLegAction').disabled=!started || !logicApiReady();
+    $('ramChipState').textContent=logicAddressMask
+      ? `${Array.from({length:15},(_,i)=>i).filter(i=>logicAddressMask&(1<<i)).map(i=>`A${i+1}`).join(', ')} forced low`
+      : logicActive && activeRamConfiguration?.type==='line-pair' && activeRamConfiguration.kind===1
+        ? `A${activeRamConfiguration.a+1} ↔ A${activeRamConfiguration.b+1} bridge`
+        : logicActive && activeRamConfiguration?.type==='line-pair' && activeRamConfiguration.kind===2
+          ? `Data bridge D${activeRamConfiguration.a} ↔ D${activeRamConfiguration.b} active; see RAM settings.`
+          : 'Address lines are connected.';
   }
 
   function chipTransitionSnapshot() {
@@ -636,10 +772,32 @@
       const wire=document.createElement('span');wire.className='chip-wire';wire.setAttribute('aria-hidden','true');
       const cut=document.createElement('span');cut.className='chip-cut';cut.textContent='×';wire.append(cut);
       button.append(...(line<8?[wire,label]:[label,wire]));
-      button.addEventListener('click',()=>applyAddressMask(logicAddressMask ^ (1<<line)));
+      button.addEventListener('click',()=>{
+        if ($('ramLegAction').value==='cut') {
+          ramSelectedPin=null;
+          applyAddressMask(logicAddressMask ^ (1<<line));
+          refreshChipControls();
+          return;
+        }
+        if (ramSelectedPin===null) ramSelectedPin=line;
+        else if (ramSelectedPin===line) ramSelectedPin=null;
+        else {
+          const first=ramSelectedPin;ramSelectedPin=null;
+          $('logicKind').value='1';configureLogicLines();
+          $('logicLineA').value=String(first);$('logicLineB').value=String(line);
+          applyLogicFault(null,{kind:1,access:Number($('logicAccess').value),a:first,b:line});
+        }
+        refreshChipControls();
+      });
       $('ramChip').append(button);
     }
-    $('chipRestoreBtn').addEventListener('click',()=>applyAddressMask(0));
+    $('chipRestoreBtn').addEventListener('click',()=>{
+      ramSelectedPin=null;
+      if (logicAddressMask) applyAddressMask(0);
+      else if (logicActive && activeRamConfiguration?.type==='line-pair' && activeRamConfiguration.kind===1) disconnectLogic();
+      refreshChipControls();
+    });
+    $('ramLegAction').addEventListener('change',()=>{ramSelectedPin=null;refreshChipControls();});
   }
 
   function updateLogicControls() {
@@ -951,16 +1109,18 @@
     if (circuitPulseIsArmed()) throw new Error('Wait for or cancel the active RAM pulse before saving a configuration.');
     if (logicActive && !activeRamConfiguration)
       throw new Error('The active RAM fault settings are unavailable; no file was created.');
-    let psg=null, fm=null;
+    let psg={pair:null,dataMask:0}, fm={pair:null,dataMask:0};
     if (psgDataApiReady()) {
       const state=currentPsgDataState();
       if (!state) throw new Error('PSG state is unavailable; no file was created.');
-      if (state.configured) psg=[state.bridgeA,state.bridgeB];
+      if (state.configured) psg={pair:state.bridgeA>=0&&state.bridgeB>=0?canonical([state.bridgeA,state.bridgeB]):null,
+        dataMask:Number.isInteger(state.dataMask)?state.dataMask:0};
     }
     if (fmDataApiReady()) {
       const state=currentFmDataState();
       if (!state) throw new Error('FM state is unavailable; no file was created.');
-      if (state.configured) fm=[state.bridgeA,state.bridgeB];
+      if (state.configured) fm={pair:state.bridgeA>=0&&state.bridgeB>=0?canonical([state.bridgeA,state.bridgeB]):null,
+        dataMask:Number.isInteger(state.dataMask)?state.dataMask:0};
     }
     let pair=canonical(actualPair());
     if (vramModelApiReady()) {
@@ -987,7 +1147,8 @@
     const ram=!c.ram?'RAM off':c.ram.type==='address-mask'
       ?`RAM address mask 0x${c.ram.mask.toString(16).toUpperCase()}, access ${c.ram.access}`
       :`RAM ${c.ram.kind===1?'address':'data'} pair ${c.ram.a}↔${c.ram.b}, access ${c.ram.access}`;
-    const audio=(name,pair)=>pair?`${name} D${pair[0]}↔D${pair[1]}`:`${name} off`;
+    const audio=(name,target)=>target.pair?`${name} D${target.pair[0]}↔D${target.pair[1]}`
+      :target.dataMask?`${name} ${maskLineNames(target.dataMask)} low`:`${name} off`;
     return `${vram} (${model})\n${ram}\n${audio('PSG',c.psg)}\n${audio('FM',c.fm)}`;
   }
 
@@ -1030,7 +1191,7 @@
     const blob=new Blob([JSON.stringify(config,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob);
     const link=document.createElement('a');
-    link.href=url; link.download='vram-page-md-circuit-v1.json';
+    link.href=url; link.download='vram-page-md-circuit-v2.json';
     document.body.append(link); link.click(); link.remove();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
     $('circuitConfigStatus').textContent='Circuit configuration downloaded. ROM and execution history are not included.';
@@ -1038,11 +1199,29 @@
 
   function sameCircuitRam(a,b) { return JSON.stringify(a)===JSON.stringify(b); }
 
+  function audioTargetActive(target) { return !!(target&&(target.pair||target.dataMask)); }
+
   function circuitBridgeNeedsChange(target,state,available) {
-    if (!available) return target!==null;
+    if (!available) return audioTargetActive(target);
     if (!state) return true;
-    if (!target) return !!state.configured;
-    return !state.configured || !samePair(canonical([state.bridgeA,state.bridgeB]),canonical(target));
+    const actualMask=Number.isInteger(state.dataMask)?state.dataMask:0;
+    const actualPair=state.configured&&state.bridgeA>=0&&state.bridgeB>=0
+      ?canonical([state.bridgeA,state.bridgeB]):null;
+    const targetPair=target?.pair||null;
+    return actualMask!==(target?.dataMask||0) ||
+      !((actualPair===null&&targetPair===null)||samePair(actualPair,targetPair));
+  }
+
+  function setPsgCircuitTarget(target) {
+    if (target.dataMask) return setPsgDataMask(target.dataMask);
+    if (target.pair) return setPsgDataBridge(true,target.pair);
+    return setPsgDataBridge(false);
+  }
+
+  function setFmCircuitTarget(target) {
+    if (target.dataMask) return setFmDataMask(target.dataMask);
+    if (target.pair) return setFmDataBridge(true,target.pair);
+    return setFmDataBridge(false);
   }
 
   function preflightCircuitConfiguration(config) {
@@ -1064,10 +1243,12 @@
       ['PSG',c.psg,psgDataApiReady,currentPsgDataState],
       ['FM',c.fm,fmDataApiReady,currentFmDataState]
     ]) {
-      if (!ready()) { if (target) return `This core does not support the requested ${name} bridge.`; continue; }
+      const maskReady=name==='PSG'?psgDataMaskApiReady():fmDataMaskApiReady();
+      if (!ready()) { if (audioTargetActive(target)) return `This core does not support the requested ${name} bridge.`; continue; }
       const state=getState();
       if (!state) return `${name} runtime state is unavailable; no setters were called.`;
-      if (target && !state.supported) return `The requested ${name} bridge is unsupported in this system profile.`;
+      if (audioTargetActive(target) && !state.supported) return `The requested ${name} bridge is unsupported in this system profile.`;
+      if (target?.dataMask && !maskReady) return `This core does not support the requested ${name} input cuts.`;
     }
     return null;
   }
@@ -1092,8 +1273,12 @@
         $('logicLineA').value=String(c.ram.a); $('logicLineB').value=String(c.ram.b);
       }
     }
-    if (c.psg) { $('psgBridgeA').value=String(c.psg[0]); $('psgBridgeB').value=String(c.psg[1]); }
-    if (c.fm) { $('fmBridgeA').value=String(c.fm[0]); $('fmBridgeB').value=String(c.fm[1]); }
+    if (c.psg.pair) {
+      $('psgBridgeA').value=String(c.psg.pair[0]); $('psgBridgeB').value=String(c.psg.pair[1]);$('psgLegMode').value='bridge';
+    } else $('psgLegMode').value=c.psg.dataMask?'ground':'bridge';
+    if (c.fm.pair) {
+      $('fmBridgeA').value=String(c.fm.pair[0]); $('fmBridgeB').value=String(c.fm.pair[1]);$('fmLegMode').value='bridge';
+    } else $('fmLegMode').value=c.fm.dataMask?'ground':'bridge';
     updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls();
   }
 
@@ -1110,7 +1295,7 @@
       ? `runtime VRAM model ${vram.modelId}, mask ${vram.mask}, pair ${JSON.stringify(vram.bridgeA>=0&&vram.bridgeB>=0?canonical([vram.bridgeA,vram.bridgeB]):null)}`
       : `tracked VRAM model ${vramModelId}, mask ${vramAddressMask}, pair ${JSON.stringify(canonical(actualPair()))}`;
     const bridgeDescription=(state,name)=>state
-      ? `${name} ${state.configured?`D${state.bridgeA}↔D${state.bridgeB}`:'off'}`
+      ? `${name} ${state.configured?(Number(state.dataMask||0)?`${maskLineNames(Number(state.dataMask))} low`:`D${state.bridgeA}↔D${state.bridgeB}`):'off'}`
       : `${name} state unavailable`;
     const actual=`Observed state: ${vramDescription}; tracked RAM ${ram}; ${bridgeDescription(psg,'PSG')}; ${bridgeDescription(fm,'FM')}.`;
     const message=`Apply stopped at ${domain}; earlier settings may have changed. ${actual} The staged file is retained and emulation is paused.`;
@@ -1186,11 +1371,11 @@
       if (!applyRamTarget()) { pauseAfterCircuitApplyFailure('RAM disconnect'); return false; }
     }
     if (changePsg) { currentDomain='PSG'; mutationStarted=true; }
-    if (changePsg && !setPsgDataBridge(!!c.psg,c.psg||undefined)) {
+    if (changePsg && !setPsgCircuitTarget(c.psg)) {
       pauseAfterCircuitApplyFailure('PSG'); return false;
     }
     if (changeFm) { currentDomain='FM'; mutationStarted=true; }
-    if (changeFm && !setFmDataBridge(!!c.fm,c.fm||undefined)) {
+    if (changeFm && !setFmCircuitTarget(c.fm)) {
       pauseAfterCircuitApplyFailure('FM'); return false;
     }
     syncCircuitSelectors(config);
@@ -1246,7 +1431,7 @@
     const data={
       schemaVersion:1,
       build:{...buildInfo},
-      modelVersion:'0.4.0-experimental',
+      modelVersion:'0.4.1-experimental',
       vramFault:{kind:vramAddressMask?'address-stuck-low':actualPair()?'address-bridge':'none',
         addressMask:vramAddressMask,lines:vramLines(vramAddressMask),bridge:actualPair()?[...actualPair()]:null},
       vramAddressLineChanges:vramAddressLineChanges.map(entry=>({...entry})),
@@ -1274,7 +1459,7 @@
         bridgeA:runtimeVramState?.bridgeA ?? actualPair()?.[0] ?? -1,
         bridgeB:runtimeVramState?.bridgeB ?? actualPair()?.[1] ?? -1,
         lastFrameCounts:transactionCounts},
-      psgInputFault:{schemaVersion:1,available:!!psgState,
+      psgInputFault:{schemaVersion:2,available:!!psgState,
         modelVersion:psgState?.modelVersion ?? null,
         supported:psgState?.supported ?? false,
         configured:psgState?.configured ?? false,
@@ -1282,9 +1467,10 @@
         reason:psgState?.reason ?? 'api-unavailable',
         bridgeA:psgState?.bridgeA ?? -1,
         bridgeB:psgState?.bridgeB ?? -1,
+        dataMask:Number.isInteger(psgState?.dataMask)?psgState.dataMask:0,
         inputWrites:psgState?.inputWrites ?? '0',
         changedWrites:psgState?.changedWrites ?? '0'},
-      fmInputFault:{schemaVersion:1,available:!!fmState,
+      fmInputFault:{schemaVersion:2,available:!!fmState,
         modelVersion:fmState?.modelVersion ?? null,
         supported:fmState?.supported ?? false,
         configured:fmState?.configured ?? false,
@@ -1292,6 +1478,7 @@
         reason:fmState?.reason ?? 'api-unavailable',
         bridgeA:fmState?.bridgeA ?? -1,
         bridgeB:fmState?.bridgeB ?? -1,
+        dataMask:Number.isInteger(fmState?.dataMask)?fmState.dataMask:0,
         inputWrites:fmState?.inputWrites ?? '0',
         changedWrites:fmState?.changedWrites ?? '0'},
       vramModelTransitions:vramModelTransitions.map(entry=>({...entry})),
@@ -1566,6 +1753,7 @@
     logicAddressMask=0;addressLineChanges=[];
     logicActive=false; // runtime_start clears the work RAM fault and counters.
     activeRamConfiguration=null;
+    ramSelectedPin=null;psgSelectedPin=null;fmSelectedPin=null;
     logicStatsRetained=false;
     logicResetState=cleanRestart ? 'Clean restart; work RAM fault and counters reset' : 'Cartridge loaded; work RAM fault and counters reset';
     resetLogicSelection();
@@ -1738,6 +1926,7 @@
     }
     $('fmBridgeA').value='0';
     $('fmBridgeB').value='1';
+    setupAudioChip('fm');setupAudioChip('psg');
     setupPatchbay();installKeyboard();
     configureLogicLines();
     $('logicKind').addEventListener('change',()=>{

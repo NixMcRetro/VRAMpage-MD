@@ -1,7 +1,7 @@
 'use strict';
 (() => {
   const FORMAT = 'vrampage-md-circuit-config';
-  const VERSION = 1;
+  const VERSION = 2;
 
   function fail(message) { throw new Error(message); }
   function object(value, label, keys) {
@@ -24,13 +24,14 @@
     if (a === b) fail(`${label} inputs must be distinct`);
     return a < b ? [a, b] : [b, a];
   }
-
-  function validate(value) {
-    object(value, 'configuration file', ['format', 'schemaVersion', 'configuration']);
-    if (value.format !== FORMAT) fail('Unrecognized circuit configuration format');
-    if (value.schemaVersion !== VERSION) fail('Unsupported circuit configuration version');
-    const config = object(value.configuration, 'configuration', ['vram', 'ram', 'psg', 'fm']);
-
+  function audioV2(value, label) {
+    object(value, `${label} configuration`, ['pair', 'dataMask']);
+    const bridgePair=value.pair===null?null:pair(value.pair,`${label} pair`);
+    const dataMask=integer(value.dataMask,0,255,`${label} data mask`);
+    if (bridgePair && dataMask) fail(`${label} pair and data mask cannot both be active`);
+    return {pair:bridgePair,dataMask};
+  }
+  function commonConfiguration(config) {
     const vram = object(config.vram, 'VRAM configuration', ['modelId', 'mask', 'pair']);
     const modelId = vram.modelId;
     if (modelId !== 1 && modelId !== 2) fail('VRAM model must be 1 or 2');
@@ -61,23 +62,37 @@
         fail('RAM type must be address-mask or line-pair');
       }
     }
-
-    const psg = config.psg === null ? null : pair(config.psg, 'PSG pair');
-    const fm = config.fm === null ? null : pair(config.fm, 'FM pair');
     if (ram && (mask !== 0 || bridgePair !== null))
       fail('RAM and VRAM fault domains cannot both be active');
-    return {format: FORMAT, schemaVersion: VERSION,
-      configuration: {vram: {modelId, mask, pair: bridgePair}, ram, psg, fm}};
+    return {vram:{modelId,mask,pair:bridgePair},ram};
   }
-
+  function validateV2(value) {
+    object(value, 'configuration file', ['format', 'schemaVersion', 'configuration']);
+    if (value.format !== FORMAT) fail('Unrecognized circuit configuration format');
+    if (value.schemaVersion !== VERSION) fail('Unsupported circuit configuration version');
+    const config = object(value.configuration, 'configuration', ['vram', 'ram', 'psg', 'fm']);
+    const common=commonConfiguration(config);
+    return {format:FORMAT,schemaVersion:VERSION,configuration:{...common,
+      psg:audioV2(config.psg,'PSG'),fm:audioV2(config.fm,'FM')}};
+  }
+  function validateV1(value) {
+    object(value, 'configuration file', ['format', 'schemaVersion', 'configuration']);
+    if (value.format !== FORMAT) fail('Unrecognized circuit configuration format');
+    if (value.schemaVersion !== 1) fail('Unsupported circuit configuration version');
+    const config = object(value.configuration, 'configuration', ['vram', 'ram', 'psg', 'fm']);
+    const common=commonConfiguration(config);
+    const oldPair=(raw,label)=>raw===null?{pair:null,dataMask:0}:{pair:pair(raw,`${label} pair`),dataMask:0};
+    return {format:FORMAT,schemaVersion:VERSION,configuration:{...common,
+      psg:oldPair(config.psg,'PSG'),fm:oldPair(config.fm,'FM')}};
+  }
+  function validate(value) { return validateV2(value); }
   function parse(text) {
     if (typeof text !== 'string' || text.length > 32768) fail('Circuit configuration must be at most 32 KB');
     let parsed;
     try { parsed = JSON.parse(text); }
     catch (_) { fail('File is not valid JSON'); }
-    return validate(parsed);
+    return parsed?.schemaVersion===1?validateV1(parsed):validateV2(parsed);
   }
-
   const api = {format: FORMAT, version: VERSION, validate, parse};
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (typeof window === 'object') window.VRAMpageCircuitConfig = api;
