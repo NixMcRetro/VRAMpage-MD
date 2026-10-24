@@ -5,6 +5,22 @@ Verified on 24 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
+PR #48 is merged as `e579c571f14b3549a5befa33d9e62ba3f3c9d45b`.
+[PR CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40088693320)
+passed all seven checks on reviewed head `1878816`; the merged source tree is
+identical. [Main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40089045294)
+is the remaining merge-commit gate before publication. Local WebKit also passes
+all six display and 45 logic tests after independent probes isolated native
+Work RAM select overflow. Shorter action labels fix it without replacing the
+control or weakening the overflow checks. Public v0.4.1 is not yet published.
+
+Continuation environment notes are `/workspace/scratch/VRAMPAGE-ENVIRONMENT.md`.
+Reuse `/usr/bin/chromium`, the pinned SDK and cached WebKit under
+`/workspace/.cloud-tools/playwright`; do not reinstall them. The local WebKit
+wrapper needs the documented workspace library setup. CI uses its normal system
+libraries. No native Mac, audible or physical testing is claimed.
+
+
 The v0.4.1 candidate adds a compact 2 by 2 chip workbench: VRAM, Work RAM, FM
 and PSG/VDP. Pin selections and connections stay within each chip. Existing
 VRAM/Work RAM behavior is reused; runtime FM/PSG data masks add stuck-low cuts

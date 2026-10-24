@@ -64,7 +64,11 @@ it; extend its strict format only as needed for audio masks, retaining v1 import
 Local verification passes: 107 native/SDK tests, 45 browser logic cases, four
 actual-core cases, three transaction cases and six display cases. Both source
 reviews approve. Required GitHub checks and same-commit package verification
-remain the delivery gate.
+remain the delivery gate. PR #48 is now merged as `e579c57` after all seven
+PR checks passed in run40088693320. Verify main CI40089045294, then publish and
+freshly verify v0.4.1 from that exact source before starting new work. The
+continuation branch `experiment/chip-workbench-delivery-checkpoint` records
+post-merge evidence; bundle it with the next implementation.
 
 After this user priority, resume coordinated fault-disconnect/recovery using
 existing setters and pulse protections, then experiment comparison.
