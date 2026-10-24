@@ -1085,7 +1085,7 @@
           try { actual=emulator._get_vram_fault_model_state(); } catch (_) { /* Keep the result explicitly unverified. */ }
           if (actual) syncVramState(actual);
           const off=actual && !actual.mask && !(actual.bridgeA>=0&&actual.bridgeB>=0);
-          note('VRAM',selectorStatus!==0?`clear rejected (${selectorStatus})`:off?'cleared':'clear accepted; runtime state unknown',
+          note('VRAM',selectorStatus!==0?`clear rejected (${selectorStatus})`:off?'cleared':actual?'clear accepted; fault remains configured':'clear accepted; runtime state unknown',
             actual?`runtime model ${actual.modelId}, ${off?'no fault configured':'fault remains configured'}`:'runtime state unknown');
         } catch (_) {
           let actual=null;
@@ -1130,11 +1130,19 @@
           cleared=clearStatus===0;
           if (cleared) cancelPulse('all fault domains disconnected');
         }
-        let pulseAfter=false;
-        try { pulseAfter=typeof emulator._get_logic_pulse_state==='function' && Number(emulator._get_logic_pulse_state())===1; }
-        catch (_) { /* The paused state is still reported below. */ }
-        note('RAM',cleared&&!logicActive?'cleared':'clear failed',cleared
-          ? `no tracked RAM fault; core clear accepted${pulseStateUnknown&&!pulseAfter?'; pulse state remains unverified':''}`
+        let pulseAfter=false, pulseAfterKnown=false;
+        try {
+          if (typeof emulator._get_logic_pulse_state==='function') {
+            pulseAfter=Number(emulator._get_logic_pulse_state())===1;
+            pulseAfterKnown=true;
+          }
+        } catch (_) { /* A telemetry failure cannot undo the clear attempt. */ }
+        const verifiedClear=cleared&&!logicActive&&pulseAfterKnown&&!pulseAfter;
+        const ramResult=verifiedClear?'cleared':cleared
+          ? (pulseAfter?'clear accepted; pulse remains armed':'clear accepted; pulse state unknown')
+          : 'clear failed';
+        note('RAM',ramResult,cleared
+          ? `no tracked RAM fault; core clear accepted${pulseAfter?'; core pulse remains armed while paused':!pulseAfterKnown?'; core pulse state unverified':''}`
           : `${logicActive?'tracked RAM fault remains active':'tracked RAM state off; core state unverified'}${pulseAfter?'; core pulse remains armed while paused':''}`);
       } catch (_) { note('RAM','clear threw',`${logicActive?'tracked RAM fault remains active':'tracked RAM state off'}; core setter outcome and pulse state unverified while paused`); }
     }
@@ -1146,8 +1154,8 @@
       const bridgeSetter=isPsg?emulator?._set_psg_data_bridge:emulator?._set_fm_data_bridge;
       const maskSetter=isPsg?emulator?._set_psg_data_mask:emulator?._set_fm_data_mask;
       if (!ready) { note(kind,'unavailable','optional runtime API absent'); return; }
-      let state=null, readFailed=false;
-      try { state=getter.call(emulator); } catch (_) { readFailed=true; }
+      let state=null;
+      try { state=getter.call(emulator); } catch (_) { /* Continue with the clear request and report state as unknown. */ }
       if (state && !state.configured) { note(kind,'already off','runtime state reports no configured fault'); return; }
       const observedAudio=()=>{
         try {
@@ -1162,7 +1170,7 @@
         if (status!==0) { note(kind,`clear rejected (${status})`,observedAudio()); return; }
         let after=null;
         try { after=getter.call(emulator); } catch (_) { /* Setter success remains known; state is not observable. */ }
-        note(kind,after ? after.configured?'clear accepted; still configured':'cleared' : readFailed?'cleared; state unavailable':'cleared; state unreadable',
+        note(kind,after ? after.configured?'clear accepted; still configured':'cleared' : 'clear accepted; runtime state unknown',
           after ? after.configured?'configured fault remains':'no configured fault' : 'runtime state unknown');
       } catch (_) { note(kind,'clear threw',observedAudio()); }
     };

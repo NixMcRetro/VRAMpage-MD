@@ -24,7 +24,7 @@ window.Module = async () => {
         throw new Error('synthetic RAM clear trap after mutation');
       }
       if(window.mockCore.rejectLogicClear)return 5;
-      if (logic.pulseState === 1) logic.pulseState = 4;
+      if (logic.pulseState === 1 && !window.mockCore.leavePulseArmedAfterClear) logic.pulseState = 4;
       logic.addressMask=0;
       logic.active = false;
       logic.config = {kind: 0, access: 0, a: 0, b: 0};
@@ -122,6 +122,7 @@ window.Module = async () => {
             !Number.isInteger(mask) || mask<0 || mask>255 ||
             (mask && (a!==-1 || b!==-1)) ||
             !((a===-1&&b===-1)||(a>=0&&a<=7&&b>=0&&b<=7&&a!==b))) return 2;
+        if (window.mockCore.leaveVramModelConfiguredAfterSet) return 0;
         Object.assign(vramModel,{modelId,mask,bridgeA:a,bridgeB:b});
         window.mockCore.vramAddressMask=mask;
         window.mockCore.short=a<0?[-1,-1]:[a,b];
@@ -177,7 +178,10 @@ window.Module = async () => {
           inputWrites:'0',changedWrites:'0'});
         return 0;
       },
-      _get_fm_data_bridge_state:()=>({...fm,modelVersion:'fm-data-bridge-test-v2'})
+      _get_fm_data_bridge_state:()=>{
+        if(window.mockCore.throwFmState) throw new Error('synthetic FM state trap');
+        return {...fm,modelVersion:'fm-data-bridge-test-v2'};
+      }
     });
     if (!window.__legacyFmMaskCore) core._set_fm_data_mask=mask=>{
       fm.maskCalls.push(mask);
