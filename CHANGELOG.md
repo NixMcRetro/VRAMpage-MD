@@ -4,7 +4,9 @@
 
 - Add an off-by-default PSG input-data bridge in the optional runtime, before register decoding and synthesis.
 - Add browser pair controls, truthful support/reset status and exact decimal counters in experiment exports; retain clean normal audio and legacy-core fallback.
-- This is the first audio slice, not the completed v0.4.0 milestone. YM2612 and separately verified Z80 traffic remain outstanding. No new public release.
+- Add an independent FM write-input bridge for YM2612 and YM3438, covering address and data bytes while preserving native port, cycle and busy-status handling. Full sound reset clears it; Z80-only partial reset preserves the configured bridge and counters.
+- Verify original synthetic Z80-to-PSG traffic through BUSREQ/RESET, with exactly three writes and two changed bytes. Compare generated FM samples against matching normal cores for both backends.
+- Keep these changes in development source pending complete v0.4.0 acceptance. The public v0.3.0 download remains unchanged.
 
 ## v0.3.0 - transaction-level VRAM
 

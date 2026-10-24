@@ -897,3 +897,15 @@ legacy selection. The final test fixture explicitly discards an inherited
 caller's custom output directory. See the linked build record for hashes,
 source-rebuild details and limits. Current-runtime performance and public model
 controls remain separate work.
+
+## FM input bridge and Z80 route
+
+`tests/test_fm_data_fault.py` checks strict native/sanitizer behavior and patch
+rejection. `tests/test_vram_transaction_wasm.py` builds matching normal/runtime
+YM2612 and YM3438 profiles and runs `tests/test_fm_data_runtime.cjs`: generated
+samples, disabled equivalence, active changes, busy status, exact counters and
+reset behavior. `tests/test_z80_psg_runtime.cjs` uses an original Z80 program
+loaded by a validated 68K bootstrap, with no commercial cartridge. Production
+profile checks execute both fixtures. Actual-core browser tests cover optional
+FM controls, draft retention, exports, unavailable APIs and clean reset.
+These checks establish software behavior, not audible or physical fidelity.

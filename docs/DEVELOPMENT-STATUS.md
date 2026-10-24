@@ -56,13 +56,20 @@ on the headless runner; an explicit 44.1 kHz PulseAudio virtual output resolves
 it with unchanged enable/mute assertions and a stronger advancing-clock check.
 This validates software routing, not audible output or native macOS.
 
-Next bounded work: FM input-data bridge on the shared YM2612/YM3438 write
-boundary and actual Z80-to-PSG route tests. Luna High implementation and
-independent review use separate `experiment/audio-fm-input` and
-`experiment/audio-z80-psg-tests` branches. The original Z80 test checkpoint
-`c8c00d8` passes against existing cores; independent author review and integration
-remain. Do not declare v0.4.0 complete or publish until the full audio acceptance
-criteria pass. Read the work queue before older historical records below.
+FM implementation and independent specialist review are complete through
+`204e611`, integrated on `integration/audio-fm`. The optional bridge transforms
+FM address/data input bytes at the shared YM2612/YM3438 boundary and preserves
+native timestamps, ports and busy handling. Matching normal/runtime tests cover
+both backends, finite generated samples, disabled equivalence, active changes,
+full reset and partial Z80 reset semantics. Browser controls and separate export
+state preserve PSG independence and legacy fallback.
+
+The original Z80-to-PSG fixture has also passed independent review and actual
+runtime checks: three writes, two changed bytes. Its encoded bootstrap proves
+that the 68K only controls BUSREQ/RESET and loads Z80 RAM, rather than writing the
+PSG directly. Final full regression and GitHub CI remain pending. Do not declare
+v0.4.0 complete or publish before full audio acceptance. Read the work queue
+before older historical records below.
 
 ## Compact Work RAM interface
 
