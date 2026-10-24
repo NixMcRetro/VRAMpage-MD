@@ -2012,6 +2012,18 @@
           event.target instanceof HTMLSelectElement ||
           event.target instanceof HTMLTextAreaElement ||
           event.target.isContentEditable) return;
+      const comparisonOutput=event.target.closest?.('#compareOutput');
+      if (comparisonOutput) {
+        const step=40;
+        const scroll={
+          ArrowUp:[0,-step],ArrowDown:[0,step],ArrowLeft:[-step,0],ArrowRight:[step,0]
+        }[event.code];
+        if (scroll) {
+          event.preventDefault();
+          comparisonOutput.scrollBy(scroll[0],scroll[1]);
+        }
+        return;
+      }
       const code=event.code;
       // Let focused UI controls activate normally rather than swallowing their
       // Enter/Space as controller inputs (notably the keyboard patchbay).

@@ -1554,6 +1554,35 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertLessEqual(self.page.evaluate("document.documentElement.scrollWidth"),390)
         self.assertLessEqual(self.page.locator("#compareOutput").evaluate("el=>el.clientWidth"),390)
 
+    def test_comparison_results_focus_keeps_keyboard_scroll_and_blocks_game_hotkeys(self):
+        self.load_rom()
+        export={"schemaVersion":1,"rom":{"name":"keyboard test","sha256":"a"*64},
+                "faultDisconnects":[{"action":"disconnect","results":[]} for _ in range(50)]}
+        encoded=json.dumps(export).encode()
+        self.page.locator("#compareFileA").set_input_files({"name":"keyboard-a.json","mimeType":"application/json","buffer":encoded})
+        self.page.locator("#compareFileB").set_input_files({"name":"keyboard-b.json","mimeType":"application/json","buffer":encoded})
+        output=self.page.locator("#compareOutput")
+        expect(output.locator("table")).to_be_visible()
+        output.focus()
+        before_scroll=output.evaluate("el=>el.scrollTop")
+        before_state=self.page.evaluate("""() => JSON.stringify({
+          pause:document.querySelector('#pauseBtn').textContent,
+          starts:mockCore.starts, logic:mockCore.logic.setterCalls,
+          vram:mockCore.vramModel.calls, masks:mockCore.vramMaskCalls,
+          psg:mockCore.psg.calls, fm:mockCore.fm.calls, input:mockCore.inputs
+        })""")
+        self.page.keyboard.press("ArrowDown")
+        self.page.wait_for_function("before=>document.querySelector('#compareOutput').scrollTop>before",arg=before_scroll)
+        self.page.keyboard.press("1")
+        self.page.keyboard.press("P")
+        after_state=self.page.evaluate("""() => JSON.stringify({
+          pause:document.querySelector('#pauseBtn').textContent,
+          starts:mockCore.starts, logic:mockCore.logic.setterCalls,
+          vram:mockCore.vramModel.calls, masks:mockCore.vramMaskCalls,
+          psg:mockCore.psg.calls, fm:mockCore.fm.calls, input:mockCore.inputs
+        })""")
+        self.assertEqual(after_state,before_state)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
