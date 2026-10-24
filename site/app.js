@@ -553,6 +553,13 @@
   function applyLogicFault(writeLimit=null) {
     if (!started || !logicApiReady()) return false;
     const config=logicConfigFromControls();
+    const lineCount=config.kind===1?15:config.kind===2?16:0;
+    if (!lineCount || !Number.isInteger(config.access) || config.access<1 || config.access>3 ||
+        !Number.isInteger(config.a) || !Number.isInteger(config.b) ||
+        config.a<0 || config.b<0 || config.a>=lineCount || config.b>=lineCount) {
+      setLogicStatus('Invalid RAM fault configuration. No fault was applied.');
+      return false;
+    }
     if (config.a===config.b) {
       setLogicStatus('Choose two different lines. No fault was applied.');
       return false;
@@ -561,7 +568,8 @@
       setLogicStatus('Data pairs must stay within D0–D7 or D8–D15. No fault was applied.');
       return false;
     }
-    if (writeLimit!==null && (!writePulseApiReady() || config.access!==2)) {
+    if (writeLimit!==null && (!Number.isInteger(writeLimit) || ![1,2,4,8].includes(writeLimit) ||
+        !writePulseApiReady() || config.access!==2)) {
       setLogicStatus('Affected-write pulses require Access: Write and a rebuilt core.');
       return false;
     }
