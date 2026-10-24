@@ -67,6 +67,210 @@ class AnnotatedBrowserResult(unittest.TextTestResult):
 
 
 class ActualCoreBrowserTests(unittest.TestCase):
+    def test_normal_core_rejects_optional_configuration_before_mutation(self):
+        normal_source = OPTIONS.site_root / 'source/src/main/js'
+        normal_js = normal_source / 'genplus.js'
+        normal_wasm = normal_source / 'genplus.wasm'
+        if not normal_js.is_file() or not normal_wasm.is_file():
+            self.fail(f'complete source package must provide normal core assets at {normal_source}')
+        handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
+        with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                with sync_playwright() as p:
+                    kwargs = {'executable_path': OPTIONS.executable} if OPTIONS.executable else {}
+                    browser = getattr(p, OPTIONS.browser).launch(**kwargs)
+                    page = browser.new_page(viewport={'width': 1366, 'height': 768}, accept_downloads=True)
+                    errors = []
+                    page.on('pageerror', lambda error: errors.append(str(error)))
+                    core_js = normal_js.read_text()
+                    core_js += '\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\n'
+                    page.route('**/core/genplus.js', lambda route: route.fulfill(
+                        content_type='text/javascript', body=core_js))
+                    page.route('**/core/genplus.wasm', lambda route: route.fulfill(
+                        content_type='application/wasm', path=str(normal_wasm)))
+                    page.goto(f'http://127.0.0.1:{server.server_port}/')
+                    page.wait_for_function('!!window.testCore')
+                    page.locator('#romFile').set_input_files({
+                        'name': 'original-normal-config.bin',
+                        'mimeType': 'application/octet-stream',
+                        'buffer': original_cartridge()})
+                    expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+                    page.wait_for_function('window.testCore._get_logic_frame()>10')
+                    self.assertEqual(page.evaluate("typeof testCore._set_vram_fault_model"), 'undefined')
+                    self.assertEqual(page.evaluate("typeof testCore._set_psg_data_bridge"), 'undefined')
+                    self.assertEqual(page.evaluate("typeof testCore._set_fm_data_bridge"), 'undefined')
+                    page.locator('#pauseBtn').click()
+                    expect(page.locator('#pauseBtn')).to_have_text('Resume')
+                    before = page.evaluate('''() => ({
+                        addressMask: testCore._get_vram_address_mask(),
+                        ramMask: testCore._get_logic_address_mask(),
+                        vramModel: document.querySelector('#vramModel').value,
+                        psgA: document.querySelector('#psgBridgeA').value,
+                        fmA: document.querySelector('#fmBridgeA').value
+                    })''')
+                    requested = {
+                        'format': 'vrampage-md-circuit-config', 'schemaVersion': 1,
+                        'configuration': {
+                            'vram': {'modelId': 1, 'mask': 0, 'pair': None},
+                            'ram': None, 'psg': [1, 6], 'fm': [0, 7]
+                        }
+                    }
+                    page.locator('#circuitConfigFile').set_input_files({
+                        'name': 'unsupported-normal-config.json', 'mimeType': 'application/json',
+                        'buffer': json.dumps(requested).encode()})
+                    expect(page.locator('#circuitConfigApply')).to_be_enabled()
+                    page.locator('#circuitConfigApply').click()
+                    expect(page.locator('#circuitConfigStatus')).to_contain_text('does not support the requested PSG bridge')
+                    after_reject = page.evaluate('''() => ({
+                        addressMask: testCore._get_vram_address_mask(),
+                        ramMask: testCore._get_logic_address_mask(),
+                        vramModel: document.querySelector('#vramModel').value,
+                        psgA: document.querySelector('#psgBridgeA').value,
+                        fmA: document.querySelector('#fmBridgeA').value
+                    })''')
+                    self.assertEqual(after_reject, before, 'unsupported normal-core request is rejected before any mutation')
+                    with page.expect_download() as download_info:
+                        page.locator('#circuitConfigDownload').click()
+                    saved = json.loads(Path(download_info.value.path()).read_text())
+                    self.assertEqual(saved['configuration'], {
+                        'vram': {'modelId': 1, 'mask': 0, 'pair': None},
+                        'ram': None, 'psg': None, 'fm': None
+                    })
+                    self.assertNotIn('rom', saved)
+                    self.assertNotIn('inputWrites', json.dumps(saved))
+                    self.assertEqual(errors, [])
+                    browser.close()
+            finally:
+                server.shutdown()
+
+    def test_circuit_configuration_uses_runtime_core_and_roundtrips_without_rom_data(self):
+        handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
+        with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                with sync_playwright() as p:
+                    kwargs = {'executable_path': OPTIONS.executable} if OPTIONS.executable else {}
+                    browser = getattr(p, OPTIONS.browser).launch(**kwargs)
+                    page = browser.new_page(viewport={'width': 1366, 'height': 768}, accept_downloads=True)
+                    errors = []
+                    page.on('pageerror', lambda error: errors.append(str(error)))
+                    core_js = (OPTIONS.site_root / 'core/genplus.js').read_text()
+                    core_js += '\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\n'
+                    page.route('**/core/genplus.js', lambda route: route.fulfill(
+                        content_type='text/javascript', body=core_js))
+                    page.goto(f'http://127.0.0.1:{server.server_port}/')
+                    page.wait_for_function('!!window.testCore')
+                    page.locator('#romFile').set_input_files({
+                        'name': 'original-circuit-config.bin',
+                        'mimeType': 'application/octet-stream',
+                        'buffer': original_cartridge()})
+                    expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+                    page.wait_for_function('window.testCore._get_logic_frame()>10')
+                    api = page.evaluate('''() => ({
+                        runtime: typeof testCore._set_vram_fault_model === 'function',
+                        vram: testCore._get_vram_fault_model_state(),
+                        supported: testCore._get_vram_supported_model_mask(),
+                        psg: testCore._get_psg_data_bridge_state(),
+                        fm: testCore._get_fm_data_bridge_state()
+                    })''')
+                    self.assertTrue(api['runtime'], 'the packaged browser core exposes the optional runtime model API')
+                    self.assertEqual(api['supported'] & 4, 4, 'synthetic cartridge enables Mode 5 transaction support')
+                    page.locator('#pauseBtn').click()
+                    expect(page.locator('#pauseBtn')).to_have_text('Resume')
+                    payload = {
+                        'format': 'vrampage-md-circuit-config', 'schemaVersion': 1,
+                        'configuration': {
+                            'vram': {'modelId': 2, 'mask': 0, 'pair': [2, 5]},
+                            'ram': None, 'psg': [1, 6], 'fm': [0, 7]
+                        }
+                    }
+                    before = page.evaluate('''() => ({
+                        model: testCore._get_vram_fault_model_state(),
+                        psg: testCore._get_psg_data_bridge_state(),
+                        fm: testCore._get_fm_data_bridge_state(),
+                        selector: document.querySelector('#vramModel').value
+                    })''')
+                    page.locator('#circuitConfigFile').set_input_files({
+                        'name': 'runtime-config.json', 'mimeType': 'application/json',
+                        'buffer': json.dumps(payload).encode()})
+                    expect(page.locator('#circuitConfigStatus')).to_contain_text('Nothing has been applied')
+                    after_preview = page.evaluate('''() => ({
+                        model: testCore._get_vram_fault_model_state(),
+                        psg: testCore._get_psg_data_bridge_state(),
+                        fm: testCore._get_fm_data_bridge_state(),
+                        selector: document.querySelector('#vramModel').value
+                    })''')
+                    self.assertEqual(after_preview, before, 'loading a file leaves actual core state and selectors unchanged')
+                    page.locator('#circuitConfigApply').click()
+                    state = page.evaluate('''() => ({
+                        vram: testCore._get_vram_fault_model_state(),
+                        psg: testCore._get_psg_data_bridge_state(),
+                        fm: testCore._get_fm_data_bridge_state()
+                    })''')
+                    self.assertEqual((state['vram']['modelId'], state['vram']['bridgeA'], state['vram']['bridgeB']), (2, 2, 5))
+                    self.assertTrue(state['psg']['configured'])
+                    self.assertEqual((state['psg']['bridgeA'], state['psg']['bridgeB']), (1, 6))
+                    self.assertTrue(state['fm']['configured'])
+                    self.assertEqual((state['fm']['bridgeA'], state['fm']['bridgeB']), (0, 7))
+                    with page.expect_download() as download_info:
+                        page.locator('#circuitConfigDownload').click()
+                    saved = json.loads(Path(download_info.value.path()).read_text())
+                    self.assertEqual(saved, payload)
+                    self.assertNotIn('rom', saved)
+                    self.assertNotIn('lastFrameCounts', json.dumps(saved))
+                    ram_payload = {
+                        'format': 'vrampage-md-circuit-config', 'schemaVersion': 1,
+                        'configuration': {
+                            'vram': {'modelId': 2, 'mask': 0, 'pair': None},
+                            'ram': {'type': 'address-mask', 'mask': 1, 'access': 3},
+                            'psg': [1, 6], 'fm': [0, 7]
+                        }
+                    }
+                    page.locator('#circuitConfigFile').set_input_files({
+                        'name': 'runtime-ram-config.json', 'mimeType': 'application/json',
+                        'buffer': json.dumps(ram_payload).encode()})
+                    expect(page.locator('#circuitConfigApply')).to_be_enabled()
+                    page.locator('#circuitConfigApply').click()
+                    ram_state = page.evaluate('''() => ({
+                        mask: testCore._get_logic_address_mask(),
+                        vram: testCore._get_vram_fault_model_state(),
+                        psg: testCore._get_psg_data_bridge_state(),
+                        fm: testCore._get_fm_data_bridge_state()
+                    })''')
+                    self.assertEqual(ram_state['mask'], 1)
+                    self.assertEqual((ram_state['vram']['mask'],ram_state['vram']['bridgeA'],ram_state['vram']['bridgeB']), (0,-1,-1))
+                    self.assertTrue(ram_state['psg']['configured'] and ram_state['fm']['configured'],
+                                    'RAM handoff leaves independent PSG and FM configurations intact')
+                    with page.expect_download() as download_info:
+                        page.locator('#circuitConfigDownload').click()
+                    self.assertEqual(json.loads(Path(download_info.value.path()).read_text()), ram_payload)
+                    if not page.locator('#logicExperiment').evaluate('element => element.open'):
+                        page.locator('#logicExperiment > summary').click()
+                    with page.expect_download() as export_info:
+                        page.locator('#logicExperimentBtn').click()
+                    experiment = json.loads(Path(export_info.value.path()).read_text())
+                    self.assertTrue(experiment['logic']['active'])
+                    self.assertEqual(experiment['logic']['fault']['addressMask'], 1)
+                    self.assertEqual(experiment['vramTransaction']['modelId'], 2)
+                    self.assertTrue(experiment['psgInputFault']['configured'])
+                    self.assertTrue(experiment['fmInputFault']['configured'])
+
+                    page.locator('#circuitConfigFile').set_input_files({
+                        'name': 'runtime-config.json', 'mimeType': 'application/json',
+                        'buffer': json.dumps(payload).encode()})
+                    page.locator('#circuitConfigApply').click()
+                    self.assertEqual(page.evaluate('testCore._get_logic_address_mask()'), 0,
+                                     'VRAM target handoff clears the active RAM fault')
+                    state = page.evaluate('testCore._get_vram_fault_model_state()')
+                    self.assertEqual((state['bridgeA'],state['bridgeB']), (2,5))
+                    self.assertEqual(errors, [])
+                    browser.close()
+            finally:
+                server.shutdown()
+
     def test_audio_queue_is_bounded_across_pause_resume_and_visibility_event(self):
         handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
         with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:

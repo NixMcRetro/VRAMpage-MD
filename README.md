@@ -6,9 +6,6 @@
 
 ## Download and play on your Mac
 
-The v0.4.0 download links are staged for publication after final release checks.
-Until publication completes, use the [verified v0.3.0 package](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.3.0/VRAMpage-MD-v0.3.0-macos.zip).
-
 **[Download VRAMpage MD v0.4.0 - complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.0/VRAMpage-MD-v0.4.0-macos.zip)**
 
 1. Download the ZIP and double-click it in Finder to extract it.
@@ -29,6 +26,8 @@ If your Mac blocks `START.command`, right-click it and choose **Open**, or follo
 **v0.3.0:** choose **Frame projection** or **Transaction** in the VRAM patchbay, then use the same legs and bridges. Transaction mode maps actual emulator VRAM accesses and exports separate model metadata and counters. Frame projection remains the default fallback. Both are digital approximations.
 
 **v0.4.0:** [audio input bridges](docs/AUDIO-BENDING.md) add independent PSG and FM D0-D7 pair controls, exact counters and experiment metadata. They change future chip-input writes before synthesis. Both the 68000 and Z80 routes are covered by synthetic tests; Z80 RAM/arbitration faults and physical electrical fidelity remain outside this model. Enable sound, choose a pair and apply it. Removing a bridge does not repair prior chip state; use clean restart when needed.
+
+**Development source after v0.4.0:** [circuit configuration files](docs/CIRCUIT-CONFIGURATIONS.md) save stable RAM/VRAM and audio settings. Loading a file previews it; an explicit Apply changes the circuit. This is not included in the immutable v0.4.0 ZIP.
 
 **RAM research:** a [reproducible bounded experiment](docs/RAM-STATUS-FOLLOWUP.md) now shows player-trajectory divergence while recorded demo inputs continue at the same phase. This uses the existing public core and does not establish physical electrical accuracy.
 

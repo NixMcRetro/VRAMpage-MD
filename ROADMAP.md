@@ -5,8 +5,8 @@
 | Phase | Delivery |
 |---|---|
 | A, delivered | v0.3.0: browser transaction-VRAM selection, existing chip controls, safe RAM coordination, exports and acceptable runtime performance |
-| B, acceptance | v0.4.0: independent YM2612/PSG input bridges, verified Z80 routes and clean normal audio; final CI/package gates |
-| C | Essential saved configurations, reproducible presets, coordinated faults, recovery and experiment comparison |
+| B, delivered | v0.4.0: independent YM2612/PSG input bridges, verified Z80 routes and clean normal audio; public package verified |
+| C, active | Essential saved configurations, reproducible presets, coordinated faults, recovery and experiment comparison |
 | D | Feature freeze, comprehensive crash/regression fixing, browser/audio stability, performance, usability and release candidate |
 
 Reuse the merged VRAM engine, API and runtime builder. Focused correctness and
@@ -53,8 +53,8 @@ Physical electrical fidelity and native Mac acceptance remain separate evidence.
 Development source has off-by-default PSG and FM input-data bridges with
 independent controls and exports. Matching normal/runtime FM tests cover YM2612
 and YM3438; an original Z80 program verifies the PSG bus route. Mixed Z80 traffic, repeated output and browser scheduling probes are now
-implemented and independently reviewed. Final candidate CI and complete package
-verification gate v0.4.0 publication. Z80 RAM/arbitration faults are deferred.
+implemented and independently reviewed. All seven PR/main checks and publication pass; the fresh public v0.4.0 ZIP
+passes checksum, source/tag/version, launcher and actual-core browser checks. Z80 RAM/arbitration faults are deferred.
 
 ## v0.1 | NTSC hardware-mode foundation
 

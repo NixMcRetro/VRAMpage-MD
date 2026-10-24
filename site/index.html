@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="style.css">
   <script src="core/genplus.js" defer onerror="window.__coreMissing = true"></script>
   <script src="framebuffer.js" defer></script>
+  <script src="circuit-config.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -180,6 +181,19 @@
           <div><span>Bytes changed</span><strong id="fmChangedWrites">0</strong></div>
         </div>
         <p class="small-note">Counters aggregate at the shared FM write boundary and do not identify which CPU initiated a write. Removing the bridge affects future writes only; it does not repair current chip state. Full sound reset clears the bridge. Z80-only reset preserves the bridge connection and counters.</p>
+      </section>
+      <section class="notes-block circuit-config-panel" aria-label="Circuit configuration files">
+        <div class="section-heading"><h2>08 <span>/</span> Circuit configuration</h2><span>Versioned JSON</span></div>
+        <p>Save fault settings without ROM data or execution history. Loading a file only stages a preview; faults change only after you choose Apply.</p>
+        <div class="logic-actions">
+          <button id="circuitConfigDownload" type="button">Download configuration</button>
+          <label id="circuitConfigFileLabel" class="load-btn" for="circuitConfigFile" role="button" tabindex="0">Load configuration</label>
+          <input id="circuitConfigFile" type="file" accept=".json,application/json" aria-label="Load circuit configuration JSON">
+          <button id="circuitConfigApply" type="button" disabled>Apply staged configuration</button>
+          <button id="circuitConfigCancel" type="button" disabled>Discard preview</button>
+        </div>
+        <p id="circuitConfigStatus" class="logic-status" role="status" aria-live="polite">No configuration staged.</p>
+        <pre id="circuitConfigPreview" class="circuit-config-preview" hidden></pre>
       </section>
       <details class="log-block">
         <summary class="section-heading"><h2>03 <span>/</span> Event log</h2><span>View activity</span></summary>

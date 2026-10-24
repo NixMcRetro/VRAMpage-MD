@@ -5,15 +5,20 @@ Verified on 24 October 2026. Read [work queue](WORK-QUEUE.md),
 
 ## Current checkpoint
 
-Audio-input milestone candidate **v0.4.0** is on `experiment/audio-milestone`.
-The FM implementation is merged in [PR #45](https://github.com/NixMcRetro/VRAMpage-MD/pull/45)
-as `2cb6e85fbbf08af3928361b161ba702f51f5fa87`, after
-[all seven PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40068642780)
-passed. The candidate adds actual Z80 FM/PSG simultaneous traffic, independent
-counters, exact repeated fresh-core output, and native browser scheduling probes.
-Both Luna High workers independently reviewed each other's tests and the audio
-model documentation. Final candidate regression, CI and publication gates are
-pending. Preserve the v0.3.0 public artifact below unchanged.
+Audio-input milestone **v0.4.0** is merged and publicly verified.
+[PR #46](https://github.com/NixMcRetro/VRAMpage-MD/pull/46) merged as
+`8c1d5329477d8702e1fb0d294abfbc233d50d80d`.
+[PR CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40069242003)
+and [merged-main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40069602921)
+passed all seven checks. [Publication](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40069946647)
+also passed, including extracted actual-core Firefox and WebKit tests.
+The [complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.0/VRAMpage-MD-v0.4.0-macos.zip)
+has SHA-256 `161ce8a914aa0ed42079c30b2a0dc705d95cdc57a4ec4a0e91bb9d8fed5f572c`.
+A fresh public download has 676 unique entries, matching version/tag/source
+manifests, executable launcher and runtime binaries identical to the tested
+candidate. Node API and both-chip/Z80 tests pass on the downloaded core, as do
+two actual Chromium audio/control and three transaction tests. The launcher
+serves all required assets and shuts down cleanly. Earlier releases are unchanged.
 
 The bounded audio milestone covers chip write-input bridges, not Z80 RAM faults
 or arbitration changes. Native audio probes observe stereo 44.1 kHz finite
@@ -21,6 +26,18 @@ buffers, bounded start lead, pause/resume and a synthetic visibility event under
 normal test load. They do not establish audible quality, actual OS background
 throttling or physical fidelity. See [audio model](AUDIO-BENDING.md).
 
+Active Phase C: strict circuit-configuration save/preview/apply, implemented on
+`experiment/circuit-config` from this release. Import is inert; explicit apply
+must preflight capabilities and preserve counter state for unchanged settings.
+Thrown-setter pause, unavailable-state reporting and undirected-pair
+normalization are implemented, including reversed live audio selections.
+Actual-runtime configuration staging, RAM/VRAM handoff and export tests pass;
+independent specialist review and the full 107-test native/SDK regression
+suite pass. Browser logic passes 40 tests; actual runtime and normal-core
+configuration, audio and control tests pass all four cases. Async selection
+tokens prevent stale reads or canceled files from replacing the preview.
+Integration is tracked in [PR #47](https://github.com/NixMcRetro/VRAMpage-MD/pull/47).
+GitHub checks remain the merge gate; no new public release is planned. Read the work queue before older checkpoints.
 
 Transaction VRAM v0.3.0 is merged and publicly verified. [PR #43](https://github.com/NixMcRetro/VRAMpage-MD/pull/43)
 merged as `4cfb983f3003449c0632375576f6a674e660d778`.

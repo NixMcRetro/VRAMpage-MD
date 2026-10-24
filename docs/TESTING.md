@@ -926,3 +926,28 @@ stereo 44.1 kHz finite samples, at most 205 ms start lead, no new scheduling whi
 paused, resumed scheduling and a near-now start after a synthetic visibility
 event. This is a normal-load observation, not OS-background or backlog stress
 validation. No native Mac or audible evidence is claimed.
+
+Published v0.4.0 verification: PR CI40069242003, merged-main CI40069602921 and
+publication40069946647 pass all required checks. The fresh public ZIP matches
+source `8c1d5329477d8702e1fb0d294abfbc233d50d80d`, its version/tag and checksum.
+Downloaded-core API, mixed FM/PSG/Z80 tests, Chromium audio/control (2) and
+transaction (3) tests pass. Its launcher serves every required runtime file
+and exits cleanly on Ctrl+C. This remains Linux cloud evidence.
+
+## Circuit configuration development checks
+
+`node tests/test_circuit_config_schema.cjs` validates version, exact fields,
+bounds, mutually exclusive RAM/VRAM targets, byte lanes and normalized pairs.
+`tests/browser_logic.py` checks inert preview, explicit apply, current applied
+settings rather than unapplied drafts, pulse/capability refusal, stable counters
+including reversed live audio connections, and pause/status after rejected or
+throwing core calls. `tests/browser_core.py` exercises the actual runtime with an
+original cartridge through VRAM/audio apply, RAM handoff and configuration/export
+round-trips. These files contain settings only, without ROM or memory contents.
+
+Configuration integration checkpoint: full 107-test Python suite with fresh
+WebAssembly profiles and normal native sanitizer checks passes, followed by all
+JavaScript/schema and native smoke checks. Chromium browser logic passes 40/40;
+compiled runtime/normal-core browser checks pass 4/4. Deferred File.text tests
+cover latest-selection precedence, Apply refusal during reads, cancellation and
+invalid replacement. No core code or compiler flags changed from v0.4.0.
