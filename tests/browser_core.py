@@ -588,6 +588,45 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     if fm_api:
                         self.assertEqual(payload['fmInputFault']['modelVersion'],'fm-register-data-low-dominant-v2')
                         self.assertTrue(payload['fmInputFault']['configured'])
+                    # Exercise coordinated removal against the actual native configuration.
+                    if page.locator('#pauseBtn').inner_text()=='Pause':
+                        page.locator('#pauseBtn').click()
+                    for kind,bit,available in [('psg',4,psg_api),('fm',3,fm_api)]:
+                        if available:
+                            page.locator(f'#{kind}LegMode').select_option('ground')
+                            page.locator(f'#{kind}Chip .pin').nth(bit).click()
+                            self.assertEqual(page.evaluate(f'testCore._get_{kind}_data_bridge_state().dataMask'),1<<bit)
+                    page.locator('#vramMode').select_option('disconnect')
+                    page.locator('#pinGrid .pin').nth(0).click()
+                    page.evaluate("""() => {
+                      window.__disconnectCpuCalls=0; window.__disconnectStartCalls=0;
+                      window.__disconnectRecover=testCore._recover_logic_cpu;
+                      window.__disconnectStart=testCore._start;
+                      testCore._recover_logic_cpu=(...args)=>{++window.__disconnectCpuCalls;return window.__disconnectRecover(...args)};
+                      testCore._start=(...args)=>{++window.__disconnectStartCalls;return window.__disconnectStart(...args)};
+                    }""")
+                    frame=page.evaluate('testCore._get_logic_frame()')
+                    for attempt in range(2):
+                        if attempt:
+                            page.locator('[data-chip-line]').nth(0).click()
+                            self.assertEqual(page.evaluate('testCore._get_logic_address_mask()'),1)
+                        page.locator('#disconnectAllFaultsBtn').click()
+                        expect(page.locator('#pauseBtn')).to_have_text('Resume')
+                        self.assertEqual(page.evaluate('testCore._get_logic_frame()'),frame)
+                        self.assertEqual(page.evaluate('[window.__disconnectCpuCalls,window.__disconnectStartCalls]'),[0,0])
+                        self.assertEqual(page.evaluate('testCore._get_vram_address_mask()'),0)
+                        self.assertEqual(page.evaluate('testCore._get_logic_address_mask()'),0)
+                        for kind,available in [('psg',psg_api),('fm',fm_api)]:
+                            if available:
+                                self.assertFalse(page.evaluate(f'testCore._get_{kind}_data_bridge_state().configured'))
+                    with page.expect_download() as download:
+                        page.locator('#logicExperimentBtn').click()
+                    cleared=json.loads(Path(download.value.path()).read_text())
+                    self.assertEqual(cleared['cpuInterventions'],payload['cpuInterventions'])
+                    self.assertEqual(len(cleared['faultDisconnects']),2)
+                    self.assertEqual([row['domain'] for row in cleared['faultDisconnects'][-1]['results']],['VRAM','RAM','PSG','FM'])
+                    self.assertEqual(cleared['faultDisconnects'][-1]['action'],'all-domain-disconnect')
+                    page.evaluate('testCore._recover_logic_cpu=window.__disconnectRecover;testCore._start=window.__disconnectStart')
                     page.locator('#resetBtn').click()
                     page.wait_for_function('testCore._get_logic_address_mask()===0')
                     if psg_api:
