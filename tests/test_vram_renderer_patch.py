@@ -42,12 +42,35 @@ class VramRendererPatch(unittest.TestCase):
         self.assertEqual(patched.count("bp = VRAM_TX_RENDER_U32("), 1)
         self.assertEqual(patched.count("object_info->attr  = VRAM_TX_RENDER_U16("), 1)
         self.assertEqual(patched.count("object_info->xpos  = VRAM_TX_RENDER_U16("), 1)
+        self.assertEqual(patched.count(
+            "const int vram_tx_render_active_snapshot = "
+            "vram_tx_diagnostic_render_active;"), 10)
+        self.assertIn(
+            "(vram_tx_render_active_snapshot ? vram_tx_render_read_u16(address) : \\\n   (*(uint16 *)&vram[(address)]))",
+            patch_core.VRAM_RENDER_READS)
+        self.assertIn(
+            "(vram_tx_render_active_snapshot ? vram_tx_render_read_u32(address) : \\\n   (*(uint32 *)&vram[(address)]))",
+            patch_core.VRAM_RENDER_READS)
         self.assertNotIn("atbuf = nt[", patched)
         self.assertNotRegex(patched, r"uint32 xscroll\s*=\s*\*\(uint32 \*\)&vram\[")
         self.assertNotIn("bp = *(uint32 *)&vram[(name << 5) | (y << 2)];", patched)
         self.assertIn("ypos = (q[link] >> im2_flag) & 0x1FF;", patched)
         self.assertIn("size = q[link + 1] >> 8;", patched)
         self.assertIn("link = (q[link + 1] & 0x7F) << 2;", patched)
+
+    def test_new_macro_caller_outside_reviewed_pure_render_functions_fails_closed(self):
+        patched = patch_core.patch_mode5_render_reads(self.source)
+        drifted = patched + "\nvoid unexpected_vram_reader(void) {\n"
+        drifted += "  (void)VRAM_TX_RENDER_U32(0x1000);\n}\n"
+        with self.assertRaises(SystemExit):
+            patch_core.patch_mode5_render_reads(drifted)
+
+        function = "void render_bg_m5(int line)\n{\n"
+        self.assertEqual(patched.count(function), 2)
+        drifted = patched.replace(
+            function, function + "  (void)VRAM_TX_RENDER_U32(0x1000);\n", 1)
+        with self.assertRaises(SystemExit):
+            patch_core.patch_mode5_render_reads(drifted)
 
     def test_raw_name_read_reintroduced_after_marker_fails_closed(self):
         patched = patch_core.patch_mode5_render_reads(self.source)

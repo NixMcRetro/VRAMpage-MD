@@ -526,8 +526,12 @@ VRAM_RENDER_MARKER = 'VRAM TX MODE 5 RENDER READS v1'
 VRAM_RENDER_READS = '''
 #if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)
 #include "vram_transaction_render.h" /* VRAM TX MODE 5 RENDER READS v1 */
-#define VRAM_TX_RENDER_U16(address) vram_tx_render_read_u16(address)
-#define VRAM_TX_RENDER_U32(address) vram_tx_render_read_u32(address)
+#define VRAM_TX_RENDER_U16(address) \\
+  (vram_tx_render_active_snapshot ? vram_tx_render_read_u16(address) : \\
+   (*(uint16 *)&vram[(address)]))
+#define VRAM_TX_RENDER_U32(address) \\
+  (vram_tx_render_active_snapshot ? vram_tx_render_read_u32(address) : \\
+   (*(uint32 *)&vram[(address)]))
 #else
 #define VRAM_TX_RENDER_U16(address) (*(uint16 *)&vram[(address)])
 #define VRAM_TX_RENDER_U32(address) (*(uint32 *)&vram[(address)])
@@ -556,7 +560,7 @@ def _function_ranges(source: str, name: str, arguments: str,
 
 
 def patch_mode5_render_reads(source: str) -> str:
-    """Route pinned M5 VRAM reads through the transaction-aware lane helper."""
+    """Route pinned M5 VRAM reads through a snapshotted active fast path."""
     include_anchor = '#include "shared.h"'
     already_patched = VRAM_RENDER_MARKER in source
     if already_patched:
@@ -681,6 +685,51 @@ def patch_mode5_render_reads(source: str) -> str:
 
     source = patch_one_function(source, 'update_bg_pattern_cache_m5', 'int index',
                                 patch_pattern_cache)
+
+    # The renderer configuration is changed only by register/reset/tick code,
+    # outside these synchronous rendering functions. Snapshot it once per
+    # function so the inactive path retains the exact original typed load and
+    # the active path keeps the existing bounds/alignment/wrap-safe helper.
+    # These are the only patched macro callers; fail closed if upstream adds
+    # another caller whose address bounds or execution context is unreviewed.
+    snapshot_functions = (
+        ('render_bg_m5', 'int line', 2, 7),
+        ('render_bg_m5_vs', 'int line', 2, 7),
+        ('render_bg_m5_im2', 'int line', 2, 7),
+        ('render_bg_m5_im2_vs', 'int line', 2, 7),
+        ('parse_satb_m5', 'int line', 1, 2),
+        ('update_bg_pattern_cache_m5', 'int index', 1, 1),
+    )
+    known_calls = 0
+    for name, arguments, expected, expected_calls in snapshot_functions:
+        changes = []
+        for start, end in _function_ranges(source, name, arguments, expected):
+            body = source[start:end]
+            calls = len(re.findall(r'VRAM_TX_RENDER_U(?:16|32)\(', body))
+            if calls != expected_calls:
+                raise SystemExit(f'Unexpected routed read count in {name}.')
+            known_calls += calls
+            declaration = ('#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)\n'
+                           '  const int vram_tx_render_active_snapshot = '
+                           'vram_tx_diagnostic_render_active;\n'
+                           '#endif\n')
+            if body.count('vram_tx_render_active_snapshot'):
+                if body.count(declaration) != 1:
+                    raise SystemExit(f'Active snapshot in {name} is partial or ambiguous.')
+            else:
+                opening = body.find('{\n')
+                if opening < 0:
+                    raise SystemExit(f'Expected {name} function body opening missing.')
+                body = body[:opening + 2] + declaration + body[opening + 2:]
+            changes.append((start, end, body))
+        for start, end, body in reversed(changes):
+            source = source[:start] + body + source[end:]
+
+    macro_definitions = (source.count('#define VRAM_TX_RENDER_U16(address)') +
+                         source.count('#define VRAM_TX_RENDER_U32(address)'))
+    total_calls = len(re.findall(r'VRAM_TX_RENDER_U(?:16|32)\(', source)) - macro_definitions
+    if total_calls != known_calls:
+        raise SystemExit('Mode 5 renderer read macro caller set changed; review required.')
     return source
 
 
