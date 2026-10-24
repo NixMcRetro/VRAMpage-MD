@@ -52,20 +52,19 @@ window.Module=opts=>originalFactory(opts).then(core=>{
   window.testCore=core;
   const nativeModel=core._set_vram_fault_model?.bind(core);
   const nativeLogic=core._set_logic_fault?.bind(core);
-  const nativeAddress=core._set_logic_address_mask?.bind(core);
   if(nativeModel) core._set_vram_fault_model=(...args)=>{
     if(window.__rejectAllVram) return 5;
     if(window.__rejectVramClear && args[1]===0 && args[2]===-1) return 6;
+    if(window.__vramAllowedCalls!==undefined) {
+      if(window.__vramAllowedCalls===0) return 9;
+      window.__vramAllowedCalls--;
+    }
     return nativeModel(...args);
   };
   if(nativeLogic) core._set_logic_fault=(...args)=>{
     if(window.__rejectRamDisconnect && args[0]===0) return 7;
     if(window.__rejectRamApply && args[0]!==0) return 8;
     return nativeLogic(...args);
-  };
-  if(nativeAddress) core._set_logic_address_mask=(...args)=>{
-    if(window.__rejectRamAddressApply && args[0]!==0) return 8;
-    return nativeAddress(...args);
   };
   if(window.__hideRuntimeApi) {
     for(const name of ['_set_vram_fault_model','_get_vram_fault_model_state','_get_vram_supported_model_mask'])
@@ -189,6 +188,58 @@ window.Module=opts=>originalFactory(opts).then(core=>{
         expect(page.locator(".pin.connected")).to_have_count(2)
         page.locator("#disconnectBtn").click()
         expect(page.locator(".pin.connected")).to_have_count(0)
+        self.assertEqual(self.errors, [])
+
+    def test_failed_rollback_pauses_and_recovery_exports_partial_cleanup(self):
+        self.open_core(ROOT / "site/core")
+        page = self.page
+        page.locator("#vramModel").select_option("2")
+        page.locator("#logicExperiment > summary").click()
+        page.locator("#logicApplyBtn").click()
+        page.evaluate("window.__rejectRamDisconnect=true; window.__vramAllowedCalls=1")
+        page.locator("#vramMode").select_option("bridge")
+        page.locator(".pin").nth(0).click()
+        page.locator(".pin").nth(1).click()
+        page.evaluate("window.__rejectRamDisconnect=false")
+        expect(page.locator("#pauseBtn")).to_have_text("Resume")
+        expect(page.locator("#vramModelStatus")).to_contain_text("Both fault states are retained")
+        state = page.evaluate("testCore._get_vram_fault_model_state()")
+        self.assertEqual((state["modelId"], state["bridgeA"], state["bridgeB"]), (2, 0, 1))
+        frozen = page.evaluate("testCore._get_logic_frame()")
+        page.wait_for_timeout(100)
+        self.assertEqual(page.evaluate("testCore._get_logic_frame()"), frozen,
+                         "emulation must pause before another tick after dual-active rollback failure")
+        with page.expect_download() as download:
+            page.locator("#logicExperimentBtn").click()
+        data = json.loads(Path(download.value.path()).read_text())
+        self.assertTrue(data["logic"]["active"])
+        self.assertEqual(data["vramTransaction"]["bridgeA"], 0)
+        self.assertTrue(any(change.get("result")=="ram-disconnect-rejected" and
+                             change.get("ramFaultStillActive") is True
+                             for change in data["vramModelTransitions"]))
+
+        # Force an already-active VRAM state to test recovery's partial-cleanup path.
+        # Normal UI handoff prevents this dual-active configuration.
+        page.evaluate("window.__vramAllowedCalls=undefined")
+        page.locator("#resetBtn").click()
+        page.wait_for_function("testCore._get_logic_frame()>5")
+        page.locator("#vramModel").select_option("2")
+        page.locator("#logicApplyBtn").click()
+        page.evaluate("testCore._set_vram_fault_model(2,0,0,1)")
+        page.evaluate("window.__rejectVramClear=true")
+        page.locator("#logicResumeBtn").click()
+        page.evaluate("window.__rejectVramClear=false")
+        expect(page.locator("#logicStatus")).to_contain_text("RAM fault is disconnected")
+        expect(page.locator("#logicStatus")).to_contain_text("no CPU intervention was issued")
+        with page.expect_download() as download:
+            page.locator("#logicExperimentBtn").click()
+        data = json.loads(Path(download.value.path()).read_text())
+        self.assertFalse(data["logic"]["active"])
+        self.assertEqual(data["vramTransaction"]["bridgeA"], 0)
+        self.assertTrue(any(item.get("action")=="recovery-aborted" and
+                            item.get("ramFaultDisconnected") is True and
+                            item.get("vramFaultDisconnected") is False
+                            for item in data["cpuInterventions"]))
         self.assertEqual(self.errors, [])
 
 
