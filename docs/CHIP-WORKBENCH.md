@@ -76,10 +76,11 @@ RAM/VRAM faults clear while PSG/FM faults and pause state are preserved. A copy
 of **Clean restart** immediately to its right invokes the same full cartridge
 reboot as the original toolbar button; both share availability and errors.
 
-All ten distinct A11–A15 write pairs remain available. **8 frames** is the
-default: disconnect after exactly eight emulated ticks without CPU recovery or
-an affected-write cap. **Hold** keeps the selected write-only pair active only while its mouse button
-or key is down; release disconnects it. Pointer cancellation or loss of window
+All ten distinct A11–A15 write pairs remain available. **Hold while pressed**
+is the default on a fresh page: the selected write-only pair is active only while
+its mouse button or key is down; release disconnects it. Choose **8-frame pulse**
+to disconnect after exactly eight emulated ticks without CPU recovery or an
+affected-write cap. Pointer cancellation or loss of window
 focus also ends the contact. Existing capability,
 memory-domain and pulse guards still apply. Removing a bridge leaves earlier
 corruption intact. Audio faults can coexist. See [RAM pulses](RAM-PULSES.md).

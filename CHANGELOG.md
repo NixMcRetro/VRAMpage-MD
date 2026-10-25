@@ -2,6 +2,8 @@
 
 ## Unreleased workbench improvements
 
+- Default RAM WRITE to Hold while pressed; retain explicit eight-frame pulses and their exact timing.
+
 - Show active faults with pale green chip outlines and neutral infill; prevent fault digits on a focused Work RAM preset from activating global VRAM. Clearly distinguish the VRAM Randomiser's temporary disabled state during RAM contacts from a press.
 
 - Add a compact Clean restart copy, optional sustained A11–A15 write contacts, and chip-targeted 1–9 shortcuts with 0 cycling VRAM/WRAM/FM/PSG and a separate keyboard-target label.
