@@ -114,6 +114,6 @@ FM/PSG shortcuts remain available because their faults are independent of RAM. *
 changing faults. Focus the game or a non-control area to use global fault digits.
 
 The VRAM Randomiser is temporarily unavailable while a Work RAM fault/contact
-is active. Its muted dashed disabled appearance and explanatory title distinguish
-this safety guard from a pressed button; activating RAM does not click the VRAM
+is active. It uses the same ordinary disabled appearance as the other Randomiser
+buttons; its explanatory title describes the guard. Activating RAM does not click the VRAM
 Randomiser. Release or clear RAM to make VRAM randomisation available again.

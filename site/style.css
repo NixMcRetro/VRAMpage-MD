@@ -401,7 +401,6 @@ footer { padding-top:9px; font-size:10px; }
 .randomiser-row strong { margin-right:3px; font-size:11px; }
 .compact-recovery-actions { display:inline-flex; gap:5px; }
 .randomiser-row button { min-width:40px; padding:5px 8px; font-size:10px; }
-#randomVramBtn:disabled { opacity:1; background:transparent; border-style:dashed; border-color:var(--rule); color:var(--muted); }
 .randomiser-status { min-height:1em; margin:0 12px 6px; color:var(--muted); font:9px/1.25 ui-monospace,SFMono-Regular,Consolas,monospace; }
 .ram-frame-pairs { margin:0 12px 6px; color:var(--muted); font:9px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace; }
 .ram-frame-pairs > strong { display:inline-block; margin:0 8px 4px 0; }

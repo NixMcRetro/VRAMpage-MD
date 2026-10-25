@@ -698,6 +698,13 @@ class ActualCoreBrowserTests(unittest.TestCase):
                       return {fm:[f.bridgeA,f.bridgeB],psg:[p.bridgeA,p.bridgeB]};
                     }''')
                     self.assertEqual(state, {'fm': [0, 7], 'psg': [0, 7]})
+                    audio_before=page.evaluate('''() => ({fm:testCore._get_fm_data_bridge_state(),psg:testCore._get_psg_data_bridge_state()})''')
+                    page.locator('#logicCpuResetBtn').click()
+                    expect(page.locator('#pauseBtn')).to_have_text('Resume')
+                    self.assertEqual(page.evaluate('''() => ({fm:testCore._get_fm_data_bridge_state(),psg:testCore._get_psg_data_bridge_state()})'''),audio_before,
+                                     'paused CPU reset preserves audio fault settings and counters')
+                    self.assertEqual(page.evaluate('nativeCalls._recover_logic_cpu'), [[2]])
+                    self.assertEqual(page.evaluate('nativeCalls._start.length'), 1)
                     self.assertEqual(page.locator('[data-keyboard-chip=FM].fault-active,[data-keyboard-chip=PSG].fault-active').count(), 2)
                     page.keyboard.press('Digit0')
                     expect(page.locator('#keyboardTarget')).to_contain_text('VRAM')
@@ -709,7 +716,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         self.assertFalse(page.evaluate('testCore._get_psg_data_bridge_state().configured'))
                         expect(page.locator('#resetBtn')).to_be_enabled()
                         expect(page.locator('#compactResetBtn')).to_be_enabled()
-                    self.assertEqual(page.evaluate('nativeCalls._recover_logic_cpu'), [])
+                    self.assertEqual(page.evaluate('nativeCalls._recover_logic_cpu'), [[2]])
                     self.assertEqual(page.locator('.chip-card.fault-active').count(), 0)
                     page.locator('#pauseBtn').click()
                     page.locator('#ramWriteMode').select_option('hold')

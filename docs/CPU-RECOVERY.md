@@ -14,6 +14,11 @@ repairs corrupted RAM or guarantees that gameplay continues.
   mixed state can fail even when a complete console restart works.
 
 Both CPU interventions leave PSG/FM input faults and sound-chip state unchanged.
+This describes the reset operation itself: it calls neither `gen_reset()` nor
+`sound_reset()`. Once the CPU runs again, cartridge code may issue ordinary
+sound writes and alter registers or audio. **Clean restart** is the workbench's
+full sound-chip reset path; removing an audio fault alone affects future writes
+and does not guarantee repair of previously changed chip state.
 The development workbench also exposes **CPU reset** beside the Randomiser
 buttons. It invokes the same CPU-only reset action; it is not a full reboot and
 does not change the app's pause state. A **Clean restart** copy immediately
