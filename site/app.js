@@ -1671,9 +1671,15 @@
     const config=activeRamConfiguration;
     if (!logicActive || !config || config.type!=='line-pair' || config.kind!==1 || config.access!==2 ||
         `${config.a},${config.b}`!==held.key) { ownedAddressHold=null; return false; }
-    const released=disconnectLogic();
+    let released;
+    try { released=disconnectLogic(); }
+    catch(error) {
+      if (keyboardHeld?.target==='WRAM') keyboardHeld=null;
+      reportKeyboardReleaseFailure('WRAM',error.message);
+      return false;
+    }
     if (released) {
-      keyboardHeld=null;
+      if (keyboardHeld?.target==='WRAM') keyboardHeld=null;
       if (type==='pointer' && held.button?.hasPointerCapture?.(pointerId)) {
         try { held.button.releasePointerCapture(pointerId); } catch (_) { /* Pointerup may have released capture already. */ }
       }
@@ -2211,12 +2217,14 @@
   }
 
   function endMomentaryBridge() {
-    if (!momentary) return;
+    if (!momentary) return true;
     const state=currentVramModelState();
     const targetModel=vramModelId===2 && (state.supportedModelsMask&4)===0 ? 1 : vramModelId;
     if (applyVramModel(targetModel,momentaryRestoreMask,momentaryRestorePair,'momentary VRAM bridge released')) {
       momentaryRestorePair=null;momentaryRestoreMask=0;
+      return true;
     }
+    return false;
   }
 
   function setKeyboardTarget(target) {
@@ -2233,6 +2241,17 @@
   function applyKeyboardMutation(action) {
     keyboardMutation=true;
     try { return action(); } finally { keyboardMutation=false; }
+  }
+
+  function reportKeyboardReleaseFailure(target,reason) {
+    if (target==='WRAM') ownedAddressHold=null;
+    if (!paused) pauseToggle();
+    if (target==='WRAM') {
+      try { updateLogicControls(); } catch (_) { /* Runtime state getters may be the failure source. */ }
+    }
+    const status=target==='VRAM' ? $('vramModelStatus') : target==='WRAM'
+      ? $('logicStatus') : $(`${target.toLowerCase()}BridgeStatus`);
+    status.textContent=`${target} held fault release/restoration was not confirmed (${reason}); emulation paused. The fault may remain active.`;
   }
 
   function audioState(target) {
@@ -2260,7 +2279,7 @@
     if (keyboardTarget==='WRAM') {
       const [a,b]=QUICK_RAM_PAIRS[index];
       if (hold) {
-        if (pendingPulse || momentary || (logicActive && !activeRamConfiguration)) return false;
+        if (pendingPulse || momentary || ownedAddressHold || (logicActive && !activeRamConfiguration)) return false;
         const restore=logicActive&&activeRamConfiguration ? {...activeRamConfiguration}:null;
         if (!applyKeyboardMutation(()=>applyLogicFault(null,{kind:1,access:2,a,b}))) return false;
         keyboardHeld={code:`Digit${index+1}`,target:'WRAM',pair:[a,b],restore};
@@ -2289,21 +2308,30 @@
     const held=keyboardHeld;
     if (!held || (code && code!==held.code)) return;
     keyboardHeld=null;
-    if (held.target==='VRAM') { endMomentaryBridge(); return; }
-    if (held.target==='WRAM') {
-      const active=activeRamConfiguration;
-      if (!logicActive || !active || active.type!=='line-pair' || active.kind!==1 || active.access!==2 || active.a!==held.pair[0] || active.b!==held.pair[1]) return;
-      const expectedOwner=held.code.startsWith('Digit')?'numeric':'keyboard';
-      if (ownedAddressHold && (ownedAddressHold.type!==expectedOwner || ownedAddressHold.code!==held.code || ownedAddressHold.key!==`${held.pair[0]},${held.pair[1]}`)) return;
-      if (!applyKeyboardMutation(()=>disconnectLogic())) return;
-      if (held.restore) applyKeyboardMutation(()=>held.restore.type==='address-mask'
-        ? applyAddressMask(held.restore.mask,held.restore.access)
-        : applyLogicFault(null,held.restore));
-      return;
+    try {
+      if (held.target==='VRAM') {
+        if (!endMomentaryBridge()) throw new Error('core refused VRAM restoration');
+        return;
+      }
+      if (held.target==='WRAM') {
+        const active=activeRamConfiguration;
+        if (!logicActive || !active || active.type!=='line-pair' || active.kind!==1 || active.access!==2 || active.a!==held.pair[0] || active.b!==held.pair[1]) return;
+        const expectedOwner=held.code.startsWith('Digit')?'numeric':'keyboard';
+        if (ownedAddressHold && (ownedAddressHold.type!==expectedOwner || ownedAddressHold.code!==held.code || ownedAddressHold.key!==`${held.pair[0]},${held.pair[1]}`)) return;
+        if (!applyKeyboardMutation(()=>disconnectLogic())) throw new Error('core refused RAM disconnect');
+        if (held.restore && !applyKeyboardMutation(()=>held.restore.type==='address-mask'
+          ? applyAddressMask(held.restore.mask,held.restore.access)
+          : applyLogicFault(null,held.restore))) throw new Error('core rejected the prior RAM fault restoration');
+        return;
+      }
+      const current=audioState(held.target);
+      if (!current) throw new Error('audio runtime state is unavailable');
+      if (!current.pair || !samePair(current.pair,SHORTCUT_PAIRS[Number(held.code.slice(5))-1])) return;
+      if (!applyKeyboardMutation(()=>applyAudioTarget(held.target,held.restore.pair,held.restore.mask)))
+        throw new Error('core rejected the prior audio fault restoration');
+    } catch(error) {
+      reportKeyboardReleaseFailure(held.target,error.message);
     }
-    const current=audioState(held.target);
-    if (!current || !current.pair || !samePair(current.pair,SHORTCUT_PAIRS[Number(held.code.slice(5))-1])) return;
-    applyKeyboardMutation(()=>applyAudioTarget(held.target,held.restore.pair,held.restore.mask));
   }
 
   function setupPatchbay() {
@@ -2523,6 +2551,8 @@
       // and cancel app-scheduled pulse work before native activation can throw.
       clearAudioQueue();
       cancelPulse(cleanRestart ? 'clean restart' : 'cartridge replaced');
+      ownedAddressHold=null; keyboardHeld=null;
+      momentary=null; momentaryRestorePair=null; momentaryRestoreMask=0;
       coreMutated=true; // _start can mutate native state before it throws.
       emulator._start();
       if (typeof emulator._set_vram_short !== 'function')
@@ -2574,6 +2604,7 @@
         started=false;
         setRunning(false);
         $('resetBtn').disabled=!romBytes;
+        $('compactResetBtn').disabled=!romBytes;
         error.cartridgeActivationUncertain=true;
         message('CARTRIDGE ACTIVATION UNCERTAIN',`${error.message} The core may have changed; use Clean restart to reload the last accepted cartridge.`);
       } else started=wasStarted;
@@ -2656,7 +2687,6 @@
       pressed.clear();
       endKeyboardHold();
       if (ownedAddressHold?.type==='pointer') endAddressFrameHold('pointer',ownedAddressHold.pointerId);
-      if(momentary) endMomentaryBridge();
       focusReleased=true;
     });
     window.addEventListener('focus',()=>{if(focusReleased){lastFrame=0;focusReleased=false;}});
