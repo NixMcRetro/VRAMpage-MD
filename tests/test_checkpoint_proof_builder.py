@@ -2,6 +2,7 @@
 import importlib.util
 from pathlib import Path
 import tempfile
+from unittest import mock
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,6 +22,21 @@ class CheckpointProofOutputTests(unittest.TestCase):
             for path in (alias,alias/'child'):
                 with self.subTest(path=path),self.assertRaisesRegex(ValueError,'symlink'):
                     BUILDER.validated_output(repo,vendor,path)
+                with mock.patch.dict('os.environ',{'VRAMPAGE_WASM_GENPLUS':str(vendor)}), \
+                     mock.patch('sys.argv',['build.py',str(repo),str(path)]), \
+                     self.assertRaisesRegex(SystemExit,'symlink'):
+                    BUILDER.main()
+            self.assertEqual(sentinel.read_text(),'retain')
+
+    def test_main_refuses_unmarked_output_without_deleting_its_contents(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);repo=root/'repo';vendor=repo/'vendor';(vendor/'.git').mkdir(parents=True)
+            output=root/'unmarked';output.mkdir();sentinel=output/'keep';sentinel.write_text('retain')
+            with mock.patch.dict('os.environ',{'VRAMPAGE_WASM_GENPLUS':str(vendor)}), \
+                 mock.patch('sys.argv',['build.py',str(repo),str(output)]), \
+                 mock.patch.object(BUILDER.subprocess,'check_output',return_value=BUILDER.PIN), \
+                 self.assertRaisesRegex(SystemExit,'unmarked'):
+                BUILDER.main()
             self.assertEqual(sentinel.read_text(),'retain')
 
     def test_source_ancestors_and_source_children_are_protected(self):
