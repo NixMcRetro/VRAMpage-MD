@@ -235,7 +235,11 @@ window.Module = async () => {
         return logic.frame;
       },
       _get_logic_activation_frame: () => logic.activationFrame,
-      _get_logic_cpu_flags: () => logic.cpuFlags,
+      _get_logic_cpu_flags: () => {
+        if (window.mockCore.throwCpuFlags) throw new Error('synthetic CPU flag telemetry trap');
+        if (Object.prototype.hasOwnProperty.call(window.mockCore,'invalidCpuFlags')) return window.mockCore.invalidCpuFlags;
+        return window.mockCore.cpuFlagsByFrame?.[logic.frame] ?? logic.cpuFlags;
+      },
     });
   }
   if (window.__legacyRecoveryCore) delete core._recover_logic_cpu;

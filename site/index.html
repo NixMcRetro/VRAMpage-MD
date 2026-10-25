@@ -165,8 +165,10 @@
       </div>
       <div class="logic-actions">
         <button id="logicResumeBtn" type="button" disabled>Disconnect and force resume</button>
+        <button id="armCpuRecoveryBtn" type="button" disabled aria-pressed="false">Arm CPU recovery once</button>
+        <span id="cpuRecoveryStatus" class="logic-status" role="status" aria-live="polite">OFF</span>
       </div>
-        <p class="logic-note">CPU recovery disconnects RAM and VRAM faults, leaves PSG/FM faults unchanged, preserves corrupted RAM and may immediately stop again. CPU-only reset leaves other chips running. Disconnect all faults pauses only when clearing a domain is unavailable, partial or unverified; Clean restart fully reboots.</p>
+        <p class="logic-note">CPU recovery disconnects RAM and VRAM faults, leaves PSG/FM faults unchanged, preserves corrupted RAM and may immediately stop again. CPU-only reset leaves other chips running. Arm once to attempt a CPU-only reset after HALT is reported on two completed frames; STOP alone does not trigger it. This does not detect software loops or a browser locked inside a frame. Disconnect all faults pauses only when clearing a domain is unavailable, partial or unverified; Clean restart fully reboots.</p>
       <div class="logic-actions pulse-settings">
         <label for="logicPulseFrames">Pulse length</label>
         <select id="logicPulseFrames" disabled aria-label="Pulse limit: emulated frames or affected writes">
