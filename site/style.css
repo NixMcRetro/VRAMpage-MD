@@ -350,8 +350,8 @@ footer { padding-top:9px; font-size:10px; }
 .chip-card.fault-active .ram-chip-body {
   background:#dcebd8; color:#243d27; outline:2px solid #8eb18a; outline-offset:1px;
 }
-.chip-card.fault-active .pin:not(.cut):not(.bridged):not(.selected):not(.connected) .chip-signal,
-.chip-card.fault-active .chip-pin:not(.cut):not(.bridged):not(.selected):not(.connected) .chip-signal { color:#243d27; }
+.chip-card.fault-active .pin:not(.cut):not(.bridged):not(.selected):not(.connected):not(:hover) .chip-signal,
+.chip-card.fault-active .chip-pin:not(.cut):not(.bridged):not(.selected):not(.connected):not(:hover) .chip-signal { color:#243d27; }
 .chip-card.fault-active .chip-middle strong,
 .chip-card.fault-active .chip-middle span,
 .chip-card.fault-active .ram-chip-body strong,

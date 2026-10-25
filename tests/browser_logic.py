@@ -1925,6 +1925,8 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.emulate_media(color_scheme='dark')
         self.assertEqual(self.page.locator('#fmChip .pin').nth(0).evaluate("p=>getComputedStyle(p.querySelector('.chip-signal')).color"),self.page.locator('#fmChip .pin').nth(0).evaluate('p=>getComputedStyle(p).color'))
         self.assertEqual(self.page.locator('#fmChip .pin').nth(2).evaluate("p=>getComputedStyle(p.querySelector('.chip-signal')).color"),'rgb(36, 61, 39)')
+        self.page.locator('#fmChip .pin').nth(2).hover()
+        self.assertEqual(self.page.locator('#fmChip .pin').nth(2).evaluate("p=>getComputedStyle(p.querySelector('.chip-signal')).color"),self.page.locator('#fmChip .pin').nth(2).evaluate('p=>getComputedStyle(p).color'))
         self.page.emulate_media(color_scheme='light')
         self.page.keyboard.press('Digit0')
         self.page.keyboard.press('Digit1')
