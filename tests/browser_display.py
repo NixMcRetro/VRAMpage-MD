@@ -180,7 +180,7 @@ class BrowserDisplayTests(unittest.TestCase):
         self.page.keyboard.press('Space')
         expect(self.page.locator('#connectionLabel')).to_have_text('AD0 ↔ AD3')
         self.assertEqual(self.page.evaluate('window.mockCore.short'), [0, 3])
-        self.page.keyboard.press('Digit0')
+        self.page.locator('#disconnectBtn').evaluate('(button)=>button.click()')
         pins.nth(1).click()
         pins.nth(2).click()
         expect(self.page.locator('#connectionLabel')).to_have_text('AD1 ↔ AD2')

@@ -2,6 +2,9 @@
 
 ## Unreleased workbench improvements
 
+- Add a compact Clean restart copy, optional sustained A11–A15 write contacts, and chip-targeted 1–9 shortcuts with 0 cycling VRAM/WRAM/FM/PSG and a pale green target indicator.
+- Record user-reported Mac Safari audio, tab/app switching, randomiser, RAM pulse and recovery acceptance.
+
 - Stage cartridge replacements so rejected or stale file reads cannot poison the running cartridge, Clean restart or export identity; stop truthfully if core activation fails after mutation.
 
 - Stop stale queued audio across pause/mute/visibility/restart boundaries and avoid accumulating buffers while the browser AudioContext is suspended, without changing emulated sound or fault state.

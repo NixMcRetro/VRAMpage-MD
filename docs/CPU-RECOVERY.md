@@ -16,7 +16,8 @@ repairs corrupted RAM or guarantees that gameplay continues.
 Both CPU interventions leave PSG/FM input faults and sound-chip state unchanged.
 The development workbench also exposes **CPU reset** beside the Randomiser
 buttons. It invokes the same CPU-only reset action; it is not a full reboot and
-does not change the app's pause state.
+does not change the app's pause state. A **Clean restart** copy immediately
+to its right invokes the same full reboot as the original toolbar button.
 Use the separate development-source all-fault action below when audio faults
 also need to be removed. CPU recovery does not reset the whole system.
 
@@ -26,9 +27,10 @@ an interrupt, rewind an exception or establish physical-hardware fidelity.
 **Clean restart** remains the full cartridge reboot. Pausing is independent:
 recovery never changes pause state, so press Resume if the application is paused.
 
-The compact A11–A15 pair buttons run write-only faults for eight emulated
-frames and then disconnect without CPU recovery. They preserve play/pause and
-audio settings; use CPU reset explicitly if desired. See [RAM pulses](RAM-PULSES.md).
+The compact A11–A15 pair buttons default to write-only faults for eight emulated
+frames and disconnect without CPU recovery. Hold mode instead keeps the fault
+active only while the mouse/key is down. They preserve play/pause and audio
+settings; use CPU reset explicitly if desired. See [RAM pulses](RAM-PULSES.md).
 
 ## Development source: disconnect all faults
 

@@ -4,6 +4,7 @@ No commercial ROM, mock emulator, or game-derived data is used.
 """
 import argparse
 import json
+import re
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -601,6 +602,109 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         self.assertTrue(start['finite'])
                         self.assertLessEqual(start['lead'], 0.205,
                                              'all real source starts respect the bounded scheduling lead')
+                    self.assertEqual(errors, [])
+                    browser.close()
+            finally:
+                server.shutdown()
+
+    def test_chip_shortcuts_held_writes_and_compact_restart_use_runtime_core(self):
+        handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
+        with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            try:
+                with sync_playwright() as p:
+                    kwargs = {'executable_path': OPTIONS.executable} if OPTIONS.executable else {}
+                    browser = getattr(p, OPTIONS.browser).launch(**kwargs)
+                    page = browser.new_page(viewport={'width': 1366, 'height': 768})
+                    errors = []
+                    page.on('pageerror', lambda error: errors.append(str(error)))
+                    core_js = (OPTIONS.site_root / 'core/genplus.js').read_text()
+                    core_js += '''
+                        const originalFactory=window.Module;
+                        window.Module=opts=>originalFactory(opts).then(c=>{
+                          window.testCore=c;
+                          window.nativeCalls={_start:[],_set_logic_fault:[],_recover_logic_cpu:[]};
+                          for(const key of Object.keys(nativeCalls)) {
+                            const native=c[key];
+                            c[key]=(...args)=>{nativeCalls[key].push(args);return native(...args)};
+                          }
+                          return c;
+                        });
+                    '''
+                    page.route('**/core/genplus.js', lambda route: route.fulfill(
+                        content_type='text/javascript', body=core_js))
+                    page.goto(f'http://127.0.0.1:{server.server_port}/')
+                    page.wait_for_function('!!window.testCore')
+                    expect(page.locator('#resetBtn')).to_be_disabled()
+                    expect(page.locator('#compactResetBtn')).to_be_disabled()
+                    page.locator('#romFile').set_input_files({
+                        'name': 'original-shortcut-hold.bin',
+                        'mimeType': 'application/octet-stream', 'buffer': original_cartridge()})
+                    expect(page.locator('#compactResetBtn')).to_be_enabled()
+                    page.wait_for_function('testCore._get_logic_frame()>3')
+                    page.locator('#pauseBtn').click()
+                    page.locator('h1').click()
+                    expect(page.locator('[data-keyboard-chip="VRAM"]')).to_have_class(
+                        re.compile(r'.*keyboard-target.*'))
+                    page.keyboard.press('Digit9')
+                    self.assertEqual(page.evaluate('''() => {
+                      const v=testCore._get_vram_fault_model_state();return [v.bridgeA,v.bridgeB];
+                    }'''), [0, 7])
+                    page.keyboard.press('Digit9')
+                    page.keyboard.press('Digit0')
+                    expect(page.locator('#keyboardTarget')).to_contain_text('WRAM')
+                    page.locator('#ramWriteMode').select_option('hold')
+                    page.locator('h1').click()
+                    page.keyboard.down('Digit9')
+                    self.assertEqual(page.evaluate('nativeCalls._set_logic_fault.at(-1)'), [1, 2, 12, 14])
+                    calls = page.evaluate('nativeCalls._set_logic_fault.length')
+                    start = page.evaluate('testCore._get_logic_frame()')
+                    page.locator('#pauseBtn').click()
+                    page.wait_for_function('(n)=>testCore._get_logic_frame()>=n+12', arg=start)
+                    page.locator('#pauseBtn').click()
+                    self.assertEqual(page.evaluate('nativeCalls._set_logic_fault.length'), calls,
+                                     'held writes do not expire after eight frames')
+                    page.locator('h1').click()
+                    page.keyboard.up('Digit9')
+                    self.assertEqual(page.evaluate('nativeCalls._set_logic_fault.at(-1)'), [0, 0, -1, -1])
+                    self.assertEqual(page.evaluate('nativeCalls._recover_logic_cpu'), [])
+                    pair = page.locator('[data-ram-frame-pair="10,11"]')
+                    pair.hover()
+                    page.mouse.down()
+                    self.assertEqual(page.evaluate('nativeCalls._set_logic_fault.at(-1)'), [1, 2, 10, 11])
+                    start = page.evaluate('testCore._get_logic_frame()')
+                    page.keyboard.press('KeyP')
+                    page.wait_for_function('(n)=>testCore._get_logic_frame()>=n+12', arg=start)
+                    self.assertEqual(page.evaluate('nativeCalls._set_logic_fault.at(-1)'), [1, 2, 10, 11])
+                    # This generated cartridge writes FF1000, which distinguishes A11/A12.
+                    self.assertGreater(page.evaluate('Number(testCore._get_logic_writes())'), 0)
+                    page.mouse.up()
+                    self.assertEqual(page.evaluate('nativeCalls._set_logic_fault.at(-1)'), [0, 0, -1, -1])
+                    page.keyboard.press('KeyP')
+                    self.assertEqual(page.evaluate('nativeCalls._recover_logic_cpu'), [])
+                    page.locator('h1').click()
+                    page.keyboard.press('Digit0')
+                    expect(page.locator('#keyboardTarget')).to_contain_text('FM')
+                    page.keyboard.press('Digit9')
+                    page.keyboard.press('Digit0')
+                    expect(page.locator('#keyboardTarget')).to_contain_text('PSG')
+                    page.keyboard.press('Digit9')
+                    state = page.evaluate('''() => {
+                      const f=testCore._get_fm_data_bridge_state(),p=testCore._get_psg_data_bridge_state();
+                      return {fm:[f.bridgeA,f.bridgeB],psg:[p.bridgeA,p.bridgeB]};
+                    }''')
+                    self.assertEqual(state, {'fm': [0, 7], 'psg': [0, 7]})
+                    page.keyboard.press('Digit0')
+                    expect(page.locator('#keyboardTarget')).to_contain_text('VRAM')
+                    self.assertEqual(page.evaluate('nativeCalls._start.length'), 1)
+                    for index, reset in enumerate(['#compactResetBtn', '#resetBtn'], start=2):
+                        page.locator(reset).click()
+                        page.wait_for_function('(n)=>nativeCalls._start.length===n', arg=index)
+                        self.assertFalse(page.evaluate('testCore._get_fm_data_bridge_state().configured'))
+                        self.assertFalse(page.evaluate('testCore._get_psg_data_bridge_state().configured'))
+                        expect(page.locator('#resetBtn')).to_be_enabled()
+                        expect(page.locator('#compactResetBtn')).to_be_enabled()
+                    self.assertEqual(page.evaluate('nativeCalls._recover_logic_cpu'), [])
                     self.assertEqual(errors, [])
                     browser.close()
             finally:

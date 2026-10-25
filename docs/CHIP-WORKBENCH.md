@@ -69,13 +69,37 @@ a staged configuration preview or add a new file format. Removing a fault
 changes future accesses, without repairing prior corruption. These remain
 digital approximations, not physical open-wire or electrical fault simulation.
 
-## Development-source compact recovery and RAM burst
+## Development-source compact recovery and RAM writes
 
-**CPU reset** beside the Randomiser buttons invokes the existing CPU-only reset:
-RAM/VRAM faults clear while PSG/FM faults and the app's pause state are preserved.
-It does not reload the cartridge. The nearby **RAM WRITE · 8 frames** controls
-provide all ten distinct address pairs within A11–A15, one button per pair. Each
-write-only bridge lasts eight emulated frames, with no affected-write cap, then
-disconnects without automatic CPU recovery. Existing memory faults/pulses and
-held contacts block these controls instead of being overwritten;
-audio faults can coexist. See [pulse timing and records](RAM-PULSES.md).
+**CPU reset** beside the Randomiser invokes the existing CPU-only reset:
+RAM/VRAM faults clear while PSG/FM faults and pause state are preserved. A copy
+of **Clean restart** immediately to its right invokes the same full cartridge
+reboot as the original toolbar button; both share availability and errors.
+
+All ten distinct A11–A15 write pairs remain available. **8 frames** is the
+default: disconnect after exactly eight emulated ticks without CPU recovery or
+an affected-write cap. **Hold** keeps the selected write-only pair active only while its mouse button
+or key is down; release disconnects it. Pointer cancellation or loss of window
+focus also ends the contact. Existing capability,
+memory-domain and pulse guards still apply. Removing a bridge leaves earlier
+corruption intact. Audio faults can coexist. See [RAM pulses](RAM-PULSES.md).
+
+## Development-source keyboard chip target
+
+Press **0** to cycle **VRAM → WRAM → FM → PSG** without applying or removing a
+fault. A pale green chip body and the keyboard-target label identify which chip
+receives **1–9**; this highlight does not mean a fault is active. Existing
+Reconnect/Disconnect buttons remove faults; 0 no longer reconnects them in the
+development build. The original public v0.4.1 shortcut behaviour is unchanged.
+
+For VRAM, FM and PSG, nine chip-local bridge presets use zero-based pairs
+0/1, 0/2, 1/3, 2/4, 3/5, 4/6, 5/7, 6/7 and 0/7. WRAM digits select the first
+nine displayed A11–A15 write pairs; A14/A15 remains available by button. Ordinary
+presses toggle chip pairs; WRAM uses its RAM duration option (eight-frame pulse
+or a write-only contact lasting until key release).
+**Shift+1–9** makes a temporary contact tied to its originating chip. FM/PSG
+restore their prior pair or mask, and WRAM restores its prior supported RAM
+setting. VRAM retains its existing prior-pair restoration; a mask replaced by
+a temporary bridge is cleared. Changing keyboard target does not redirect release.
+A newer manual action cancels stale restoration. Browser modifier shortcuts,
+editable fields and comparison-result navigation retain their existing guards.

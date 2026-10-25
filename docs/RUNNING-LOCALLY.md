@@ -90,3 +90,7 @@ asset above is the normal user download.
 
 v0.2.7 includes an optional, default-disabled metadata-only RAM write trace for
 developer experiments. Normal play needs no trace setup. See [trace documentation](RAM-WRITE-TRACE.md).
+
+Development builds after the public v0.4.1 ZIP use **0** to cycle keyboard chip
+targets and **1–9** for that target's presets; reconnect using the named buttons.
+See [workbench shortcuts](CHIP-WORKBENCH.md#development-source-keyboard-chip-target).

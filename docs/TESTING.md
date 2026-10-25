@@ -1287,3 +1287,67 @@ source/native/SDK107 passes with normal sanitizers and fresh WASM (339.615 s).
 Chromium display7/7 and logic80/80, actual compiled-core5/5, and focused WebKit3/3
 pass; the final tightened shortcut case also passes in Chromium1/1 and WebKit1/1.
 Source C/native models, fault outcomes and public version remain unchanged.
+
+The final ROM-free review ZIP has 682 unique entries with exact source
+`5fc7b814b09abb044e326cab2e6d8021750947bc`, application0.4.1 and byte-equal
+UI/runtime files. The extracted compiled-core shortcut probe also passes.
+All seven PR #56 checks pass in
+[run 40178948293](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40178948293).
+Merge `c8753f5ad8c677873587f91a1f49a7e4b7be7b34` exactly matches the reviewed tree.
+All seven main checks pass in run40179292731; the current checkpoint links the
+verified review download. Public
+v0.4.1 release metadata/tag/assets remain unchanged; McRetro.net is untouched.
+
+# User-reported Mac Safari acceptance — 25 October 2026 (Sydney)
+
+After PR #56, the user confirms audible sound, mute/re-enable, chip randomisers,
+eight-frame RAM buttons, CPU reset and Clean restart. Same-browser tab switching
+pauses emulation and returning resumes it; switching apps keeps emulation running
+without observed stuck keys or notes. This closes the reported Safari manual
+acceptance items; it does not establish native macOS Firefox, all OS/browser
+lifecycle paths or physical electrical fidelity. The supplied screenshot is user
+evidence and is not committed as a private game capture.
+
+# Press-duration RAM contacts and keyboard chip targets
+
+User-requested source `593d4f5` / `c6d8c31` adds a shared compact Clean restart,
+RAM WRITE **8-frame pulse / Hold while pressed**, chip-local 1–9 presets and
+0 target cycling. Independent Luna High fixes (`a602394`) cover cross-contact
+ownership, rejected/throwing release and restore, stale restart callbacks and
+compact restart availability after an uncertain native start. Review also approves
+the target-label placement (`bcf6134`) and synthetic pointer-state test (`f0bd2f1`).
+
+Full source/native/SDK107 passes with normal sanitizers/fresh WASM in 176.933 s.
+No native/core source changes followed that run; final JavaScript syntax and
+compact UI6 pass after review. Chromium display7 and compiled-core6 pass. The
+original generated cartridge directly exercises ninth presets, sustained keyboard
+and pointer contacts beyond twelve frames, changed A11/A12 writes, explicit
+release without `_recover_logic_cpu`, independent FM/PSG settings, and both
+restart buttons through native `_start`. The cartridge writes FF1000: it
+distinguishes A11/A12, not every possible pair, so zero changed writes on a
+different pair is a valid result rather than evidence the setting was rejected.
+
+The 16-state layout probe verifies four targets in both themes at 1366 and 375
+pixels: exactly one pale green chip body, readable labels, no horizontal overflow
+or page errors, and Clean restart immediately right of CPU reset. The existing
+landscape-window budget remains enforced without reducing the player minimum;
+the target label is above the chip grid. A synthetic `pointercancel` test releases
+Playwright's physical mouse state before its next press, matching two distinct
+contacts; the release and inactive assertions remain enforced. These automated
+checks do not establish native Mac behaviour for the newly added controls.
+Raw logs, images and retained first failures: `/workspace/scratch/shortcut-modes`.
+
+Final Chromium logic93/93 passes in 221.230 s, display7/7 in 26.314 s, and
+compiled-core6/6 in 28.932 s. Focused WebKit covers twelve distinct contact/
+recovery cases across runs (the corrected cancellation case passes separately),
+three desktop layout/workflow cases and the new genuine compiled-core controls
+case (6.708 s); all pass. The full Chromium suite includes the cancellation
+assertions, while its final corrected harness case also passes independently.
+
+Initial full-suite layout failures were fixed without relaxing viewport budgets:
+recovery controls stay adjacent, the mode selector shares the RAM WRITE heading,
+and target-label spacing accommodates WebKit. The expected Randomiser control
+list now includes the requested Clean restart. Independent review approves
+`dc22f1d` and `79690f5`; chip dimensions/fonts and the player minimum are unchanged.
+Original logs remain alongside final passing logs. Final syntax and compact UI6
+pass, and native/core source is unchanged from the full SDK107 evidence above.
