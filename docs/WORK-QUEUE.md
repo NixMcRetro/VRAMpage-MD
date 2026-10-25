@@ -1,26 +1,30 @@
 # Development work queue
 
-## Current Phase D slice: safe cartridge replacement
+## Source checkpoint: safe cartridge replacement
 
-Resume verified checkpoint `59cb65b` atop main `8412399`. A rejected replacement
-currently overwrites stored ROM bytes/hash before validation while the previous
-core and filename remain active. An independent compiled-core probe reproduced
-old filename/new rejected-file SHA and a Clean restart that never called the core
-again. Stage candidate files separately and commit active identity only after
-accepted activation. Reject oversize inputs before reading their entire contents.
+Implementation `5b378f9` stages file reads and accepted ROM identity, rejects
+known size limits before reading and ignores stale selections/errors. Explicit
+Clean restart invalidates pending reads and uses retained accepted bytes. Export
+cancels rather than mixing identities after asynchronous hashing. Preflight
+rejection preserves the running/paused game, faults, audio, pulse and history.
+An activation attempt that may mutate the core stops/reports uncertainty on
+failure; there is no hidden rollback or automatic CPU rescue.
 
-Preserve the active cartridge, identity, play/pause, fault/audio state and history
-on non-mutating validation/read/allocation rejection. Initial invalid loads still
-need a helpful waiting/error state. Latest file selection wins; older pending
-reads/errors must not override it, and explicit Clean restart invalidates older
-reads. Export hashing must not combine one cartridge's hash with another's name
-and live state. Native mutation/start failures cannot be rolled back honestly:
-stop/report uncertain state instead of pretending the old machine was restored.
+Independent Luna High review/fixes `f85ac61` mark mutation before native start,
+retain pre-start audio drain and pulse cancellation only after acceptance, and
+refuse pending export if the core becomes uncertain. New-mode rejection coverage
+`141bdd9` and reset contract `522c13e` retain exact pulse timing and real native
+restart behaviour. Focused ROM/failure/race/export/pulse checks pass. The old
+source-only reset regex demanded premature disconnect calls; it was updated to
+assert real native restart plus read invalidation instead, with behavioural
+reset/cleanup evidence retained. The failed first source log is preserved.
 
-Keep all fault/glitch/recovery models unchanged. Independent review, full
-applicable tests and required PR/main CI gate integration; public v0.4.1 and
-McRetro.net remain untouched. No v0.5.0 recovery feature or version change is
-part of this failure-handling slice. Evidence: `/workspace/scratch/rom-stability`.
+Independent compiled-core before/after proof: the old build exported the rejected
+file's hash under the accepted filename and failed to restart; the fixed build
+retains the accepted hash/name and performs native Clean restart. Raw evidence:
+`/workspace/scratch/rom-stability`. Full final regression, package provenance
+and required PR/main CI remain integration gates. Preserve public v0.4.1 and
+McRetro.net; this is Phase D failure handling, not the v0.5.0 recovery milestone.
 
 ## PR #54 integration checkpoint — 25 October 2026
 

@@ -21,6 +21,22 @@ address printed in the launcher's Terminal window into Firefox's address bar.
 Keep that window open while playing. Press **Control+C** there to stop the server.
 ROM files are read locally by your browser; they are not uploaded.
 
+### Development-source cartridge loading safeguards
+
+Later review builds stage new cartridge files before replacing the current game.
+A rejected size/header, unreadable file or refused input buffer leaves the last
+accepted cartridge and restart data intact. While a game is active, rejection is
+reported in the event log without covering its screen or changing play/pause.
+Only the latest chosen file may activate; Clean restart cancels earlier pending
+reads. Experiment export cancels if cartridge identity changes during hashing,
+rather than saving a mismatched name and SHA-256.
+
+If the emulator has begun activation and then fails, the app stops and reports
+uncertainty. Clean restart can explicitly retry the retained accepted cartridge;
+this is not automatic rollback or game recovery. These development changes do
+not replace the immutable public v0.4.1 ZIP.
+
+
 ## If macOS blocks START.command
 
 First try right-clicking **START.command**, choosing **Open**, and confirming

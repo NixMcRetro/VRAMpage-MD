@@ -1228,3 +1228,21 @@ cancellation. A core-mutating failure must stop/report uncertainty, not fake
 rollback. Verify actual-core good/rejected/restart identities, existing normal/
 runtime compatibility and all pulse/recovery/audio lifecycle regressions. No
 commercial ROMs, raw memory exports, new file formats or fault models are needed.
+
+Implementation `5b378f9` and independent review `f85ac61` pass focused rejection,
+size/read/allocation, latest-selection/stale-error, reset/read, native-mutation
+trap and export/hash race checks. Review restores audio drain before native
+start, marks mutation before the call (not after a potential trap), cancels
+pulses only after preflight, and prevents export from an uncertain core.
+The direct paused eight-frame pulse + bad-header case (`141bdd9`) preserves
+identity, paused frame, native fault and active pulse, then completes at exactly
+eight frames without CPU recovery. Reset's static contract (`522c13e`) now pins
+read invalidation, shared startup and native `_start`, rather than premature
+disconnection calls; existing behavioural reset/counter/history checks remain.
+
+The independent fixed compiled-core probe retains both the accepted filename
+and its original SHA after bad-header rejection, keeps the live screen visible,
+and increments native start calls from one to two on explicit Clean restart.
+It creates no uncaught page error. Reports `baseline.json` and `fixed.json` are
+kept separately; no original failure evidence was overwritten. Native model,
+version, file formats and emulation/glitch behaviour are unchanged.
