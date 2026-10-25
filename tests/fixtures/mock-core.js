@@ -244,5 +244,6 @@ window.Module = async () => {
   }
   if (window.__legacyChipCore) {delete core._set_logic_address_mask;delete core._get_logic_address_mask;}
   if(window.__legacyVramChipCore) {delete core._set_vram_address_mask;delete core._get_vram_address_mask;}
+  window.mockCore.core=core;
   return core;
 };

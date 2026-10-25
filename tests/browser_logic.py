@@ -285,6 +285,32 @@ class BrowserLogicTests(unittest.TestCase):
         expect(page.locator("#romName")).to_have_text("SYNTHETIC-TEST.BIN")
         self.assertEqual(page.evaluate("window.mockCore.starts"), 3)
 
+    def test_native_start_that_mutates_then_throws_stops_unknown_core(self):
+        self.load_rom()
+        self.page.evaluate("""() => {
+          const native=window.mockCore.core._start;
+          window.__nativeTestStart=function(...args) {
+            return Reflect.apply(native,this,args);
+          };
+          window.mockCore.core._start=function(...args) {
+            Reflect.apply(window.__nativeTestStart,this,args);
+            throw new Error('synthetic native start trap after mutation');
+          };
+        }""")
+        self.page.locator("#romFile").set_input_files({
+            "name": "uncertain.bin", "mimeType": "application/octet-stream", "buffer": self.synthetic_rom()})
+        expect(self.page.locator("#powerLabel")).to_have_text("WAITING FOR ROM")
+        expect(self.page.locator("#placeholderTitle")).to_have_text("CARTRIDGE ACTIVATION UNCERTAIN")
+        expect(self.page.locator("#romName")).to_have_text("SYNTHETIC-TEST.BIN")
+        self.assertTrue(self.page.locator("#logicExperimentBtn").is_disabled())
+        startsAfterTrap=self.page.evaluate("window.mockCore.starts")
+        self.assertEqual(startsAfterTrap, 2)
+        self.page.evaluate("window.mockCore.core._start=window.__nativeTestStart")
+        self.page.locator("#resetBtn").click()
+        expect(self.page.locator("#powerLabel")).to_have_text("CONSOLE ON")
+        expect(self.page.locator("#romName")).to_have_text("SYNTHETIC-TEST.BIN")
+        self.assertGreater(self.page.evaluate("window.mockCore.starts"), startsAfterTrap)
+
     def test_export_cancels_if_rom_identity_changes_while_hashing(self):
         self.page.evaluate("""() => {
           const native=crypto.subtle.digest.bind(crypto.subtle);

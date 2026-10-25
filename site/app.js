@@ -1974,6 +1974,7 @@
     let romSha256=null;
     try { romSha256=await (exportIdentity?.hashPromise ?? Promise.resolve(null)); } catch (_) { /* Hashing failure never blocks emulation. */ }
     if (exportIdentity!==romIdentity) throw new Error('ROM changed while preparing export; download canceled.');
+    if (!started || !emulator) throw new Error('Cartridge activation is uncertain; restart the last accepted cartridge before exporting.');
     const currentFrame=logicApiReady() ? Number(emulator._get_logic_frame()) || 0 : 0;
     const coreReads=logicApiReady() ? Number(emulator._get_logic_reads()) || 0 : 0;
     const coreWrites=logicApiReady() ? Number(emulator._get_logic_writes()) || 0 : 0;
@@ -2322,9 +2323,12 @@
       if (!ptr) throw new Error('Emulator refused ROM buffer allocation.');
       ensureWasmViews();
       new Uint8Array(emulator.HEAPU8.buffer,ptr,bytes.length).set(bytes);
-      emulator._start();
-      coreMutated=true;
+      // The accepted new image is about to replace core state; drain old audio
+      // and cancel app-scheduled pulse work before native activation can throw.
       clearAudioQueue();
+      cancelPulse(cleanRestart ? 'clean restart' : 'cartridge replaced');
+      coreMutated=true; // _start can mutate native state before it throws.
+      emulator._start();
       if (typeof emulator._set_vram_short !== 'function')
         throw new Error('Core missing _set_vram_short. You must build the patched core (not the upstream prebuilt WASM).');
       frameView=null;
