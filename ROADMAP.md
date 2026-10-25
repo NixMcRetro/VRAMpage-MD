@@ -38,6 +38,17 @@ regression and browser verification happen at integration boundaries. Do not
 repeat completed research or publish minor intermediate releases. Historical
 milestones below remain available as evidence.
 
+## Planned after stabilisation: v0.5.0 recovery milestone
+
+The user approved a target combining independent, optional bounded CPU halt
+recovery and explicit save/restore checkpoints. Defaults must preserve unassisted
+glitch outcomes; record interventions and never silently rewind or invent a
+healthy hardware status. The core has save-state code, but browser exposure,
+complete state/compatibility validation and checkpoint restore semantics need
+design and independent review before implementation. This is a future milestone,
+not part of current stabilisation. Keep `VERSION` and the public release at
+0.4.1 until a tested milestone is ready; preserve existing assets and tags.
+
 ## Previous public delivery: v0.2.8 compact Work RAM interface
 
 The source import, display fixes and work-RAM development through v0.2.4 are

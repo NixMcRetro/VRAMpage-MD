@@ -48,11 +48,21 @@ Start at low volume: corrupted register writes may produce loud tones or stuck
 notes. Muting and clean restart are useful recovery options.
 
 The browser schedules stereo 44.1 kHz buffers, with a 200 ms future-start limit
-and a 25 ms resynchronization offset when scheduling falls behind. Pausing and
-visibility changes reset its scheduling cursor. Already submitted short buffers
-can finish; an underrun can cause a gap. This is output scheduling, not another
-fault model. Automation observes native audio routing and generated samples,
-not sound heard through speakers or actual macOS background throttling.
+and a 25 ms resynchronization offset when scheduling falls behind. In the public
+v0.4.1 build, pause/visibility reset that cursor while already submitted short
+buffers can finish. Development-source stabilisation now stops and disconnects
+queued buffers on pause, mute, visibility changes and validated cartridge
+replacement/clean restart; ended sources release their connections. Invalid ROM
+headers/sizes and failed buffer allocation leave the current audio untouched.
+
+A non-running browser AudioContext cannot consume scheduled buffers. Emulation
+continues to produce its normal sound output, but the frontend discards that
+unplayable output instead of allocating an accumulating queue. After context
+resume it schedules fresh buffers near current time. This does not resume a
+halted CPU, clear fault settings, reset sound-chip registers or smooth the PCM
+samples during normal playback. An underrun can still cause a gap. Automation
+observes native audio routing and generated samples, not sound heard through
+speakers or actual macOS background throttling.
 
 ## Acceptance
 

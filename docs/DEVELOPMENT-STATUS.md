@@ -1,5 +1,28 @@
 # Development status and continuation checkpoint
 
+## Current Phase D slice: audio lifecycle stability
+
+Resume checkpoint `426c4fc` atop main `2736d59`; preserve all completed feature
+and hardware-model evidence. Source `23ec56b` fixes host-side queued audio only:
+stop/disconnect old sources at pause, mute, visibility and accepted cartridge
+replacement/restart boundaries, release ended nodes, and avoid buffer allocation
+while the AudioContext cannot run. Keep calling the core sound path, normal PCM
+copying, fault settings, CPU/chip state and manual recovery semantics unchanged.
+Independent Luna High review approves this exact source; no source blocker remains.
+
+A genuine-context/compiled-core probe reproduced 120 new queued sources across
+120 emulated frames while context time was suspended. The fixed probe creates
+zero. The 150-cycle mixed fault/pulse/reset/audio/visibility run reports no stale
+queue violations, a peak of four active sources and fixed 32 MiB WASM memory.
+The extended 1,500-cycle run and complete source/browser/package/CI gates are
+being completed; do not claim universal leak freedom or audible/native Mac
+validation. Scratch evidence: `/workspace/scratch/stability`.
+
+The proposed v0.5.0 auto-resume/checkpoint milestone is deferred until after
+stabilisation; no new recovery feature, version bump or public release change is
+part of this slice. Preserve v0.4.1 and McRetro.net. A stopped/corrupted game is
+still a valid fault outcome; host audio cleanup must not silently rescue it.
+
 ## PR #53 integration checkpoint — 25 October 2026
 
 [PR #53](https://github.com/NixMcRetro/VRAMpage-MD/pull/53) merged as

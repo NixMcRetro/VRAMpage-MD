@@ -1146,3 +1146,29 @@ All seven main checks pass on `2736d596435e050f0c779351535a2e40f73d6097` in
 The reviewed and merged trees match. Public v0.4.1 metadata, tag and asset digests
 were verified unchanged after merge; McRetro.net was untouched. Phase C acceptance
 is integrated and Phase D feature freeze/stabilisation remains active.
+
+# Phase D audio lifecycle stability
+
+Use genuine AudioContext/AudioBufferSource nodes and the original compiled-core
+cartridge. Count active, unended, unstopped sources separately from historical
+starts; merely counting explicit connections without accounting for ended nodes
+cannot prove a backlog. Compare pending start times against current context time.
+Freeze the real context clock with explicit suspend while emulation advances,
+then require no new buffers, no old live connections and a genuinely new near-now
+source after manual resume. This is controlled suspension, not OS backgrounding.
+
+Verify pause/mute/visibility and accepted ROM restart disconnect queued sources;
+ended and failed-start paths release tracking. Header/size/allocation rejection
+must occur before cleanup of the still-running cartridge. Retain finite stereo
+44.1 kHz checks and normal-playback scheduling bounds. No C model, PCM smoothing,
+CPU intervention or fault-state change is introduced. Independent Luna High review
+approves `23ec56b`; the focused actual-core Chromium case passes.
+
+Independent pre-fix probe: 120 emulated frames with suspended context created
+120 sources and left 124 active; later pause and mute retained genuinely unended
+sources. Fixed 150-cycle run: zero allocations during suspension, zero boundary
+violations/page errors, four peak active sources and 32 MiB WASM throughout.
+Post-GC JS heap measurements include browser/JIT/DOM warm-up and are diagnostic,
+not a universal no-leak guarantee. Keep raw samples/logs under
+`/workspace/scratch/stability`; the longer run and integration results belong in
+the final checkpoint. Preserve original failure logs and public v0.4.1 evidence.
