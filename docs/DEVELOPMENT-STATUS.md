@@ -15,6 +15,22 @@ plain/applied/hovered pin labels retain readable contrast in both themes. The
 dotted VRAM Randomiser border means unavailable, both before a ROM is loaded
 and during RAM contacts; it remains a safety-disabled command, not a press.
 
+Implementation `bd254b4` changes only the initial HTML selection to Hold;
+reviewed CSS/test follow-ups through `26c8c09` add the active pale fill with
+readable body, plain-pin, applied-pin and hover colours. No JavaScript, native
+fault, timing or recovery code changed. Independent review approves the default
+and final palette/contrast guards. Explicit pulse cases retain their exact
+8-frame, write-count, cancellation, rejection and legacy assertions.
+
+Local full source/native/SDK107 passes with normal sanitizers/fresh WASM
+(337.785 s); native code is unchanged after the CSS-only refinement. Final
+Chromium logic96/96, display7/7 and compiled-core6/6 pass. Focused WebKit5/5 and
+its real compiled-core default-Hold case pass. Forty-eight light/dark desktop/
+mobile visual states verify default Hold, explicit Pulse, active fill/outline,
+neutral idle chips and the existing unavailable VRAM style. Logs and images:
+`/workspace/scratch/hold-default`. Exact package and required PR/main CI remain
+integration gates; preserve public v0.4.1 and McRetro.net.
+
 ## PR #58 integration checkpoint — 26 October 2026 (Sydney)
 
 [PR #58](https://github.com/NixMcRetro/VRAMpage-MD/pull/58) merged as

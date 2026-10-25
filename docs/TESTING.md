@@ -1423,3 +1423,14 @@ and readable body, plain-pin, applied-pin and hovered-pin text. The first full
 browser run's two obsolete neutral-active colour assertions are retained with
 its log; the corrected assertions preserve the idle theme check and explicitly
 verify the new active-fill behaviour. Native models/handlers/timing are unchanged.
+
+Independent review approves `bd254b4` (default and explicit pulse callers) and
+CSS/test refinements through `26c8c09` (active fill and pin contrast). Full
+source/native/SDK107 passes with normal sanitizers/fresh WASM in 337.785 s;
+JavaScript/native code is unchanged after the CSS-only fill refinement. Final
+Chromium logic96/96 passes in 223.136 s, display7/7 in 25.766 s and compiled-core6/6
+in 50.891 s. Focused WebKit5/5 passes in 41.568 s; the genuine compiled-core
+default-Hold case passes in 8.192 s. Forty-eight visual states cover idle/theme,
+keyboard targets, explicit eight-frame contacts, default Hold/release and mixed
+active chips. Viewed dark RAM/light mixed-chip images confirm the fill and
+readable pin labels. Raw evidence: `/workspace/scratch/hold-default`.
