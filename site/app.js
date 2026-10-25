@@ -2183,6 +2183,10 @@
   function audioFrame() {
     const size = emulator._sound(); // Number of stereo float samples
     if (!audioOn || !audioCtx || size <= 0) return;
+    if (audioCtx.state !== 'running') {
+      if (activeAudioSources.size) clearAudioQueue();
+      return;
+    }
     const count = Math.min(2048,size);
     const b = audioCtx.createBuffer(2,count,AUDIO_RATE);
     b.copyToChannel(leftAudio.subarray(0,count),0);

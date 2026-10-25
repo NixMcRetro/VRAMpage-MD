@@ -380,12 +380,13 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     page.add_init_script("""
                         const audioKey = window.AudioContext ? 'AudioContext' : 'webkitAudioContext';
                         const NativeAudioContext = window[audioKey];
-                        window.__audioScheduleProbe = {starts: [], live: 0, connected: 0,
+                        window.__audioScheduleProbe = {starts: [], live: 0, connected: 0, created: 0,
                             peakConnected: 0};
                         if (NativeAudioContext) {
                             const nativeCreateBufferSource = NativeAudioContext.prototype.createBufferSource;
                             NativeAudioContext.prototype.createBufferSource = function(...args) {
                                 const source = Reflect.apply(nativeCreateBufferSource, this, args);
+                                window.__audioScheduleProbe.created++;
                                 window.__audioScheduleProbe.live++;
                                 source.addEventListener('ended', () => {
                                     window.__audioScheduleProbe.live--;
@@ -476,6 +477,29 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         self.assertGreaterEqual(start['lead'], -0.005)
                         self.assertLessEqual(start['lead'], 0.205,
                                              'scheduled audio lead stays within the 200 ms cap plus tolerance')
+
+                    suspended = page.evaluate('''async () => {
+                        const before = window.__audioScheduleProbe.created;
+                        await window.testAudioContext.suspend();
+                        const frame = testCore._get_logic_frame();
+                        await new Promise(resolve => {
+                            const check = () => testCore._get_logic_frame() >= frame + 60
+                                ? resolve() : requestAnimationFrame(check);
+                            requestAnimationFrame(check);
+                        });
+                        const during = window.__audioScheduleProbe.created;
+                        await window.testAudioContext.resume();
+                        return {before, during, connected: window.__audioScheduleProbe.connected};
+                    }''')
+                    self.assertLessEqual(suspended['during'] - suspended['before'], 1,
+                                         'suspended context does not accumulate new source buffers')
+                    resume_start_count = len(initial['starts'])
+                    page.wait_for_function('n=>window.__audioScheduleProbe.starts.length > n',
+                                           arg=resume_start_count)
+                    resumed_start = page.evaluate('n=>window.__audioScheduleProbe.starts[n]',
+                                                  resume_start_count)
+                    self.assertLessEqual(resumed_start['lead'], 0.055,
+                                         'audio resumes with a fresh source near current time')
 
                     page.locator('#pauseBtn').click()
                     expect(page.locator('#pauseBtn')).to_have_text('Resume')
