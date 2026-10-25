@@ -1523,3 +1523,5 @@ RAM disconnect. The pulse exclusion regression also steps all eight affected
 frames explicitly and requires recovery observations exactly at end+1/end+2,
 avoiding a race against a 134 ms transient message. These focused cases pass in
 Chromium and WebKit; the final source receives its own complete CI run.
+
+PR #61 final delivery: all seven PR checks40221361461 and main checks40221890031 passed. Final local Chromium103 passed217.138s; main436a8e0 source equals ea699a55. No native model/version/public artifact change.
