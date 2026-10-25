@@ -1434,3 +1434,16 @@ default-Hold case passes in 8.192 s. Forty-eight visual states cover idle/theme,
 keyboard targets, explicit eight-frame contacts, default Hold/release and mixed
 active chips. Viewed dark RAM/light mixed-chip images confirm the fill and
 readable pin labels. Raw evidence: `/workspace/scratch/hold-default`.
+
+Final package source `c8c40816d528b8548c2a2b959f480cfe8b30afdc` has 682 unique
+ROM-free entries, exact version0.4.1 metadata and matching UI/core bytes. Initial
+extracted actual-core6 had one unchanged-audio scheduling sample at -11.61 ms,
+against the strict -5 ms lower bound. The original log is retained; audio source
+was unchanged, its isolated strict recheck passes (3.635 s), and the serial full
+extracted-core6 passes (18.239 s). No assertion, scheduling code or tolerance was
+changed. Full PR CI also passes all seven checks on the exact head in
+[run 40202191064](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40202191064).
+Merge `00be32ff8c9c705c60b1aafe4dd264d799c22fa2` matches that reviewed tree.
+All seven main checks pass in run40202700942. The current checkpoint links the
+verified review download. Public v0.4.1
+metadata/tag/assets remain unchanged; McRetro.net is untouched.

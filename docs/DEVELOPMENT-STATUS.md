@@ -1,6 +1,44 @@
 # Development status and continuation checkpoint
 
-## Source checkpoint: RAM WRITE Hold default and active chip fills
+## PR #59 integration checkpoint — 26 October 2026 (Sydney)
+
+[PR #59](https://github.com/NixMcRetro/VRAMpage-MD/pull/59) merged as
+`00be32ff8c9c705c60b1aafe4dd264d799c22fa2` after all seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40202191064)
+passed on `c8c40816d528b8548c2a2b959f480cfe8b30afdc`.
+The merged tree exactly matches the independently reviewed head.
+All seven main checks pass; no integration blocker remains.
+Main verification: [run 40202700942](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40202700942).
+
+RAM WRITE starts on **Hold while pressed** on a fresh page. Eight-frame pulse
+remains an explicit option with unchanged exact timing and release semantics.
+Active fault chips receive pale green fill plus their existing green outline;
+idle chips and keyboard target changes stay neutral. Body, plain-pin, applied-pin
+and hovered-pin labels remain readable in both themes. The dotted VRAM Randomiser
+continues to mean unavailable, including before a ROM loads and during RAM
+contacts; its safety guard is unchanged.
+
+Independent review approves the selected default, explicit pulse regression
+coverage and final palette/contrast guards through `26c8c09`. Local source/native/
+SDK107, Chromium logic96/display7/compiled-core6, focused WebKit5 and its real-core
+default-Hold case pass. Forty-eight visual states pass. The 682-file ROM-free
+package matches exact source/version0.4.1 and UI/runtime bytes. An initial
+unchanged-audio scheduling start was 11.61 ms late against the strict 5 ms test
+limit; the original log is retained. Isolated audio and serial full extracted-core6
+rechecks pass without modifying the assertion or audio code. Final package/core6
+passes in 18.239 s. Evidence: `/workspace/scratch/hold-default`.
+
+[Ready-to-run ROM-free review build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40202700942/artifacts/12602597340).
+
+Public v0.4.1 metadata, tag and both original asset digests were verified unchanged
+after merge. McRetro.net was not modified or deployed. No JavaScript, native fault,
+recovery or timing code changed. Native Safari retest/physical validation remain
+separate from automated Chromium/WebKit checks; deliberate faults can still lock
+games. Next: new UI/default acceptance and concrete compatibility reports, then
+the separately planned v0.5.0 optional recovery/checkpoint design. Preserve old
+models/evidence; do not publish an intermediate release or repeat completed research.
+
+## Completed source slice: RAM WRITE Hold default and active chip fills
 
 The user requests **Hold while pressed** as the RAM WRITE default. On a fresh
 page the selector now starts on Hold; the existing **8-frame pulse** option remains
@@ -28,8 +66,8 @@ Chromium logic96/96, display7/7 and compiled-core6/6 pass. Focused WebKit5/5 and
 its real compiled-core default-Hold case pass. Forty-eight light/dark desktop/
 mobile visual states verify default Hold, explicit Pulse, active fill/outline,
 neutral idle chips and the existing unavailable VRAM style. Logs and images:
-`/workspace/scratch/hold-default`. Exact package and required PR/main CI remain
-integration gates; preserve public v0.4.1 and McRetro.net.
+`/workspace/scratch/hold-default`. Package provenance and PR/main integration evidence are recorded above;
+preserve public v0.4.1 and McRetro.net.
 
 ## PR #58 integration checkpoint — 26 October 2026 (Sydney)
 
