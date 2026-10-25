@@ -87,8 +87,10 @@ corruption intact. Audio faults can coexist. See [RAM pulses](RAM-PULSES.md).
 ## Development-source keyboard chip target
 
 Press **0** to cycle **VRAM → WRAM → FM → PSG** without applying or removing a
-fault. A pale green chip body and the keyboard-target label identify which chip
-receives **1–9**; this highlight does not mean a fault is active. Existing
+fault. The keyboard-target label identifies which chip receives **1–9**. A pale green
+chip outline indicates an active fault on that chip, independently of keyboard
+selection. Chip bodies and text retain their normal theme colours. Clearing a
+fault removes its outline; previous RAM or sound-chip corruption can persist. Existing
 Reconnect/Disconnect buttons remove faults; 0 no longer reconnects them in the
 development build. The original public v0.4.1 shortcut behaviour is unchanged.
 
@@ -103,3 +105,8 @@ setting. VRAM retains its existing prior-pair restoration; a mask replaced by
 a temporary bridge is cleared. Changing keyboard target does not redirect release.
 A newer manual action cancels stale restoration. Browser modifier shortcuts,
 editable fields and comparison-result navigation retain their existing guards.
+
+Focused native RAM pair buttons use **Space/Enter**. Fault digits **1–9** do not
+invoke global chip shortcuts from those buttons, preventing a RAM contact from
+accidentally activating VRAM. **0** still changes the keyboard target without
+changing faults. Focus the game or a non-control area to use global fault digits.

@@ -1,5 +1,28 @@
 # Development status and continuation checkpoint
 
+## Active correction: active-chip outlines and focused WRAM shortcuts
+
+User clarification after PR #57: green should mark the chip outline when its
+fault is active, not fill the selected keyboard target. Keep neutral chip bodies
+and ordinary text/pin colours; the separate keyboard-target label still follows
+0 cycling. Outline VRAM, WRAM, FM and PSG from their actual configured fault
+state, including masks, bridges and temporary contacts; remove the outline when
+the fault clears, without implying earlier corruption has been repaired.
+
+A before-fix compiled-core probe reproduces a cross-domain bug: with an A11/A12
+Work RAM button focused, Space starts its held write contact, but Digit1 reaches
+the still-selected VRAM shortcut and applies AD0/AD1 while disconnecting RAM.
+Keep fault digits local to the focused native RAM control, preserve Space/Enter
+release and ordinary global shortcuts elsewhere, and retain safe 0 target cycling.
+Raw original-cartridge-only proof: `/workspace/scratch/active-outline/baseline-core.json`.
+
+Acceptance: no green idle/default VRAM; active chip outline only, neutral infill,
+correct light/dark contrast, multiple independent audio outlines, exact eight-frame
+and pointer/key contact cleanup, no VRAM change or RAM disconnect from focused
+WRAM digits, and no hidden CPU recovery. Preserve v0.4.1, McRetro.net, all native
+fault models and previous verified evidence. Use independent review and required
+seven PR/main checks at integration; do not repeat completed RAM research.
+
 ## PR #57 integration checkpoint — 25 October 2026 (Sydney)
 
 [PR #57](https://github.com/NixMcRetro/VRAMpage-MD/pull/57) merged as

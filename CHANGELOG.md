@@ -2,7 +2,9 @@
 
 ## Unreleased workbench improvements
 
-- Add a compact Clean restart copy, optional sustained A11–A15 write contacts, and chip-targeted 1–9 shortcuts with 0 cycling VRAM/WRAM/FM/PSG and a pale green target indicator.
+- Show active faults with pale green chip outlines and neutral infill; prevent fault digits on a focused Work RAM preset from activating the global VRAM shortcut.
+
+- Add a compact Clean restart copy, optional sustained A11–A15 write contacts, and chip-targeted 1–9 shortcuts with 0 cycling VRAM/WRAM/FM/PSG and a separate keyboard-target label.
 - Record user-reported Mac Safari audio, tab/app switching, randomiser, RAM pulse and recovery acceptance.
 
 - Stage cartridge replacements so rejected or stale file reads cannot poison the running cartridge, Clean restart or export identity; stop truthfully if core activation fails after mutation.

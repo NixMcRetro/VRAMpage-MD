@@ -1361,3 +1361,19 @@ Merge `5a63331ddf2b100f1f5fd1d9cf73a557a875c536` exactly matches that tree.
 All seven main checks pass in run40184871084. The current integration checkpoint
 links the verified review download.
 Public v0.4.1 metadata/tag/assets are unchanged, and McRetro.net is untouched.
+
+# Active chip outlines and focused Work RAM controls
+
+The user clarifies that green means an active chip fault outline, not a selected
+keyboard target or green body fill. The original generated-cartridge probe on
+main `5a63331` independently reproduces a related focus bug: hold Space on a native
+A11/A12 RAM button, then Digit1 invokes global VRAM AD0/AD1 and clears RAM. Native
+VRAM/RAM setter calls and core state are retained separately in
+`/workspace/scratch/active-outline/baseline-core.json`; no private game data is used.
+
+Acceptance requires neutral idle chips, green outlines matching applied faults
+through pulse/Hold and explicit cleanup, separate keyboard-target text, retained
+0 cycling, and no VRAM setting/RAM release from fault digits on a focused RAM
+button. The compiled-core regression also checks Space release, independent
+FM/PSG active state and restart clearing. These indicators describe configured
+faults, not proof that every access changed or earlier corruption was repaired.
