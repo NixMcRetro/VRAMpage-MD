@@ -1514,3 +1514,12 @@ existing sizing. Both failing cases pass locally in Chromium and WebKit, and all
 seven WebKit display cases pass. The original strict viewport assertions remain.
 Final required CI reruns the complete browser matrix; Firefox is unavailable in
 the local Playwright cache, so its new evidence must come from that CI run.
+
+
+Run 40220840825 passed all seven checks after the desktop sizing correction.
+Before final delivery, the armed display now clears its HALT 1/2 hint whenever
+observation clears; a manually stepped regression covers HALT, clear, HALT and
+RAM disconnect. The pulse exclusion regression also steps all eight affected
+frames explicitly and requires recovery observations exactly at end+1/end+2,
+avoiding a race against a 134 ms transient message. These focused cases pass in
+Chromium and WebKit; the final source receives its own complete CI run.

@@ -2563,25 +2563,27 @@ class BrowserLogicTests(unittest.TestCase):
             expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('OFF')
 
     def test_pending_address_pulse_excludes_frames_and_resets_halt_streak(self):
-        self.page.close();self.page=self.new_page(circuit_config=True)
-        self.load_rom()
+        self.page.close();self.page=self.new_page(circuit_config=True,manual_frames=True)
+        self.page.locator('#romFile').set_input_files({'name':'pulse.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
+        expect(self.page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+        self.page.evaluate('stepTestFrame();stepTestFrame()')
         self.page.locator('#armCpuRecoveryBtn').click()
-        self.page.evaluate('mockCore.logic.cpuFlags=0')
         self.page.locator('#ramWriteMode').select_option('pulse')
         self.page.locator('[data-ram-frame-pair="10,11"]').click()
-        self.page.evaluate("""() => {
-          const frame=mockCore.logic.activationFrame;
-          mockCore.cpuFlagsByFrame=Object.fromEntries(Array.from({length:8},(_,i)=>[frame+i+1,2]));
-        }""")
+        self.page.evaluate('mockCore.logic.cpuFlags=2')
         expect(self.page.locator('#randomiserStatus')).to_contain_text('for 8 emulated frames')
-        self.page.wait_for_function("document.querySelector('#randomiserStatus').textContent.includes('bridge ended after 8 emulated frames')")
+        for _ in range(8):
+            self.page.evaluate('stepTestFrame()')
+            self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[])
+        expect(self.page.locator('#randomiserStatus')).to_contain_text('bridge ended after 8 emulated frames')
+        self.page.evaluate('stepTestFrame()')
         self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[])
-        self.page.evaluate('delete mockCore.cpuFlagsByFrame;mockCore.logic.cpuFlags=2')
-        self.page.wait_for_function('mockCore.logic.recoveries.length===1')
+        expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('ARMED · HALT 1/2')
+        self.page.evaluate('stepTestFrame()')
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[2])
         payload=self.export_payload()
-        self.assertTrue(payload['cpuInterventions'][-1]['observedFrames'][0] >
-                        payload['faultPulses'][-1]['endFrame'],
-                        (payload['cpuInterventions'][-1],payload['faultPulses'][-1]))
+        end=payload['faultPulses'][-1]['endFrame']
+        self.assertEqual(payload['cpuInterventions'][-1]['observedFrames'],[end+1,end+2])
 
     def test_recovery_disarms_on_manual_actions_configuration_and_visibility_loss(self):
         self.page.close();self.page=self.new_page(circuit_config=True)
@@ -2667,6 +2669,10 @@ class BrowserLogicTests(unittest.TestCase):
             document.querySelector('#armCpuRecoveryBtn').click();
             stepTestFrame();
         }""")
+        expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('ARMED · HALT 1/2')
+        self.page.evaluate('mockCore.logic.cpuFlags=0;stepTestFrame()')
+        expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('ARMED')
+        self.page.evaluate('mockCore.logic.cpuFlags=2;stepTestFrame()')
         expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('ARMED · HALT 1/2')
         self.page.evaluate("document.querySelector('#logicDisconnectBtn').click();stepTestFrame()")
         self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[])

@@ -1076,7 +1076,11 @@
     return !!(momentary || keyboardHeld || ownedAddressHold || pendingPulse);
   }
 
-  function resetCpuRecoveryObservation() { cpuRecoveryHaltFrames=[]; }
+  function resetCpuRecoveryObservation() {
+    const hadObservation=cpuRecoveryHaltFrames.length>0;
+    cpuRecoveryHaltFrames=[];
+    if (hadObservation) updateCpuRecoveryControls();
+  }
 
   function disarmCpuRecovery() {
     cpuRecoveryArmed=false;
