@@ -1,6 +1,6 @@
 # v0.5.0 recovery and checkpoints — reviewed design
 
-Status: **Reviewed design; step 1 implemented in development source; checkpoint steps remain planned.** Based on main
+Status: **Reviewed design; step 1 implemented; step 2 has a private replay proof, with production checkpoint controls still planned.** Based on main
 `5d0425a64acb0f883789c67e8c6ec41e5d2c0c02` and upstream core
 `6090aff9e9b2f578cd28882bd4571d2e35b1d674`. The public release and `VERSION`
 remain v0.4.1. Existing manual CPU Reset and Clean Restart retain their semantics.
@@ -157,3 +157,15 @@ state coverage and capacity proof remain release blockers, not completed work.
 
 Independent Luna High source/design review found no blocking issue. The audit was
 read-only; no recovery/checkpoint implementation or new execution is claimed.
+
+
+## Private replay proof checkpoint
+
+The [native proof](CHECKPOINT-REPLAY-PROOF.md) demonstrates capacity guards and
+same-instance audio/pixel replay for original synthetic ordinary MD cartridges.
+Stock serialized state alone fails PCM replay; a separate audio-runtime supplement
+passes the five recorded scenarios. It is not installed in production cores.
+Native Blip sanitizer coverage also identified signed-shift UB; equivalent defined
+arithmetic preserves all recorded PCM/pixel outputs. Production checkpoint work
+still needs complete device/input state, mapper/SRAM policy and validated lifecycle
+orchestration. Do not expose Save/Restore on the strength of these narrow cases.

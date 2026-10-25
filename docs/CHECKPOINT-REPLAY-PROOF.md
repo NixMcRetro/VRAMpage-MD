@@ -1,0 +1,36 @@
+# Native Checkpoint Replay Proof (Developer Only)
+
+This is a private feasibility experiment, not a product checkpoint API. It runs the pinned C core in an isolated Emscripten build against original synthetic cartridges. The runner never accepts external state bytes and uses no commercial ROM or captured memory. All experimental hooks are added to the copied core only.
+
+Run `scripts/checkpoint-proof/build-and-run.sh` from a checkout with a host C compiler (`cc`), Emscripten, CMake and Node on `PATH`, plus the pinned core checkout. If the vendor tree is outside this worktree, set `VRAMPAGE_WASM_GENPLUS=/path/to/vendor/wasm-genplus`. For example, in this environment: `VRAMPAGE_WASM_GENPLUS=/workspace/VRAMpage-MD/vendor/wasm-genplus scripts/checkpoint-proof/build-and-run.sh`. It recreates only a marked isolated output directory (`build/checkpoint-proof/` by default) and runs five replay cases. `BUILD-INFO.json` records the application commit, upstream pin and hashes of the builder, hooks, runners, shared patch and native harness. Tracked changes must be committed so the source commit identifies all shared patch inputs. The builder refuses to remove an unmarked output directory, symlink output/ancestors, source directories or ancestors containing the source. Set `CHECKPOINT_PROOF_DIR` to select a disposable output directory outside repository source and the vendor checkout (or under repository `build/`). The builder verifies the exact core commit `6090aff9e9b2f578cd28882bd4571d2e35b1d674`, applies the existing `scripts/patch_core.py` runtime patch, then appends proof-only hooks in the copied source.
+
+Each case saves through stock `state_save`, advances six frames, restores with stock `state_load`, supplements omitted audio runtime state, and checks byte-identical stock state reserialization, pixel hashes, PCM sample counts and left/right PCM hashes against both the first continuation and a fresh same-build core. The synthetic dynamic cartridge loops through CRAM updates, so its successive frame hashes must differ. PSG-only and FM+PSG cases run with low-pass mode; FM+PSG and dynamic CRAM cases also run with EQ mode. State and audio buffers have 64-byte sentinels and verify untouched payload tails.
+
+The stock state was 144,398 bytes against its declared 1,036,288-byte buffer in this build. The separate audio supplement was 35,960 bytes against 524,288 bytes. Those numbers are observations for these synthetic cartridges and this one build profile, not a maximum for ordinary cartridges. The retained baseline [PSG result](experiments/2026-10-26-checkpoint-replay/result.json) and [FM+PSG result](experiments/2026-10-26-checkpoint-replay/fm-result.json) record the stock-only failure: the first restored output has 735 samples versus 736 and its PCM hashes differ, although state reserialization and pixels match. With the supplement, each of six frames has 736 samples and all captured pixel and stereo PCM hashes match. See the [supplemented replay evidence](experiments/2026-10-26-checkpoint-replay/psg-supplement-final.json) and the adjacent FM/dynamic/EQ JSON files for the recorded hashes and scalar results.
+
+The recorded build used Emscripten 4.0.23, CMake and Node 24.19.0. The supplementary source edits are scripted in `scripts/checkpoint-proof/audio-hooks.patch.py`; their only target is the archived working copy. Empty-slot refusal, zero-capacity save refusal with an unchanged sentinel, sample-rate mismatch rejection before state mutation, and preservation of the live Blip/ring pointer fingerprint are asserted by each runner.
+
+The supplement experiment copies Blip factor, offset, integrators and its two live sample rings; PSG runtime fields omitted from its native context save; FM last samples and cycle bookkeeping; and system EQ/low-pass history, VDP cycle position and audio profile. It restores into existing allocations and keeps the FM pointer bound to the existing static buffer. The sample/frame rate is checked; filter mode is held fixed per case and is not validated as a load-time identity. This is still proof scaffolding: the hooks use same-process internal data and do not establish a safe persistent format.
+
+Not established: SRAM/EEPROM or special mapper carts, SVP, input-consuming gameplay, external app input state, browser audio queues, other build profiles, fault-model runtime and diagnostics, untrusted-state loading, full-core/WASM sanitizers, packaged browsers, or a production one-slot checkpoint. SRAM contents are outside this test and remain a hard gate. No static-image heuristic or automatic restore is tested or proposed here.
+
+
+The native smoke check compiles the actual isolated Blip helpers with AddressSanitizer
+and UndefinedBehaviorSanitizer (fatal findings), checks null/short capacity refusal,
+guard bytes, live pointers, queued PCM restoration and the three-buffer mixer. The
+harness uses strict warnings; existing signed-comparison warnings in pinned vendor
+code remain visible. The initial run reported negative signed shifts in all high-pass
+read/mix paths. The shared core patch replaces the four `s << 6` operations with
+`s * 64`: `CLAMP` bounds `s` to signed16-bit values, so the multiplication is defined
+and fits signed32-bit values. No filter coefficient or intended sample value changes.
+Golden synthetic PCM hashes must remain unchanged after rebuilding. This correction
+also applies to normal/runtime builds; the snapshot API remains proof-only.
+
+
+Final local verification rebuilt both production profiles and confirmed no proof
+exports in either normal or runtime modules. All 115 SDK/source tests pass, as do
+seven fresh Chromium compiled-core cases and three runtime/normal handoff cases. The final portable proof build passes
+fatal native sanitizers and all five WASM cases; every pixel/PCM hash still matches
+the committed pre-correction recordings. [Build provenance](experiments/2026-10-26-checkpoint-replay/BUILD-INFO.json)
+identifies the actual proof source and file hashes. Independent specialist review
+approved the signed-math equivalence, missing-source refusal and staging guards.

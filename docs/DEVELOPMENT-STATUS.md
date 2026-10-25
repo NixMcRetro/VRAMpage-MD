@@ -1,5 +1,71 @@
 # Development status and continuation checkpoint
 
+## Private checkpoint proof and defined Blip arithmetic integration
+
+Developer-only code in `scripts/checkpoint-proof` archives the exact upstream pin,
+builds in a marked isolated directory, and validates five original synthetic cases:
+PSG LPF, FM+PSG LPF/EQ and changing-CRAM LPF/EQ. Stock state144398 bytes alone
+fails PCM replay; a35960-byte audio supplement restores six-frame pixel/sample-count/
+stereo hashes exactly. All five outputs also match recorded pre-correction goldens.
+No normal/runtime checkpoint exports or UI are added. Input-consuming gameplay,
+SRAM/EEPROM/SVP/mappers and fault/diagnostic restoration remain gates.
+
+Native AddressSanitizer/UndefinedBehaviorSanitizer found old signed negative shifts
+in pinned Blip filtering. The shared patch replaces four high-pass expressions
+with defined multiplication, using the existing clamped16-bit sample and factor64.
+Intended output is unchanged. The native smoke now runs with fatal sanitizers,
+capacity/null refusal, guards, live pointers, PCM replay and three-buffer mixing.
+Independent specialist review approves through158715e; twelve focused source/path
+checks pass. Final SDK/source115 passes; fresh production profiles have no experimental
+checkpoint exports; compiled-core7 and runtime/normal handoff3 pass. Portable
+proof/native sanitizers and all five pre-correction pixel/PCM goldens pass.
+Package provenance and required PR/main CI remain integration gates.
+
+Builder refuses missing/drifted source, symlink output/ancestors, source paths,
+unmarked output and dirty tracked source before cleanup. Committed source identity
+and source-file hashes accompany the proof outputs. Focused Blip sanitizers do not
+establish full-core/WASM memory safety or a production checkpoint format. Public
+v0.4.1/McRetro.net remain untouched. Preserve Title Case and unassisted defaults.
+
+
+## PR #61 verified delivery — 26 October 2026 (Sydney)
+
+[PR #61](https://github.com/NixMcRetro/VRAMpage-MD/pull/61) merged as
+`436a8e0f8fd815bc527a3be0fd675b3d90c7c41d` after all seven checks passed on
+`ea699a55a9508069aa24b35325eeb64ceaa7c8e9` ([PR CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40221361461)).
+Merged tree equals reviewed/tested source. All seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40221890031)
+passed on the latest main. [Ready-to-run review download](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40221890031/artifacts/12609931295).
+
+Title Case controls/labels and the off-by-default one-attempt HALT recovery are
+complete. CPU Reset preserves FM/PSG; Clean Restart remains a full reset. Final
+Chromium logic103 passed in 217.138s; core7/display7, focused WebKit logic7 +
+actual HALT/STOP1, direct WASM25, docs6 and source/native97 (two SDK/vendor classes
+skipped locally) passed. CI rebuilt fresh native/WASM and tested all browser/package
+routes. Local ROM-free package683 matched exact source/version/UI/core; extracted
+core7 and final HALT/STOP case passed. Final ZIP SHA256:
+`37814dce927cbe9a1d385c3cbf8cad78ee298217acd2a23047bd959ab2985a78`.
+Independent source review approved fixes; first failed CI layout records remain.
+
+Public v0.4.1 title/tag/assets are unchanged: tag commit
+`e579c571f14b3549a5befa33d9e62ba3f3c9d45b`; ZIP digest
+`36133552de9c7dafb9502dea957b6a4934fe4b503d19e311fb898834162ec6fd`;
+SHA256SUMS digest `961ff2e54e34e511355e736f0106fcd8cda71777977f1e29663683e08ed7b1bc`.
+McRetro.net untouched. Native Safari and audible/physical behavior were not newly
+verified; the policy cannot rescue every software/browser hang.
+
+The user authorizes continued improvements during the active session. Next work
+is the private checkpoint replay proof on `experiment/checkpoint-replay-proof`
+(initial author09e7008; reviewed staging-guard fixes1055f42). Stock native state
+144398 bytes restores serialized fields/pixels but changes PCM. An isolated35960-byte
+audio supplement replays five original synthetic cases exactly, including dynamic
+CRAM, PSG/FM and LPF/EQ. No product checkpoint API exists. A newly added native
+sanitizer smoke check reports old negative-left-shift UB in pinned Blip filtering;
+investigate/fix with sample-equivalence evidence before accepting sanitizer status.
+Proof/source safety fixes are unmerged and require final review/checks/CI. Preserve
+unassisted defaults, source pin, Title Case, v0.4.1 and McRetro.net. This checkpoint
+is a continuation branch, not a separate documentation-only PR.
+
+
 ## Bounded CPU recovery integration — 26 October 2026 (Sydney)
 
 Development source implements plan step 1: **Arm CPU Recovery Once**, off by
