@@ -410,3 +410,8 @@ footer { padding-top:9px; font-size:10px; }
 @media (max-width:420px) {
   .chip-workbench-grid { grid-template-columns:1fr; }
 }
+
+@media (min-width:1121px) {
+  .chip-compact-control select, .ram-frame-pairs select { height:20px; line-height:12px; }
+  .randomiser-row button { height:24px; line-height:12px; }
+}
