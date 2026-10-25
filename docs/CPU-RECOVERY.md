@@ -78,7 +78,8 @@ Clean restart/new-ROM initialization clears this attempt history.
 
 An older core with work-RAM hooks but without `_recover_logic_cpu` can still
 play/apply faults; only recovery controls remain disabled. Rebuild the WASM to
-use the new controls. No automatic or repeated recovery is performed.
+use the new controls. Manual actions never enable automatic recovery. The development-source single-arm
+option below is separately opt-in; older public releases have no automatic recovery.
 
 ## Verification and reproduction
 
@@ -124,8 +125,25 @@ node scripts/run-cpu-recovery.cjs /private/path/cartridge.md > /tmp/recovery.jso
 This is one trial per action, not a repeated recovery success rate. Actual
 post-recovery visuals, sound and native macOS behavior remain unverified.
 
-## Planned v0.5.0
+## Development source: arm CPU recovery once
 
-The [recovery and checkpoint design](RECOVERY-CHECKPOINT-PLAN.md) specifies an
-opt-in, single armed HALT intervention and explicit one-slot session checkpoints.
-Neither is implemented yet; current manual recovery behavior above is unchanged.
+**Arm CPU recovery once** is off by default. After explicit arming, two consecutive
+eligible completed frames with the 68000 HALT bit set cause one CPU-only reset
+attempt, then disarm. A legitimate STOP instruction, static picture, silence or
+software loop is not a trigger. It cannot rescue a browser blocked inside a core
+tick. The action clears RAM/VRAM faults and preserves FM/PSG exactly like manual
+CPU reset; it does not guarantee continued gameplay.
+
+Held/momentary faults and pending RAM pulses defer observation and reset the HALT
+streak. Arming is unavailable during those contacts. Ordinary fault edits restart
+the streak but retain arming. Pause, blur/hidden tab, manual recovery, imported
+configuration application, Disconnect all faults, new ROM activation and Clean
+restart disarm. Failed telemetry, rejected clears or rejected recovery disarm and
+pause; no repeated attempts, escalation or rewind follows. Re-arm explicitly to
+allow another attempt. Additive intervention metadata distinguishes the armed
+trigger from a manual action and records attempts/aborts, not gameplay success.
+
+The [v0.5.0 design](RECOVERY-CHECKPOINT-PLAN.md) also covers one-slot in-memory
+checkpoints. Those remain planned until serializer bounds and complete state
+replay are verified. This recovery slice does not expose checkpoint controls or
+advance the public v0.4.1 release.

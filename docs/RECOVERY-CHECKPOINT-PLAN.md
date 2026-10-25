@@ -1,6 +1,6 @@
 # v0.5.0 recovery and checkpoints — reviewed design
 
-Status: **Planned; no runtime implementation in this checkpoint.** Based on main
+Status: **Reviewed design; step 1 under implementation in development source.** Based on main
 `5d0425a64acb0f883789c67e8c6ec41e5d2c0c02` and upstream core
 `6090aff9e9b2f578cd28882bd4571d2e35b1d674`. The public release and `VERSION`
 remain v0.4.1. Existing manual CPU reset and Clean restart retain their semantics.
@@ -152,7 +152,7 @@ upstream `core/state.c`, `core/state.h`, `core/vdp_ctrl.c:vdp_context_*`,
 
 The design checkpoint requires source audit, independent review and Markdown/link
 checks. It does not justify rerunning unchanged emulator builds or claiming new
-recovery/checkpoint execution. First implementation is step 1; step 2's exact
+recovery/checkpoint execution. The bounded recovery implementation follows step 1; step 2's exact
 state coverage and capacity proof remain release blockers, not completed work.
 
 Independent Luna High source/design review found no blocking issue. The audit was

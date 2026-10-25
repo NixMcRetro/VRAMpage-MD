@@ -2,6 +2,8 @@
 
 ## Unreleased workbench improvements
 
+- Add an opt-in, single armed CPU-only reset attempt after two eligible HALT frames. Keep STOP and deliberate contacts unassisted; disarm across lifecycle actions and pause on telemetry/recovery failures. Checkpoints remain planned.
+
 - Design the v0.5.0 opt-in single-attempt CPU recovery and explicit one-slot session checkpoint, with native state/capacity verification gates. No runtime behavior or version change in the design checkpoint.
 
 - Remove the VRAM-only dotted disabled-button styling; retain consistent unavailable controls and RAM/VRAM safety guards. Verify CPU-only reset preserves audio fault configuration while Clean restart clears it.

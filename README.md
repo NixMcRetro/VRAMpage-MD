@@ -31,6 +31,8 @@ If your Mac blocks `START.command`, right-click it and choose **Open**, or follo
 
 **Development source after v0.4.1:** coordinated fault removal clears every modeled domain while preserving play/pause after a confirmed complete clear. Failed or unverified clears pause for inspection. CPU recovery still clears RAM/VRAM faults and preserves audio faults. These unreleased controls are not in the public ZIP above; see [recovery semantics](docs/CPU-RECOVERY.md).
 
+Development source also offers **Arm CPU recovery once**, off by default: after explicit arming it attempts one CPU-only reset on two eligible completed HALT frames. It ignores ordinary STOP and static pictures, preserves audio faults, and does not guarantee recovery. See [recovery semantics](docs/CPU-RECOVERY.md#development-source-arm-cpu-recovery-once).
+
 Development source also adds a [read-only comparison of two saved experiment exports](docs/EXPERIMENTS.md#compare-saved-exports-development-source). Inspect identities, settings and recorded results locally; loading an export never applies its settings or replays a run. Missing metadata remains unknown.
 
 The development-source [Randomiser](docs/CHIP-WORKBENCH.md#development-source-randomiser) has separate **PSG**, **FM** and **VRAM** buttons. Each selects cuts or a joined pair within that chip, leaving the other chips unchanged. Save the resulting configuration to keep a useful setup. The public v0.4.1 ZIP is preserved.
