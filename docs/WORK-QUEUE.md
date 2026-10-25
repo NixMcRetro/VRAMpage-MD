@@ -1,5 +1,31 @@
 # Development work queue
 
+## Private checkpoint proof and defined Blip arithmetic integration
+
+Developer-only code in `scripts/checkpoint-proof` archives the exact upstream pin,
+builds in a marked isolated directory, and validates five original synthetic cases:
+PSG LPF, FM+PSG LPF/EQ and changing-CRAM LPF/EQ. Stock state144398 bytes alone
+fails PCM replay; a35960-byte audio supplement restores six-frame pixel/sample-count/
+stereo hashes exactly. All five outputs also match recorded pre-correction goldens.
+No normal/runtime checkpoint exports or UI are added. Input-consuming gameplay,
+SRAM/EEPROM/SVP/mappers and fault/diagnostic restoration remain gates.
+
+Native AddressSanitizer/UndefinedBehaviorSanitizer found old signed negative shifts
+in pinned Blip filtering. The shared patch replaces four high-pass expressions
+with defined multiplication, using the existing clamped16-bit sample and factor64.
+Intended output is unchanged. The native smoke now runs with fatal sanitizers,
+capacity/null refusal, guards, live pointers, PCM replay and three-buffer mixing.
+Independent specialist review approves through158715e; twelve focused source/path
+checks pass. Full SDK/source113 passed before two final guard cases were added;
+fresh production cores/browser checks and required PR/main CI are integration gates.
+
+Builder refuses missing/drifted source, symlink output/ancestors, source paths,
+unmarked output and dirty tracked source before cleanup. Committed source identity
+and source-file hashes accompany the proof outputs. Focused Blip sanitizers do not
+establish full-core/WASM memory safety or a production checkpoint format. Public
+v0.4.1/McRetro.net remain untouched. Preserve Title Case and unassisted defaults.
+
+
 ## PR #61 verified delivery — 26 October 2026 (Sydney)
 
 [PR #61](https://github.com/NixMcRetro/VRAMpage-MD/pull/61) merged as

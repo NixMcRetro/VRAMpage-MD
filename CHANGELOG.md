@@ -2,6 +2,8 @@
 
 ## Unreleased workbench improvements
 
+- Add a developer-only checkpoint replay proof with guarded same-instance audio snapshots. Replace undefined signed shifts in the existing Blip high-pass filter with equivalent defined arithmetic; verify unchanged synthetic PCM/pixels and native sanitizer checks. Checkpoint controls remain unavailable.
+
 - Use Title Case consistently for buttons and labels, preserving acronyms and Work RAM naming.
 
 - Add an opt-in, single armed CPU-only reset attempt after two eligible HALT frames. Keep STOP and deliberate contacts unassisted; disarm across lifecycle actions and pause on telemetry/recovery failures. Checkpoints remain planned.
