@@ -77,7 +77,7 @@ window.Module = async () => {
   const core = {
     HEAPU8: bytes, HEAPF32: floats,
     _init() {},
-    _get_rom_buffer_ref: () => 3 * 1024 * 1024,
+    _get_rom_buffer_ref: () => window.mockCore.rejectRomAllocation ? 0 : 3 * 1024 * 1024,
     _get_frame_buffer_ref: () => 0,
     _get_input_buffer_ref: () => input,
     _get_web_audio_l_ref: () => input + 1024,

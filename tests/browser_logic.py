@@ -144,6 +144,174 @@ class BrowserLogicTests(unittest.TestCase):
         page.wait_for_function("window.mockCore.ticks > 0")
         return data
 
+    def test_rejected_roms_keep_the_accepted_cartridge_and_initial_errors_are_helpful(self):
+        self.load_rom()
+        self.page.locator("#logicAccess").select_option("2")
+        self.page.locator("#logicApplyBtn").click()
+        self.page.locator("#pauseBtn").click()
+        starts = self.page.evaluate("window.mockCore.starts")
+        fault = self.page.evaluate("({active:window.mockCore.logic.active, config:{...window.mockCore.logic.config}})")
+        for name, data in (("short.bin", b"tiny"),
+                           ("bad-header.bin", bytes(512))):
+            self.page.locator("#romFile").set_input_files({"name": name, "mimeType": "application/octet-stream", "buffer": data})
+            expect(self.page.locator("#powerLabel")).to_have_text("CONSOLE ON")
+            expect(self.page.locator("#pauseBtn")).to_have_text("Resume")
+            expect(self.page.locator("#romName")).to_have_text("SYNTHETIC-TEST.BIN")
+            self.assertEqual(self.page.evaluate("window.mockCore.starts"), starts)
+            self.assertEqual(self.page.evaluate("({active:window.mockCore.logic.active, config:{...window.mockCore.logic.config}})"), fault)
+            self.assertTrue(self.page.locator("#screenPlaceholder").evaluate("node => node.hidden"))
+        self.page.evaluate("window.mockCore.rejectRomAllocation=true")
+        self.page.locator("#romFile").set_input_files({
+            "name": "allocation-rejected.bin", "mimeType": "application/octet-stream", "buffer": self.synthetic_rom()})
+        expect(self.page.locator("#powerLabel")).to_have_text("CONSOLE ON")
+        expect(self.page.locator("#pauseBtn")).to_have_text("Resume")
+        self.assertEqual(self.page.evaluate("window.mockCore.starts"), starts)
+        self.assertEqual(self.page.evaluate("({active:window.mockCore.logic.active, config:{...window.mockCore.logic.config}})"), fault)
+
+        self.page.evaluate("""() => {
+          const native=File.prototype.arrayBuffer;
+          window.oversizeReadCalls=0;
+          File.prototype.arrayBuffer=function(){window.oversizeReadCalls++;return native.call(this);};
+        }""")
+        self.page.locator("#romFile").set_input_files({
+            "name": "oversize.bin", "mimeType": "application/octet-stream", "buffer": bytes(4*1024*1024+1)})
+        expect(self.page.locator("#powerLabel")).to_have_text("CONSOLE ON")
+        self.assertEqual(self.page.evaluate("window.oversizeReadCalls"), 0)
+        self.assertEqual(self.page.evaluate("window.mockCore.starts"), starts)
+        self.assertEqual(self.page.evaluate("({active:window.mockCore.logic.active, config:{...window.mockCore.logic.config}})"), fault)
+
+        self.page.evaluate("""() => {
+          const native=File.prototype.arrayBuffer;
+          File.prototype.arrayBuffer=function(){
+            return this.name==='read-rejected.bin'
+              ? Promise.reject(new Error('synthetic file read rejection'))
+              : native.call(this);
+          };
+        }""")
+        self.page.locator("#romFile").set_input_files({
+            "name": "read-rejected.bin", "mimeType": "application/octet-stream", "buffer": self.synthetic_rom()})
+        expect(self.page.locator("#powerLabel")).to_have_text("CONSOLE ON")
+        expect(self.page.locator("#pauseBtn")).to_have_text("Resume")
+        self.assertEqual(self.page.evaluate("window.mockCore.starts"), starts)
+        self.assertEqual(self.page.evaluate("({active:window.mockCore.logic.active, config:{...window.mockCore.logic.config}})"), fault)
+
+        with self.page.expect_download() as download_event:
+            self.page.locator("#logicExperimentBtn").click()
+        export_path=download_event.value.path()
+        exported=json.loads(export_path.read_text())
+        self.assertEqual(exported["rom"], {
+            "name": "synthetic-test.bin",
+            "sha256": hashlib.sha256(self.synthetic_rom()).hexdigest(),
+        })
+
+        initial = self.new_page()
+        initial.locator("#romFile").set_input_files({"name": "bad-header.bin", "mimeType": "application/octet-stream", "buffer": bytes(512)})
+        expect(initial.locator("#powerLabel")).to_have_text("WAITING FOR ROM")
+        expect(initial.locator("#placeholderTitle")).to_have_text("CARTRIDGE COULD NOT START")
+        expect(initial.locator("#placeholderMessage")).to_contain_text('ROM header missing "SEGA"')
+
+    def test_latest_rom_selection_wins_even_when_the_latest_file_is_invalid(self):
+        self.page.evaluate("""() => {
+          const native=File.prototype.arrayBuffer;
+          window.pendingRomReads={};
+          File.prototype.arrayBuffer=function(){
+            return new Promise((resolve,reject)=>window.pendingRomReads[this.name]={
+              resolve:()=>native.call(this).then(resolve,reject), reject});
+          };
+        }""")
+        self.page.locator("#romFile").set_input_files({"name": "older-valid.bin", "mimeType": "application/octet-stream", "buffer": self.synthetic_rom()})
+        self.page.wait_for_function("window.pendingRomReads['older-valid.bin']")
+        self.page.locator("#romFile").set_input_files({"name": "latest-invalid.bin", "mimeType": "application/octet-stream", "buffer": bytes(512)})
+        self.page.wait_for_function("window.pendingRomReads['latest-invalid.bin']")
+        self.page.evaluate("window.pendingRomReads['latest-invalid.bin'].resolve()")
+        expect(self.page.locator("#placeholderTitle")).to_have_text("CARTRIDGE COULD NOT START")
+        self.page.evaluate("window.pendingRomReads['older-valid.bin'].resolve()")
+        expect(self.page.locator("#powerLabel")).to_have_text("WAITING FOR ROM")
+        self.assertEqual(self.page.evaluate("window.mockCore.starts"), 0)
+
+    def test_stale_file_read_error_does_not_cover_the_latest_valid_game(self):
+        self.page.evaluate("""() => {
+          const native=File.prototype.arrayBuffer;
+          window.pendingRomReads={};
+          File.prototype.arrayBuffer=function(){
+            return new Promise((resolve,reject)=>window.pendingRomReads[this.name]={
+              resolve:()=>native.call(this).then(resolve,reject), reject});
+          };
+        }""")
+        self.page.locator("#romFile").set_input_files({
+            "name": "older-read-error.bin", "mimeType": "application/octet-stream", "buffer": self.synthetic_rom()})
+        self.page.wait_for_function("window.pendingRomReads['older-read-error.bin']")
+        self.page.locator("#romFile").set_input_files({
+            "name": "latest-valid.bin", "mimeType": "application/octet-stream", "buffer": self.synthetic_rom()})
+        self.page.wait_for_function("window.pendingRomReads['latest-valid.bin']")
+        self.page.evaluate("window.pendingRomReads['latest-valid.bin'].resolve()")
+        expect(self.page.locator("#romName")).to_have_text("LATEST-VALID.BIN")
+        self.page.evaluate("window.pendingRomReads['older-read-error.bin'].reject(new Error('stale read failure'))")
+        expect(self.page.locator("#powerLabel")).to_have_text("CONSOLE ON")
+        expect(self.page.locator("#romName")).to_have_text("LATEST-VALID.BIN")
+        self.assertTrue(self.page.locator("#screenPlaceholder").evaluate("node => node.hidden"))
+        self.assertEqual(self.page.evaluate("window.mockCore.starts"), 1)
+
+    def test_clean_restart_cancels_a_pending_rom_read(self):
+        self.load_rom()
+        self.page.evaluate("""() => {
+          const native=File.prototype.arrayBuffer;
+          window.pendingResetRead=null;
+          File.prototype.arrayBuffer=function(){
+            return new Promise((resolve,reject)=>window.pendingResetRead={
+              resolve:()=>native.call(this).then(resolve,reject), reject});
+          };
+        }""")
+        self.page.locator("#romFile").set_input_files({"name": "delayed.bin", "mimeType": "application/octet-stream", "buffer": self.synthetic_rom()})
+        self.page.wait_for_function("window.pendingResetRead")
+        self.page.locator("#resetBtn").click()
+        self.page.wait_for_function("window.mockCore.starts === 2")
+        self.page.evaluate("window.pendingResetRead.resolve()")
+        expect(self.page.locator("#romName")).to_have_text("SYNTHETIC-TEST.BIN")
+        self.assertEqual(self.page.evaluate("window.mockCore.starts"), 2)
+
+    def test_post_start_failure_reports_uncertainty_and_retains_restart_source(self):
+        page = self.new_page(circuit_config=True)
+        self.load_rom(page)
+        page.evaluate("window.mockCore.rejectVramModel=true")
+        page.locator("#romFile").set_input_files({
+            "name": "post-start-failure.bin", "mimeType": "application/octet-stream", "buffer": self.synthetic_rom()})
+        expect(page.locator("#powerLabel")).to_have_text("WAITING FOR ROM")
+        expect(page.locator("#placeholderTitle")).to_have_text("CARTRIDGE ACTIVATION UNCERTAIN")
+        self.assertTrue(page.locator("#resetBtn").is_enabled())
+        page.evaluate("window.mockCore.rejectVramModel=false")
+        page.locator("#resetBtn").click()
+        expect(page.locator("#powerLabel")).to_have_text("CONSOLE ON")
+        expect(page.locator("#romName")).to_have_text("SYNTHETIC-TEST.BIN")
+        self.assertEqual(page.evaluate("window.mockCore.starts"), 3)
+
+    def test_export_cancels_if_rom_identity_changes_while_hashing(self):
+        self.page.evaluate("""() => {
+          const native=crypto.subtle.digest.bind(crypto.subtle);
+          let delayed=false;
+          window.finishPendingHash=null;
+          window.digestCalls=0;
+          Object.defineProperty(crypto.subtle,'digest',{configurable:true,value:(algorithm,data)=>
+            (window.digestCalls++, delayed ? native(algorithm,data) : (delayed=true,new Promise(resolve=>{
+              window.finishPendingHash=()=>resolve(new Uint8Array(32).buffer);
+            })))});
+        }""")
+        self.assertTrue(self.page.evaluate("!!crypto.subtle && crypto.subtle.digest.toString().includes('delayed')"))
+        self.page.locator("#romFile").set_input_files({
+            "name": "first.bin", "mimeType": "application/octet-stream", "buffer": self.synthetic_rom()})
+        expect(self.page.locator("#powerLabel")).to_have_text("CONSOLE ON")
+        self.assertEqual(self.page.evaluate("window.digestCalls"), 1)
+        self.assertEqual(self.page.evaluate("typeof window.finishPendingHash"), "function")
+        downloads=[]
+        self.page.on("download", lambda download: downloads.append(download.suggested_filename))
+        self.page.locator("#logicExperimentBtn").click()
+        self.page.locator("#romFile").set_input_files({
+            "name": "replacement.bin", "mimeType": "application/octet-stream", "buffer": self.synthetic_rom()})
+        expect(self.page.locator("#romName")).to_have_text("REPLACEMENT.BIN")
+        self.page.evaluate("window.finishPendingHash()")
+        expect(self.page.locator("#logicStatus")).to_contain_text("ROM changed while preparing export")
+        self.assertEqual(downloads, [])
+
     def test_rom_gates_logic_controls_and_legacy_core_degrades_gracefully(self):
         for control in ("#logicKind", "#logicAccess", "#logicLineA", "#logicLineB",
                         "#logicApplyBtn", "#logicDisconnectBtn", "#logicExperimentBtn"):
