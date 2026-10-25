@@ -10,7 +10,8 @@ s=blip_header.read_text()
 if 'blip_proof_size' not in s:
     s=s.replace('void blip_delete( blip_t* );','void blip_delete( blip_t* );\nunsigned blip_proof_size(const blip_t*);\nint blip_proof_save(blip_t*, unsigned char*, unsigned);\nint blip_proof_load(blip_t*, const unsigned char*, unsigned);')
     blip_header.write_text(s)
-append('core/sound/blip_buf.c','unsigned blip_proof_size(',r'''typedef struct { fixed_t factor, offset; int size, integrator[2]; } blip_proof_header;
+append('core/sound/blip_buf.c','unsigned blip_proof_size(',r'''#include <stdint.h>
+typedef struct { fixed_t factor, offset; int size, integrator[2]; } blip_proof_header;
 unsigned blip_proof_size(const blip_t *m) {
   return m ? (unsigned)(sizeof(blip_proof_header) + 2u * (unsigned)(m->size + buf_extra) * sizeof(buf_t)) : 0;
 }
