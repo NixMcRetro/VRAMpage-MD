@@ -1,5 +1,23 @@
 # Development work queue
 
+## Active Phase D: browser shortcut isolation
+
+Source `feb9277` adds one modifier guard to shared keyboard handling after a
+compiled-core reproduction: Ctrl+P prevented browser default and changed Pause
+to Resume; Meta+C pressed emulated A. The fixed original-cartridge probe leaves
+Pause unchanged, browser default available and A released, without page errors.
+This uses synthetic DOM modifier events with a genuine compiled core; it does
+not establish native Mac shortcut or OS-background behaviour. Raw before/after
+reports and logs: `/workspace/scratch/input-stability`.
+
+Control/Command/Alt keydowns no longer invoke game/preset/pause actions. Ordinary
+controls and Shift momentary contacts remain supported; keyup cleanup remains
+unconditional. Focused Chromium negative and existing controller/patchbay tests
+pass. Independent review and final integration checks are in progress. Preserve
+v0.4.1, all intentional fault outcomes and McRetro.net; no native model, timing,
+recovery or release change is included. Native Mac/audible/OS-background manual
+acceptance remains open after this bounded compatibility fix.
+
 ## PR #55 integration checkpoint — 25 October 2026
 
 [PR #55](https://github.com/NixMcRetro/VRAMpage-MD/pull/55) merged as
@@ -26,16 +44,6 @@ work is remaining compatibility/manual acceptance, especially native Mac audible
 output and OS background transitions; do not repeat completed automated gates or
 implement speculative recovery. v0.5.0 remains planned after stabilisation.
 Intentional faults can still halt or corrupt a game; no automatic rescue was added.
-
-## Phase D keyboard shortcut follow-up
-
-The input stability work reproduced browser shortcut conflicts on `014f901`:
-Ctrl+P paused, and modified preset/controller keys were accepted as game input.
-The experiment branch adds a modifier guard and focused browser regression while
-retaining plain controller and Shift momentary behavior. See the matching status
-checkpoint and focused test command in `docs/TESTING.md`; independent review and
-integration remain with the coordinator. A synthetic visibility event did not
-justify changing focus-loss lifecycle behavior.
 
 ## Source checkpoint: safe cartridge replacement
 

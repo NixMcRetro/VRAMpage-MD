@@ -1,5 +1,23 @@
 # Development status and continuation checkpoint
 
+## Active Phase D: browser shortcut isolation
+
+Source `feb9277` adds one modifier guard to shared keyboard handling after a
+compiled-core reproduction: Ctrl+P prevented browser default and changed Pause
+to Resume; Meta+C pressed emulated A. The fixed original-cartridge probe leaves
+Pause unchanged, browser default available and A released, without page errors.
+This uses synthetic DOM modifier events with a genuine compiled core; it does
+not establish native Mac shortcut or OS-background behaviour. Raw before/after
+reports and logs: `/workspace/scratch/input-stability`.
+
+Control/Command/Alt keydowns no longer invoke game/preset/pause actions. Ordinary
+controls and Shift momentary contacts remain supported; keyup cleanup remains
+unconditional. Focused Chromium negative and existing controller/patchbay tests
+pass. Independent review and final integration checks are in progress. Preserve
+v0.4.1, all intentional fault outcomes and McRetro.net; no native model, timing,
+recovery or release change is included. Native Mac/audible/OS-background manual
+acceptance remains open after this bounded compatibility fix.
+
 ## PR #55 integration checkpoint — 25 October 2026
 
 [PR #55](https://github.com/NixMcRetro/VRAMpage-MD/pull/55) merged as
@@ -26,17 +44,6 @@ work is remaining compatibility/manual acceptance, especially native Mac audible
 output and OS background transitions; do not repeat completed automated gates or
 implement speculative recovery. v0.5.0 remains planned after stabilisation.
 Intentional faults can still halt or corrupt a game; no automatic rescue was added.
-
-## Phase D input shortcut follow-up
-
-On `014f901`, Chromium reproduced Ctrl+P pausing the game; the same DOM handler
-also processes modified preset and controller keys. The bounded follow-up ignores
-Ctrl/Meta/Alt keydowns, preserving browser shortcuts while leaving plain controls
-and Shift momentary presets unchanged. Focused Chromium shortcut, controller and
-patchbay tests pass; the compiled-core modifier reproduction is recorded by the
-parent coordinator. Visibility-only input cleanup was not added after the
-synthetic visible-page event probe proved inconclusive for real backgrounding.
-This experiment is committed separately for independent review and integration.
 
 ## Source checkpoint: safe cartridge replacement
 

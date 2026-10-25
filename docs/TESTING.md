@@ -1270,3 +1270,12 @@ Merge `ed62981a62a3a32477308cec85bee2b62a7583ba` exactly matches that tree.
 All seven main checks pass in run40174600830; the current checkpoint links the
 verified build. The public
 v0.4.1 tag and both asset digests remain unchanged; no McRetro.net changes occurred.
+
+# Phase D browser modifier shortcut isolation
+
+Original generated-cartridge proof on `ed62981` reproduces Ctrl+P canceling its
+browser default and pausing the game, plus Meta+C pressing controller A. With
+`feb9277`, the same genuine-core probe preserves Pause, leaves default uncanceled
+and controller A at zero, with no page errors. These are synthetic DOM modifier
+events, not native Mac/OS shortcut acceptance. Both reports remain in
+`/workspace/scratch/input-stability`; deliberate faults/recovery are unchanged.
