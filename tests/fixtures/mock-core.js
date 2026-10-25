@@ -231,6 +231,7 @@ window.Module = async () => {
       _get_logic_reads: () => logic.reads,
       _get_logic_writes: () => logic.writes,
       _get_logic_frame: () => {
+        if(window.mockCore.throwLogicFrame) throw new Error('synthetic frame telemetry trap');
         if(window.mockCore.throwFrameOnce) {window.mockCore.throwFrameOnce=false;throw new Error('synthetic frame telemetry trap');}
         return logic.frame;
       },

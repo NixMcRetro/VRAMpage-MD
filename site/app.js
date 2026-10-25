@@ -1141,10 +1141,14 @@
   function refreshLogicMetrics() {
     const core=emulator;
     if (logicApiReady(core)) {
-      const reads=Number(core._get_logic_reads()) || 0;
-      const writes=Number(core._get_logic_writes()) || 0;
-      const frame=Number(core._get_logic_frame()) || 0;
-      const activation=Number(core._get_logic_activation_frame());
+      const metric=(getter,fallback=null)=>{
+        try { const value=Number(getter.call(core)); return Number.isFinite(value)?value:fallback; }
+        catch (_) { return fallback; }
+      };
+      const reads=metric(core._get_logic_reads,0);
+      const writes=metric(core._get_logic_writes,0);
+      const frame=metric(core._get_logic_frame);
+      const activation=metric(core._get_logic_activation_frame);
       let flags=null;
       try { flags=Number(core._get_logic_cpu_flags()); if (!Number.isFinite(flags)) flags=null; }
       catch (_) { flags=null; }
@@ -1154,7 +1158,7 @@
         ? lastLogicExperiment.writeCount : writes;
       $('logicReadCount').textContent=shownReads.toLocaleString();
       $('logicWriteCount').textContent=shownWrites.toLocaleString();
-      $('logicFrame').textContent=frame.toLocaleString();
+      $('logicFrame').textContent=frame===null?'—':frame.toLocaleString();
       const shownActivation=logicActive && Number.isFinite(activation) && activation>=0
         ? activation : lastLogicExperiment?.activationFrame;
       $('logicActivationFrame').textContent=shownActivation===undefined ? '—' : Number(shownActivation).toLocaleString();
