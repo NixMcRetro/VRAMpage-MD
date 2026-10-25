@@ -2,6 +2,8 @@
 """Build a private synthetic replay proof on an isolated copy of pinned core."""
 from pathlib import Path
 import os
+import hashlib
+import json
 import shutil
 import subprocess
 import sys
@@ -44,6 +46,13 @@ def main():
         shutil.rmtree(output)
     output.mkdir(parents=True)
     (output / MARKER).write_text(MARKER_TEXT)
+    proof_files = sorted((repo / "scripts/checkpoint-proof").glob("*"))
+    proof_files += [repo / "scripts/patch_core.py", repo / "tests/checkpoint_blip_smoke.c"]
+    metadata = {"core_revision": PIN,
+                "source_commit": subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"], text=True).strip(),
+                "file_sha256": {str(path.relative_to(repo)): hashlib.sha256(path.read_bytes()).hexdigest()
+                                for path in proof_files if path.is_file()}}
+    (output / "BUILD-INFO.json").write_text(json.dumps(metadata, indent=2) + "\n")
     core = output / "source"
     core.mkdir()
     archive = subprocess.check_output(["git", "-C", str(vendor), "archive", "--format=tar", PIN])
