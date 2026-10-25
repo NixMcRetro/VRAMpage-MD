@@ -1,5 +1,40 @@
 # Development status and continuation checkpoint
 
+## PR #53 integration checkpoint — 25 October 2026
+
+[PR #53](https://github.com/NixMcRetro/VRAMpage-MD/pull/53) merged as
+`2736d596435e050f0c779351535a2e40f73d6097` after all seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40159956069)
+passed on `5b7afb4bfac4bf5a00b76addce9130d02ca905ec`.
+The merged tree exactly matches the reviewed head.
+All seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40160355074)
+pass. No integration blocker remains.
+
+All ten A11–A15 WRITE pairs now have individual buttons. Each bridge runs for
+exactly eight emulated frames without an affected-write cap, then disconnects
+without CPU recovery. Advanced selected-limit/forced-resume pulses are unchanged.
+Both rows stay visible at 1366×768, including with long status messages. Explicit
+cancel/reset/restart/load/replacement cannot clear a later RAM fault.
+
+Independent Luna High review approved `21a80e7` (review `772f749`). Full source/
+SDK107, normal sanitizers/fresh WASM, final Chromium72/72, extracted compiled-core
+5/5, display6/6, focused WebKit5/5 and independent focused Chromium7/7 pass. The
+682-file ROM-free ZIP matches `5b7afb4`, version0.4.1 and its UI/runtime bytes.
+Logs, package and acceptance plan: `/workspace/scratch/eight-frame-ram-pairs`.
+
+[Ready-to-run eight-frame review build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40160355074/artifacts/12586885523)
+contains the merged controls and matching source, separate from public v0.4.1.
+
+Combined configuration/preset/randomisation/pulse/removal/recovery/restart/export/
+comparison acceptance is complete. Phase C is accepted; Phase D feature freeze
+and stabilisation are active. Reuse valid unchanged native/performance evidence;
+fix concrete failures and usability gaps rather than add models or infrastructure.
+The public v0.4.1 tag, metadata and original asset digests were verified unchanged
+after merge. McRetro.net was not modified or deployed. Native macOS, audible and
+physical validation remain unclaimed; faults can stop games or persist in RAM.
+Bundle this checkpoint with the next concrete stabilisation change; no standalone
+documentation PR or intermediate release is needed.
+
 ## Source checkpoint: eight-frame pairs and combined acceptance
 
 Implementation `2465987` and layout fix `ddaebad` replace the random RAM shortcut
@@ -13,8 +48,8 @@ eight frames and no CPU intervention), keyboard/no-write/paused timing, active
 and malformed-state refusal, failed setters/releases, all cancellation paths,
 legacy optional APIs and actual normal/runtime cores. Full source/SDK107 with
 normal sanitizers and fresh WASM, display6/6 and focused WebKit5/5 pass. The
-independent final focused Chromium7/7 run passes. Full final interfaces, package
-provenance and required PR/main CI remain integration gates. Logs and the plan
+independent final focused Chromium7/7 run passes. Final full interfaces and package provenance pass; PR/main CI evidence is
+recorded in the integration checkpoint above. Logs and the plan
 are under `/workspace/scratch/eight-frame-ram-pairs`.
 
 The combined workbench flow passes: save/preview/apply, presets, independent chip

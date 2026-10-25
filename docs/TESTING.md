@@ -1132,3 +1132,17 @@ writes. SDK107, display6/6, focused WebKit5/5 and independent Chromium7/7 pass;
 complete interface and PR/main gates are recorded at the integration checkpoint.
 Native/core model code and public v0.4.1 are unchanged. Phase C automated
 acceptance is complete in source; Phase D feature freeze is active.
+
+Final head `5b7afb4` passes complete Chromium72/72 and extracted compiled-core
+5/5, alongside display6/6 and focused WebKit5/5. The exact-source 682-file review
+ZIP has unique entries, matching version/build commit and byte-identical UI/core
+assets. All seven PR #53 checks pass, including complete browser interfaces and
+extracted normal/runtime/controls checks in Firefox and WebKit. Merged commit
+`2736d596435e050f0c779351535a2e40f73d6097` has the same tree. Main results and
+review download are recorded in the current integration checkpoint.
+
+All seven main checks pass on `2736d596435e050f0c779351535a2e40f73d6097` in
+[run 40160355074](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40160355074).
+The reviewed and merged trees match. Public v0.4.1 metadata, tag and asset digests
+were verified unchanged after merge; McRetro.net was untouched. Phase C acceptance
+is integrated and Phase D feature freeze/stabilisation remains active.
