@@ -2859,7 +2859,7 @@
         (section.top + window.scrollY) - chrome - 12));
       displayViewport.style.setProperty('--window-display-height', `${height}px`);
     }
-    $('fullscreenBtn').textContent = active ? 'Exit fullscreen' : 'Fullscreen';
+    $('fullscreenBtn').textContent = active ? 'Exit Fullscreen' : 'Fullscreen';
     $('fullscreenBtn').setAttribute('aria-pressed', String(active));
     // Firefox can retain a stale canvas backing/compositor surface after a
     // fullscreen transition. Reset only the fixed-size canvas and repaint

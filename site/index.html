@@ -56,7 +56,7 @@
           <p id="keyboardTarget" class="keyboard-target" role="status" aria-live="polite">Keyboard fault target: VRAM</p>
         <div class="chip-workbench-grid">
           <section class="chip-card" data-keyboard-chip="VRAM" aria-label="VRAM chip">
-            <h2>VRAM <small>VDP address nets</small></h2>
+            <h2>VRAM <small>VDP Address Nets</small></h2>
             <label class="chip-compact-control">Model
               <select id="vramModel" aria-describedby="vramModelStatus">
                 <option value="1">Frame</option><option value="2">Transaction</option>
@@ -72,7 +72,7 @@
             <p id="vramModelStatus" class="chip-state" role="status" aria-live="polite">Frame projection is the default model.</p>
           </section>
           <section class="chip-card" data-keyboard-chip="WRAM" aria-label="Work RAM chip">
-            <h2>Work RAM <small>logical address lines</small></h2>
+            <h2>Work RAM <small>Logical Address Lines</small></h2>
             <label class="chip-compact-control">Leg Action
               <select id="ramLegAction"><option value="cut">Cut / Reconnect</option><option value="bridge">Bridge Pair</option></select>
             </label>
@@ -83,7 +83,7 @@
             <p id="ramChipState" class="chip-state" aria-live="polite">Address lines are connected.</p>
           </section>
           <section class="chip-card" data-keyboard-chip="FM" aria-label="FM chip">
-            <h2>FM <small>YM2612 register data</small></h2>
+            <h2>FM <small>YM2612 Register Data</small></h2>
             <label class="chip-compact-control">Leg Action
               <select id="fmLegMode"><option value="bridge">Bridge Two Bits</option><option value="ground" data-audio-mask>Force Selected Bits Low</option></select>
             </label>
@@ -91,7 +91,7 @@
             <p id="fmChipState" class="chip-state" aria-live="polite">No FM data fault.</p>
           </section>
           <section class="chip-card" data-keyboard-chip="PSG" aria-label="PSG chip">
-            <h2>PSG / VDP <small>programmable sound data</small></h2>
+            <h2>PSG / VDP <small>Programmable Sound Data</small></h2>
             <label class="chip-compact-control">Leg Action
               <select id="psgLegMode"><option value="bridge">Bridge Two Bits</option><option value="ground" data-audio-mask>Force Selected Bits Low</option></select>
             </label>
@@ -141,7 +141,7 @@
     </div>
 
     <details class="logic-panel" id="logicExperiment">
-      <summary class="section-heading"><h2>05 <span>/</span> Logic / Work RAM</h2><span>Experimental · 68000 bus model</span></summary>
+      <summary class="section-heading"><h2>05 <span>/</span> Logic / Work RAM</h2><span>Experimental · 68000 Bus Model</span></summary>
       <p class="logic-intro">Bridge one pair of modeled Work RAM lines. Apply a fault explicitly; the selectors do not activate it by themselves.</p>
       <div class="logic-controls" aria-label="Logic fault configuration">
         <label>Line Type
@@ -172,12 +172,12 @@
       <div class="logic-actions pulse-settings">
         <label for="logicPulseFrames">Pulse Length</label>
         <select id="logicPulseFrames" disabled aria-label="Pulse limit: emulated frames or affected writes">
-          <option value="writes:1" data-write-limit>1 affected write (≤1 frame)</option>
-          <option value="writes:2" data-write-limit>2 affected writes (≤1 frame)</option>
-          <option value="writes:4" data-write-limit>4 affected writes (≤1 frame)</option>
-          <option value="writes:8" data-write-limit>8 affected writes (≤1 frame)</option>
-          <option value="1" selected>1 frame (~17 ms)</option><option value="2">2 frames (~33 ms)</option>
-          <option value="4">4 frames (~67 ms)</option><option value="8">8 frames (~134 ms)</option>
+          <option value="writes:1" data-write-limit>1 Affected Write (≤1 Frame)</option>
+          <option value="writes:2" data-write-limit>2 Affected Writes (≤1 Frame)</option>
+          <option value="writes:4" data-write-limit>4 Affected Writes (≤1 Frame)</option>
+          <option value="writes:8" data-write-limit>8 Affected Writes (≤1 Frame)</option>
+          <option value="1" selected>1 Frame (~17 ms)</option><option value="2">2 Frames (~33 ms)</option>
+          <option value="4">4 Frames (~67 ms)</option><option value="8">8 Frames (~134 ms)</option>
         </select>
         <button id="logicPulseBtn" type="button" disabled>Pulse Selected Fault → Force Resume</button>
       </div>
@@ -189,7 +189,7 @@
         <div><span>Affected Writes</span><strong id="logicWriteCount">0</strong></div>
         <div><span>Current Frame</span><strong id="logicFrame">0</strong></div>
         <div><span>Activation Frame</span><strong id="logicActivationFrame">—</strong></div>
-        <div class="cpu-state"><span>CPU Status flags</span><strong id="logicCpuStatus">—</strong></div>
+        <div class="cpu-state"><span>CPU Status Flags</span><strong id="logicCpuStatus">—</strong></div>
       </div>
       <p class="logic-note"><strong>Model limits.</strong> This is an experimental transaction model, not an exact physical pin or cycle-level simulation. Read faults affect returned values; write faults alter stored RAM and those changes persist after disconnecting. CPU STOP/HALT indicators report flags only; recovery occurs only through explicit recovery or pulse controls. Data pairs must stay within D0–D7 or D8–D15. Only one fault domain (VRAM or logic/Work RAM) is active at a time.</p>
     </details>
@@ -208,8 +208,8 @@
         </div>
         <p id="psgBridgeStatus" class="logic-status" role="status" aria-live="polite">Checking core support…</p>
         <div class="logic-metrics psg-metrics">
-          <div><span>PSG data writes</span><strong id="psgInputWrites">0</strong></div>
-          <div><span>Bytes changed</span><strong id="psgChangedWrites">0</strong></div>
+          <div><span>PSG Data Writes</span><strong id="psgInputWrites">0</strong></div>
+          <div><span>Bytes Changed</span><strong id="psgChangedWrites">0</strong></div>
         </div>
         <p class="small-note">The counters aggregate at the PSG write sink and do not identify which CPU initiated a write. Disconnecting changes future writes only. The model does not repair current PSG chip state.</p>
       </section>
@@ -226,8 +226,8 @@
         </div>
         <p id="fmBridgeStatus" class="logic-status" role="status" aria-live="polite">Checking core support…</p>
         <div class="logic-metrics psg-metrics">
-          <div><span>FM register writes</span><strong id="fmInputWrites">0</strong></div>
-          <div><span>Bytes changed</span><strong id="fmChangedWrites">0</strong></div>
+          <div><span>FM Register Writes</span><strong id="fmInputWrites">0</strong></div>
+          <div><span>Bytes Changed</span><strong id="fmChangedWrites">0</strong></div>
         </div>
         <p class="small-note">Counters aggregate at the shared FM write boundary and do not identify which CPU initiated a write. Removing the bridge affects future writes only; it does not repair current chip state. Full sound reset clears the bridge. Z80-only reset preserves the bridge connection and counters.</p>
       </section>
@@ -245,7 +245,7 @@
         <pre id="circuitConfigPreview" class="circuit-config-preview" hidden></pre>
       </section>
       <section class="notes-block experiment-comparison" aria-label="Experiment comparison">
-        <div class="section-heading"><h2>09 <span>/</span> Compare Exports</h2><span>Local · read-only</span></div>
+        <div class="section-heading"><h2>09 <span>/</span> Compare Exports</h2><span>Local · Read-Only</span></div>
         <p>Load two experiment JSON exports to compare recorded identity, fault settings, counters and outcomes. Files are read in this browser only. Unknown values may be absent, invalid, or unavailable; long values are shortened. Comparison does not establish causal or gameplay equivalence.</p>
         <div class="logic-actions">
           <label id="compareFileALabel" class="load-btn" for="compareFileA" role="button" tabindex="0">Load Export A</label><input id="compareFileA" type="file" accept=".json,application/json" aria-label="Load experiment export A">
