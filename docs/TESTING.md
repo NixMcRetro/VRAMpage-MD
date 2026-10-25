@@ -1383,3 +1383,17 @@ the VRAM Randomiser has `disabled=true`, `:active=false`, no pressed attribute,
 zero click events and unchanged VRAM setters. Its old 0.45 opacity looked sunken;
 a distinct disabled style retains the guard/title. Numeric-key isolation applies
 to conflicting VRAM shortcuts, preserving independently selected FM/PSG inputs.
+
+Source `fc49c19` and independent Luna High support guard (`250adbf`, reviewed as
+`2ad7d9f`) pass focused review. Audio active markers require confirmed support
+and configuration; unknown support is tested. Full SDK/source107 passes with
+normal sanitizers/fresh WASM (168.034 s). The final JS-only support guard does
+not change native code; final syntax and compact UI6 pass. Complete Chromium
+logic96/96 passes in 228.231 s, display7/7 in 12.607 s, and compiled-core6/6 in
+30.253 s. Focused WebKit6/6 passes in 52.022 s; the expanded real compiled-core
+controls case passes in WebKit in 4.955 s. The 48-state light/dark desktop/mobile
+probe confirms neutral chip fills, green outlines only on active faults, independent
+keyboard target cycling, pulse/held-contact cleanup and a dashed disabled VRAM
+Randomiser with zero click events or VRAM setter changes from RAM pointer input.
+Before/fixed native probes and original failing baseline are retained separately.
+These checks do not establish a new native Safari or physical-chip test.

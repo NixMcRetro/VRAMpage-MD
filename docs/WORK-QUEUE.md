@@ -1,6 +1,6 @@
 # Development work queue
 
-## Active correction: active-chip outlines and focused WRAM shortcuts
+## Source checkpoint: active-chip outlines and focused WRAM shortcuts
 
 User clarification after PR #57: green should mark the chip outline when its
 fault is active, not fill the selected keyboard target. Keep neutral chip bodies
@@ -28,6 +28,24 @@ and pointer/key contact cleanup, no VRAM change or RAM disconnect from focused
 WRAM digits, and no hidden CPU recovery. Preserve v0.4.1, McRetro.net, all native
 fault models and previous verified evidence. Use independent review and required
 seven PR/main checks at integration; do not repeat completed RAM research.
+
+Source `fc49c19` and independent Luna High review `250adbf` implement the
+correction. Audio outlines require confirmed runtime support and configuration;
+unknown support does not produce a green active indication. The configured
+fault state drives chip-body outlines, independently of the text-only keyboard
+target. The VRAM Randomiser remains guarded and distinctly unavailable during
+RAM contacts, with no click or VRAM setter activation from the mouse path.
+
+The original compiled-core focus probe fails before the fix and passes after:
+Space-held WRAM survives Digit1 with unchanged VRAM state/setters, 0 still cycles,
+and Space release clears only RAM. Local full source/native/SDK107 passes with
+normal sanitizers/fresh WASM (168.034 s); native code is unchanged after the JS-only
+review support guard. Final syntax/compact UI6, Chromium logic96/96 and display7/7,
+compiled-core6/6, focused WebKit6/6 and its genuine compiled-core controls case
+pass. Forty-eight light/dark desktop/mobile visual states verify neutral fills,
+active outlines, target independence, pulse/hold cleanup and disabled appearance.
+Logs and original before-fix evidence: `/workspace/scratch/active-outline`.
+Package provenance and required seven PR/main checks remain integration gates.
 
 ## PR #57 integration checkpoint — 25 October 2026 (Sydney)
 
