@@ -48,6 +48,10 @@ rejected files, stale reads and uncertain native-start failures. It preserves
 accepted restart bytes and intentional glitch outcomes. Integration evidence and
 remaining manual acceptance are recorded in the current checkpoint.
 
+PR #56 isolates browser modifier shortcuts from game/preset/pause keys while
+preserving plain controls and Shift contacts. The current integration checkpoint
+records independent review, regression results and remaining manual acceptance.
+
 ## Planned after stabilisation: v0.5.0 recovery milestone
 
 The user approved a target combining independent, optional bounded CPU halt

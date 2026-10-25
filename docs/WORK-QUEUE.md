@@ -1,6 +1,36 @@
 # Development work queue
 
-## Active Phase D: browser shortcut isolation
+## PR #56 integration checkpoint — 25 October 2026
+
+[PR #56](https://github.com/NixMcRetro/VRAMpage-MD/pull/56) merged as
+`c8753f5ad8c677873587f91a1f49a7e4b7be7b34` after all seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40178948293)
+passed on `5fc7b814b09abb044e326cab2e6d8021750947bc`.
+The merged tree exactly matches the independently reviewed head.
+All seven main checks pass; no integration blocker remains.
+Main verification: [run 40179292731](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40179292731).
+
+The shared keyboard handler ignores Control/Command/Alt keydowns so browser
+shortcuts cannot pause, patch or press controller buttons. Plain controls, Shift
+momentary contacts and modified keyup cleanup remain covered. Independent Luna
+High review approves the one-line implementation and final regression. Local
+source/native/SDK107, Chromium display7/7 and logic80/80, actual compiled-core5/5,
+focused WebKit3/3 and tightened shortcut cases in both browsers pass. The 682-file
+ROM-free package matches source/version/UI/runtime bytes; the extracted genuine
+core repeats the fixed shortcut probe. Raw before/after evidence and logs:
+`/workspace/scratch/input-stability`.
+
+[Ready-to-run ROM-free review build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40179292731/artifacts/12593530865).
+
+Public v0.4.1 metadata, tag and both asset digests were verified unchanged after
+merge. McRetro.net was not modified or deployed. No native model, timing, fault
+outcome or recovery policy changed. Phase D continues with remaining manual
+native Mac audible/OS-background acceptance and any concrete compatibility
+reports; this Linux DOM-event probe does not establish those results. Do not
+repeat completed automated gates or add speculative features. Optional bounded
+recovery/manual checkpoints remain planned for v0.5.0 after stabilisation.
+
+## Completed Phase D slice: browser shortcut isolation
 
 Source `feb9277` adds one modifier guard to shared keyboard handling after a
 compiled-core reproduction: Ctrl+P prevented browser default and changed Pause
@@ -17,7 +47,7 @@ pass. Independent Luna High review approves `feb9277` and final test follow-up
 `ac44e96`; the new test waits for a fresh tick and verifies modified keyup release.
 Full source/SDK107, Chromium display7/7 and logic80/80, actual compiled-core5/5
 and focused WebKit3/3 pass; the final tightened shortcut case passes again in
-Chromium and WebKit. Required PR/main CI remain integration gates. Preserve
+Chromium and WebKit. Required PR/main integration evidence is recorded above. Preserve
 v0.4.1, all intentional fault outcomes and McRetro.net; no native model, timing,
 recovery or release change is included. Native Mac/audible/OS-background manual
 acceptance remains open after this bounded compatibility fix.

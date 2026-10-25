@@ -1287,3 +1287,13 @@ source/native/SDK107 passes with normal sanitizers and fresh WASM (339.615 s).
 Chromium display7/7 and logic80/80, actual compiled-core5/5, and focused WebKit3/3
 pass; the final tightened shortcut case also passes in Chromium1/1 and WebKit1/1.
 Source C/native models, fault outcomes and public version remain unchanged.
+
+The final ROM-free review ZIP has 682 unique entries with exact source
+`5fc7b814b09abb044e326cab2e6d8021750947bc`, application0.4.1 and byte-equal
+UI/runtime files. The extracted compiled-core shortcut probe also passes.
+All seven PR #56 checks pass in
+[run 40178948293](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40178948293).
+Merge `c8753f5ad8c677873587f91a1f49a7e4b7be7b34` exactly matches the reviewed tree.
+All seven main checks pass in run40179292731; the current checkpoint links the
+verified review download. Public
+v0.4.1 release metadata/tag/assets remain unchanged; McRetro.net is untouched.
