@@ -219,6 +219,7 @@ class BrowserDisplayTests(unittest.TestCase):
 
     def test_modified_shortcuts_do_not_control_game(self):
         self.page.locator('h1').click()
+        ticks = self.page.evaluate('window.mockCore.ticks')
         for code, key, modifier in [
                 ('KeyP', 'p', 'ctrlKey'), ('KeyP', 'p', 'metaKey'),
                 ('KeyP', 'p', 'altKey'), ('Digit1', '1', 'ctrlKey'),
@@ -231,12 +232,22 @@ class BrowserDisplayTests(unittest.TestCase):
                   return document.dispatchEvent(event);
                 }''', {'code': code, 'key': key, 'modifier': modifier})
                 self.assertTrue(allowed, f'{modifier}+{key} must remain available to the browser')
+        self.page.wait_for_function('(n) => window.mockCore.ticks > n', arg=ticks)
         self.assertEqual(self.page.evaluate('''() => ({
           pause:document.querySelector('#pauseBtn').textContent.trim(),
           connection:document.querySelector('#connectionLabel').textContent.trim(),
           a:window.mockCore.inputs[10]
         })'''), {
             'pause': 'Pause', 'connection': 'NONE — NORMAL ADDRESSING', 'a': 0})
+
+        self.page.evaluate('''() => document.dispatchEvent(new KeyboardEvent('keydown', {
+          code:'KeyC',key:'c',bubbles:true
+        }))''')
+        self.page.wait_for_function('window.mockCore.inputs[10] === 1')
+        self.page.evaluate('''() => document.dispatchEvent(new KeyboardEvent('keyup', {
+          code:'KeyC',key:'c',metaKey:true,bubbles:true
+        }))''')
+        self.page.wait_for_function('window.mockCore.inputs[10] === 0')
 
 
 if __name__ == '__main__':
