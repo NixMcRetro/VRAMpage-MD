@@ -28,8 +28,8 @@ also applies to normal/runtime builds; the snapshot API remains proof-only.
 
 
 Final local verification rebuilt both production profiles and confirmed no proof
-exports in either normal or runtime modules. All115 SDK/source tests pass, as do
-seven fresh Chromium compiled-core cases. The final portable proof build passes
+exports in either normal or runtime modules. All 115 SDK/source tests pass, as do
+seven fresh Chromium compiled-core cases and three runtime/normal handoff cases. The final portable proof build passes
 fatal native sanitizers and all five WASM cases; every pixel/PCM hash still matches
 the committed pre-correction recordings. [Build provenance](experiments/2026-10-26-checkpoint-replay/BUILD-INFO.json)
 identifies the actual proof source and file hashes. Independent specialist review

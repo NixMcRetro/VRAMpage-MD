@@ -1538,7 +1538,7 @@ equivalent multiplication removes those findings. All five rebuilt WASM outputs
 retain every pre-correction pixel/PCM hash. No filter coefficient or fault model
 changes. Shared patch source drift and missing Blip input fail before source writes.
 
-The full SDK/source suite passes115 tests (145.167s) with normal sanitizer settings
+The full SDK/source suite passes 115 tests (145.167s) with normal sanitizer settings
 and fresh WASM. Twelve focused patcher/path tests pass; the portable build refuses
 symlinks/ancestors, source paths, unmarked output and dirty source before cleanup.
 Both production profiles rebuild; neither exposes experimental checkpoint hooks.
@@ -1549,3 +1549,5 @@ establish general gameplay restore or native Mac audible behavior.
 
 Evidence: `/workspace/scratch/checkpoint-proof`; immutable recorded synthetic hashes
 and source provenance are linked from `CHECKPOINT-REPLAY-PROOF.md`.
+
+Fresh production Chromium runtime/normal transaction handoff tests3 pass; neither production factory exposes a proof export. The normal build used a clean isolated CMake cache; the corrected command supplies a directory to `--normal-core`.

@@ -17,9 +17,9 @@ Intended output is unchanged. The native smoke now runs with fatal sanitizers,
 capacity/null refusal, guards, live pointers, PCM replay and three-buffer mixing.
 Independent specialist review approves through158715e; twelve focused source/path
 checks pass. Final SDK/source115 passes; fresh production profiles have no experimental
-checkpoint exports and compiled-core7 passes. Portable proof/native sanitizers
-and allfive pre-correction pixel/PCM goldens pass. Runtime/normal handoff checks,
-package provenance and required PR/main CI remain integration gates.
+checkpoint exports; compiled-core7 and runtime/normal handoff3 pass. Portable
+proof/native sanitizers and all five pre-correction pixel/PCM goldens pass.
+Package provenance and required PR/main CI remain integration gates.
 
 Builder refuses missing/drifted source, symlink output/ancestors, source paths,
 unmarked output and dirty tracked source before cleanup. Committed source identity
