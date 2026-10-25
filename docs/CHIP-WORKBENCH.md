@@ -115,5 +115,5 @@ changing faults. Focus the game or a non-control area to use global fault digits
 
 The VRAM Randomiser is temporarily unavailable while a Work RAM fault/contact
 is active. It uses the same ordinary disabled appearance as the other Randomiser
-buttons; its explanatory title describes the guard. activating RAM does not click the VRAM
+buttons; its explanatory title describes the guard. Activating RAM does not click the VRAM
 Randomiser. Release or clear RAM to make VRAM randomisation available again.

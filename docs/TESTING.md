@@ -1468,3 +1468,5 @@ by both Clean restart controls clearing audio fault configuration. This fixture
 can have zero audio fault counters; the general register/nonzero-counter claim
 rests on the native source call graph. After execution resumes, game code can
 reprogram sound normally. No sound reset behaviour is modified by this cleanup.
+
+Disabled-style follow-up: Chromium compact 6, display 7, logic 96 and actual-core 6 tests passed; targeted WebKit appearance and CPU/clean-restart cases passed. Visual probe passed 48 states. CPU preservation is supported by source review; snapshots verify fault configuration, not nonzero sound registers. Unchanged native build evidence is reused.
