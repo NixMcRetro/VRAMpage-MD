@@ -1451,7 +1451,12 @@
       if (!Number.isInteger(pulseState) || ![0,2,3,4].includes(pulseState)) throw new Error('RAM pulse state active or unreadable');
       if (!vramState || !Number.isInteger(vramState.mask) || !Number.isInteger(vramState.bridgeA) ||
           !Number.isInteger(vramState.bridgeB)) throw new Error('VRAM runtime state unavailable');
-      if (vramState.mask || (vramState.bridgeA>=0 && vramState.bridgeB>=0)) throw new Error('VRAM fault active');
+      if (vramState.mask<0 || vramState.mask>255) throw new Error('VRAM runtime state unavailable');
+      const bridgeOff=vramState.bridgeA===-1 && vramState.bridgeB===-1;
+      const bridgeValid=vramState.bridgeA>=0 && vramState.bridgeA<8 &&
+        vramState.bridgeB>=0 && vramState.bridgeB<8 && vramState.bridgeA!==vramState.bridgeB;
+      if (!bridgeOff && !bridgeValid) throw new Error('VRAM runtime state unavailable');
+      if (vramState.mask || bridgeValid) throw new Error('VRAM fault active');
       startFrame=Number(emulator._get_logic_frame());
       if (!Number.isFinite(startFrame) || startFrame<0) throw new Error('RAM frame state unavailable');
     } catch (error) {

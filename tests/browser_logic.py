@@ -677,7 +677,8 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.close()
         self.page=self.new_page(circuit_config=True)
         self.load_rom()
-        self.assertEqual(self.page.locator('.randomiser-row button').all_text_contents(),['PSG','FM','VRAM'])
+        self.assertEqual(self.page.locator('.randomiser-row button').all_text_contents(),
+                         ['PSG','FM','VRAM','CPU reset','RAM WRITE pulse A11–A15 (≤8 writes / 1 frame)'])
         expect(self.page.locator('#randomiserStatus')).to_have_text('Choose PSG, FM, or VRAM to randomise a chip.')
         before=self.page.evaluate('({starts:mockCore.starts,ramCalls:mockCore.logic.setterCalls.length,fm:mockCore.fm.calls.length,vram:mockCore.vramModel.calls.length})')
         def randomise(selector, value):
@@ -1299,6 +1300,20 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertEqual(self.export_payload_for(page)["faultPulses"],[])
         expect(page.locator("#logicStatus")).to_contain_text("VRAM fault active")
         page.keyboard.up("Digit1")
+
+        for vram_state in (
+            {"modelId":1,"mask":256,"bridgeA":-1,"bridgeB":-1},
+            {"modelId":1,"mask":0,"bridgeA":0,"bridgeB":-2},
+        ):
+            page=self.new_page(circuit_config=True)
+            self.load_rom(page)
+            page.evaluate("state=>window.mockCore.vramStateOverride=state",vram_state)
+            calls=page.evaluate("[window.mockCore.logic.setterCalls.length,window.mockCore.vramModel.calls.length]")
+            page.locator("#randomRamPulseBtn").click()
+            self.assertEqual(page.evaluate("[window.mockCore.logic.setterCalls.length,window.mockCore.vramModel.calls.length]"),calls)
+            self.assertEqual(self.export_payload_for(page)["faultPulses"],[])
+            expect(page.locator("#logicStatus")).to_contain_text("VRAM runtime state unavailable")
+            page.close()
 
     def test_invalid_selection_keeps_existing_pulse_and_restart_cancels(self):
         self.load_rom()

@@ -670,12 +670,28 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     frame=page.evaluate('testCore._get_logic_frame()')
                     for attempt in range(2):
                         if attempt:
+                            # The first clear began paused and deliberately kept it paused.
+                            # Exercise the running-success path separately after an explicit resume.
+                            page.locator('#pauseBtn').click()
+                            page.wait_for_function('frame=>testCore._get_logic_frame()>frame',arg=frame)
+                            frame=page.evaluate('testCore._get_logic_frame()')
                             page.locator('[data-chip-line]').nth(0).click()
                             self.assertEqual(page.evaluate('testCore._get_logic_address_mask()'),1)
-                        page.locator('#disconnectAllFaultsBtn').click()
+                        paused_before=page.locator('#pauseBtn').inner_text()=='Resume'
+                        frame=page.evaluate("""() => {
+                          const frame=testCore._get_logic_frame();
+                          document.querySelector('#disconnectAllFaultsBtn').click();
+                          return frame;
+                        }""")
                         all_domains_available=psg_api and fm_api
-                        expect(page.locator('#pauseBtn')).to_have_text('Pause' if all_domains_available else 'Resume')
-                        self.assertGreaterEqual(page.evaluate('testCore._get_logic_frame()'),frame)
+                        expected_pause='Resume' if paused_before or not all_domains_available else 'Pause'
+                        self.assertEqual(page.locator('#pauseBtn').inner_text(),expected_pause,
+                                         page.locator('#disconnectAllFaultsStatus').inner_text())
+                        if paused_before or not all_domains_available:
+                            self.assertEqual(page.evaluate('testCore._get_logic_frame()'),frame,
+                                             'paused or incomplete disconnect must stop before another frame')
+                        else:
+                            self.assertGreaterEqual(page.evaluate('testCore._get_logic_frame()'),frame)
                         frame=page.evaluate('testCore._get_logic_frame()')
                         self.assertEqual(page.evaluate('[window.__disconnectCpuCalls,window.__disconnectStartCalls]'),[0,0])
                         self.assertEqual(page.evaluate('testCore._get_vram_address_mask()'),0)
@@ -684,12 +700,12 @@ class ActualCoreBrowserTests(unittest.TestCase):
                             if available:
                                 self.assertFalse(page.evaluate(f'testCore._get_{kind}_data_bridge_state().configured'))
                         page.wait_for_timeout(40)
-                        if all_domains_available:
+                        if all_domains_available and not paused_before:
                             self.assertGreater(page.evaluate('testCore._get_logic_frame()'),frame,
-                                               'confirmed clear must leave running emulation ticking')
+                                               'confirmed running clear must keep emulation ticking')
                         else:
                             self.assertEqual(page.evaluate('testCore._get_logic_frame()'),frame,
-                                             'unavailable audio clear must pause before another frame')
+                                             'paused or incomplete disconnect must stop before another frame')
                         frame=page.evaluate('testCore._get_logic_frame()')
                     self.assertTrue(page.evaluate("typeof testCore._arm_logic_write_pulse==='function'"),
                                     'actual core exposes affected-write pulse support')

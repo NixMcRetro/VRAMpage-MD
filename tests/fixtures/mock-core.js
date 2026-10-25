@@ -130,7 +130,7 @@ window.Module = async () => {
         if (window.mockCore.rejectVramModelAfterMutation) return 9;
         return 0;
       },
-      _get_vram_fault_model_state:()=>window.mockCore.nullVramState?null:({modelId:vramModel.modelId,modelVersion:vramModel.modelId===2
+      _get_vram_fault_model_state:()=>window.mockCore.nullVramState?null:(window.mockCore.vramStateOverride||{modelId:vramModel.modelId,modelVersion:vramModel.modelId===2
         ?'logical-byte-transaction-v1':'frame-projection-v1',mask:vramModel.mask,
         bridgeA:vramModel.bridgeA,bridgeB:vramModel.bridgeB,supportedModelsMask:vramModel.supportedModelsMask,
         effective:!!(vramModel.mask||vramModel.bridgeA>=0),reason:vramModel.mask||vramModel.bridgeA>=0?'active':'no-fault',
