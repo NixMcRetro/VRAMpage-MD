@@ -1192,3 +1192,20 @@ Complete Chromium72/72, actual compiled-core5/5 and focused genuine WebKit audio
 1/1 pass on final source `23ec56b`. The app diff has no C, chip-model, fault-state,
 CPU recovery, PCM-copying or emulation-timing changes. Independent review approves
 that source; exact final package identity and PR/main CI are integration gates.
+
+Final local review head `f9ae124` has a complete 682-file package with unique
+entries and exact source/version/UI/core byte checks; all five tests pass on the
+extracted runtime. The first packaging attempt rejected missing corresponding
+source in the isolated worktree; copying the unchanged full source from the
+canonical built checkout resolved it without rebuilding/replacing public assets.
+All seven PR #54 checks pass, including complete interfaces in all three browsers
+and extracted Firefox/WebKit audio/controls/runtime/fallback checks. Merge
+`841239996c11446ec11a94fe757cd9991f6ca7b4` has the reviewed tree. Main CI and
+ready-to-run review evidence are in the current integration checkpoint.
+
+All seven main checks pass on `841239996c11446ec11a94fe757cd9991f6ca7b4` in
+[run 40164254321](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40164254321).
+The merged tree matches the independently reviewed head. Public v0.4.1 metadata,
+tag and asset digests were verified unchanged after merge; McRetro.net was not
+modified or deployed. This host-audio slice is complete; manual macOS/audible/OS
+background validation and broader Phase D work remain distinct from these results.
