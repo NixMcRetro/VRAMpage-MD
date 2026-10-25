@@ -37,33 +37,33 @@
           </div>
         </div>
         <div class="screen-info"><span id="romName">NO CARTRIDGE INSERTED</span><span id="fpsIndicator">— FPS</span></div>
-        <div class="video-options"><label><input id="rawVideoToggle" type="checkbox"> Raw emulator output</label><span id="videoStatus" role="status" aria-live="polite">Video: native pixels</span></div>
+        <div class="video-options"><label><input id="rawVideoToggle" type="checkbox"> Raw Emulator Output</label><span id="videoStatus" role="status" aria-live="polite">Video: native pixels</span></div>
         <div class="toolbar">
           <label class="load-btn" for="romFile">Load ROM</label>
           <input id="romFile" type="file" accept=".bin,.md,.gen,application/octet-stream" aria-label="Load Mega Drive ROM">
-          <button id="resetBtn" type="button" disabled title="Disconnect faults and reboot from the same cartridge">Clean restart</button>
+          <button id="resetBtn" type="button" disabled title="Disconnect faults and reboot from the same cartridge">Clean Restart</button>
           <button id="pauseBtn" type="button" disabled>Pause</button>
           <button id="soundBtn" type="button" disabled aria-pressed="false">Enable Sound</button>
           <button id="fullscreenBtn" type="button" aria-pressed="false">Fullscreen</button>
         </div>
         <div class="instructions">
           <p><strong>PLAY</strong> Arrows / Z X C / Enter <span class="help-divider">|</span> <strong>FAULTS</strong> 1–9 toggle / Shift+1–9 hold / 0 next chip / P pause</p>
-          <p id="faultHint" class="fault-hint" hidden>A previous VRAM fault may have changed VRAM. Clean restart resets emulation; it cannot correct missing emulator output rows.</p>
+          <p id="faultHint" class="fault-hint" hidden>A previous VRAM fault may have changed VRAM. Clean Restart resets emulation; it cannot correct missing emulator output rows.</p>
         </div>
       </section>
 
       <aside class="chip-workbench" aria-label="Console chip fault workbench">
-          <p id="keyboardTarget" class="keyboard-target" role="status" aria-live="polite">Keyboard fault target: VRAM</p>
+          <p id="keyboardTarget" class="keyboard-target" role="status" aria-live="polite">Keyboard Fault Target: VRAM</p>
         <div class="chip-workbench-grid">
           <section class="chip-card" data-keyboard-chip="VRAM" aria-label="VRAM chip">
-            <h2>VRAM <small>VDP address nets</small></h2>
+            <h2>VRAM <small>VDP Address Nets</small></h2>
             <label class="chip-compact-control">Model
               <select id="vramModel" aria-describedby="vramModelStatus">
                 <option value="1">Frame</option><option value="2">Transaction</option>
               </select>
             </label>
-            <label class="chip-compact-control">Leg action
-              <select id="vramMode"><option value="disconnect">Cut / reconnect</option><option value="bridge">Bridge pair</option></select>
+            <label class="chip-compact-control">Leg Action
+              <select id="vramMode"><option value="disconnect">Cut / Reconnect</option><option value="bridge">Bridge Pair</option></select>
             </label>
             <div class="pin-grid chip-pin-grid" id="pinGrid" role="group" aria-label="Conceptual VRAM address nets">
               <div class="chip-middle"><strong>VRAM</strong><span>AD0–AD7</span></div>
@@ -72,35 +72,35 @@
             <p id="vramModelStatus" class="chip-state" role="status" aria-live="polite">Frame projection is the default model.</p>
           </section>
           <section class="chip-card" data-keyboard-chip="WRAM" aria-label="Work RAM chip">
-            <h2>WORK RAM <small>logical address lines</small></h2>
-            <label class="chip-compact-control">Leg action
-              <select id="ramLegAction"><option value="cut">Cut / reconnect</option><option value="bridge">Bridge pair</option></select>
+            <h2>Work RAM <small>Logical Address Lines</small></h2>
+            <label class="chip-compact-control">Leg Action
+              <select id="ramLegAction"><option value="cut">Cut / Reconnect</option><option value="bridge">Bridge Pair</option></select>
             </label>
-            <div id="ramChip" class="ram-chip work-ram-chip" role="group" aria-label="Conceptual work RAM address lines" aria-describedby="chipExplanation">
-              <div class="ram-chip-body"><strong>WORK RAM</strong><span>64 KiB</span><small>A1–A15</small></div>
+            <div id="ramChip" class="ram-chip work-ram-chip" role="group" aria-label="Conceptual Work RAM address lines" aria-describedby="chipExplanation">
+              <div class="ram-chip-body"><strong>Work RAM</strong><span>64 KiB</span><small>A1–A15</small></div>
             </div>
-            <button id="chipRestoreBtn" type="button" disabled>Reconnect all A lines</button>
+            <button id="chipRestoreBtn" type="button" disabled>Reconnect All A Lines</button>
             <p id="ramChipState" class="chip-state" aria-live="polite">Address lines are connected.</p>
           </section>
           <section class="chip-card" data-keyboard-chip="FM" aria-label="FM chip">
-            <h2>FM <small>YM2612 register data</small></h2>
-            <label class="chip-compact-control">Leg action
-              <select id="fmLegMode"><option value="bridge">Bridge two bits</option><option value="ground" data-audio-mask>Force selected bits low</option></select>
+            <h2>FM <small>YM2612 Register Data</small></h2>
+            <label class="chip-compact-control">Leg Action
+              <select id="fmLegMode"><option value="bridge">Bridge Two Bits</option><option value="ground" data-audio-mask>Force Selected Bits Low</option></select>
             </label>
             <div id="fmChip" class="data-chip" role="group" aria-label="FM data inputs D0 through D7"></div>
             <p id="fmChipState" class="chip-state" aria-live="polite">No FM data fault.</p>
           </section>
           <section class="chip-card" data-keyboard-chip="PSG" aria-label="PSG chip">
-            <h2>PSG / VDP <small>programmable sound data</small></h2>
-            <label class="chip-compact-control">Leg action
-              <select id="psgLegMode"><option value="bridge">Bridge two bits</option><option value="ground" data-audio-mask>Force selected bits low</option></select>
+            <h2>PSG / VDP <small>Programmable Sound Data</small></h2>
+            <label class="chip-compact-control">Leg Action
+              <select id="psgLegMode"><option value="bridge">Bridge Two Bits</option><option value="ground" data-audio-mask>Force Selected Bits Low</option></select>
             </label>
             <div id="psgChip" class="data-chip" role="group" aria-label="PSG data inputs D0 through D7"></div>
             <p id="psgChipState" class="chip-state" aria-live="polite">No PSG data fault.</p>
           </section>
         </div>
         <div class="logic-actions chip-workbench-actions">
-          <button id="disconnectAllFaultsBtn" type="button" disabled title="Attempts to clear VRAM, work RAM, PSG and FM faults. Confirmed success preserves the current run state; any uncertainty pauses before the next frame.">Disconnect all faults</button>
+          <button id="disconnectAllFaultsBtn" type="button" disabled title="Attempts to clear VRAM, Work RAM, PSG and FM faults. Confirmed success preserves the current run state; any uncertainty pauses before the next frame.">Disconnect All Faults</button>
         </div>
         <div class="randomiser-row" role="group" aria-label="Randomiser chip controls">
           <strong>Randomiser</strong>
@@ -108,32 +108,32 @@
           <button id="randomFmBtn" type="button" disabled>FM</button>
           <button id="randomVramBtn" type="button" disabled>VRAM</button>
           <span class="compact-recovery-actions">
-          <button id="logicCpuResetBtn" type="button" disabled title="CPU-only reset: clears RAM/VRAM faults, preserves PSG/FM faults, and keeps the current run state.">CPU reset</button>
-          <button id="compactResetBtn" type="button" disabled title="Disconnect faults and reboot from the same cartridge">Clean restart</button>
+          <button id="logicCpuResetBtn" type="button" disabled title="CPU-only reset: clears RAM/VRAM faults, preserves PSG/FM faults, and keeps the current run state.">CPU Reset</button>
+          <button id="compactResetBtn" type="button" disabled title="Disconnect faults and reboot from the same cartridge">Clean Restart</button>
           </span>
         </div>
         <div class="ram-frame-pairs" role="group" aria-label="RAM write pairs">
-          <strong>RAM WRITE</strong>
-          <label>Mode <select id="ramWriteMode"><option value="pulse">8-frame pulse</option><option value="hold" selected>Hold while pressed</option></select></label>
+          <strong>RAM Write</strong>
+          <label>Mode <select id="ramWriteMode"><option value="pulse">8-Frame Pulse</option><option value="hold" selected>Hold While Pressed</option></select></label>
           <div id="ramFramePairs" class="ram-frame-pair-buttons"></div>
         </div>
         <p id="randomiserStatus" class="randomiser-status" role="status" aria-live="polite">Load a ROM to randomise a chip.</p>
         <p id="disconnectAllFaultsStatus" class="logic-status" role="status" aria-live="polite">Load a ROM to disconnect all fault domains.</p>
         <details class="chip-settings" id="vramSettings">
-          <summary>VRAM presets, counters and model notes</summary>
+          <summary>VRAM Presets, Counters and Model Notes</summary>
           <p id="vramModeHint" class="explain"></p>
-          <div class="presets-head"><h3>Presets</h3><button id="disconnectBtn" type="button">Reconnect all [0]</button></div>
+          <div class="presets-head"><h3>Presets</h3><button id="disconnectBtn" type="button">Reconnect All [0]</button></div>
           <div id="presetGrid" class="preset-grid"></div>
           <div class="metrics">
-            <div><span>Projected differences</span><strong id="readCount">0</strong></div>
-            <div><span>Changed bytes</span><strong id="writeCount">0</strong></div>
+            <div><span>Projected Differences</span><strong id="readCount">0</strong></div>
+            <div><span>Changed Bytes</span><strong id="writeCount">0</strong></div>
           </div>
           <div id="transactionMetrics" class="transaction-metrics" hidden>
-            <div><span>Logical byte reads</span><strong id="transactionReads">0</strong></div>
-            <div><span>Logical byte writes</span><strong id="transactionWrites">0</strong></div>
-            <div><span>Redirected reads</span><strong id="redirectedReads">0</strong></div>
-            <div><span>Redirected writes</span><strong id="redirectedWrites">0</strong></div>
-            <div><span>Changed physical writes</span><strong id="physicalWrites">0</strong></div>
+            <div><span>Logical Byte Reads</span><strong id="transactionReads">0</strong></div>
+            <div><span>Logical Byte Writes</span><strong id="transactionWrites">0</strong></div>
+            <div><span>Redirected Reads</span><strong id="redirectedReads">0</strong></div>
+            <div><span>Redirected Writes</span><strong id="redirectedWrites">0</strong></div>
+            <div><span>Changed Physical Writes</span><strong id="physicalWrites">0</strong></div>
           </div>
           <p id="vramModelNotice" class="notice"><strong>Experimental model.</strong> VRAM lines are conceptual logical address nets, not a physical pinout or cycle-accurate electrical simulation.</p>
         </details>
@@ -141,14 +141,14 @@
     </div>
 
     <details class="logic-panel" id="logicExperiment">
-      <summary class="section-heading"><h2>05 <span>/</span> Logic / work RAM</h2><span>Experimental · 68000 bus model</span></summary>
-      <p class="logic-intro">Bridge one pair of modeled work RAM lines. Apply a fault explicitly; the selectors do not activate it by themselves.</p>
+      <summary class="section-heading"><h2>05 <span>/</span> Logic / Work RAM</h2><span>Experimental · 68000 Bus Model</span></summary>
+      <p class="logic-intro">Bridge one pair of modeled Work RAM lines. Apply a fault explicitly; the selectors do not activate it by themselves.</p>
       <div class="logic-controls" aria-label="Logic fault configuration">
-        <label>Line type
+        <label>Line Type
           <select id="logicKind"><option value="1">Address</option><option value="2">Data</option></select>
         </label>
         <label>Access
-          <select id="logicAccess"><option value="1">Read</option><option value="2">Write</option><option value="3">Read + write</option></select>
+          <select id="logicAccess"><option value="1">Read</option><option value="2">Write</option><option value="3">Read + Write</option></select>
         </label>
         <label>Line A
           <select id="logicLineA"></select>
@@ -159,110 +159,112 @@
       </div>
       <p class="logic-note" id="chipExplanation"><strong>Address-line switches.</strong> Click a wire to toggle its × and force that signal low, using Access above. This applies immediately and stays active until reconnected or replaced by another fault. The chip is a conceptual address-bus diagram, not a physical pinout. “Disabled” uses a stuck-low model; a real open wire can float.</p>
       <div class="logic-actions">
-        <button id="logicApplyBtn" type="button" disabled>Apply RAM fault</button>
+        <button id="logicApplyBtn" type="button" disabled>Apply RAM Fault</button>
         <button id="logicDisconnectBtn" type="button" disabled>Disconnect RAM</button>
-        <button id="logicExperimentBtn" type="button" disabled>Download experiment JSON</button>
+        <button id="logicExperimentBtn" type="button" disabled>Download Experiment JSON</button>
       </div>
       <div class="logic-actions">
-        <button id="logicResumeBtn" type="button" disabled>Disconnect and force resume</button>
+        <button id="logicResumeBtn" type="button" disabled>Disconnect and Force Resume</button>
+        <button id="armCpuRecoveryBtn" type="button" disabled aria-pressed="false">Arm CPU Recovery Once</button>
+        <span id="cpuRecoveryStatus" class="logic-status" role="status" aria-live="polite">OFF</span>
       </div>
-        <p class="logic-note">CPU recovery disconnects RAM and VRAM faults, leaves PSG/FM faults unchanged, preserves corrupted RAM and may immediately stop again. CPU-only reset leaves other chips running. Disconnect all faults pauses only when clearing a domain is unavailable, partial or unverified; Clean restart fully reboots.</p>
+        <p class="logic-note">CPU recovery disconnects RAM and VRAM faults, leaves PSG/FM faults unchanged, preserves corrupted RAM and may immediately stop again. CPU-only reset leaves other chips running. Arm once to attempt a CPU-only reset after HALT is reported on two completed frames; STOP alone does not trigger it. This does not detect software loops or a browser locked inside a frame. Disconnect All Faults pauses only when clearing a domain is unavailable, partial or unverified; Clean Restart fully reboots.</p>
       <div class="logic-actions pulse-settings">
-        <label for="logicPulseFrames">Pulse length</label>
+        <label for="logicPulseFrames">Pulse Length</label>
         <select id="logicPulseFrames" disabled aria-label="Pulse limit: emulated frames or affected writes">
-          <option value="writes:1" data-write-limit>1 affected write (≤1 frame)</option>
-          <option value="writes:2" data-write-limit>2 affected writes (≤1 frame)</option>
-          <option value="writes:4" data-write-limit>4 affected writes (≤1 frame)</option>
-          <option value="writes:8" data-write-limit>8 affected writes (≤1 frame)</option>
-          <option value="1" selected>1 frame (~17 ms)</option><option value="2">2 frames (~33 ms)</option>
-          <option value="4">4 frames (~67 ms)</option><option value="8">8 frames (~134 ms)</option>
+          <option value="writes:1" data-write-limit>1 Affected Write (≤1 Frame)</option>
+          <option value="writes:2" data-write-limit>2 Affected Writes (≤1 Frame)</option>
+          <option value="writes:4" data-write-limit>4 Affected Writes (≤1 Frame)</option>
+          <option value="writes:8" data-write-limit>8 Affected Writes (≤1 Frame)</option>
+          <option value="1" selected>1 Frame (~17 ms)</option><option value="2">2 Frames (~33 ms)</option>
+          <option value="4">4 Frames (~67 ms)</option><option value="8">8 Frames (~134 ms)</option>
         </select>
-        <button id="logicPulseBtn" type="button" disabled>Pulse selected fault → force resume</button>
+        <button id="logicPulseBtn" type="button" disabled>Pulse Selected Fault → Force Resume</button>
       </div>
       <p class="logic-note">Quick address pairs: <strong>write pulses</strong>, using the limit above. Each button applies a pair, then disconnects and attempts resume. These bridge address lines, not particular RAM locations. Affected-write limits release inside the core and expire after one frame. Even one affected write can disrupt later execution; small or recoverable corruption is not guaranteed.</p>
       <div id="logicPulsePairs" class="logic-actions" role="group" aria-label="Quick address write pulses"></div>
       <p id="logicStatus" class="logic-status" role="status" aria-live="polite">Checking core support…</p>
       <div class="logic-metrics">
-        <div><span>Affected reads</span><strong id="logicReadCount">0</strong></div>
-        <div><span>Affected writes</span><strong id="logicWriteCount">0</strong></div>
-        <div><span>Current frame</span><strong id="logicFrame">0</strong></div>
-        <div><span>Activation frame</span><strong id="logicActivationFrame">—</strong></div>
-        <div class="cpu-state"><span>CPU status flags</span><strong id="logicCpuStatus">—</strong></div>
+        <div><span>Affected Reads</span><strong id="logicReadCount">0</strong></div>
+        <div><span>Affected Writes</span><strong id="logicWriteCount">0</strong></div>
+        <div><span>Current Frame</span><strong id="logicFrame">0</strong></div>
+        <div><span>Activation Frame</span><strong id="logicActivationFrame">—</strong></div>
+        <div class="cpu-state"><span>CPU Status Flags</span><strong id="logicCpuStatus">—</strong></div>
       </div>
-      <p class="logic-note"><strong>Model limits.</strong> This is an experimental transaction model, not an exact physical pin or cycle-level simulation. Read faults affect returned values; write faults alter stored RAM and those changes persist after disconnecting. CPU STOP/HALT indicators report flags only; recovery occurs only through explicit recovery or pulse controls. Data pairs must stay within D0–D7 or D8–D15. Only one fault domain (VRAM or logic/work RAM) is active at a time.</p>
+      <p class="logic-note"><strong>Model limits.</strong> This is an experimental transaction model, not an exact physical pin or cycle-level simulation. Read faults affect returned values; write faults alter stored RAM and those changes persist after disconnecting. CPU STOP/HALT indicators report flags only; recovery occurs only through explicit recovery or pulse controls. Data pairs must stay within D0–D7 or D8–D15. Only one fault domain (VRAM or logic/Work RAM) is active at a time.</p>
     </details>
 
     <section class="bottom-grid">
-      <section class="notes-block psg-panel" aria-label="PSG input bridge">
-        <div class="section-heading"><h2>06 <span>/</span> PSG input bridge</h2><span>D0-D7</span></div>
+      <section class="notes-block psg-panel" aria-label="PSG Input Bridge">
+        <div class="section-heading"><h2>06 <span>/</span> PSG Input Bridge</h2><span>D0-D7</span></div>
         <p>Bridge two PSG data inputs. If either requested bit is low, both bridged inputs are forced low on each future PSG write.</p>
         <div class="logic-controls psg-controls">
           <label>Input A <select id="psgBridgeA"></select></label>
           <label>Input B <select id="psgBridgeB"></select></label>
         </div>
         <div class="logic-actions">
-          <button id="psgBridgeApply" type="button" disabled>Apply bridge</button>
-          <button id="psgBridgeRemove" type="button" disabled>Remove bridge</button>
+          <button id="psgBridgeApply" type="button" disabled>Apply Bridge</button>
+          <button id="psgBridgeRemove" type="button" disabled>Remove Bridge</button>
         </div>
         <p id="psgBridgeStatus" class="logic-status" role="status" aria-live="polite">Checking core support…</p>
         <div class="logic-metrics psg-metrics">
-          <div><span>PSG data writes</span><strong id="psgInputWrites">0</strong></div>
-          <div><span>Bytes changed</span><strong id="psgChangedWrites">0</strong></div>
+          <div><span>PSG Data Writes</span><strong id="psgInputWrites">0</strong></div>
+          <div><span>Bytes Changed</span><strong id="psgChangedWrites">0</strong></div>
         </div>
         <p class="small-note">The counters aggregate at the PSG write sink and do not identify which CPU initiated a write. Disconnecting changes future writes only. The model does not repair current PSG chip state.</p>
       </section>
-      <section class="notes-block fm-panel" aria-label="FM register input bridge">
-        <div class="section-heading"><h2>07 <span>/</span> FM register input bridge</h2><span>D0-D7</span></div>
+      <section class="notes-block fm-panel" aria-label="FM Register Input Bridge">
+        <div class="section-heading"><h2>07 <span>/</span> FM Register Input Bridge</h2><span>D0-D7</span></div>
         <p>Bridge two FM data inputs. The selected low-dominant inputs are applied to each register-address and register-data byte before the chip decodes it.</p>
         <div class="logic-controls psg-controls">
           <label>Input A <select id="fmBridgeA"></select></label>
           <label>Input B <select id="fmBridgeB"></select></label>
         </div>
         <div class="logic-actions">
-          <button id="fmBridgeApply" type="button" disabled>Apply bridge</button>
-          <button id="fmBridgeRemove" type="button" disabled>Remove bridge</button>
+          <button id="fmBridgeApply" type="button" disabled>Apply Bridge</button>
+          <button id="fmBridgeRemove" type="button" disabled>Remove Bridge</button>
         </div>
         <p id="fmBridgeStatus" class="logic-status" role="status" aria-live="polite">Checking core support…</p>
         <div class="logic-metrics psg-metrics">
-          <div><span>FM register writes</span><strong id="fmInputWrites">0</strong></div>
-          <div><span>Bytes changed</span><strong id="fmChangedWrites">0</strong></div>
+          <div><span>FM Register Writes</span><strong id="fmInputWrites">0</strong></div>
+          <div><span>Bytes Changed</span><strong id="fmChangedWrites">0</strong></div>
         </div>
         <p class="small-note">Counters aggregate at the shared FM write boundary and do not identify which CPU initiated a write. Removing the bridge affects future writes only; it does not repair current chip state. Full sound reset clears the bridge. Z80-only reset preserves the bridge connection and counters.</p>
       </section>
-      <section class="notes-block circuit-config-panel" aria-label="Circuit configuration files">
-        <div class="section-heading"><h2>08 <span>/</span> Circuit configuration</h2><span>Versioned JSON</span></div>
+      <section class="notes-block circuit-config-panel" aria-label="Circuit Configuration files">
+        <div class="section-heading"><h2>08 <span>/</span> Circuit Configuration</h2><span>Versioned JSON</span></div>
         <p>Save fault settings without ROM data or execution history. Loading a file only stages a preview; faults change only after you choose Apply.</p>
         <div class="logic-actions">
-          <button id="circuitConfigDownload" type="button">Download configuration</button>
-          <label id="circuitConfigFileLabel" class="load-btn" for="circuitConfigFile" role="button" tabindex="0">Load configuration</label>
+          <button id="circuitConfigDownload" type="button">Download Configuration</button>
+          <label id="circuitConfigFileLabel" class="load-btn" for="circuitConfigFile" role="button" tabindex="0">Load Configuration</label>
           <input id="circuitConfigFile" type="file" accept=".json,application/json" aria-label="Load circuit configuration JSON">
-          <button id="circuitConfigApply" type="button" disabled>Apply staged configuration</button>
-          <button id="circuitConfigCancel" type="button" disabled>Discard preview</button>
+          <button id="circuitConfigApply" type="button" disabled>Apply Staged Configuration</button>
+          <button id="circuitConfigCancel" type="button" disabled>Discard Preview</button>
         </div>
         <p id="circuitConfigStatus" class="logic-status" role="status" aria-live="polite">No configuration staged.</p>
         <pre id="circuitConfigPreview" class="circuit-config-preview" hidden></pre>
       </section>
       <section class="notes-block experiment-comparison" aria-label="Experiment comparison">
-        <div class="section-heading"><h2>09 <span>/</span> Compare exports</h2><span>Local · read-only</span></div>
+        <div class="section-heading"><h2>09 <span>/</span> Compare Exports</h2><span>Local · Read-Only</span></div>
         <p>Load two experiment JSON exports to compare recorded identity, fault settings, counters and outcomes. Files are read in this browser only. Unknown values may be absent, invalid, or unavailable; long values are shortened. Comparison does not establish causal or gameplay equivalence.</p>
         <div class="logic-actions">
-          <label id="compareFileALabel" class="load-btn" for="compareFileA" role="button" tabindex="0">Load export A</label><input id="compareFileA" type="file" accept=".json,application/json" aria-label="Load experiment export A">
-          <label id="compareFileBLabel" class="load-btn" for="compareFileB" role="button" tabindex="0">Load export B</label><input id="compareFileB" type="file" accept=".json,application/json" aria-label="Load experiment export B">
-          <button id="compareCancel" type="button">Cancel / clear</button>
+          <label id="compareFileALabel" class="load-btn" for="compareFileA" role="button" tabindex="0">Load Export A</label><input id="compareFileA" type="file" accept=".json,application/json" aria-label="Load experiment export A">
+          <label id="compareFileBLabel" class="load-btn" for="compareFileB" role="button" tabindex="0">Load Export B</label><input id="compareFileB" type="file" accept=".json,application/json" aria-label="Load experiment export B">
+          <button id="compareCancel" type="button">Cancel / Clear</button>
         </div>
         <p id="compareStatus" class="logic-status" role="status" aria-live="polite">Choose two exported experiment JSON files.</p>
         <div id="compareOutput" role="region" tabindex="0" aria-label="Comparison results; scroll to see all fields" aria-live="polite"></div>
       </section>
       <details class="log-block">
-        <summary class="section-heading"><h2>03 <span>/</span> Event log</h2><span>View activity</span></summary>
-        <button id="clearLogBtn" type="button" class="clear-log">Clear log</button>
+        <summary class="section-heading"><h2>03 <span>/</span> Event Log</h2><span>View Activity</span></summary>
+        <button id="clearLogBtn" type="button" class="clear-log">Clear Log</button>
         <ol id="experimentLog" aria-live="polite"></ol>
       </details>
       <details class="notes-block">
-        <summary class="section-heading"><h2>04 <span>/</span> Build notes</h2><span>Technical details</span></summary>
+        <summary class="section-heading"><h2>04 <span>/</span> Build Notes</h2><span>Technical Details</span></summary>
         <p>No ROM included. Your cartridge data stays in this browser.</p>
-        <p>Sound is available with <strong>Enable Sound</strong>. The separate logic/work RAM panel is an experimental 68000 transaction model.</p>
-        <p class="small-note">The game display automatically fills consistently missing framebuffer rows. Select <strong>Raw emulator output</strong> to inspect untouched pixels. This does not alter emulated VRAM or hardware faults.</p>
+        <p>Sound is available with <strong>Enable Sound</strong>. The separate logic/Work RAM panel is an experimental 68000 transaction model.</p>
+        <p class="small-note">The game display automatically fills consistently missing framebuffer rows. Select <strong>Raw Emulator Output</strong> to inspect untouched pixels. This does not alter emulated VRAM or hardware faults.</p>
         <p class="small-note">Emulator: <a href="https://github.com/h1romas4/wasm-genplus" target="_blank" rel="noreferrer">wasm-genplus</a> / <a href="https://github.com/ekeeke/Genesis-Plus-GX" target="_blank" rel="noreferrer">Genesis Plus GX</a>. Redistributing a modified core requires its corresponding source and applicable licence notices.</p>
       </details>
     </section>

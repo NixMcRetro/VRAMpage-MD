@@ -46,6 +46,8 @@
   let logicStatusMessage = 'Checking core support…';
   let lastLogicExperiment = null;
   let cpuInterventions = [];
+  let cpuRecoveryArmed = false, cpuRecoveryHaltFrames = [];
+  let lastCpuRecoveryAttempt = null;
   let faultDisconnectActions = [];
   let faultPulses = [], pendingPulse = null;
   let activeRamConfiguration = null, stagedCircuitConfiguration = null;
@@ -195,6 +197,7 @@
   }
 
   function setPsgDataBridge(enabled, pairOverride=undefined) {
+    resetCpuRecoveryObservation();
     if (!psgDataApiReady()) {
       $('psgBridgeStatus').textContent='This core does not provide the optional PSG runtime API.';
       return false;
@@ -231,6 +234,7 @@
   }
 
   function setPsgDataMask(mask) {
+    resetCpuRecoveryObservation();
     if (!psgDataMaskApiReady() || !Number.isInteger(mask) || mask<0 || mask>255) return false;
     const state=currentPsgDataState();
     if (!state || (mask && !state.supported)) return false;
@@ -275,6 +279,7 @@
   }
 
   function setFmDataBridge(enabled, pairOverride=undefined) {
+    resetCpuRecoveryObservation();
     if (!fmDataApiReady()) {
       $('fmBridgeStatus').textContent='This core does not provide the optional FM runtime API.';
       return false;
@@ -311,6 +316,7 @@
   }
 
   function setFmDataMask(mask) {
+    resetCpuRecoveryObservation();
     if (!fmDataMaskApiReady() || !Number.isInteger(mask) || mask<0 || mask>255) return false;
     const state=currentFmDataState();
     if (!state || (mask && !state.supported)) return false;
@@ -786,6 +792,7 @@
   }
 
   function applyVramModel(modelId,mask,pair,reason='VRAM model changed') {
+    resetCpuRecoveryObservation();
     const targetPair=pair?canonical(pair):null;
     const validation=validateVramModel(modelId,mask,targetPair);
     if (!validation.ok) {
@@ -872,9 +879,9 @@
     latched=targetPair; momentary=null; selectedPin=null;
     if (removedLogic) {
       logicResetState='Logic fault disconnected because VRAM fault was activated';
-      logicStatusMessage='VRAM patch active; logic/work RAM fault disconnected.';
+      logicStatusMessage='VRAM patch active; logic/Work RAM fault disconnected.';
       $('logicStatus').textContent=logicStatusMessage;
-      stamp('Logic/work RAM fault disconnected because the VRAM patch was activated');
+      stamp('Logic/Work RAM fault disconnected because the VRAM patch was activated');
     }
     if (oldModel!==modelId || oldMask!==mask || !samePair(oldPair,targetPair)) {
       vramModelTransitions.push({frame:oldFrame,from:oldModel,to:modelId,
@@ -943,6 +950,7 @@
   }
 
   function applyAddressMask(mask, accessOverride=undefined) {
+    resetCpuRecoveryObservation();
     if (!started || !addressMaskApiReady()) return false;
     const access=Number(accessOverride===undefined ? $('logicAccess').value : accessOverride);
     if (!Number.isInteger(mask) || mask<0 || mask>0x7fff ||
@@ -1027,6 +1035,7 @@
     for (const id of ['logicKind','logicAccess','logicLineA','logicLineB','logicApplyBtn'])
       $(id).disabled = !canUse;
     $('logicDisconnectBtn').disabled = !canUse;
+    updateCpuRecoveryControls(canUse);
     for (const id of ['logicResumeBtn','logicCpuResetBtn'])
       $(id).disabled = !canUse || typeof emulator._recover_logic_cpu !== 'function';
     for (const control of document.querySelectorAll('[data-ram-frame-pair]'))
@@ -1053,28 +1062,126 @@
     refreshRandomiserControls();
   }
 
+  function updateCpuRecoveryControls(canUse=started && logicApiReady()) {
+    const recoveryReady=canUse && !paused && typeof emulator?._recover_logic_cpu==='function' &&
+      typeof emulator?._get_logic_cpu_flags==='function';
+    $('armCpuRecoveryBtn').disabled=!recoveryReady || (!cpuRecoveryArmed && recoveryTransientActive());
+    $('armCpuRecoveryBtn').setAttribute('aria-pressed',String(cpuRecoveryArmed));
+    $('armCpuRecoveryBtn').textContent=cpuRecoveryArmed?'Disarm CPU Recovery':'Arm CPU Recovery Once';
+    $('cpuRecoveryStatus').textContent=cpuRecoveryArmed
+      ? `ARMED${cpuRecoveryHaltFrames.length?` · HALT ${cpuRecoveryHaltFrames.length}/2`:''}` : 'OFF';
+  }
+
+  function recoveryTransientActive() {
+    return !!(momentary || keyboardHeld || ownedAddressHold || pendingPulse);
+  }
+
+  function resetCpuRecoveryObservation() {
+    const hadObservation=cpuRecoveryHaltFrames.length>0;
+    cpuRecoveryHaltFrames=[];
+    if (hadObservation) updateCpuRecoveryControls();
+  }
+
+  function disarmCpuRecovery() {
+    cpuRecoveryArmed=false;
+    resetCpuRecoveryObservation();
+    updateCpuRecoveryControls();
+  }
+
+  function abortAutomaticCpuRecovery(reason, frame=null, flags=null, observedFrames=[]) {
+    cpuRecoveryArmed=false;
+    resetCpuRecoveryObservation();
+    cpuInterventions.push({action:'automatic-recovery-aborted',trigger:'armed-halt-streak',
+      frame,observedFlags:flags,observedFrames:[...observedFrames],attempted:false,
+      outcome:'aborted',reason});
+    if (!paused) pauseToggle();
+    setLogicStatus(`Automatic CPU recovery stopped: ${reason}. Emulation paused for inspection; no retry will occur.`);
+    stamp(`Automatic CPU recovery aborted: ${reason}; emulation paused; no retry`);
+    updateLogicControls();
+  }
+
+  function observeAutomaticCpuRecovery() {
+    if (!cpuRecoveryArmed || paused || !started) return;
+    if (recoveryTransientActive()) { resetCpuRecoveryObservation(); return; }
+    let flags, frame;
+    try {
+      flags=emulator._get_logic_cpu_flags();
+      frame=emulator._get_logic_frame();
+      if (typeof flags!=='number' || !Number.isInteger(flags) || flags<0 || flags>3 ||
+          typeof frame!=='number' || !Number.isSafeInteger(frame) || frame<0)
+        throw new Error('CPU flag or frame telemetry is invalid');
+    } catch (error) {
+      abortAutomaticCpuRecovery(`CPU telemetry unavailable (${error.message})`,null,null,cpuRecoveryHaltFrames);
+      return;
+    }
+    if (!(flags&2)) { resetCpuRecoveryObservation(); return; }
+    cpuRecoveryHaltFrames.push(frame);
+    if (cpuRecoveryHaltFrames.length<2) { updateLogicControls(); return; }
+    const observedFrames=[...cpuRecoveryHaltFrames];
+    cpuRecoveryArmed=false; // Consume before clears or native recovery can fail.
+    resetCpuRecoveryObservation();
+    const interventionStart=cpuInterventions.length;
+    let succeeded=false, reason='CPU recovery failed';
+    try { succeeded=recoverLogicCPU(2)===true; }
+    catch (error) { reason=`CPU recovery threw (${error.message})`; }
+    const latest=cpuInterventions.at(-1);
+    if (succeeded && latest && cpuInterventions.length>interventionStart) {
+      Object.assign(latest,{trigger:'armed-halt-streak',observedFlags:flags,
+        observedFrames,attempted:true,outcome:'issued'});
+      if (latest.telemetryError) {
+        if (!paused) pauseToggle();
+        setLogicStatus(`CPU-only reset issued; post-reset telemetry unavailable (${latest.telemetryError}). Emulation paused for inspection; no retry will occur.`);
+      }
+    } else {
+      reason=lastCpuRecoveryAttempt?.reason || reason;
+      if (latest && cpuInterventions.length>interventionStart && latest.action==='recovery-aborted') {
+        Object.assign(latest,{trigger:'armed-halt-streak',observedFlags:flags,
+          observedFrames,attempted:false,outcome:'aborted'});
+      } else if (latest && cpuInterventions.length>interventionStart &&
+          ['cpu-only-reset','force-resume','cpu-recovery-rejected'].includes(latest.action)) {
+        Object.assign(latest,{trigger:'armed-halt-streak',observedFlags:flags,observedFrames,
+          attempted:true,outcome:latest.action==='cpu-recovery-rejected'?'rejected':'aborted',reason});
+      } else cpuInterventions.push({action:'automatic-recovery-aborted',trigger:'armed-halt-streak',
+        frame,observedFlags:flags,observedFrames,attempted:!!lastCpuRecoveryAttempt?.nativeCalled,
+        outcome:'aborted',reason});
+      if (!paused) pauseToggle();
+      setLogicStatus(`Automatic CPU recovery stopped: ${reason}. Emulation paused for inspection; no retry will occur.`);
+      stamp(`Automatic CPU recovery aborted: ${reason}; emulation paused; no retry`);
+    }
+    updateLogicControls();
+  }
+
   function refreshLogicMetrics() {
     const core=emulator;
     if (logicApiReady(core)) {
-      const reads=Number(core._get_logic_reads()) || 0;
-      const writes=Number(core._get_logic_writes()) || 0;
-      const frame=Number(core._get_logic_frame()) || 0;
-      const activation=Number(core._get_logic_activation_frame());
-      const flags=Number(core._get_logic_cpu_flags()) || 0;
+      const metric=(getter,fallback=null)=>{
+        try { const value=Number(getter.call(core)); return Number.isFinite(value)?value:fallback; }
+        catch (_) { return fallback; }
+      };
+      const reads=metric(core._get_logic_reads,0);
+      const writes=metric(core._get_logic_writes,0);
+      const frame=metric(core._get_logic_frame);
+      const activation=metric(core._get_logic_activation_frame);
+      let flags=null;
+      try { flags=Number(core._get_logic_cpu_flags()); if (!Number.isFinite(flags)) flags=null; }
+      catch (_) { flags=null; }
       const shownReads=!logicActive && logicStatsRetained && lastLogicExperiment
         ? lastLogicExperiment.readCount : reads;
       const shownWrites=!logicActive && logicStatsRetained && lastLogicExperiment
         ? lastLogicExperiment.writeCount : writes;
       $('logicReadCount').textContent=shownReads.toLocaleString();
       $('logicWriteCount').textContent=shownWrites.toLocaleString();
-      $('logicFrame').textContent=frame.toLocaleString();
+      $('logicFrame').textContent=frame===null?'—':frame.toLocaleString();
       const shownActivation=logicActive && Number.isFinite(activation) && activation>=0
         ? activation : lastLogicExperiment?.activationFrame;
       $('logicActivationFrame').textContent=shownActivation===undefined ? '—' : Number(shownActivation).toLocaleString();
       const cpu=[];
-      if (flags & 1) cpu.push('STOP');
-      if (flags & 2) cpu.push('HALT');
-      $('logicCpuStatus').textContent=cpu.length ? cpu.join(' + ') : 'No STOP/HALT flag';
+      if (flags===null) $('logicCpuStatus').textContent='CPU status unavailable';
+      else {
+        if (flags & 1) cpu.push('STOP');
+        if (flags & 2) cpu.push('HALT');
+        $('logicCpuStatus').textContent=cpu.length ? cpu.join(' + ') : 'No STOP/HALT flag';
+      }
       if (lastLogicExperiment && logicActive) {
         lastLogicExperiment.currentFrame=frame;
         lastLogicExperiment.readCount=reads;
@@ -1124,6 +1231,7 @@
   function logicLineName(kind,line) { return kind===1 ? `A${line+1}` : `D${line}`; }
 
   function applyLogicFault(writeLimit=null, configOverride=null) {
+    resetCpuRecoveryObservation();
     if (!started || !logicApiReady()) return false;
     const config=configOverride || logicConfigFromControls();
     const lineCount=config.kind===1?15:config.kind===2?16:0;
@@ -1185,11 +1293,12 @@
       cpuFlags:Number(emulator._get_logic_cpu_flags()) || 0
     };
     setLogicStatus(`Applied ${kindLabel} ${lineA} ↔ ${lineB} on ${accessLabel}.`);
-    stamp(`LOGIC / WORK RAM FAULT: ${kindLabel} ${lineA} ↔ ${lineB}, ${accessLabel}`);
+    stamp(`LOGIC / Work RAM FAULT: ${kindLabel} ${lineA} ↔ ${lineB}, ${accessLabel}`);
     return true;
   }
 
   function disconnectLogic({silent=false,pulseReason='fault disconnected'}={}) {
+    resetCpuRecoveryObservation();
     if (!logicActive) {
       cancelPulse(pulseReason);
       if (!silent) setLogicStatus('No logic fault is active.');
@@ -1222,20 +1331,23 @@
     if (!silent) {
       logicResetState='Logic fault disconnected; RAM writes persist';
       setLogicStatus('Logic fault disconnected. Any projected writes remain in RAM until a clean restart.');
-      stamp('Logic/work RAM fault disconnected; projected RAM writes persist');
+      stamp('Logic/Work RAM fault disconnected; projected RAM writes persist');
     }
     updateLogicControls();
     return true;
   }
 
   function recoverLogicCPU(mode) {
-    if (!started || typeof emulator?._recover_logic_cpu !== 'function') return;
+    lastCpuRecoveryAttempt={nativeCalled:false,status:null};
+    disarmCpuRecovery();
+    if (!started || typeof emulator?._recover_logic_cpu !== 'function') return false;
     const frame=Number(emulator._get_logic_frame());
     const flagsBefore=Number(emulator._get_logic_cpu_flags());
     const hadRamFault=logicActive;
     if (!disconnectLogic({silent:true,pulseReason:'manual CPU recovery'})) {
+      lastCpuRecoveryAttempt.reason='RAM clear rejected or unavailable';
       setLogicStatus('Recovery stopped: could not disconnect RAM fault.');
-      return;
+      return false;
     }
     if (!disconnect('CPU recovery disconnected VRAM fault')) {
       const state=currentVramModelState();
@@ -1248,16 +1360,27 @@
       logicResetState='Recovery stopped after RAM fault disconnect; VRAM configuration remains active';
       setLogicStatus('Recovery stopped: VRAM clear was rejected. The RAM fault is disconnected, VRAM configuration remains active, and no CPU intervention was issued.');
       stamp('CPU recovery aborted after RAM disconnect; VRAM configuration remains active and CPU intervention was not issued.');
-      return;
+      return false;
     }
+    lastCpuRecoveryAttempt.nativeCalled=true;
     const status=emulator._recover_logic_cpu(mode);
+    lastCpuRecoveryAttempt.status=status;
     if (status!==0) {
+      lastCpuRecoveryAttempt.reason=`CPU recovery rejected (status ${status})`;
+      cpuInterventions.push({action:'cpu-recovery-rejected',frame,flagsBefore,
+        status,attempted:true,outcome:'rejected'});
       setLogicStatus(`CPU recovery rejected (status ${status}).`);
-      return;
+      return false;
     }
     const action=mode===1 ? 'force-resume' : 'cpu-only-reset';
-    cpuInterventions.push({action,frame,flagsBefore,
-      flagsAfter:Number(emulator._get_logic_cpu_flags())});
+    const intervention={action,frame,flagsBefore,flagsAfter:null,attempted:true,outcome:'issued'};
+    cpuInterventions.push(intervention);
+    try {
+      const flags=emulator._get_logic_cpu_flags();
+      if (typeof flags!=='number' || !Number.isInteger(flags) || flags<0 || flags>3)
+        throw new Error('CPU flag telemetry is invalid');
+      intervention.flagsAfter=flags;
+    } catch (error) { intervention.telemetryError=error.message; }
     logicResetState=`${action}; RAM/VRAM faults disconnected; audio faults unchanged; RAM preserved`;
     setLogicStatus(`${mode===1 ? 'Forced resume attempted' : 'CPU-only reset issued'}. RAM/VRAM faults disconnected; audio faults unchanged; RAM preserved. Recovery is not guaranteed.`);
     stamp(`CPU intervention: ${action}; RAM/VRAM faults disconnected; audio faults unchanged; RAM preserved`);
@@ -1281,6 +1404,7 @@
 
   function disconnectAllFaults() {
     if (!started) return false;
+    disarmCpuRecovery();
     cancelPulse('all fault domains disconnected');
     selectedPin=null; ramSelectedPin=null; psgSelectedPin=null; fmSelectedPin=null;
     if (momentary) latched=canonical(momentary);
@@ -1930,6 +2054,7 @@
     }
     const config=stagedCircuitConfiguration;
     if (!config) return false;
+    disarmCpuRecovery();
     let error;
     try { error=preflightCircuitConfiguration(config); }
     catch (_) { error='Runtime state could not be read; no setters were called.'; }
@@ -2239,7 +2364,7 @@
 
   function setKeyboardTarget(target) {
     keyboardTarget=target;
-    $('keyboardTarget').textContent=`Keyboard fault target: ${target}`;
+    $('keyboardTarget').textContent=`Keyboard Fault Target: ${target}`;
     document.querySelectorAll('[data-keyboard-chip]').forEach(card=>
       card.classList.toggle('keyboard-target',card.dataset.keyboardChip===target));
   }
@@ -2477,12 +2602,15 @@
   }
 
   function renderFrame() {
+    const transientAtStart=recoveryTransientActive();
     ensureWasmViews();
     pollControls();
     emulator._tick();
     finishFaultPulse();
     drawActiveVideo();
     audioFrame();
+    if (transientAtStart || recoveryTransientActive()) resetCpuRecoveryObservation();
+    else observeAutomaticCpuRecovery();
     frames++;
     // Statistics describe byte differences under the projection model.
     if (typeof emulator._get_vram_changed_reads === 'function')
@@ -2505,7 +2633,7 @@
     accumulated += Math.min(100,time-lastFrame);
     lastFrame = time;
     let done=0;
-    while (accumulated>=FRAME_MS && done<3) {
+    while (accumulated>=FRAME_MS && done<3 && started && !paused && !document.hidden) {
       renderFrame(); accumulated-=FRAME_MS; done++;
     }
     if (done===3) accumulated=0;
@@ -2518,10 +2646,12 @@
 
   function pauseToggle() {
     if (!started) return;
+    if (!paused) disarmCpuRecovery();
     paused=!paused;
     $('pauseBtn').textContent = paused ? 'Resume' : 'Pause';
     if (paused) clearAudioQueue();
     stamp(paused?'Emulation paused':'Emulation resumed');
+    updateLogicControls();
   }
 
   async function soundToggle() {
@@ -2559,6 +2689,7 @@
       new Uint8Array(emulator.HEAPU8.buffer,ptr,bytes.length).set(bytes);
       // The accepted new image is about to replace core state; drain old audio
       // and cancel app-scheduled pulse work before native activation can throw.
+      disarmCpuRecovery();
       clearAudioQueue();
       cancelPulse(cleanRestart ? 'clean restart' : 'cartridge replaced');
       ownedAddressHold=null; keyboardHeld=null;
@@ -2577,11 +2708,11 @@
       vramModelId=1;vramModelTransitions=[];
       vramModelStatusMessage='';
       logicAddressMask=0;addressLineChanges=[];
-      logicActive=false; // runtime_start clears the work RAM fault and counters.
+      logicActive=false; // runtime_start clears the Work RAM fault and counters.
       activeRamConfiguration=null;
       ramSelectedPin=null;psgSelectedPin=null;fmSelectedPin=null;
       logicStatsRetained=false;
-      logicResetState=cleanRestart ? 'Clean restart; work RAM fault and counters reset' : 'Cartridge loaded; work RAM fault and counters reset';
+      logicResetState=cleanRestart ? 'Clean Restart; Work RAM fault and counters reset' : 'Cartridge loaded; Work RAM fault and counters reset';
       resetLogicSelection();
       logicStatusMessage=logicApiReady() ? 'Load or apply a logic fault when ready.' : 'Rebuild core for logic faults';
       ensureWasmViews();
@@ -2616,7 +2747,7 @@
         $('resetBtn').disabled=!romBytes;
         $('compactResetBtn').disabled=!romBytes;
         error.cartridgeActivationUncertain=true;
-        message('CARTRIDGE ACTIVATION UNCERTAIN',`${error.message} The core may have changed; use Clean restart to reload the last accepted cartridge.`);
+        message('CARTRIDGE ACTIVATION UNCERTAIN',`${error.message} The core may have changed; use Clean Restart to reload the last accepted cartridge.`);
       } else started=wasStarted;
       throw error;
     }
@@ -2647,8 +2778,8 @@
       await startCartridge(romBytes,loadedName,{cleanRestart:true});
       possibleVramResidue = false;
       updateFaultUI();
-      setLogicStatus(logicApiAvailable ? 'Clean restart: VRAM/work RAM faults cleared; counters reset.' : 'Rebuild core for logic faults');
-      stamp('Clean restart: VRAM/work RAM reset; all fault domains disconnected');
+      setLogicStatus(logicApiAvailable ? 'Clean Restart: VRAM/Work RAM faults cleared; counters reset.' : 'Rebuild core for logic faults');
+      stamp('Clean Restart: VRAM/Work RAM reset; all fault domains disconnected');
     } catch (error) { stamp(`Restart failed: ${error.message}`); }
   }
 
@@ -2697,13 +2828,17 @@
       else if (['Space','Enter'].includes(event.code) && keyboardHeld?.target==='WRAM') endKeyboardHold(event.code);
     });
     window.addEventListener('blur',()=>{
+      disarmCpuRecovery();
       pressed.clear();
       endKeyboardHold();
       if (ownedAddressHold?.type==='pointer') endAddressFrameHold('pointer',ownedAddressHold.pointerId);
       focusReleased=true;
     });
     window.addEventListener('focus',()=>{if(focusReleased){lastFrame=0;focusReleased=false;}});
-    document.addEventListener('visibilitychange',()=>{lastFrame=0;clearAudioQueue();});
+    document.addEventListener('visibilitychange',()=>{
+      lastFrame=0;clearAudioQueue();
+      if (document.hidden) disarmCpuRecovery();
+    });
   }
 
   async function initialiseCore() {
@@ -2749,7 +2884,7 @@
         (section.top + window.scrollY) - chrome - 12));
       displayViewport.style.setProperty('--window-display-height', `${height}px`);
     }
-    $('fullscreenBtn').textContent = active ? 'Exit fullscreen' : 'Fullscreen';
+    $('fullscreenBtn').textContent = active ? 'Exit Fullscreen' : 'Fullscreen';
     $('fullscreenBtn').setAttribute('aria-pressed', String(active));
     // Firefox can retain a stale canvas backing/compositor surface after a
     // fullscreen transition. Reset only the fixed-size canvas and repaint
@@ -2821,6 +2956,15 @@
     $('logicCpuResetBtn').addEventListener('click',()=>{
       recoverLogicCPU(2);
       $('randomiserStatus').textContent=$('logicStatus').textContent;
+    });
+    $('armCpuRecoveryBtn').addEventListener('click',()=>{
+      if (cpuRecoveryArmed) disarmCpuRecovery();
+      else if (started && !paused && typeof emulator?._recover_logic_cpu==='function' &&
+          typeof emulator?._get_logic_cpu_flags==='function' && !recoveryTransientActive()) {
+        resetCpuRecoveryObservation();cpuRecoveryArmed=true;
+        setLogicStatus('One CPU-only recovery is armed after two eligible HALT frames.');
+        stamp('One CPU-only recovery armed');updateLogicControls();
+      }
     });
     $('logicDisconnectBtn').addEventListener('click',()=>disconnectLogic());
     $('disconnectAllFaultsBtn').addEventListener('click',runDisconnectAllFaults);

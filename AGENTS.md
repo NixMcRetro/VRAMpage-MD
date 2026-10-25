@@ -49,7 +49,8 @@ updates and full applicable automated checks. Never weaken assertions to hide
 regressions. Use `bash scripts/test.sh` and documented browser/actual-WASM checks;
 consult `.github/workflows/source-checks.yml` and `build-website.yml` for pinned
 CI commands. Preserve static hosting and avoid unnecessary dependencies,
-telemetry, frameworks and rewrites.
+telemetry, frameworks and rewrites. Use Title Case for buttons and labels,
+including Work RAM, CPU Reset and Clean Restart; preserve chip acronyms.
 
 Keep isolated worktrees and uncommitted source under `/workspace`, not `/tmp`.
 Temporary directories can disappear between sessions. Commit bounded, reviewable

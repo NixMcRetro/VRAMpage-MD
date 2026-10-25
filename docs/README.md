@@ -33,6 +33,7 @@ older standalone-model descriptions are historical development records.
 | [Affected-write pulses](ACCESS-LIMITED-PULSES.md) | v0.2.3 transaction cutoffs, longword fix and corrected-core comparisons |
 | [Pulse survey](PULSE-EXPERIMENTS.md) | Repeated actual-core survey of all adjacent address write pairs |
 | [RAM pulses](RAM-PULSES.md) | Short contacts, quick address write pairs, frame timing and cancellation |
+| [v0.5.0 recovery/checkpoint plan](RECOVERY-CHECKPOINT-PLAN.md) | Planned opt-in recovery, one-session checkpoint and acceptance gates |
 | [CPU recovery](CPU-RECOVERY.md) | v0.2.1 force-resume/reset semantics, metadata and limits |
 | [Experiments](EXPERIMENTS.md) | Read-only saved-export comparison and repeatable zero-fault/RAM-fault procedure |
 | [Build and deployment](DEPLOYMENT.md) | Versioned local downloads and separately authorised website deployment |

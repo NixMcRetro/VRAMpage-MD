@@ -16,12 +16,12 @@ repairs corrupted RAM or guarantees that gameplay continues.
 Both CPU interventions leave PSG/FM input faults and sound-chip state unchanged.
 This describes the reset operation itself: it calls neither `gen_reset()` nor
 `sound_reset()`. Once the CPU runs again, cartridge code may issue ordinary
-sound writes and alter registers or audio. **Clean restart** is the workbench's
+sound writes and alter registers or audio. **Clean Restart** is the workbench's
 full sound-chip reset path; removing an audio fault alone affects future writes
 and does not guarantee repair of previously changed chip state.
-The development workbench also exposes **CPU reset** beside the Randomiser
+The development workbench also exposes **CPU Reset** beside the Randomiser
 buttons. It invokes the same CPU-only reset action; it is not a full reboot and
-does not change the app's pause state. A **Clean restart** copy immediately
+does not change the app's pause state. A **Clean Restart** copy immediately
 to its right invokes the same full reboot as the original toolbar button.
 Use the separate development-source all-fault action below when audio faults
 also need to be removed. CPU recovery does not reset the whole system.
@@ -29,18 +29,18 @@ also need to be removed. CPU recovery does not reset the whole system.
 These semantics follow the pinned [m68kcpu.c reset implementation](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/m68k/m68kcpu.c#L348-L397).
 Force resume deliberately bypasses normal CPU behavior. It does not synthesize
 an interrupt, rewind an exception or establish physical-hardware fidelity.
-**Clean restart** remains the full cartridge reboot. Pausing is independent:
+**Clean Restart** remains the full cartridge reboot. Pausing is independent:
 recovery never changes pause state, so press Resume if the application is paused.
 
 The compact A11–A15 pair buttons default to **Hold while pressed**, keeping a
 write-only fault active only while the mouse/key is down. Explicit **8-frame
 pulse** mode disconnects after eight emulated frames without CPU recovery. They preserve play/pause and audio
-settings; use CPU reset explicitly if desired. See [RAM pulses](RAM-PULSES.md).
+settings; use CPU Reset explicitly if desired. See [RAM pulses](RAM-PULSES.md).
 
 ## Development source: disconnect all faults
 
-The new **Disconnect all faults** action is separate from CPU recovery and
-**Clean restart**. It cancels app-side RAM pulse completion and
+The new **Disconnect All Faults** action is separate from CPU recovery and
+**Clean Restart**. It cancels app-side RAM pulse completion and
 held/momentary restore actions, then attempts to clear VRAM, work RAM, PSG and
 FM through their existing APIs. Successful clears are retained if another
 domain fails; old faults are never reinstalled as rollback. Status distinguishes
@@ -55,7 +55,7 @@ This action does not resume/reset the 68000, reload the cartridge, undo earlier
 memory writes or restore sound-chip registers. Existing audio clear operations
 reset their configuration counters; already-off audio domains are left alone.
 A failed RAM clear can leave its core pulse armed, so do not resume until the
-reported fault state is understood or use **Clean restart**.
+reported fault state is understood or use **Clean Restart**.
 
 This addition is development source after public v0.4.1. That immutable release
 ZIP does not contain this new action. A later workbench milestone will package
@@ -67,18 +67,19 @@ The original v0.2.1 experimental exports used `2.1-experimental` and remain unch
 an ordered list of action, current frame, flags before and immediately after.
 The after-value precedes execution of the next frame; zero does not prove a
 healthy CPU/game. Fault access counters and activation/current frame survive
-recovery. Clean restart or loading a cartridge clears intervention history.
+recovery. Clean Restart or loading a cartridge clears intervention history.
 No RAM contents are exported. Download the record before restarting.
 
 Development-source exports also include `faultDisconnects`, a separate list of
 all-domain removal attempts and per-domain results. These are not CPU
 interventions. Status identifies observed runtime state versus tracked or
 unavailable state; a failed clear must not be interpreted as restored gameplay.
-Clean restart/new-ROM initialization clears this attempt history.
+Clean Restart/new-ROM initialization clears this attempt history.
 
 An older core with work-RAM hooks but without `_recover_logic_cpu` can still
 play/apply faults; only recovery controls remain disabled. Rebuild the WASM to
-use the new controls. No automatic or repeated recovery is performed.
+use the new controls. Manual actions never enable automatic recovery. The development-source single-arm
+option below is separately opt-in; older public releases have no automatic recovery.
 
 ## Verification and reproduction
 
@@ -123,3 +124,26 @@ node scripts/run-cpu-recovery.cjs /private/path/cartridge.md > /tmp/recovery.jso
 
 This is one trial per action, not a repeated recovery success rate. Actual
 post-recovery visuals, sound and native macOS behavior remain unverified.
+
+## Development source: arm CPU recovery once
+
+**Arm CPU Recovery Once** is off by default. After explicit arming, two consecutive
+eligible completed frames with the 68000 HALT bit set cause one CPU-only reset
+attempt, then disarm. A legitimate STOP instruction, static picture, silence or
+software loop is not a trigger. It cannot rescue a browser blocked inside a core
+tick. The action clears RAM/VRAM faults and preserves FM/PSG exactly like manual
+CPU Reset; it does not guarantee continued gameplay.
+
+Held/momentary faults and pending RAM pulses defer observation and reset the HALT
+streak. Arming is unavailable during those contacts. Ordinary fault edits restart
+the streak but retain arming. Pause, blur/hidden tab, manual recovery, imported
+configuration application, Disconnect All Faults, new ROM activation and Clean
+restart disarm. Failed telemetry, rejected clears or rejected recovery disarm and
+pause; no repeated attempts, escalation or rewind follows. Re-arm explicitly to
+allow another attempt. Additive intervention metadata distinguishes the armed
+trigger from a manual action and records attempts/aborts, not gameplay success.
+
+The [v0.5.0 design](RECOVERY-CHECKPOINT-PLAN.md) also covers one-slot in-memory
+checkpoints. Those remain planned until serializer bounds and complete state
+replay are verified. This recovery slice does not expose checkpoint controls or
+advance the public v0.4.1 release.

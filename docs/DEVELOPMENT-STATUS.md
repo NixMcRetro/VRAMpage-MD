@@ -1,6 +1,81 @@
 # Development status and continuation checkpoint
 
-## Active cleanup: consistent disabled controls and CPU/audio confirmation
+## Bounded CPU recovery integration — 26 October 2026 (Sydney)
+
+Development source implements plan step 1: **Arm CPU Recovery Once**, off by
+default, observes HALT on two consecutive eligible completed frames and consumes
+one CPU-only reset attempt. It ignores STOP-only and deliberate transient contacts;
+failed telemetry/clears/recovery pause without retry. Lifecycle operations disarm;
+ordinary fault edits reset the streak while retaining arming. FM/PSG are preserved
+by the existing CPU-only reset path. Intervention metadata records armed triggers
+and aborts. The frame catch-up loop now stops immediately on a failure pause.
+
+Buttons and labels use Title Case, including **Work RAM**, **CPU Reset**,
+**Clean Restart** and **Hold While Pressed**. Preserve this style in future work.
+No native model, VERSION, public release or McRetro.net change. Checkpoint
+save/restore remains gated by serializer capacity and complete state/replay proof.
+Independent review approves through c6930dc. Source/native smoke97 (two SDK/vendor
+classes skipped), Chromium core7/display7, WebKit focused7/actual-HALT1 and direct
+WASM25 pass. Final-source Chromium103 passes. Initial CI found native-control viewport
+differences in Firefox/WebKit; desktop-only sizing fixes both locally reproduced
+WebKit cases without changing the strict assertions. Required seven PR/main
+checks and updated package provenance remain integration gates.
+
+
+## v0.5.0 design checkpoint
+
+Resume from verified main `5d0425a64acb0f883789c67e8c6ec41e5d2c0c02` (PR #60,
+all seven PR/main checks passed). No new open PR or main changes were found.
+[Recovery/checkpoint plan](RECOVERY-CHECKPOINT-PLAN.md) now defines the next
+implementation: one explicitly armed HALT-triggered CPU reset attempt; then one
+manual in-memory same-session checkpoint after native round-trip/capacity proof.
+Unassisted operation remains default, audio remains outside CPU reset, and no
+static-image heuristic, repeated rescue or automatic rewind is planned.
+
+This is a design-only continuation checkpoint. No runtime/build/package change,
+version bump, release replacement or McRetro.net action. Previous CI evidence
+is reused; new runtime tests are acceptance gates, not executed claims. Independent
+Luna High source audit covered existing serializer and CPU recovery paths;
+full design review approved with no blocking findings. Six documentation tests,
+changed Markdown local-link validation and `git diff --check` passed. Design saved
+on `experiment/v050-recovery-design`; no documentation-only integration PR.
+Native serialization bounds/complete replay and manual Mac acceptance remain
+implementation gates. First implementation scope is plan step 1, with focused
+positive/negative/failure tests and all required CI before merging.
+
+
+## PR #60 verified delivery checkpoint — 26 October 2026 (Sydney)
+
+[PR #60](https://github.com/NixMcRetro/VRAMpage-MD/pull/60) merged as
+`5d0425a64acb0f883789c67e8c6ec41e5d2c0c02` after all seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40206196863)
+passed on `6d2a461d8ae4b6890cf05ce045e64dd50517f7c4`. Merged tree equals
+reviewed source. All seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40206671753)
+passed on the latest main; no blocker remains.
+
+VRAM-only dotted disabled styling is removed; standard disabled appearance and
+safety guards remain. Active fill and default Hold are user accepted. CPU reset
+preserves FM/PSG directly; Clean restart resets sound. Resumed cartridge code can
+still reprogram sound. Independent specialist review found no blocking issue.
+Chromium: compact 6, display 7, logic 96, actual-core 6 passed. Targeted WebKit
+appearance and CPU/restart cases passed, as did 48 visual states and 25 actual-WASM
+CPU checks. Local ROM-free package: 682 unique files, exact source/version/UI/core
+identity and extracted actual-core 6 passed. Unchanged native SDK evidence reused.
+Fresh CI builds and packaged-browser checks passed separately.
+
+[Ready-to-run main review download](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40206671753/artifacts/12603749446).
+Public v0.4.1 metadata, asset digests and tag `e579c571f14b3549a5befa33d9e62ba3f3c9d45b`
+are unchanged. McRetro.net untouched. Native Safari and physical electrical
+accuracy were not newly tested; synthetic checks do not establish audible game sound.
+
+Next bounded task: design the v0.5.0 opt-in bounded CPU recovery and explicit
+save/restore checkpoints, with default unassisted faults and compatibility/state
+validation. Reuse completed stabilisation evidence. Do not bump VERSION, replace
+public assets, silently rescue faults or repeat finished RAM research. This
+checkpoint is a continuation branch, not another documentation-only PR.
+
+
+## Completed scope: consistent disabled controls and CPU/audio confirmation
 
 The user accepts the active fill and Hold behaviour, and requests removal of the
 VRAM-only dotted unavailable styling. Remove that one CSS override so all chip

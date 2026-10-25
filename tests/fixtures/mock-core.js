@@ -231,11 +231,16 @@ window.Module = async () => {
       _get_logic_reads: () => logic.reads,
       _get_logic_writes: () => logic.writes,
       _get_logic_frame: () => {
+        if(window.mockCore.throwLogicFrame) throw new Error('synthetic frame telemetry trap');
         if(window.mockCore.throwFrameOnce) {window.mockCore.throwFrameOnce=false;throw new Error('synthetic frame telemetry trap');}
         return logic.frame;
       },
       _get_logic_activation_frame: () => logic.activationFrame,
-      _get_logic_cpu_flags: () => logic.cpuFlags,
+      _get_logic_cpu_flags: () => {
+        if (window.mockCore.throwCpuFlags) throw new Error('synthetic CPU flag telemetry trap');
+        if (Object.prototype.hasOwnProperty.call(window.mockCore,'invalidCpuFlags')) return window.mockCore.invalidCpuFlags;
+        return window.mockCore.cpuFlagsByFrame?.[logic.frame] ?? logic.cpuFlags;
+      },
     });
   }
   if (window.__legacyRecoveryCore) delete core._recover_logic_cpu;

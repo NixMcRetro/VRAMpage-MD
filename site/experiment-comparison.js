@@ -74,12 +74,12 @@
     const logicAvailability=hasPath(a,['logic'])||hasPath(b,['logic'])?['logic','available']:null;
     const rows=[
       identity(a,b,'ROM SHA-256',['rom','sha256'],v=>/^[a-f0-9]{64}$/.test(v)),
-      identity(a,b,'Core revision',['corePin'],v=>/^[a-f0-9]{40}$/.test(v)),
-      identity(a,b,'Build source commit',['build','sourceCommit'],(v,record)=>/^[a-f0-9]{40}$/.test(v)&&path(record,['build','status'])==='available'),
-      identity(a,b,'Application version',['build','applicationVersion'],v=>/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(v)),
-      identity(a,b,'Model version',['modelVersion']),
-      identity(a,b,'RAM model version',['logic','modelVersion']),
-      identity(a,b,'ROM title',['rom','name'])
+      identity(a,b,'Core Revision',['corePin'],v=>/^[a-f0-9]{40}$/.test(v)),
+      identity(a,b,'Build Source Commit',['build','sourceCommit'],(v,record)=>/^[a-f0-9]{40}$/.test(v)&&path(record,['build','status'])==='available'),
+      identity(a,b,'Application Version',['build','applicationVersion'],v=>/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(v)),
+      identity(a,b,'Model Version',['modelVersion']),
+      identity(a,b,'RAM Model Version',['logic','modelVersion']),
+      identity(a,b,'ROM Title',['rom','name'])
     ];
     const field=(label,keys,availability,valid=()=>true)=> {
       const av=path(a,keys),bv=path(b,keys);
@@ -92,7 +92,7 @@
       rows.push({label,a:show(av),b:show(bv),status:equal(av,bv)?'match':'mismatch'});
     };
     const audio=(name,key)=>{
-      for(const [label,fieldName] of [['configured','configured'],['effective','effective'],['data mask','dataMask'],['bridge A','bridgeA'],['bridge B','bridgeB']]) {
+      for(const [label,fieldName] of [['Configured','configured'],['Effective','effective'],['Data Mask','dataMask'],['Bridge A','bridgeA'],['Bridge B','bridgeB']]) {
         const valid=fieldName==='configured'||fieldName==='effective'?isBoolean:
           fieldName==='dataMask'?value=>isInteger(value,0,255):value=>isInteger(value,-1,7);
         field(`${name} ${label}`,[key,fieldName],[key,'available'],valid);
@@ -100,35 +100,35 @@
     };
     const ramA=ramFault(a),ramB=ramFault(b);
     for(const [label,get,valid] of [
-      ['kind',v=>v?.kind,value=>typeof value==='string'&&['address','data','address-stuck-low','address-mask','line-pair'].includes(value)],
-      ['access',v=>v?.access,value=>typeof value==='string'&&['read','write','read + write','both'].includes(value)],
-      ['address mask',v=>v?.addressMask,value=>isInteger(value,0,32767)],
-      ['lines / pair',v=>v?.lines??v?.linesPair,value=>isLineList(value)||isPair(value)],
-      ['activation frame',v=>v?.activationFrame,value=>isInteger(value)]
+      ['Kind',v=>v?.kind,value=>typeof value==='string'&&['address','data','address-stuck-low','address-mask','line-pair'].includes(value)],
+      ['Access',v=>v?.access,value=>typeof value==='string'&&['read','write','read + write','both'].includes(value)],
+      ['Address Mask',v=>v?.addressMask,value=>isInteger(value,0,32767)],
+      ['Lines / Pair',v=>v?.lines??v?.linesPair,value=>isLineList(value)||isPair(value)],
+      ['Activation Frame',v=>v?.activationFrame,value=>isInteger(value)]
     ]) {
       const av=ramA===null?null:get(ramA),bv=ramB===null?null:get(ramB);
       const aValid=av===null||valid(av),bValid=bv===null||valid(bv);
-      rows.push({label:`RAM recorded ${label}`,a:aValid?show(av):'Unknown',b:bValid?show(bv):'Unknown',status:av===undefined||bv===undefined||!aValid||!bValid?'unknown':equal(av,bv)?'match':'mismatch'});
+      rows.push({label:`RAM Recorded ${label}`,a:aValid?show(av):'Unknown',b:bValid?show(bv):'Unknown',status:av===undefined||bv===undefined||!aValid||!bValid?'unknown':equal(av,bv)?'match':'mismatch'});
     }
     for(const [label,keys,valid] of [
-      ['kind',['vramFault','kind'],value=>typeof value==='string'&&['none','address-stuck-low','address-bridge'].includes(value)],
-      ['address mask',['vramFault','addressMask'],value=>isInteger(value,0,255)],['bridge',['vramFault','bridge'],isVramPair],
-      ['model id',['vramTransaction','modelId'],value=>isInteger(value,1,255)],['model version',['vramTransaction','modelVersion'],isString],
-      ['transaction mask',['vramTransaction','mask'],value=>isInteger(value,0,255)],
-      ['transaction bridge A',['vramTransaction','bridgeA'],value=>isInteger(value,-1,7)],
-      ['transaction bridge B',['vramTransaction','bridgeB'],value=>isInteger(value,-1,7)]
+      ['Kind',['vramFault','kind'],value=>typeof value==='string'&&['none','address-stuck-low','address-bridge'].includes(value)],
+      ['Address Mask',['vramFault','addressMask'],value=>isInteger(value,0,255)],['Bridge',['vramFault','bridge'],isVramPair],
+      ['Model ID',['vramTransaction','modelId'],value=>isInteger(value,1,255)],['Model Version',['vramTransaction','modelVersion'],isString],
+      ['Transaction Mask',['vramTransaction','mask'],value=>isInteger(value,0,255)],
+      ['Transaction Bridge A',['vramTransaction','bridgeA'],value=>isInteger(value,-1,7)],
+      ['Transaction Bridge B',['vramTransaction','bridgeB'],value=>isInteger(value,-1,7)]
     ]) field(`VRAM ${label}`,keys,keys[0]==='vramTransaction'?['vramTransaction','available']:null,valid);
     audio('FM','fmInputFault'); audio('PSG','psgInputFault');
     for(const [name,key] of [['FM','fmInputFault'],['PSG','psgInputFault']]) {
-      for(const [label,fieldName] of [['model version','modelVersion'],['changed writes','changedWrites']])
+      for(const [label,fieldName] of [['Model Version','modelVersion'],['Changed Writes','changedWrites']])
         field(`${name} ${label}`,[key,fieldName],[key,'available'],fieldName==='changedWrites'?isCount:isString);
     }
     for(const [label,keys,valid] of [
-      ['RAM active',['logic','active'],isBoolean],['RAM affected reads',['logic','readCount'],isInteger],['RAM affected writes',['logic','writeCount'],isInteger],
-      ['Current frame',['currentFrame'],isInteger],['CPU flags',['cpuFlags'],value=>isInteger(value,0,65535)],
-      ['VRAM transaction counts',['vramTransaction','lastFrameCounts'],isRecord],
-      ['PSG recorded writes',['psgInputFault','inputWrites'],isCount],['FM recorded writes',['fmInputFault','inputWrites'],isCount],
-      ['Fault disconnect outcomes',['faultDisconnects'],isObject],['CPU interventions',['cpuInterventions'],isObject],['Reset state',['resetState'],isString]
+      ['RAM Active',['logic','active'],isBoolean],['RAM Affected Reads',['logic','readCount'],isInteger],['RAM Affected Writes',['logic','writeCount'],isInteger],
+      ['Current Frame',['currentFrame'],isInteger],['CPU Flags',['cpuFlags'],value=>isInteger(value,0,65535)],
+      ['VRAM Transaction Counts',['vramTransaction','lastFrameCounts'],isRecord],
+      ['PSG Recorded Writes',['psgInputFault','inputWrites'],isCount],['FM Recorded Writes',['fmInputFault','inputWrites'],isCount],
+      ['Fault Disconnect Outcomes',['faultDisconnects'],isObject],['CPU Interventions',['cpuInterventions'],isObject],['Reset State',['resetState'],isString]
     ]) {
       const legacyKeys={
         'logic.active':'faultActive','logic.readCount':'readCount','logic.writeCount':'writeCount'

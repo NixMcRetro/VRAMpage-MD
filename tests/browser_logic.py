@@ -54,7 +54,7 @@ class BrowserLogicTests(unittest.TestCase):
             context.close()
         self.assertEqual(self.errors, [], "Uncaught application errors")
 
-    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False):
+    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False, manual_frames=False):
         context = self.browser.new_context(
             viewport={"width": 1366, "height": 768},
             color_scheme="light",
@@ -62,6 +62,12 @@ class BrowserLogicTests(unittest.TestCase):
         )
         self.contexts.append(context)
         page = context.new_page()
+        if manual_frames:
+            page.add_init_script("""
+                window.testFrames=[];window.testTime=0;
+                window.requestAnimationFrame=cb=>testFrames.push(cb);
+                window.stepTestFrame=()=>{const callbacks=testFrames.splice(0);testTime+=17;callbacks.forEach(cb=>cb(testTime));};
+            """)
         page.on("pageerror", lambda error: self.errors.append(str(error)))
         if circuit_config:
             page.add_init_script("window.__circuitConfigCore = true;")
@@ -453,7 +459,7 @@ class BrowserLogicTests(unittest.TestCase):
         pins.nth(1).click()
         expect(self.page.locator("#connectionLabel")).to_have_text("AD0 ↔ AD1")
         expect(self.page.locator("#logicStatus")).to_have_text(
-            "VRAM patch active; logic/work RAM fault disconnected.")
+            "VRAM patch active; logic/Work RAM fault disconnected.")
         self.assertFalse(self.page.evaluate("window.mockCore.logic.active"))
         self.assertEqual(self.page.evaluate("window.mockCore.short"), [0, 1])
 
@@ -461,7 +467,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.wait_for_function("window.mockCore.starts === 2")
         expect(self.page.locator("#connectionLabel")).to_have_text("NONE — NORMAL ADDRESSING")
         expect(self.page.locator("#logicStatus")).to_have_text(
-            "Clean restart: VRAM/work RAM faults cleared; counters reset.")
+            "Clean Restart: VRAM/Work RAM faults cleared; counters reset.")
         self.assertEqual(self.page.evaluate("window.mockCore.short"), [-1, -1])
         self.assertFalse(self.page.evaluate("window.mockCore.logic.active"))
         self.assertEqual(self.page.evaluate("window.mockCore.logic.reads"), 0)
@@ -974,7 +980,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.page=self.new_page(circuit_config=True)
         self.load_rom()
         self.assertEqual(self.page.locator('.randomiser-row button').all_text_contents(),
-                         ['PSG','FM','VRAM','CPU reset','Clean restart'])
+                         ['PSG','FM','VRAM','CPU Reset','Clean Restart'])
         expect(self.page.locator('#randomiserStatus')).to_have_text('Choose PSG, FM, or VRAM to randomise a chip.')
         before=self.page.evaluate('({starts:mockCore.starts,ramCalls:mockCore.logic.setterCalls.length,fm:mockCore.fm.calls.length,vram:mockCore.vramModel.calls.length})')
         def randomise(selector, value):
@@ -1501,7 +1507,7 @@ class BrowserLogicTests(unittest.TestCase):
         pairs=self.page.locator("[data-ram-frame-pair]")
         self.assertEqual(pairs.count(),10)
         self.assertEqual(self.page.locator("#randomRamPulseBtn").count(),0)
-        self.assertEqual(self.page.locator(".ram-frame-pairs > strong").inner_text(),"RAM WRITE")
+        self.assertEqual(self.page.locator(".ram-frame-pairs > strong").inner_text(),"RAM Write")
         expect(self.page.locator('#ramWriteMode')).to_have_value('pulse')
         rows=self.page.evaluate("""() => [...document.querySelectorAll('[data-ram-frame-pair]')].map(button=>{
           const rect=button.getBoundingClientRect();return {text:button.textContent,x:rect.x,right:rect.right,y:rect.y};
@@ -1899,13 +1905,13 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.locator('#ramWriteMode').select_option('hold')
         self.page.locator('#screen').click()
         target=self.page.locator('#keyboardTarget')
-        expect(target).to_have_text('Keyboard fault target: VRAM')
+        expect(target).to_have_text('Keyboard Fault Target: VRAM')
         expect(self.page.locator('[data-keyboard-chip="VRAM"]')).to_have_class('chip-card keyboard-target')
         self.assertFalse(self.page.locator('[data-keyboard-chip="VRAM"]').evaluate("node=>node.classList.contains('fault-active')"))
         self.assertEqual(self.page.locator('[data-keyboard-chip="VRAM"] .chip-middle').evaluate("node=>getComputedStyle(node).outlineStyle"),'none')
         vram_body_color=self.page.locator('[data-keyboard-chip="VRAM"] .chip-middle').evaluate("node=>getComputedStyle(node).backgroundColor")
         self.page.keyboard.press('Digit0')
-        expect(target).to_have_text('Keyboard fault target: WRAM')
+        expect(target).to_have_text('Keyboard Fault Target: WRAM')
         wram_body_color=self.page.locator('[data-keyboard-chip="WRAM"] .ram-chip-body').evaluate("node=>getComputedStyle(node).backgroundColor")
         self.page.keyboard.down('Digit1')
         self.assertTrue(self.page.evaluate('mockCore.logic.active'))
@@ -1977,7 +1983,7 @@ class BrowserLogicTests(unittest.TestCase):
                          'the original Space owner still releases the held Work RAM fault')
         self.assertEqual(self.page.evaluate('mockCore.vramModel.calls.length'),vram_calls)
         self.page.keyboard.press('Digit0')
-        expect(self.page.locator('#keyboardTarget')).to_have_text('Keyboard fault target: WRAM')
+        expect(self.page.locator('#keyboardTarget')).to_have_text('Keyboard Fault Target: WRAM')
         self.assertEqual(self.page.evaluate('mockCore.vramModel.calls.length'),vram_calls,
                          'zero remains a keyboard-target selector while the RAM button is focused')
 
@@ -2042,7 +2048,7 @@ class BrowserLogicTests(unittest.TestCase):
         expect(self.page.locator('#logicStatus')).to_contain_text('held on A13 ↔ A15')
         self.page.keyboard.down('Digit0')
         self.page.keyboard.up('Digit0')
-        expect(self.page.locator('#keyboardTarget')).to_have_text('Keyboard fault target: FM')
+        expect(self.page.locator('#keyboardTarget')).to_have_text('Keyboard Fault Target: FM')
         self.page.keyboard.up('Digit9')
         self.assertFalse(self.page.evaluate('mockCore.logic.active'))
 
@@ -2229,7 +2235,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.keyboard.down('Digit1')
         self.assertEqual(self.page.evaluate('mockCore.vramModel.bridgeA>=0'),True)
         self.page.keyboard.press('Digit0')
-        expect(self.page.locator('#keyboardTarget')).to_have_text('Keyboard fault target: WRAM')
+        expect(self.page.locator('#keyboardTarget')).to_have_text('Keyboard Fault Target: WRAM')
         self.page.keyboard.up('Digit1')
         self.page.keyboard.up('Shift')
         self.assertEqual(self.page.evaluate('mockCore.vramAddressMask'),1)
@@ -2481,6 +2487,220 @@ class BrowserLogicTests(unittest.TestCase):
             self.page.locator("#logicExperimentBtn").click()
         self.assertEqual(json.loads(Path(info.value.path()).read_text())["cpuInterventions"], [])
 
+    def test_armed_cpu_recovery_requires_two_consecutive_halt_frames_and_rearms_explicitly(self):
+        self.page.close();self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        button=self.page.locator('#armCpuRecoveryBtn')
+        expect(button).to_be_enabled()
+        expect(button).to_have_text('Arm CPU Recovery Once')
+        self.page.evaluate("mockCore.logic.cpuFlags=2;mockCore.core._set_psg_data_bridge(1,0,1);mockCore.core._set_fm_data_bridge(1,2,3)")
+        start=self.page.evaluate('mockCore.ticks')
+        self.page.wait_for_function('mockCore.ticks >= '+str(start+4))
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[],'HALT must not trigger while policy is off')
+
+        self.page.evaluate('mockCore.logic.cpuFlags=1')
+        button.click()
+        expect(self.page.locator('#cpuRecoveryStatus')).to_contain_text('ARMED')
+        start=self.page.evaluate('mockCore.ticks')
+        self.page.wait_for_function('mockCore.ticks >= '+str(start+4))
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[],'STOP alone must not trigger recovery')
+
+        self.page.evaluate("""() => {
+          const frame=mockCore.logic.frame;
+          mockCore.cpuFlagsByFrame={[frame+1]:2,[frame+2]:0,[frame+3]:2,[frame+4]:2};
+        }""")
+        self.page.wait_for_function('mockCore.logic.recoveries.length===1')
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[2])
+        payload=self.export_payload()
+        entry=payload['cpuInterventions'][-1]
+        self.assertEqual(entry['trigger'],'armed-halt-streak')
+        self.assertEqual(entry['observedFlags'],2)
+        self.assertEqual(entry['observedFrames'][1]-entry['observedFrames'][0],1)
+        self.assertTrue(entry['attempted'])
+        self.assertEqual(entry['outcome'],'issued')
+        self.assertTrue(self.page.evaluate('mockCore.psg.configured && mockCore.fm.configured'),
+                        'CPU recovery must preserve audio fault configuration')
+        expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('OFF')
+
+        self.page.evaluate('mockCore.logic.cpuFlags=2;delete mockCore.cpuFlagsByFrame')
+        start=self.page.evaluate('mockCore.ticks')
+        self.page.wait_for_function('mockCore.ticks >= '+str(start+4))
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[2],'one arm permits one attempt')
+        button.click()
+        self.page.wait_for_function('mockCore.logic.recoveries.length===2')
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[2,2],'a second explicit arm permits another attempt')
+
+    def test_armed_recovery_resets_for_held_contacts_and_cancels_on_pause_blur_and_rom_change(self):
+        self.page.close();self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        self.page.locator('#armCpuRecoveryBtn').click()
+        self.page.locator('#ramWriteMode').select_option('hold')
+        hold=self.page.locator('[data-ram-frame-pair="10,11"]')
+        hold.focus();self.page.keyboard.down('Space')
+        expect(self.page.locator('#armCpuRecoveryBtn')).to_have_text('Disarm CPU Recovery')
+        self.page.evaluate('mockCore.logic.cpuFlags=2')
+        start=self.page.evaluate('mockCore.ticks')
+        self.page.wait_for_function('mockCore.ticks >= '+str(start+4))
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[])
+        self.page.locator('#armCpuRecoveryBtn').click()
+        expect(self.page.locator('#armCpuRecoveryBtn')).to_be_disabled()
+        self.page.keyboard.up('Space')
+        expect(self.page.locator('#armCpuRecoveryBtn')).to_have_text('Arm CPU Recovery Once')
+        self.page.locator('#armCpuRecoveryBtn').click()
+        self.page.wait_for_function('mockCore.logic.recoveries.length===1')
+
+        # Pause, window blur and a successfully activated replacement each disarm.
+        for action in ('pause','blur','rom'):
+            if action=='pause':
+                self.page.locator('#armCpuRecoveryBtn').click();self.page.locator('#pauseBtn').click()
+            elif action=='blur':
+                self.page.locator('#pauseBtn').click();self.page.locator('#armCpuRecoveryBtn').click()
+                self.page.evaluate("window.dispatchEvent(new Event('blur'))")
+            else:
+                self.page.locator('#armCpuRecoveryBtn').click()
+                self.page.locator('#romFile').set_input_files({'name':'replacement.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
+                self.page.wait_for_function('mockCore.starts===2')
+            expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('OFF')
+
+    def test_pending_address_pulse_excludes_frames_and_resets_halt_streak(self):
+        self.page.close();self.page=self.new_page(circuit_config=True,manual_frames=True)
+        self.page.locator('#romFile').set_input_files({'name':'pulse.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
+        expect(self.page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+        self.page.evaluate('stepTestFrame();stepTestFrame()')
+        self.page.locator('#armCpuRecoveryBtn').click()
+        self.page.locator('#ramWriteMode').select_option('pulse')
+        self.page.locator('[data-ram-frame-pair="10,11"]').click()
+        self.page.evaluate('mockCore.logic.cpuFlags=2')
+        expect(self.page.locator('#randomiserStatus')).to_contain_text('for 8 emulated frames')
+        for _ in range(8):
+            self.page.evaluate('stepTestFrame()')
+            self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[])
+        expect(self.page.locator('#randomiserStatus')).to_contain_text('bridge ended after 8 emulated frames')
+        self.page.evaluate('stepTestFrame()')
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[])
+        expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('ARMED · HALT 1/2')
+        self.page.evaluate('stepTestFrame()')
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[2])
+        payload=self.export_payload()
+        end=payload['faultPulses'][-1]['endFrame']
+        self.assertEqual(payload['cpuInterventions'][-1]['observedFrames'],[end+1,end+2])
+
+    def test_recovery_disarms_on_manual_actions_configuration_and_visibility_loss(self):
+        self.page.close();self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        arm=self.page.locator('#armCpuRecoveryBtn')
+
+        # An ordinary RAM fault edit resets the streak but leaves explicit arming intact.
+        arm.click()
+        self.page.locator('#logicApplyBtn').click()
+        expect(arm).to_have_text('Disarm CPU Recovery')
+        self.page.evaluate('mockCore.logic.cpuFlags=2')
+        self.page.wait_for_function('mockCore.logic.recoveries.length===1')
+
+        arm.click();self.page.locator('#logicCpuResetBtn').click()
+        expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('OFF')
+        arm.click();self.page.locator('#disconnectAllFaultsBtn').click()
+        expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('OFF')
+        arm.click();self.page.locator('#resetBtn').click()
+        self.page.wait_for_function('mockCore.starts===2')
+        expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('OFF')
+
+        arm.click()
+        self.stage_circuit_file(self.circuit_configuration(vram_pair=[2,5]))
+        expect(self.page.locator('#circuitConfigApply')).to_be_enabled()
+        self.page.locator('#circuitConfigApply').click()
+        expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('OFF')
+
+        arm.click()
+        self.page.evaluate("Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'))")
+        expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('OFF')
+
+    def test_armed_recovery_aborts_on_bad_telemetry_or_clear_failure_and_records_attempt(self):
+        self.page.close();self.page=self.new_page()
+        self.load_rom()
+        self.page.locator('#armCpuRecoveryBtn').click()
+        self.page.evaluate('mockCore.throwCpuFlags=true')
+        self.page.wait_for_function("document.querySelector('#pauseBtn').textContent==='Resume'")
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[])
+        expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('OFF')
+        self.page.evaluate('mockCore.throwCpuFlags=false')
+        entry=self.export_payload()['cpuInterventions'][-1]
+        self.assertEqual(entry['action'],'automatic-recovery-aborted')
+        self.assertFalse(entry['attempted'])
+
+        self.page.locator('#pauseBtn').click()
+        self.page.evaluate('mockCore.throwLogicFrame=true')
+        self.page.locator('#armCpuRecoveryBtn').click()
+        self.page.wait_for_function("document.querySelector('#pauseBtn').textContent==='Resume'")
+        self.page.evaluate('mockCore.throwLogicFrame=false')
+        entry=self.export_payload()['cpuInterventions'][-1]
+        self.assertIn('frame telemetry trap',entry['reason'])
+
+        self.page.locator('#pauseBtn').click()
+        self.page.evaluate('mockCore.throwCpuFlags=false;mockCore.invalidCpuFlags=4;mockCore.logic.cpuFlags=2')
+        self.page.locator('#armCpuRecoveryBtn').click()
+        self.page.wait_for_function("document.querySelector('#pauseBtn').textContent==='Resume'")
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[])
+
+        self.page.locator('#pauseBtn').click()
+        self.page.evaluate('delete mockCore.invalidCpuFlags;mockCore.logic.cpuFlags=2')
+        self.page.locator('#logicAccess').select_option('2');self.page.locator('#logicApplyBtn').click()
+        self.page.evaluate('mockCore.rejectLogicClear=true')
+        self.page.locator('#armCpuRecoveryBtn').click()
+        self.page.wait_for_function("document.querySelector('#pauseBtn').textContent==='Resume'")
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[])
+        entry=self.export_payload()['cpuInterventions'][-1]
+        self.assertEqual(entry['trigger'],'armed-halt-streak')
+        self.assertFalse(entry['attempted'],'RAM clear failure occurs before native CPU recovery')
+        self.assertIn('RAM clear',entry['reason'])
+        self.assertEqual(entry['outcome'],'aborted')
+
+
+    def test_direct_ram_disconnect_restarts_the_armed_halt_streak(self):
+        self.page.close();self.page=self.new_page(manual_frames=True)
+        self.page.locator('#romFile').set_input_files({'name':'streak.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
+        expect(self.page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+        self.page.locator('#pauseBtn').click()
+        self.page.evaluate('stepTestFrame()')  # Prime the app clock while paused.
+        self.page.evaluate("""() => {
+            mockCore.logic.cpuFlags=2;
+            document.querySelector('#logicApplyBtn').click();
+            document.querySelector('#pauseBtn').click();
+            document.querySelector('#armCpuRecoveryBtn').click();
+            stepTestFrame();
+        }""")
+        expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('ARMED · HALT 1/2')
+        self.page.evaluate('mockCore.logic.cpuFlags=0;stepTestFrame()')
+        expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('ARMED')
+        self.page.evaluate('mockCore.logic.cpuFlags=2;stepTestFrame()')
+        expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('ARMED · HALT 1/2')
+        self.page.evaluate("document.querySelector('#logicDisconnectBtn').click();stepTestFrame()")
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[])
+        expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('ARMED · HALT 1/2')
+        self.page.evaluate('stepTestFrame()')
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[2])
+
+    def test_issued_cpu_reset_retains_its_outcome_when_post_reset_telemetry_fails(self):
+        self.load_rom()
+        self.page.evaluate("""() => {
+            const nativeRecover=mockCore.core._recover_logic_cpu;
+            mockCore.core._recover_logic_cpu=mode=>{
+                const status=nativeRecover(mode);mockCore.throwCpuFlags=true;return status;
+            };
+            mockCore.logic.cpuFlags=2;
+        }""")
+        self.page.locator('#armCpuRecoveryBtn').click()
+        self.page.wait_for_function("document.querySelector('#pauseBtn').textContent==='Resume'")
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[2])
+        expect(self.page.locator('#logicStatus')).to_contain_text('CPU-only reset issued; post-reset telemetry unavailable')
+        self.page.evaluate('mockCore.throwCpuFlags=false')
+        entry=self.export_payload()['cpuInterventions'][-1]
+        self.assertEqual(entry['action'],'cpu-only-reset')
+        self.assertEqual(entry['outcome'],'issued')
+        self.assertTrue(entry['attempted'])
+        self.assertIsNone(entry['flagsAfter'])
+        self.assertIn('CPU flag telemetry trap',entry['telemetryError'])
+
     def assert_build_export(self, expected):
         rom=self.load_rom()
         self.page.locator('#logicApplyBtn').click()
@@ -2624,7 +2844,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.locator("#compareFileB").set_input_files({"name":"export-b.json","mimeType":"application/json","buffer":json.dumps(pair_payload).encode()})
         expect(self.page.locator("#compareOutput table")).to_be_visible()
         expect(self.page.locator("#compareOutput")).to_contain_text("ROM SHA-256")
-        expect(self.page.locator("#compareOutput")).to_contain_text("RAM recorded kind")
+        expect(self.page.locator("#compareOutput")).to_contain_text("RAM Recorded Kind")
         expect(self.page.locator("#compareOutput")).to_contain_text("mismatch")
         self.assertLessEqual(self.page.locator("#compareOutput").evaluate("el=>el.clientHeight"),460)
         self.assertGreater(self.page.locator("#compareOutput table").evaluate("el=>el.scrollWidth"),
