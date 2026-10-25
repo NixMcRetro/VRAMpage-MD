@@ -1,6 +1,37 @@
 # Development work queue
 
-## Active cleanup: consistent disabled controls and CPU/audio confirmation
+## PR #60 verified delivery checkpoint — 26 October 2026 (Sydney)
+
+[PR #60](https://github.com/NixMcRetro/VRAMpage-MD/pull/60) merged as
+`5d0425a64acb0f883789c67e8c6ec41e5d2c0c02` after all seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40206196863)
+passed on `6d2a461d8ae4b6890cf05ce045e64dd50517f7c4`. Merged tree equals
+reviewed source. All seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40206671753)
+passed on the latest main; no blocker remains.
+
+VRAM-only dotted disabled styling is removed; standard disabled appearance and
+safety guards remain. Active fill and default Hold are user accepted. CPU reset
+preserves FM/PSG directly; Clean restart resets sound. Resumed cartridge code can
+still reprogram sound. Independent specialist review found no blocking issue.
+Chromium: compact 6, display 7, logic 96, actual-core 6 passed. Targeted WebKit
+appearance and CPU/restart cases passed, as did 48 visual states and 25 actual-WASM
+CPU checks. Local ROM-free package: 682 unique files, exact source/version/UI/core
+identity and extracted actual-core 6 passed. Unchanged native SDK evidence reused.
+Fresh CI builds and packaged-browser checks passed separately.
+
+[Ready-to-run main review download](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40206671753/artifacts/12603749446).
+Public v0.4.1 metadata, asset digests and tag `e579c571f14b3549a5befa33d9e62ba3f3c9d45b`
+are unchanged. McRetro.net untouched. Native Safari and physical electrical
+accuracy were not newly tested; synthetic checks do not establish audible game sound.
+
+Next bounded task: design the v0.5.0 opt-in bounded CPU recovery and explicit
+save/restore checkpoints, with default unassisted faults and compatibility/state
+validation. Reuse completed stabilisation evidence. Do not bump VERSION, replace
+public assets, silently rescue faults or repeat finished RAM research. This
+checkpoint is a continuation branch, not another documentation-only PR.
+
+
+## Completed scope: consistent disabled controls and CPU/audio confirmation
 
 The user accepts the active fill and Hold behaviour, and requests removal of the
 VRAM-only dotted unavailable styling. Remove that one CSS override so all chip

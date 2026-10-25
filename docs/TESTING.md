@@ -1470,3 +1470,5 @@ rests on the native source call graph. After execution resumes, game code can
 reprogram sound normally. No sound reset behaviour is modified by this cleanup.
 
 Disabled-style follow-up: Chromium compact 6, display 7, logic 96 and actual-core 6 tests passed; targeted WebKit appearance and CPU/clean-restart cases passed. Visual probe passed 48 states. CPU preservation is supported by source review; snapshots verify fault configuration, not nonzero sound registers. Unchanged native build evidence is reused.
+
+PR #60 final integration: all seven PR checks (40206196863) and all seven main checks (40206671753) passed. The extracted local bundle also passed all six actual-core cases. Main source is 5d0425a64acb0f883789c67e8c6ec41e5d2c0c02; release/tag/assets unchanged.
