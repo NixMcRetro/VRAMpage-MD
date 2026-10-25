@@ -47,6 +47,7 @@ extern int checkpoint_pad_load(const uint8_t *in, unsigned length);
 extern int checkpoint_pad_validate(const uint8_t *in, unsigned length);
 extern unsigned checkpoint_stock_sound_bound(void);
 extern unsigned checkpoint_vdp_context_bound(void);
+extern int checkpoint_plain_md_cart(void);
 
 typedef struct {
     uint8_t before[SESSION_CHECKPOINT_GUARD];
@@ -120,10 +121,7 @@ static int session_checkpoint_profile(void)
     if (system_hw != SYSTEM_MD || svp || config.ym3438 != 0 || !cart.romsize ||
         cart.romsize > 0x800000 || cart.special || !session_checkpoint_state_bound_ok())
         return 0;
-    if (cart.hw.realtec || cart.hw.bankshift || cart.hw.time_r || cart.hw.time_w ||
-        cart.hw.regs_r || cart.hw.regs_w) return 0;
-    for (i = 0; i < 4; ++i)
-        if (cart.hw.mask[i] || cart.hw.addr[i]) return 0;
+    if (!checkpoint_plain_md_cart()) return 0;
     if (input.system[0] != NO_SYSTEM && input.system[0] != SYSTEM_GAMEPAD) return 0;
     if (input.system[1] != NO_SYSTEM && input.system[1] != SYSTEM_GAMEPAD) return 0;
     if ((input.system[0] == SYSTEM_GAMEPAD && input.dev[0] == NO_DEVICE) ||
@@ -134,9 +132,13 @@ static int session_checkpoint_profile(void)
                 input.dev[i] != NO_DEVICE) return 0;
         } else if (input.dev[i] != NO_DEVICE) return 0;
     }
-    if (sram.custom) return 0;
-    if (sram.on && (!sram.detected || !sram.sram || sram.sram != cart.rom + 0x800000 ||
-                    sram.start > sram.end || sram.end > 0x3fffff)) return 0;
+    if (sram.custom || (sram.detected && !sram.on)) return 0;
+    if (sram.on) {
+        if (!sram.sram || sram.sram != cart.rom + 0x800000 ||
+            sram.start > sram.end || sram.end > 0x3fffff ||
+            sram.start < cart.romsize || (sram.start >> 16) != (sram.end >> 16)) return 0;
+        if (!sram.detected && (sram.start != 0x200000 || sram.end != 0x20ffff)) return 0;
+    }
     return 1;
 }
 

@@ -74,6 +74,15 @@ int checkpoint_psg_load(const unsigned char *in, unsigned len) {
 
 append("core/sound/ym2612.c", "unsigned checkpoint_ym2612_size(", r'''unsigned checkpoint_ym2612_size(void) { return (unsigned)(sizeof(ym2612) + 24u); }''')
 
+append("core/cart_hw/md_cart.c", "int checkpoint_plain_md_cart(", r'''int checkpoint_plain_md_cart(void) {
+  int i;
+  if (cart.special || cart.hw.realtec || cart.hw.bankshift || cart.hw.time_r ||
+      (cart.hw.time_w && cart.hw.time_w != default_time_w) || cart.hw.regs_r || cart.hw.regs_w)
+    return 0;
+  for (i=0; i<4; i++) if (cart.hw.mask[i] || cart.hw.addr[i]) return 0;
+  return 1;
+}''')
+
 insert_before("core/vdp_ctrl.c", "unsigned checkpoint_vdp_context_bound(", "#ifdef VRAM_TX_DIAGNOSTIC\n#include <emscripten/emscripten.h>", r'''unsigned checkpoint_vdp_context_bound(void) {
   return (unsigned)(sizeof(sat)+sizeof(vram)+sizeof(cram)+sizeof(vsram)+sizeof(reg)+
     sizeof(addr)+sizeof(addr_latch)+sizeof(code)+sizeof(pending)+sizeof(status)+

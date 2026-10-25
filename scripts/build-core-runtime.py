@@ -179,6 +179,7 @@ def stage_source(root: Path, work: Path, archive: bytes) -> Path:
     checkpoint_files = ("src/main/c/core/sound/blip_buf.c", "src/main/c/core/sound/blip_buf.h",
                         "src/main/c/core/sound/psg.c", "src/main/c/core/sound/sound.c",
                         "src/main/c/core/sound/ym2612.c", "src/main/c/core/vdp_ctrl.c",
+                        "src/main/c/core/cart_hw/md_cart.c",
                         "src/main/c/core/system.c", "src/main/c/core/input_hw/gamepad.c",
                         "src/main/c/wasm/wasm.c")
     run([sys.executable, str(checkpoint_patcher), str(upstream)])
