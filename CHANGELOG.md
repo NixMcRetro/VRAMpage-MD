@@ -2,6 +2,8 @@
 
 ## Unreleased workbench improvements
 
+- Stop stale queued audio across pause/mute/visibility/restart boundaries and avoid accumulating buffers while the browser AudioContext is suspended, without changing emulated sound or fault state.
+
 - Add compact CPU reset and ten individual A11–A15 write-only RAM pair buttons. Each lasts eight emulated frames and disconnects without automatic CPU recovery; these replace the earlier random eight-write/one-frame shortcut.
 - Add a Randomiser row with separate PSG, FM and VRAM buttons for chip-local cuts or bridges, reusing existing models and exports.
 - Compare two saved experiment exports locally without changing emulation; distinguish matching, different and unavailable identities and inspect recorded settings, counters and recovery outcomes.

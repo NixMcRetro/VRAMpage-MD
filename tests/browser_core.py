@@ -380,11 +380,50 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     page.add_init_script("""
                         const audioKey = window.AudioContext ? 'AudioContext' : 'webkitAudioContext';
                         const NativeAudioContext = window[audioKey];
-                        window.__audioScheduleProbe = {starts: []};
+                        window.__audioScheduleProbe = {starts: [], live: 0, connected: 0, created: 0,
+                            peakConnected: 0, sources: []};
                         if (NativeAudioContext) {
                             const nativeCreateBufferSource = NativeAudioContext.prototype.createBufferSource;
                             NativeAudioContext.prototype.createBufferSource = function(...args) {
                                 const source = Reflect.apply(nativeCreateBufferSource, this, args);
+                                window.__audioScheduleProbe.created++;
+                                source.__probeEnded = false;
+                                source.__probeStopped = false;
+                                window.__audioScheduleProbe.live++;
+                                source.addEventListener('ended', () => {
+                                    window.__audioScheduleProbe.live--;
+                                    source.__probeEnded = true;
+                                    if (source.__probeConnected) {
+                                        source.__probeConnected = false;
+                                        window.__audioScheduleProbe.connected--;
+                                    }
+                                }, {once: true});
+                                const nativeConnect = source.connect;
+                                source.connect = function(...args) {
+                                    window.__audioScheduleProbe.connected++;
+                                    window.__audioScheduleProbe.peakConnected = Math.max(
+                                        window.__audioScheduleProbe.peakConnected,
+                                        window.__audioScheduleProbe.connected);
+                                    return Reflect.apply(nativeConnect, source, args);
+                                };
+                                const nativeDisconnect = source.disconnect;
+                                source.disconnect = function(...args) {
+                                    if (source.__probeConnected) {
+                                        source.__probeConnected = false;
+                                        window.__audioScheduleProbe.connected--;
+                                    }
+                                    return Reflect.apply(nativeDisconnect, source, args);
+                                };
+                                const trackedConnect = source.connect;
+                                source.connect = function(...args) {
+                                    source.__probeConnected = true;
+                                    return Reflect.apply(trackedConnect, source, args);
+                                };
+                                const nativeStop = source.stop;
+                                source.stop = function(...args) {
+                                    source.__probeStopped = true;
+                                    return Reflect.apply(nativeStop, source, args);
+                                };
                                 const nativeStart = source.start;
                                 source.start = function(...startArgs) {
                                     const buffer = source.buffer;
@@ -399,9 +438,11 @@ class ActualCoreBrowserTests(unittest.TestCase):
                                     }
                                     const now = source.context.currentTime;
                                     const when = startArgs.length ? startArgs[0] : now;
+                                    window.__audioScheduleProbe.sources.push({source, when});
                                     window.__audioScheduleProbe.starts.push({
                                         now, when, lead: when - now, sampleRate: buffer?.sampleRate ?? 0,
-                                        channels: buffer?.numberOfChannels ?? 0, finite,
+                                        channels: buffer?.numberOfChannels ?? 0,
+                                        duration: buffer?.duration ?? 0, finite,
                                         visibilityEventSynthetic: window.__syntheticVisibilityProbe || false
                                     });
                                     return Reflect.apply(nativeStart, source, startArgs);
@@ -450,9 +491,53 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         self.assertLessEqual(start['lead'], 0.205,
                                              'scheduled audio lead stays within the 200 ms cap plus tolerance')
 
-                    page.locator('#pauseBtn').click()
+                    suspended = page.evaluate('''async () => {
+                        const before = {created: window.__audioScheduleProbe.created,
+                            connected: window.__audioScheduleProbe.connected};
+                        await window.testAudioContext.suspend();
+                        const frame = testCore._get_logic_frame();
+                        await new Promise(resolve => {
+                            const check = () => testCore._get_logic_frame() >= frame + 60
+                                ? resolve() : requestAnimationFrame(check);
+                            requestAnimationFrame(check);
+                        });
+                        const during = window.__audioScheduleProbe.created;
+                        const connected = window.__audioScheduleProbe.connected;
+                        await window.testAudioContext.resume();
+                        const resumeStartCount = window.__audioScheduleProbe.starts.length;
+                        return {before, during, connected, resumeStartCount};
+                    }''')
+                    self.assertLessEqual(suspended['during'] - suspended['before']['created'], 1,
+                                         'suspended context does not accumulate new source buffers')
+                    self.assertEqual(suspended['connected'], 0,
+                                     'suspended context disconnects prior live sources once')
+                    resume_start_count = suspended['resumeStartCount']
+                    page.wait_for_function('n=>window.__audioScheduleProbe.starts.length > n',
+                                           arg=resume_start_count)
+                    resumed_start = page.evaluate('n=>window.__audioScheduleProbe.starts[n]',
+                                                  resume_start_count)
+                    self.assertLessEqual(resumed_start['lead'], 0.055,
+                                         'audio resumes with a fresh source near current time')
+
+                    page.wait_for_function('''() => window.__audioScheduleProbe.sources.some(({source,when}) =>
+                        when > window.testAudioContext.currentTime && !source.__probeEnded &&
+                        !source.__probeStopped && source.__probeConnected)''',
+                                           timeout=3000)
+                    pause_probe = page.evaluate('''() => {
+                        const future = window.__audioScheduleProbe.sources.filter(({source,when}) =>
+                            when > window.testAudioContext.currentTime && !source.__probeEnded &&
+                            !source.__probeStopped && source.__probeConnected).length;
+                        document.querySelector('#pauseBtn').click();
+                        return {future, live: window.__audioScheduleProbe.live,
+                                connected: window.__audioScheduleProbe.connected};
+                    }''')
                     expect(page.locator('#pauseBtn')).to_have_text('Resume')
                     paused_count = page.evaluate('window.__audioScheduleProbe.starts.length')
+                    paused_connected = pause_probe['connected']
+                    self.assertGreater(pause_probe['future'], 0,
+                                       'pause reproduction begins with genuinely future-scheduled sources')
+                    self.assertEqual(paused_connected, 0,
+                                     f'pause disconnects future real sources: {pause_probe}')
                     page.wait_for_timeout(250)
                     self.assertEqual(page.evaluate('window.__audioScheduleProbe.starts.length'), paused_count,
                                      'pause stops scheduling new sources')
@@ -460,16 +545,27 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     expect(page.locator('#pauseBtn')).to_have_text('Pause')
                     page.wait_for_function('n=>window.__audioScheduleProbe.starts.length > n',
                                             arg=paused_count)
+                    page.locator('#soundBtn').click()
+                    expect(page.locator('#soundBtn')).to_have_text('Enable Sound')
+                    self.assertEqual(page.evaluate('window.__audioScheduleProbe.connected'), 0,
+                                     'mute disconnects every queued real AudioBufferSource')
+                    muted_count = page.evaluate('window.__audioScheduleProbe.starts.length')
+                    page.locator('#soundBtn').click()
+                    expect(page.locator('#soundBtn')).to_have_text('Mute Sound')
+                    page.wait_for_function('n=>window.__audioScheduleProbe.starts.length > n',
+                                            arg=muted_count)
 
                     before_visibility = page.evaluate('''() => {
                         const count = window.__audioScheduleProbe.starts.length;
                         const hidden = document.hidden;
                         window.__syntheticVisibilityProbe = true;
                         document.dispatchEvent(new Event('visibilitychange'));
-                        return {count, hidden};
+                        return {count, hidden, connected: window.__audioScheduleProbe.connected};
                     }''')
                     self.assertFalse(before_visibility['hidden'],
                                      'visibility check uses a visible page and a synthetic event')
+                    self.assertEqual(before_visibility['connected'], 0,
+                                     'visibility change disconnects queued real sources')
                     page.wait_for_function('n=>window.__audioScheduleProbe.starts.slice(n).some(s=>s.visibilityEventSynthetic)',
                                             arg=before_visibility['count'])
                     visibility_start = page.evaluate('''n=>window.__audioScheduleProbe.starts
@@ -479,7 +575,26 @@ class ActualCoreBrowserTests(unittest.TestCase):
                                     'this is a dispatched visibility event, not OS backgrounding')
                     self.assertLessEqual(visibility_start['lead'], 0.055,
                                          'observed source start after the synthetic event is near current time')
+                    page.wait_for_function('window.__audioScheduleProbe.connected > 0')
+                    page.evaluate('''() => {
+                        const start = testCore._start;
+                        window.__startConnectedSources = [];
+                        testCore._start = function(...args) {
+                            window.__startConnectedSources.push(window.__audioScheduleProbe.connected);
+                            return Reflect.apply(start, this, args);
+                        };
+                    }''')
+                    page.locator('#romFile').set_input_files({
+                        'name':'replacement-audio-queue.bin',
+                        'mimeType':'application/octet-stream',
+                        'buffer':original_cartridge()})
+                    expect(page.locator('#romName')).to_have_text('REPLACEMENT-AUDIO-QUEUE.BIN')
+                    self.assertEqual(page.evaluate('window.__startConnectedSources'), [0],
+                                     'ROM replacement drains live old sources before the new core starts')
                     all_starts = page.evaluate('window.__audioScheduleProbe.starts')
+                    peak_connected = page.evaluate('window.__audioScheduleProbe.peakConnected')
+                    self.assertLessEqual(peak_connected, 16,
+                                         'connected genuine buffers remain within the scheduling horizon')
                     for start in all_starts:
                         self.assertEqual(start['sampleRate'], 44100)
                         self.assertEqual(start['channels'], 2)

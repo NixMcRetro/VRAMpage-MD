@@ -6,7 +6,7 @@
 |---|---|
 | A, delivered | v0.3.0: browser transaction-VRAM selection, existing chip controls, safe RAM coordination, exports and acceptable runtime performance |
 | B, delivered | v0.4.0: independent YM2612/PSG input bridges, verified Z80 routes and clean normal audio; public package verified |
-| C, accepted in source | Essential saved configurations, reproducible presets, coordinated faults, recovery and experiment comparison |
+| C, accepted | Essential saved configurations, reproducible presets, coordinated faults, recovery and experiment comparison |
 | D, active | Feature freeze, comprehensive crash/regression fixing, browser/audio stability, performance, usability and release candidate |
 
 Phase C already includes saved configuration preview/apply and the compact
@@ -27,9 +27,9 @@ requested follow-up replaces that shortcut with ten individual eight-frame
 A11–A15 WRITE pair buttons without automatic CPU recovery. Combined automated
 acceptance now covers saved configuration, presets, randomisation, pulse guards,
 removal, CPU recovery, restart, export and read-only comparison on the supported
-paths, with normal/runtime compatibility evidence. Phase C is accepted in source;
-Phase D feature freeze and stabilisation are active. Required CI still gates
-integration. Preserve the existing release and verify remaining manual limits.
+paths, with normal/runtime compatibility evidence. Phase C is accepted through PR #53;
+Phase D feature freeze and stabilisation are active. All seven PR and main checks pass;
+evidence is recorded in the integration checkpoint. Preserve the existing release and verify remaining manual limits.
 Do not repeat the completed configuration or chip integration.
 
 Reuse the merged VRAM engine, API and runtime builder. Focused correctness and
@@ -37,6 +37,17 @@ independent specialist review remain mandatory during implementation; full
 regression and browser verification happen at integration boundaries. Do not
 repeat completed research or publish minor intermediate releases. Historical
 milestones below remain available as evidence.
+
+## Planned after stabilisation: v0.5.0 recovery milestone
+
+The user approved a target combining independent, optional bounded CPU halt
+recovery and explicit save/restore checkpoints. Defaults must preserve unassisted
+glitch outcomes; record interventions and never silently rewind or invent a
+healthy hardware status. The core has save-state code, but browser exposure,
+complete state/compatibility validation and checkpoint restore semantics need
+design and independent review before implementation. This is a future milestone,
+not part of current stabilisation. Keep `VERSION` and the public release at
+0.4.1 until a tested milestone is ready; preserve existing assets and tags.
 
 ## Previous public delivery: v0.2.8 compact Work RAM interface
 

@@ -1132,3 +1132,63 @@ writes. SDK107, display6/6, focused WebKit5/5 and independent Chromium7/7 pass;
 complete interface and PR/main gates are recorded at the integration checkpoint.
 Native/core model code and public v0.4.1 are unchanged. Phase C automated
 acceptance is complete in source; Phase D feature freeze is active.
+
+Final head `5b7afb4` passes complete Chromium72/72 and extracted compiled-core
+5/5, alongside display6/6 and focused WebKit5/5. The exact-source 682-file review
+ZIP has unique entries, matching version/build commit and byte-identical UI/core
+assets. All seven PR #53 checks pass, including complete browser interfaces and
+extracted normal/runtime/controls checks in Firefox and WebKit. Merged commit
+`2736d596435e050f0c779351535a2e40f73d6097` has the same tree. Main results and
+review download are recorded in the current integration checkpoint.
+
+All seven main checks pass on `2736d596435e050f0c779351535a2e40f73d6097` in
+[run 40160355074](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40160355074).
+The reviewed and merged trees match. Public v0.4.1 metadata, tag and asset digests
+were verified unchanged after merge; McRetro.net was untouched. Phase C acceptance
+is integrated and Phase D feature freeze/stabilisation remains active.
+
+# Phase D audio lifecycle stability
+
+Use genuine AudioContext/AudioBufferSource nodes and the original compiled-core
+cartridge. Count active, unended, unstopped sources separately from historical
+starts; merely counting explicit connections without accounting for ended nodes
+cannot prove a backlog. Compare pending start times against current context time.
+Freeze the real context clock with explicit suspend while emulation advances,
+then require no new buffers, no old live connections and a genuinely new near-now
+source after manual resume. This is controlled suspension, not OS backgrounding.
+
+Verify pause/mute/visibility and accepted ROM restart disconnect queued sources;
+ended and failed-start paths release tracking. Header/size/allocation rejection
+must occur before cleanup of the still-running cartridge. Retain finite stereo
+44.1 kHz checks and normal-playback scheduling bounds. No C model, PCM smoothing,
+CPU intervention or fault-state change is introduced. Independent Luna High review
+approves `23ec56b`; the focused actual-core Chromium case passes.
+
+Independent pre-fix probe: 120 emulated frames with suspended context created
+120 sources and left 124 active; later pause and mute retained genuinely unended
+sources. Fixed 150-cycle run: zero allocations during suspension, zero boundary
+violations/page errors, four peak active sources and 32 MiB WASM throughout.
+Post-GC JS heap measurements include browser/JIT/DOM warm-up and are diagnostic,
+not a universal no-leak guarantee. Keep raw samples/logs under
+`/workspace/scratch/stability`; the longer run and integration results belong in
+the final checkpoint. Preserve original failure logs and public v0.4.1 evidence.
+
+The extended genuine-core Chromium run completed 1,500 mixed fault/pulse/audio/
+pause/visibility/CPU-reset/restart iterations in 411.73 seconds while other
+regressions ran concurrently. It reported zero boundary violations/page errors;
+zero new sources over the controlled suspended-clock interval (121 emulated
+frames); 15 peak active sources; a 199.10 ms maximum scheduling lead; and 15,767
+created/ended sources with none active at final pause. WASM stayed at 33,554,432
+bytes. Post-GC JS heap was 2,971,936 bytes after warm-up and 3,454,152 at final
+pause; this small observed rise includes browser/JIT/automation state and is
+not attributed to an application leak or claimed as proof of leak freedom.
+Raw reports: `baseline.json`, `soak-fixed.json`, `soak-1500.json` and their logs
+in the task scratch directory. The baseline uses an ended-aware active set, so
+its paused/muted sources are genuinely unfinished, unlike the withdrawn earlier
+explicit-connection-only probe.
+
+The full source/native/SDK107 script passes with normal sanitizers/fresh WASM.
+Complete Chromium72/72, actual compiled-core5/5 and focused genuine WebKit audio
+1/1 pass on final source `23ec56b`. The app diff has no C, chip-model, fault-state,
+CPU recovery, PCM-copying or emulation-timing changes. Independent review approves
+that source; exact final package identity and PR/main CI are integration gates.

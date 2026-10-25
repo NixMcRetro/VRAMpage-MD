@@ -27,6 +27,7 @@
   let emulator = null, started = false, paused = false;
   let loadedName = '', latched = null, momentary = null, momentaryRestorePair = null, selectedPin = null;
   let audioCtx = null, audioOn = false, nextAudioTime = 0;
+  const activeAudioSources = new Set();
   let romBytes = null, frameView = null, inputView = null, leftAudio = null, rightAudio = null;
   let lastFrame = 0, accumulated = 0, frames = 0, measuredAt = 0;
   let focusReleased = false;
@@ -2182,17 +2183,40 @@
   function audioFrame() {
     const size = emulator._sound(); // Number of stereo float samples
     if (!audioOn || !audioCtx || size <= 0) return;
+    if (audioCtx.state !== 'running') {
+      if (activeAudioSources.size) clearAudioQueue();
+      return;
+    }
     const count = Math.min(2048,size);
     const b = audioCtx.createBuffer(2,count,AUDIO_RATE);
     b.copyToChannel(leftAudio.subarray(0,count),0);
     b.copyToChannel(rightAudio.subarray(0,count),1);
     const src=audioCtx.createBufferSource();
     src.buffer=b; src.connect(audioCtx.destination);
+    activeAudioSources.add(src);
+    src.addEventListener('ended',()=>{
+      activeAudioSources.delete(src);
+      src.disconnect();
+    },{once:true});
     // Limit latency/backlog after a paused tab or slow frame.
     if (nextAudioTime < audioCtx.currentTime || nextAudioTime > audioCtx.currentTime + 0.20)
       nextAudioTime = audioCtx.currentTime + 0.025;
-    src.start(nextAudioTime);
+    try { src.start(nextAudioTime); }
+    catch (error) {
+      activeAudioSources.delete(src);
+      src.disconnect();
+      throw error;
+    }
     nextAudioTime += b.duration;
+  }
+
+  function clearAudioQueue() {
+    for (const src of activeAudioSources) {
+      try { src.stop(); } catch (_) {}
+      try { src.disconnect(); } catch (_) {}
+    }
+    activeAudioSources.clear();
+    nextAudioTime=0;
   }
 
   function resetStats() { frames = 0; measuredAt = performance.now(); }
@@ -2258,7 +2282,7 @@
     if (!started) return;
     paused=!paused;
     $('pauseBtn').textContent = paused ? 'Resume' : 'Pause';
-    if (paused) nextAudioTime=0;
+    if (paused) clearAudioQueue();
     stamp(paused?'Emulation paused':'Emulation resumed');
   }
 
@@ -2270,8 +2294,8 @@
       if (audioCtx.state==='suspended') await audioCtx.resume();
       if (audioCtx.state !== 'running') throw new Error('Browser audio is not running. Check Firefox audio permissions.');
     }
+    clearAudioQueue();
     audioOn=enabling;
-    nextAudioTime=0;
     $('soundBtn').textContent=audioOn?'Mute Sound':'Enable Sound';
     $('soundBtn').setAttribute('aria-pressed',String(audioOn));
     refreshPsgDataControls();
@@ -2293,6 +2317,7 @@
     ensureWasmViews();
     new Uint8Array(emulator.HEAPU8.buffer,ptr,bytes.length).set(bytes);
     if (logicActive) disconnectLogic({silent:true});
+    clearAudioQueue();
     emulator._start();
     if (typeof emulator._set_vram_short !== 'function')
       throw new Error('Core missing _set_vram_short. You must build the patched core (not the upstream prebuilt WASM).');
@@ -2324,7 +2349,7 @@
     $('pauseBtn').textContent='Pause';
     faultDisconnectActions=[];
     $('disconnectAllFaultsStatus').textContent='No all-domain disconnect has been attempted for this cartridge.';
-    accumulated=0;lastFrame=0;resetStats();nextAudioTime=0;
+    accumulated=0;lastFrame=0;resetStats();
     updateLogicControls();
     refreshPsgDataControls();
     refreshFmDataControls();
@@ -2393,7 +2418,7 @@
       focusReleased=true;
     });
     window.addEventListener('focus',()=>{if(focusReleased){lastFrame=0;focusReleased=false;}});
-    document.addEventListener('visibilitychange',()=>{lastFrame=0;nextAudioTime=0;});
+    document.addEventListener('visibilitychange',()=>{lastFrame=0;clearAudioQueue();});
   }
 
   async function initialiseCore() {
