@@ -34,7 +34,7 @@ extern int get_psg_data_mask(void);
 extern int get_fm_data_bridge_enabled(void);
 extern int get_fm_data_mask(void);
 extern int get_vram_fault_model_effective(void);
-extern int get_vram_address_mask(void);
+extern unsigned int get_vram_address_mask(void);
 extern int get_vram_short_a(void);
 extern int get_vram_short_b(void);
 extern int checkpoint_audio_size(void);
@@ -193,7 +193,7 @@ int SESSION_CHECKPOINT_KEEPALIVE save_session_checkpoint(void)
     if (!session_checkpoint_profile()) return SESSION_CHECKPOINT_UNSUPPORTED;
     if (!session_checkpoint_faults_clear() || !session_checkpoint_neutral_input())
         return SESSION_CHECKPOINT_UNSAFE;
-    if (!frame_buffer || !snd.blips[0] || !cart.rom) return SESSION_CHECKPOINT_CAPTURE_FAILED;
+    if (!frame_buffer || !snd.blips[0]) return SESSION_CHECKPOINT_CAPTURE_FAILED;
     slot = &session_checkpoint_slots[next];
     memset(slot, 0xA5, sizeof(*slot));
     slot->valid = 0;
