@@ -2023,6 +2023,8 @@ class BrowserLogicTests(unittest.TestCase):
         pointer_id=int(button.get_attribute('data-pointer-id'))
         button.dispatch_event('pointercancel',{'pointerId':pointer_id})
         self.assertFalse(self.page.evaluate('mockCore.logic.active'))
+        self.page.mouse.up()  # Synthetic cancellation does not release Playwright's physical mouse state.
+        self.assertFalse(self.page.evaluate('mockCore.logic.active'))
         button.hover()
         self.page.mouse.down()
         self.assertTrue(self.page.evaluate('mockCore.logic.active'))
