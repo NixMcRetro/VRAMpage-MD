@@ -664,7 +664,6 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     page.locator('#pauseBtn').click()
                     self.assertEqual(page.evaluate('nativeCalls._set_logic_fault.length'), calls,
                                      'held writes do not expire after eight frames')
-                    self.assertGreater(page.evaluate('Number(testCore._get_logic_writes())'), 0)
                     page.locator('h1').click()
                     page.keyboard.up('Digit9')
                     self.assertEqual(page.evaluate('nativeCalls._set_logic_fault.at(-1)'), [0, 0, -1, -1])
@@ -677,6 +676,8 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     page.keyboard.press('KeyP')
                     page.wait_for_function('(n)=>testCore._get_logic_frame()>=n+12', arg=start)
                     self.assertEqual(page.evaluate('nativeCalls._set_logic_fault.at(-1)'), [1, 2, 10, 11])
+                    # This generated cartridge writes FF1000, which distinguishes A11/A12.
+                    self.assertGreater(page.evaluate('Number(testCore._get_logic_writes())'), 0)
                     page.mouse.up()
                     self.assertEqual(page.evaluate('nativeCalls._set_logic_fault.at(-1)'), [0, 0, -1, -1])
                     page.keyboard.press('KeyP')
