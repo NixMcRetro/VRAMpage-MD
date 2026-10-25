@@ -1043,7 +1043,7 @@ unreadable pulse state and held-bridge restoration after refusal. A first full
 explicit mode choice, and the failed log remains under `/workspace/scratch/randomise`.
 The native/SDK107 and source script pass with unchanged native model code.
 
-# Compact RAM burst and recovery acceptance (development source)
+# PR #52 compact RAM burst and recovery acceptance (historical development source)
 
 Force deterministic endpoints within A11–A15 (zero-based 10–14), writes only,
 eight affected writes maximum and one-frame expiry. Assert that completion
@@ -1079,3 +1079,56 @@ preflight fix `53c710b`. Focused actual-core tests pass for running/paused
 disconnection, bounded pulse exports and the normal-core legacy-getter fallback.
 The stale actual-core test was corrected to start each run-state case explicitly
 and measure disconnect/no-tick state in the same JavaScript task.
+
+Final local source `a1a142e` passes Chromium71/71 and the extracted compiled-core
+5/5 suite. The final 682-entry ROM-free review ZIP has unique entries, exact
+source commit/version and byte-identical UI/runtime assets. All seven PR #52
+checks pass, including full Chromium/Firefox/WebKit interfaces and extracted
+Firefox/WebKit runtime/normal-fallback checks. Main CI is recorded in the current
+integration checkpoint.
+
+All seven main checks also pass on merged commit
+`b4424e0d6a68ed12a36b8dc8fff70a502ca16a02` in
+[run 40154014908](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40154014908).
+The merged tree matches the reviewed head. The public v0.4.1 tag, metadata and
+asset digests were verified unchanged after merge; McRetro.net was untouched.
+
+# Individual eight-frame RAM pairs and combined workbench acceptance
+
+Verify all ten unordered pairs from A11–A15 exactly once, write-only access and
+completion after eight emulated frames. Prove the previous eight-write limit is
+removed by recording more than eight affected writes; no-write frames must still
+expire correctly. Paused/hidden execution waits for emulated ticks. Check CPU
+intervention history stays unchanged on completion, and explicit disconnect/reset/
+restart/new-ROM/replacement cancellation never restores a late contact. Refuse
+active RAM/VRAM/pulses/held contacts and malformed state before mutation. Rejected,
+throwing or unverified setters/releases must retain truthful outcomes and pause
+when needed. Keep existing advanced force-resume pulses and compact CPU reset.
+
+Exercise a combined flow across configuration save/preview/apply, presets, chip
+randomisation, the pair pulses, running/paused all-domain removal, memory-only
+CPU recovery, clean restart, exports and read-only comparison. Retain preview
+isolation, chip independence, recorded histories and explicit unknown/partial
+results. Reuse existing domain tests and original actual-core cartridges for
+normal/runtime compatibility. Verify keyboard operation and viewport fit. Native
+Mac/audible/physical validation remains distinct from Linux synthetic acceptance.
+
+Source `2465987` and final layout `ddaebad` pass focused all-pair tests with
+exact eight-frame contacts and 160 affected writes per case, proving the old
+eight-write cap is removed. Final independent review/fix `21a80e7` adds keyboard
+Enter activation, paused/no-write completion and cancellation by disconnect,
+replacement, CPU reset, clean restart and new ROM. Advancing later frames with
+a replacement ordinary RAM fault proves no late clear/recovery. Existing
+advanced selected-limit/forced-resume controls remain intact. Invalid private
+pair arguments have no external input path; the closed generator covers all ten
+valid combinations, while malformed runtime-state refusals are directly tested.
+
+The final combined source flow covers preview isolation, applied configuration
+save, presets, independent PSG/FM randomisation, audio-preserving CPU reset,
+running/paused coordinated clearing, pulse save/apply refusal with preview
+retention, later apply, history exports, read-only comparison and clean restart.
+Actual normal/runtime cores confirm eight frames and more than eight affected
+writes. SDK107, display6/6, focused WebKit5/5 and independent Chromium7/7 pass;
+complete interface and PR/main gates are recorded at the integration checkpoint.
+Native/core model code and public v0.4.1 are unchanged. Phase C automated
+acceptance is complete in source; Phase D feature freeze is active.

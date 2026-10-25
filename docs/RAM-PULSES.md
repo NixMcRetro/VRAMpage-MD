@@ -25,13 +25,17 @@ export reasons and the longword-hook correction. The frame options below remain.
 
 ## Timing, interruption and recording
 
-### Development-source A11–A15 random write pulse
+### Development-source A11–A15 individual eight-frame write pulses
 
-The compact workbench's **RAM pulse** control chooses one distinct joined pair
-from **A11–A15**, on **writes only**. Each click is limited to **eight affected
-writes**, with a **one-emulated-frame maximum**. These are logical address-line
-bridges, not writes to particular numeric RAM locations. The original advanced
-pulse controls retain their selected limits and force-resume behavior.
+The compact workbench provides ten **RAM WRITE · 8 frames** buttons, one for
+every distinct pair within **A11–A15**: A11/A12, A11/A13, A11/A14, A11/A15,
+A12/A13, A12/A14, A12/A15, A13/A14, A13/A15 and A14/A15. Clicking a button joins
+that pair on **writes only** for **eight emulated frames** (about 134 ms at normal
+NTSC playback), then disconnects. These are logical address-line bridges, not
+writes to particular numeric RAM locations. The earlier random eight-write/
+one-frame shortcut is replaced: these frame pulses have **no affected-write
+limit**. The original advanced controls retain their selected limits and
+force-resume behavior.
 
 This new burst disconnects at completion without issuing CPU recovery. Use the
 nearby **CPU reset** explicitly when wanted. Starting and completing it preserve
@@ -41,11 +45,11 @@ released first rather than silently replaced. FM/PSG settings remain unchanged.
 Disconnect all faults, CPU reset, cartridge replacement and clean restart cancel
 the pending burst so it cannot trigger later recovery or restore a fault.
 
-Download experiment JSON to retain the chosen pair, write/frame limits, result
+Download experiment JSON to retain the selected pair, eight-frame duration, result
 and no-recovery metadata in `faultPulses`. Stable configuration files do not
 store pulses. The A11–A15 restriction and short duration do not guarantee that
 gameplay continues or that prior corruption is repaired. Reuse the existing
-bounded-write model; no additional hardware model or game-specific edits are
+ordinary frame-based fault model; no additional hardware model or game-specific edits are
 introduced.
 
 ### Existing advanced pulse behavior
@@ -64,7 +68,7 @@ Clean restart clears pulse/intervention history and cannot trigger stale recover
 A stopped CPU does not stop the emulator's frame counter, so the scheduled
 contact still ends. Recovery leaves the app's pause state unchanged.
 
-Current experiment exports use `0.2.4-experimental` and include `faultPulses`, ordered
+Current experiment exports use `0.4.1-experimental` and include `faultPulses`, ordered
 records of kind/access/zero-based line indices, requested frame count, start/end
 frame, active/completed/cancelled status and cancellation reason. For address
 pairs, indices 0–14 correspond to A1–A15. A completed pulse also records affected reads/writes and the CPU flags at the

@@ -124,28 +124,27 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     })
                     self.assertNotIn('rom', saved)
                     self.assertNotIn('inputWrites', json.dumps(saved))
-                    expect(page.locator('#randomRamPulseBtn')).to_be_enabled()
-                    page.evaluate("""() => {
-                      const nativeRandom=Math.random, values=[0.99,0];
-                      Math.random=()=>values.shift();
-                      document.querySelector('#randomRamPulseBtn').click();
-                      Math.random=nativeRandom;
-                    }""")
+                    pair=page.locator("[data-ram-frame-pair='10,11']")
+                    expect(pair).to_be_enabled()
+                    pair.click()
                     expect(page.locator('#pauseBtn')).to_have_text('Resume')
-                    self.assertEqual(page.evaluate('testCore._get_logic_pulse_state()'),1,
-                                     'normal-core legacy VRAM getters permit the bounded RAM pulse')
+                    self.assertEqual(page.evaluate('testCore._get_logic_pulse_state()'),0,
+                                     'eight-frame bridge uses the ordinary RAM setter, not native pulse expiry')
                     page.locator('#pauseBtn').click()
+                    expect(page.locator('#pauseBtn')).to_have_text('Pause')
                     expect(page.locator('#randomiserStatus')).to_contain_text(
-                        'fault disconnected automatically',timeout=8000)
+                        'ended after 8 emulated frames',timeout=8000)
                     page.locator('#logicExperiment > summary').click()
                     with page.expect_download() as pulse_download:
                         page.locator('#logicExperimentBtn').click()
                     pulse_payload=json.loads(Path(pulse_download.value.path()).read_text())
                     pulse=pulse_payload['faultPulses'][-1]
-                    self.assertEqual((pulse['a'],pulse['b']),(10,14))
+                    self.assertEqual((pulse['a'],pulse['b']),(10,11))
                     self.assertEqual(pulse['access'],2)
-                    self.assertLessEqual(pulse['writeCount'],8)
-                    self.assertLessEqual(pulse['endFrame']-pulse['startFrame'],1)
+                    self.assertGreater(pulse['writeCount'],8)
+                    self.assertEqual(pulse['requestedFrames'],8)
+                    self.assertNotIn('requestedWrites',pulse)
+                    self.assertEqual(pulse['endFrame']-pulse['startFrame'],8)
                     self.assertFalse(pulse['cpuRecoveryAttempted'])
                     self.assertFalse(pulse['recoveryAccepted'])
                     self.assertEqual(errors, [])
@@ -731,18 +730,13 @@ class ActualCoreBrowserTests(unittest.TestCase):
                             self.assertEqual(page.evaluate('testCore._get_logic_frame()'),frame,
                                              'paused or incomplete disconnect must stop before another frame')
                         frame=page.evaluate('testCore._get_logic_frame()')
-                    self.assertTrue(page.evaluate("typeof testCore._arm_logic_write_pulse==='function'"),
-                                    'actual core exposes affected-write pulse support')
+                    self.assertTrue(page.evaluate("typeof testCore._set_logic_fault==='function'"),
+                                    'actual core exposes ordinary work RAM bridge support')
                     if page.locator('#pauseBtn').inner_text()!='Pause':
                         page.locator('#pauseBtn').click()
                     before=page.evaluate("testCore._get_logic_frame()")
-                    page.evaluate("""() => {
-                      const nativeRandom=Math.random, values=[0,0];
-                      Math.random=()=>values.shift();
-                      document.querySelector('#randomRamPulseBtn').click();
-                      Math.random=nativeRandom;
-                    }""")
-                    expect(page.locator('#randomiserStatus')).to_contain_text('fault disconnected automatically')
+                    page.locator("[data-ram-frame-pair='10,11']").click()
+                    expect(page.locator('#randomiserStatus')).to_contain_text('ended after 8 emulated frames',timeout=8000)
                     expect(page.locator('#pauseBtn')).to_have_text('Pause')
                     with page.expect_download() as download:
                         page.locator('#logicExperimentBtn').click()
@@ -754,8 +748,10 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     burst=cleared['faultPulses'][-1]
                     self.assertEqual((burst['a'],burst['b']),(10,11))
                     self.assertEqual(burst['access'],2)
-                    self.assertLessEqual(burst['writeCount'],8)
-                    self.assertEqual(burst['endFrame']-burst['startFrame'],1)
+                    self.assertGreater(burst['writeCount'],8)
+                    self.assertEqual(burst['requestedFrames'],8)
+                    self.assertNotIn('requestedWrites',burst)
+                    self.assertEqual(burst['endFrame']-burst['startFrame'],8)
                     self.assertFalse(burst['cpuRecoveryAttempted'])
                     self.assertFalse(burst['recoveryAccepted'])
                     self.assertGreaterEqual(burst['endFrame'],before)

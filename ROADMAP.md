@@ -6,8 +6,8 @@
 |---|---|
 | A, delivered | v0.3.0: browser transaction-VRAM selection, existing chip controls, safe RAM coordination, exports and acceptable runtime performance |
 | B, delivered | v0.4.0: independent YM2612/PSG input bridges, verified Z80 routes and clean normal audio; public package verified |
-| C, active | Essential saved configurations, reproducible presets, coordinated faults, recovery and experiment comparison |
-| D | Feature freeze, comprehensive crash/regression fixing, browser/audio stability, performance, usability and release candidate |
+| C, accepted in source | Essential saved configurations, reproducible presets, coordinated faults, recovery and experiment comparison |
+| D, active | Feature freeze, comprehensive crash/regression fixing, browser/audio stability, performance, usability and release candidate |
 
 Phase C already includes saved configuration preview/apply and the compact
 four-chip workbench in public v0.4.1. The current bounded addition is coordinated
@@ -19,10 +19,17 @@ PR/main checks pass. PR #51 completed the requested compact Randomiser
 row with independent PSG, FM and VRAM buttons. It reuses existing chip-local cut
 and bridge models, preserves Work RAM and the other chip settings, and retains
 truthful configuration/export and failure behavior. All seven PR/main checks
-pass. The next requested workbench slice adds a compact CPU reset shortcut,
-an A11–A15 random write burst (eight affected writes/one-frame maximum, no CPU
-recovery at completion), and all-domain clearing without forced pause on
-confirmed success. Then review combined flows before the Phase D feature freeze.
+pass. PR #52 delivered a compact CPU reset shortcut, an A11–A15 random write
+burst (eight affected writes/one-frame maximum, no CPU recovery at completion),
+and all-domain clearing without forced pause on confirmed success. Its seven
+PR and main checks pass; evidence is recorded in the current checkpoint. The
+requested follow-up replaces that shortcut with ten individual eight-frame
+A11–A15 WRITE pair buttons without automatic CPU recovery. Combined automated
+acceptance now covers saved configuration, presets, randomisation, pulse guards,
+removal, CPU recovery, restart, export and read-only comparison on the supported
+paths, with normal/runtime compatibility evidence. Phase C is accepted in source;
+Phase D feature freeze and stabilisation are active. Required CI still gates
+integration. Preserve the existing release and verify remaining manual limits.
 Do not repeat the completed configuration or chip integration.
 
 Reuse the merged VRAM engine, API and runtime builder. Focused correctness and

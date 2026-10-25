@@ -2,12 +2,13 @@
 
 ## Unreleased workbench improvements
 
-- Add compact CPU reset and an A11–A15 write-only random RAM burst, capped at eight affected writes/one frame and cleared without automatic CPU recovery.
+- Add compact CPU reset and ten individual A11–A15 write-only RAM pair buttons. Each lasts eight emulated frames and disconnects without automatic CPU recovery; these replace the earlier random eight-write/one-frame shortcut.
 - Add a Randomiser row with separate PSG, FM and VRAM buttons for chip-local cuts or bridges, reusing existing models and exports.
 - Compare two saved experiment exports locally without changing emulation; distinguish matching, different and unavailable identities and inspect recorded settings, counters and recovery outcomes.
 - Add all-domain disconnection with pulse/held-action cancellation and partial-failure reporting. Preserve play/pause on confirmed complete clears; pause failed or unverified clears for inspection.
 - Clarify that CPU recovery clears RAM/VRAM faults while leaving audio faults unchanged. Preserve explicit resume and clean restart as separate actions.
 - Keep the public v0.4.1 package and historical evidence unchanged.
+- Complete combined workbench acceptance across configuration, presets, chip randomisation, eight-frame contacts, removal, recovery, restart, export and comparison; enter feature freeze for stabilisation.
 
 ## v0.4.1 - compact chip workbench
 

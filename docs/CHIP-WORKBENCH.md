@@ -73,8 +73,9 @@ digital approximations, not physical open-wire or electrical fault simulation.
 
 **CPU reset** beside the Randomiser buttons invokes the existing CPU-only reset:
 RAM/VRAM faults clear while PSG/FM faults and the app's pause state are preserved.
-It does not reload the cartridge. The nearby **RAM pulse** chooses one write-only
-address bridge within A11–A15 for up to eight affected writes, capped at one
-emulated frame. It disconnects without automatic CPU recovery. Existing memory
-faults/pulses and held contacts block this shortcut instead of being overwritten;
+It does not reload the cartridge. The nearby **RAM WRITE · 8 frames** controls
+provide all ten distinct address pairs within A11–A15, one button per pair. Each
+write-only bridge lasts eight emulated frames, with no affected-write cap, then
+disconnects without automatic CPU recovery. Existing memory faults/pulses and
+held contacts block these controls instead of being overwritten;
 audio faults can coexist. See [pulse timing and records](RAM-PULSES.md).

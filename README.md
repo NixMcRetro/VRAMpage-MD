@@ -35,7 +35,7 @@ Development source also adds a [read-only comparison of two saved experiment exp
 
 The development-source [Randomiser](docs/CHIP-WORKBENCH.md#development-source-randomiser) has separate **PSG**, **FM** and **VRAM** buttons. Each selects cuts or a joined pair within that chip, leaving the other chips unchanged. Save the resulting configuration to keep a useful setup. The public v0.4.1 ZIP is preserved.
 
-The same area includes **CPU reset** and a temporary **RAM pulse** restricted to write bridges within A11–A15, with eight affected writes maximum and a one-frame cap. The burst disconnects without automatic CPU recovery; use experiment JSON to retain its history.
+The same area includes **CPU reset** and ten individual **RAM WRITE** pair buttons covering every combination within A11–A15. Each joins its selected pair for **eight emulated frames**, then disconnects without automatic CPU recovery. There is no affected-write cap on these frame pulses; use experiment JSON to retain their history.
 
 **RAM research:** a [reproducible bounded experiment](docs/RAM-STATUS-FOLLOWUP.md) now shows player-trajectory divergence while recorded demo inputs continue at the same phase. This uses the existing public core and does not establish physical electrical accuracy.
 
@@ -49,7 +49,7 @@ The same area includes **CPU reset** and a temporary **RAM pulse** restricted to
 
 The interface fits different window sizes, follows your system Light/Dark preference and offers both corrected video output and raw diagnostic output. Some faults can freeze a game or leave persistent RAM corruption until a **Clean restart**.
 
-**Experimental limitations:** VRAM offers frame projection and logical-byte transaction models; neither VRAM nor RAM faults reproduce every physical electrical effect. The circuit diagrams are conceptual, not verified motherboard pinouts. Rendering remains line-batched rather than cycle-accurate. Hardware-informed audio bending is the next major milestone. Automated Linux browser/core tests are not the same as native Mac Firefox or physical-hardware validation.
+**Experimental limitations:** VRAM offers frame projection and logical-byte transaction models; neither VRAM nor RAM faults reproduce every physical electrical effect. The circuit diagrams are conceptual, not verified motherboard pinouts. Rendering remains line-batched rather than cycle-accurate. Automated Linux browser/core tests are not the same as native Mac Firefox or physical-hardware validation.
 
 ## For developers, researchers and maintainers
 
