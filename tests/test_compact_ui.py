@@ -29,6 +29,8 @@ class CompactWorkbenchTests(unittest.TestCase):
         self.assertIn('1–9 toggle / Shift+1–9 hold / 0 next chip', HTML)
         self.assertIn('id="keyboardTarget"', HTML)
         self.assertIn('id="ramWriteMode"', HTML)
+        self.assertIn('<option value="hold" selected>Hold while pressed</option>', HTML)
+        self.assertIn('<option value="pulse">8-frame pulse</option>', HTML)
         self.assertIn("$('resetBtn').addEventListener('click',cleanRestart)", JS)
         self.assertIn("$('compactResetBtn').addEventListener('click',cleanRestart)", JS)
         reset = re.search(r"async function cleanRestart\(\) \{([\s\S]*?)\n  \}", JS)

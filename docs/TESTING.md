@@ -1397,3 +1397,40 @@ keyboard target cycling, pulse/held-contact cleanup and a dashed disabled VRAM
 Randomiser with zero click events or VRAM setter changes from RAM pointer input.
 Before/fixed native probes and original failing baseline are retained separately.
 These checks do not establish a new native Safari or physical-chip test.
+
+Final local review head `00aa262f351feeb7f16687ce472fb45e42dd01f4` produces
+682 unique ROM-free package entries, exact source/version0.4.1 metadata and
+byte-identical UI/core files. All six compiled-core tests pass on the extracted
+package (18.587 s). All seven PR #58 checks pass in
+[run 40197239190](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40197239190).
+Merge `d3b8d7eec4a2dd16c99734eecbce73d345bb8c26` exactly matches that tree.
+All seven main checks pass in run40197674169. The current integration checkpoint
+links the verified review download.
+Public v0.4.1 metadata/tag/assets are unchanged; McRetro.net is untouched.
+
+# Default press-duration Hold and active fault fills
+
+Fresh-page RAM WRITE now selects **Hold while pressed** without a fixture or
+initialisation script overriding the value. Mock and real compiled-core tests
+assert that default, hold beyond eight frames, and release on pointer/key up.
+Pulse-specific tests select **8-frame pulse** explicitly and retain exact timing,
+write-count, cancellation, rejection and legacy assertions.
+
+Active fault chips use pale green fills and outlines; idle chips remain themed,
+and changing only keyboard target never fills a chip. Updated colour regressions
+verify active fill, restoration on release, ordinary idle light/dark backgrounds
+and readable body, plain-pin, applied-pin and hovered-pin text. The first full
+browser run's two obsolete neutral-active colour assertions are retained with
+its log; the corrected assertions preserve the idle theme check and explicitly
+verify the new active-fill behaviour. Native models/handlers/timing are unchanged.
+
+Independent review approves `bd254b4` (default and explicit pulse callers) and
+CSS/test refinements through `26c8c09` (active fill and pin contrast). Full
+source/native/SDK107 passes with normal sanitizers/fresh WASM in 337.785 s;
+JavaScript/native code is unchanged after the CSS-only fill refinement. Final
+Chromium logic96/96 passes in 223.136 s, display7/7 in 25.766 s and compiled-core6/6
+in 50.891 s. Focused WebKit5/5 passes in 41.568 s; the genuine compiled-core
+default-Hold case passes in 8.192 s. Forty-eight visual states cover idle/theme,
+keyboard targets, explicit eight-frame contacts, default Hold/release and mixed
+active chips. Viewed dark RAM/light mixed-chip images confirm the fill and
+readable pin labels. Raw evidence: `/workspace/scratch/hold-default`.

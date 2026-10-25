@@ -27,7 +27,7 @@ export reasons and the longword-hook correction. The frame options below remain.
 
 ### Development-source A11–A15 individual eight-frame write pulses
 
-The compact workbench provides ten **RAM WRITE · 8 frames** buttons, one for
+In **8-frame pulse** mode, the compact workbench provides ten RAM WRITE buttons, one for
 every distinct pair within **A11–A15**: A11/A12, A11/A13, A11/A14, A11/A15,
 A12/A13, A12/A14, A12/A15, A13/A14, A13/A15 and A14/A15. Clicking a button joins
 that pair on **writes only** for **eight emulated frames** (about 134 ms at normal
@@ -93,9 +93,9 @@ See [CPU recovery](CPU-RECOVERY.md) for the intervention's limitations.
 
 ## Development-source sustained write option
 
-The compact A11–A15 controls default to **8 frames**. Choose **Hold** to apply
-a write-only pair without a frame or affected-write limit only while its mouse
-button or key is held down. Release, pointer cancellation or window focus loss
+The compact A11–A15 controls default to **Hold while pressed**, applying a
+write-only pair without a frame or affected-write limit only while its mouse
+button or key is held down. Choose **8-frame pulse** for a timed contact instead. Release, pointer cancellation or window focus loss
 disconnects it. Explicit release performs no CPU recovery and does not
 undo earlier writes. Capability, existing memory-fault and pulse guards remain.
 Disconnect/recovery/restart actions clear the owned contact so a later release

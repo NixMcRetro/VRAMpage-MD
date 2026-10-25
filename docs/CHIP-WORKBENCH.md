@@ -76,10 +76,11 @@ RAM/VRAM faults clear while PSG/FM faults and pause state are preserved. A copy
 of **Clean restart** immediately to its right invokes the same full cartridge
 reboot as the original toolbar button; both share availability and errors.
 
-All ten distinct A11–A15 write pairs remain available. **8 frames** is the
-default: disconnect after exactly eight emulated ticks without CPU recovery or
-an affected-write cap. **Hold** keeps the selected write-only pair active only while its mouse button
-or key is down; release disconnects it. Pointer cancellation or loss of window
+All ten distinct A11–A15 write pairs remain available. **Hold while pressed**
+is the default on a fresh page: the selected write-only pair is active only while
+its mouse button or key is down; release disconnects it. Choose **8-frame pulse**
+to disconnect after exactly eight emulated ticks without CPU recovery or an
+affected-write cap. Pointer cancellation or loss of window
 focus also ends the contact. Existing capability,
 memory-domain and pulse guards still apply. Removing a bridge leaves earlier
 corruption intact. Audio faults can coexist. See [RAM pulses](RAM-PULSES.md).
@@ -88,8 +89,9 @@ corruption intact. Audio faults can coexist. See [RAM pulses](RAM-PULSES.md).
 
 Press **0** to cycle **VRAM → WRAM → FM → PSG** without applying or removing a
 fault. The keyboard-target label identifies which chip receives **1–9**. A pale green
-chip outline indicates an active fault on that chip, independently of keyboard
-selection. Chip bodies and text retain their normal theme colours. Clearing a
+chip fill and outline indicate an active fault on that chip, independently of
+keyboard selection. Idle chips retain their normal theme colours. Active bodies
+use dark text while applied/hovered pins retain their readable theme accents. Clearing a
 fault removes its outline; previous RAM or sound-chip corruption can persist. Existing
 Reconnect/Disconnect buttons remove faults; 0 no longer reconnects them in the
 development build. The original public v0.4.1 shortcut behaviour is unchanged.

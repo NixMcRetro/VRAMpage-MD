@@ -1,6 +1,75 @@
 # Development status and continuation checkpoint
 
-## Source checkpoint: active-chip outlines and focused WRAM shortcuts
+## Source checkpoint: RAM WRITE Hold default and active chip fills
+
+The user requests **Hold while pressed** as the RAM WRITE default. On a fresh
+page the selector now starts on Hold; the existing **8-frame pulse** option remains
+available by explicit choice. No input handler, native fault model, timing,
+recovery or public version changes are required. Pulse-specific regression
+cases select Pulse explicitly; cold-start mock and actual-core tests check the
+new default and release semantics rather than overriding the selector first.
+
+Active faults also give their chips pale green fill while retaining the green
+outline. Idle chips and keyboard target changes remain neutral; body text and
+plain/applied/hovered pin labels retain readable contrast in both themes. The
+dotted VRAM Randomiser border means unavailable, both before a ROM is loaded
+and during RAM contacts; it remains a safety-disabled command, not a press.
+
+Implementation `bd254b4` changes only the initial HTML selection to Hold;
+reviewed CSS/test follow-ups through `26c8c09` add the active pale fill with
+readable body, plain-pin, applied-pin and hover colours. No JavaScript, native
+fault, timing or recovery code changed. Independent review approves the default
+and final palette/contrast guards. Explicit pulse cases retain their exact
+8-frame, write-count, cancellation, rejection and legacy assertions.
+
+Local full source/native/SDK107 passes with normal sanitizers/fresh WASM
+(337.785 s); native code is unchanged after the CSS-only refinement. Final
+Chromium logic96/96, display7/7 and compiled-core6/6 pass. Focused WebKit5/5 and
+its real compiled-core default-Hold case pass. Forty-eight light/dark desktop/
+mobile visual states verify default Hold, explicit Pulse, active fill/outline,
+neutral idle chips and the existing unavailable VRAM style. Logs and images:
+`/workspace/scratch/hold-default`. Exact package and required PR/main CI remain
+integration gates; preserve public v0.4.1 and McRetro.net.
+
+## PR #58 integration checkpoint — 26 October 2026 (Sydney)
+
+[PR #58](https://github.com/NixMcRetro/VRAMpage-MD/pull/58) merged as
+`d3b8d7eec4a2dd16c99734eecbce73d345bb8c26` after all seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40197239190)
+passed on `00aa262f351feeb7f16687ce472fb45e42dd01f4`.
+The merged tree exactly matches the independently reviewed head.
+All seven main checks pass; no integration blocker remains.
+Main verification: [run 40197674169](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40197674169).
+
+Green outlines now follow active chip faults, with neutral fills and normal
+text/pin colours. Keyboard selection remains a separate text label. Indicators
+clear with pulses, contact release, disconnection and restart; audio outlines
+require confirmed support. The VRAM Randomiser's apparent press during RAM
+contacts was its disabled state, with zero clicks or VRAM setters. It now has
+a distinct muted dashed disabled appearance while retaining the safety guard.
+A separate genuine keyboard handoff bug is fixed: focused RAM pair controls
+cannot route fault digits to global VRAM, while Space release, 0 cycling and
+explicit independent audio shortcuts continue to work.
+
+Independent Luna High review approves the correction. Source/native/SDK107,
+Chromium logic96/display7/compiled-core6, extracted-package6 and focused WebKit6
+plus its genuine compiled-core case pass. Forty-eight light/dark desktop/mobile
+states verify active outlines, neutral bodies, target independence, pulse/Hold
+cleanup and disabled appearance. The 682-file ROM-free package identifies the
+exact source/version0.4.1 and matches UI/runtime bytes. Original before/fixed
+native evidence, logs and images: `/workspace/scratch/active-outline`.
+
+[Ready-to-run ROM-free review build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40197674169/artifacts/12599784087).
+
+Public v0.4.1 metadata, tag and both original asset digests were verified unchanged
+after merge. McRetro.net was not modified or deployed. Native models, timing and
+recovery policy are unchanged. New UI corrections have automated Chromium/WebKit
+coverage; native Mac Safari retest and physical-chip validation remain distinct.
+Next: concrete compatibility reports/new UI acceptance, then the separately
+planned v0.5.0 optional recovery/checkpoint design after stabilisation. Do not
+repeat completed research or publish an intermediate release.
+
+## Completed source slice: active-chip outlines and focused WRAM shortcuts
 
 User clarification after PR #57: green should mark the chip outline when its
 fault is active, not fill the selected keyboard target. Keep neutral chip bodies
@@ -45,7 +114,7 @@ compiled-core6/6, focused WebKit6/6 and its genuine compiled-core controls case
 pass. Forty-eight light/dark desktop/mobile visual states verify neutral fills,
 active outlines, target independence, pulse/hold cleanup and disabled appearance.
 Logs and original before-fix evidence: `/workspace/scratch/active-outline`.
-Package provenance and required seven PR/main checks remain integration gates.
+Package provenance and PR/main integration evidence are recorded above.
 
 ## PR #57 integration checkpoint — 25 October 2026 (Sydney)
 

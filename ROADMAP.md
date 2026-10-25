@@ -60,6 +60,16 @@ paths; PR #57 is merged after seven passing PR checks. Integration evidence
 is recorded in the current checkpoint. Public v0.4.1
 and McRetro.net remain preserved; the future recovery milestone is separate.
 
+PR #58 corrects the user-facing indication to active-chip outlines with neutral
+infill, distinguishes unavailable VRAM randomisation during RAM contacts, and
+prevents conflicting VRAM shortcuts on focused RAM controls. All seven PR checks
+pass; integration evidence is recorded in the latest checkpoint.
+
+The latest user refinement makes **Hold while pressed** the fresh-page RAM WRITE
+default, with explicit eight-frame pulses still available. Active fault chips now
+receive pale green fills as well as outlines; idle chips remain neutral. No native
+fault, recovery or timing changes are involved.
+
 ## Planned after stabilisation: v0.5.0 recovery milestone
 
 The user approved a target combining independent, optional bounded CPU halt

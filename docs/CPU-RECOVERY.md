@@ -27,9 +27,9 @@ an interrupt, rewind an exception or establish physical-hardware fidelity.
 **Clean restart** remains the full cartridge reboot. Pausing is independent:
 recovery never changes pause state, so press Resume if the application is paused.
 
-The compact A11–A15 pair buttons default to write-only faults for eight emulated
-frames and disconnect without CPU recovery. Hold mode instead keeps the fault
-active only while the mouse/key is down. They preserve play/pause and audio
+The compact A11–A15 pair buttons default to **Hold while pressed**, keeping a
+write-only fault active only while the mouse/key is down. Explicit **8-frame
+pulse** mode disconnects after eight emulated frames without CPU recovery. They preserve play/pause and audio
 settings; use CPU reset explicitly if desired. See [RAM pulses](RAM-PULSES.md).
 
 ## Development source: disconnect all faults
