@@ -189,7 +189,7 @@
           : 'No PSG data bridge is active.';
     updateAudioChip('psg',state);
     document.querySelector('[data-keyboard-chip="PSG"]').classList.toggle('fault-active',
-      started && state?.supported!==false && !!state?.configured &&
+      started && !!state?.supported && !!state?.configured &&
       (!!Number(state.dataMask||0) || (state.bridgeA>=0 && state.bridgeB>=0)));
     refreshRandomiserControls();
   }
@@ -269,7 +269,7 @@
           : 'No FM data bridge is active.';
     updateAudioChip('fm',state);
     document.querySelector('[data-keyboard-chip="FM"]').classList.toggle('fault-active',
-      started && state?.supported!==false && !!state?.configured &&
+      started && !!state?.supported && !!state?.configured &&
       (!!Number(state.dataMask||0) || (state.bridgeA>=0 && state.bridgeB>=0)));
     refreshRandomiserControls();
   }

@@ -1923,6 +1923,22 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertTrue(self.page.locator('[data-keyboard-chip="FM"]').evaluate("node=>node.classList.contains('fault-active')"))
         self.assertTrue(self.page.locator('[data-keyboard-chip="PSG"]').evaluate("node=>node.classList.contains('fault-active')"))
 
+    def test_audio_fault_outline_requires_supported_runtime_state(self):
+        self.page.close();self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        self.page.keyboard.press('Digit0')
+        self.page.keyboard.press('Digit0')
+        self.page.keyboard.press('Digit1')
+        self.assertTrue(self.page.evaluate('mockCore.fm.configured'))
+        self.assertTrue(self.page.locator('[data-keyboard-chip="FM"]').evaluate("node=>node.classList.contains('fault-active')"))
+        self.page.evaluate("""() => {
+          const native=mockCore.core._get_fm_data_bridge_state;
+          mockCore.core._get_fm_data_bridge_state=()=>{const {supported,...state}=native();return state};
+          document.querySelector('#fmLegMode').dispatchEvent(new Event('change'));
+        }""")
+        self.assertFalse(self.page.locator('[data-keyboard-chip="FM"]').evaluate("node=>node.classList.contains('fault-active')"),
+                         'unknown profile support must not be presented as a confirmed active FM fault')
+
     def test_focused_wram_preset_does_not_route_digits_to_vram(self):
         self.page.close();self.page=self.new_page(circuit_config=True)
         self.load_rom()
