@@ -93,9 +93,10 @@ See [CPU recovery](CPU-RECOVERY.md) for the intervention's limitations.
 
 ## Development-source sustained write option
 
-The compact A11–A15 controls default to **8 frames**. Choose **Hold** to latch
-a write-only pair without a frame or affected-write limit, then click the active
-pair again to release it. Explicit release performs no CPU recovery and does not
+The compact A11–A15 controls default to **8 frames**. Choose **Hold** to apply
+a write-only pair without a frame or affected-write limit only while its mouse
+button or key is held down. Release, pointer cancellation or window focus loss
+disconnects it. Explicit release performs no CPU recovery and does not
 undo earlier writes. Capability, existing memory-fault and pulse guards remain.
 Disconnect/recovery/restart actions clear the owned contact so a later release
 cannot clear a newer fault. This option does not change the advanced historical

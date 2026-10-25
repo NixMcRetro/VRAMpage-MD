@@ -13,7 +13,8 @@ no native model, automatic recovery or version bump is required.
 
 Acceptance: both restart buttons have identical enabled/error/reset behaviour;
 eight-frame default remains exact; sustained writes affect only the chosen
-A11–A15 pair and can be explicitly released without CPU recovery; mode changes
+A11–A15 pair and releases with the mouse/key (including pointer cancel or focus loss)
+without CPU recovery; mode changes
 never apply/remove faults; shortcuts target one chip with correct held-action
 release, focus/modifier/repeat guards and truthful unsupported/failure state.
 Keep all ten RAM pair buttons; digits address the first nine. Verify ninth preset,

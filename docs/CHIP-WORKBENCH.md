@@ -78,8 +78,9 @@ reboot as the original toolbar button; both share availability and errors.
 
 All ten distinct A11–A15 write pairs remain available. **8 frames** is the
 default: disconnect after exactly eight emulated ticks without CPU recovery or
-an affected-write cap. **Hold** keeps the selected write-only pair active until
-explicit release; click the active pair again to release it. Existing capability,
+an affected-write cap. **Hold** keeps the selected write-only pair active only while its mouse button
+or key is down; release disconnects it. Pointer cancellation or loss of window
+focus also ends the contact. Existing capability,
 memory-domain and pulse guards still apply. Removing a bridge leaves earlier
 corruption intact. Audio faults can coexist. See [RAM pulses](RAM-PULSES.md).
 
@@ -94,7 +95,8 @@ development build. The original public v0.4.1 shortcut behaviour is unchanged.
 For VRAM, FM and PSG, nine chip-local bridge presets use zero-based pairs
 0/1, 0/2, 1/3, 2/4, 3/5, 4/6, 5/7, 6/7 and 0/7. WRAM digits select the first
 nine displayed A11–A15 write pairs; A14/A15 remains available by button. Ordinary
-presses toggle the selected pair using the RAM duration option where applicable.
+presses toggle chip pairs; WRAM uses its RAM duration option (eight-frame pulse
+or a write-only contact lasting until key release).
 **Shift+1–9** makes a temporary contact; release restores the originating chip's
 prior supported setting. Changing keyboard target does not redirect release.
 A newer manual action cancels stale restoration. Browser modifier shortcuts,
