@@ -1351,3 +1351,13 @@ list now includes the requested Clean restart. Independent review approves
 `dc22f1d` and `79690f5`; chip dimensions/fonts and the player minimum are unchanged.
 Original logs remain alongside final passing logs. Final syntax and compact UI6
 pass, and native/core source is unchanged from the full SDK107 evidence above.
+
+Final local review head `db46608478f9245627c389b75dadf43cf83d253e` produces
+682 unique ROM-free package entries, exact application0.4.1/source metadata and
+byte-identical UI/core files. All six compiled-core tests pass on the extracted
+package in 27.948 s. All seven PR #57 checks pass in
+[run 40184481041](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40184481041).
+Merge `5a63331ddf2b100f1f5fd1d9cf73a557a875c536` exactly matches that tree.
+All seven main checks pass in run40184871084. The current integration checkpoint
+links the verified review download.
+Public v0.4.1 metadata/tag/assets are unchanged, and McRetro.net is untouched.

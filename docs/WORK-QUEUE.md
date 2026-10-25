@@ -1,6 +1,42 @@
 # Development work queue
 
-## Source checkpoint: compact recovery, held RAM and chip shortcuts
+## PR #57 integration checkpoint — 25 October 2026 (Sydney)
+
+[PR #57](https://github.com/NixMcRetro/VRAMpage-MD/pull/57) merged as
+`5a63331ddf2b100f1f5fd1d9cf73a557a875c536` after all seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40184481041)
+passed on `db46608478f9245627c389b75dadf43cf83d253e`.
+The merged tree exactly matches the independently reviewed head.
+All seven main checks pass; no integration blocker remains.
+Main verification: [run 40184871084](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40184871084).
+
+Clean restart is duplicated immediately right of CPU reset with shared handler
+and error/availability behaviour. RAM WRITE defaults to eight frames; **Hold while
+pressed** releases with pointer/key up, cancellation or focus loss, without CPU
+recovery. Keys 1–9 target the selected chip; 0 cycles VRAM → WRAM → FM → PSG
+without changing faults. A pale green chip body and visible label identify that
+target. WRAM's tenth pair remains available by button. Rejected/uncertain release
+pauses and reports; newer faults and restarts cannot be overwritten by stale
+release callbacks. Native models, timing and intentional glitch outcomes remain.
+
+Independent Luna High review approves implementation and follow-ups. Local
+source/native/SDK107, Chromium logic93 and display7, actual compiled-core6 and
+extracted-package6 pass, alongside focused WebKit contact/recovery/layout and
+compiled-core checks. Sixteen light/dark desktop/mobile visual states pass. The
+682-file ROM-free review package matches exact source, version0.4.1 and UI/runtime
+bytes. Raw logs, images and original failure records: `/workspace/scratch/shortcut-modes`.
+
+[Ready-to-run ROM-free review build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40184871084/artifacts/12595786841).
+
+Public v0.4.1 metadata, tag and both original asset digests were verified unchanged
+after merge. McRetro.net was not modified or deployed. The user's earlier Mac
+Safari acceptance is recorded below; new controls have automated Chromium/WebKit
+coverage and still need user-side Mac acceptance. Deliberate faults can still
+halt/corrupt a game. Next: concrete compatibility reports and the new-control
+manual check; optional recovery/checkpoints remain planned for v0.5.0 after
+stabilisation. Do not repeat completed research or publish an intermediate release.
+
+## Completed source slice: compact recovery, held RAM and chip shortcuts
 
 Resume verified main `c8753f5` / checkpoint `53b653e`; preserve public v0.4.1,
 existing hardware models and McRetro.net. The user explicitly requested this
@@ -40,8 +76,7 @@ beyond eight frames, changed writes, release without recovery and both restarts.
 Sixteen visual states (four targets × light/dark × desktop/mobile) pass tint,
 contrast, overflow and adjacent-restart checks. Full Chromium logic93/93 passes (221.230 s). Focused WebKit covers twelve
 contact/recovery cases across runs, three compact-layout cases and the new
-compiled-core controls case; all pass. Package provenance and required PR/main CI
-remain integration gates. Raw logs,
+compiled-core controls case; all pass. Package provenance and PR/main integration evidence are recorded above. Raw logs,
 screenshots and retained first failures: `/workspace/scratch/shortcut-modes`.
 
 ## User-reported Mac Safari acceptance — 25 October 2026 (Sydney)

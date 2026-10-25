@@ -56,7 +56,8 @@ The user reports Mac Safari audio/mute, tab/app switching, randomisers, eight-fr
 RAM contacts and recovery checks passing. The requested follow-up adds a compact
 Clean restart copy, press-duration RAM Hold, chip-targeted 1–9 shortcuts and 0
 cycling with a pale green target indicator. It reuses existing fault/recovery
-paths; integration evidence is recorded in the current checkpoint. Public v0.4.1
+paths; PR #57 is merged after seven passing PR checks. Integration evidence
+is recorded in the current checkpoint. Public v0.4.1
 and McRetro.net remain preserved; the future recovery milestone is separate.
 
 ## Planned after stabilisation: v0.5.0 recovery milestone
