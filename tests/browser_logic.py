@@ -563,11 +563,12 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.close()
         self.page=self.new_page(circuit_config=True)
         self.load_rom()
+        setters_before_preview=self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]")
         config=self.circuit_configuration(vram_pair=[2,5],psg=[1,6],fm=[0,7])
         self.stage_circuit_file(config)
         expect(self.page.locator("#circuitConfigStatus")).to_contain_text("Nothing has been applied")
         expect(self.page.locator("#circuitConfigPreview")).to_contain_text("VRAM AD2↔AD5")
-        self.assertEqual(self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]"),[0,0,0])
+        self.assertEqual(self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]"),setters_before_preview)
         self.page.locator("#circuitConfigApply").click()
         self.page.wait_for_function("mockCore.vramModel.bridgeA===2 && mockCore.psg.configured && mockCore.fm.configured")
 
@@ -592,7 +593,8 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertNotIn("rom",saved_config)
         self.assertNotIn("history",saved_config)
 
-        self.page.locator("#logicExperiment > summary").click()
+        if not self.page.locator("#logicExperiment").evaluate("element=>element.open"):
+            self.page.locator("#logicExperiment > summary").click()
         self.page.locator("#logicApplyBtn").click()
         self.page.evaluate("mockCore.logic.cpuFlags=3")
         self.page.locator("#logicCpuResetBtn").click()
@@ -613,16 +615,21 @@ class BrowserLogicTests(unittest.TestCase):
         expect(self.page.locator("#pauseBtn")).to_have_text("Resume")
 
         self.stage_circuit_file(active_config)
-        calls_before_pulse=self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.logic.setterCalls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]")
         self.page.locator("[data-ram-frame-pair='10,14']").click()
+        calls_before_apply=self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.logic.setterCalls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]")
         self.page.locator("#circuitConfigApply").click()
         expect(self.page.locator("#circuitConfigStatus")).to_contain_text("active RAM pulse")
-        self.assertEqual(self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.logic.setterCalls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]"),calls_before_pulse)
+        self.assertEqual(self.page.evaluate("[mockCore.vramModel.calls.length,mockCore.logic.setterCalls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]"),calls_before_apply)
         self.page.locator("#circuitConfigDownload").click()
         expect(self.page.locator("#circuitConfigStatus")).to_contain_text("active RAM pulse")
         expect(self.page.locator("#circuitConfigPreview")).to_be_visible()
         self.page.locator("#pauseBtn").click()
         expect(self.page.locator("#randomiserStatus")).to_contain_text("ended after 8 emulated frames",timeout=5000)
+        self.page.evaluate("window.scrollTo(0,0)")
+        pair_bounds=self.page.locator("[data-ram-frame-pair]").last.evaluate(
+            "button=>({top:button.getBoundingClientRect().top,bottom:button.getBoundingClientRect().bottom})")
+        self.assertGreaterEqual(pair_bounds["top"],0)
+        self.assertLessEqual(pair_bounds["bottom"],768)
         self.page.locator("#circuitConfigApply").click()
         expect(self.page.locator("#circuitConfigStatus")).to_contain_text("applied",ignore_case=True)
         first_experiment=self.export_payload()
@@ -1330,6 +1337,11 @@ class BrowserLogicTests(unittest.TestCase):
             self.page.locator("#pauseBtn").click()
             expect(self.page.locator("#randomiserStatus")).to_contain_text(
                 "ended after 8 emulated frames",timeout=5000)
+            self.page.evaluate("window.scrollTo(0,0)")
+            pair_bounds=self.page.locator("[data-ram-frame-pair]").last.evaluate(
+                "button=>({top:button.getBoundingClientRect().top,bottom:button.getBoundingClientRect().bottom})")
+            self.assertGreaterEqual(pair_bounds["top"],0)
+            self.assertLessEqual(pair_bounds["bottom"],768)
             data=self.export_payload()
             pulse=data["faultPulses"][-1]
             self.assertEqual((pulse["a"],pulse["b"]),(a,b))
@@ -1507,7 +1519,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertFalse(self.page.evaluate("window.mockCore.logic.active"))
 
     def test_older_pulse_core_keeps_frame_and_eight_frame_pair_controls(self):
-        page = self.new_page(legacy_write_pulse=True)
+        page = self.new_page(legacy_write_pulse=True,circuit_config=True)
         self.load_rom(page)
         expect(page.locator("#logicPulseFrames option[value='writes:1']")).to_be_disabled()
         expect(page.locator("#logicPulseBtn")).to_be_enabled()
