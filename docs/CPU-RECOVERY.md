@@ -26,6 +26,10 @@ an interrupt, rewind an exception or establish physical-hardware fidelity.
 **Clean restart** remains the full cartridge reboot. Pausing is independent:
 recovery never changes pause state, so press Resume if the application is paused.
 
+The compact A11–A15 pair buttons run write-only faults for eight emulated
+frames and then disconnect without CPU recovery. They preserve play/pause and
+audio settings; use CPU reset explicitly if desired. See [RAM pulses](RAM-PULSES.md).
+
 ## Development source: disconnect all faults
 
 The new **Disconnect all faults** action is separate from CPU recovery and

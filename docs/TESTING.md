@@ -1043,7 +1043,7 @@ unreadable pulse state and held-bridge restoration after refusal. A first full
 explicit mode choice, and the failed log remains under `/workspace/scratch/randomise`.
 The native/SDK107 and source script pass with unchanged native model code.
 
-# Compact RAM burst and recovery acceptance (development source)
+# PR #52 compact RAM burst and recovery acceptance (historical development source)
 
 Force deterministic endpoints within A11–A15 (zero-based 10–14), writes only,
 eight affected writes maximum and one-frame expiry. Assert that completion
@@ -1092,3 +1092,23 @@ All seven main checks also pass on merged commit
 [run 40154014908](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40154014908).
 The merged tree matches the reviewed head. The public v0.4.1 tag, metadata and
 asset digests were verified unchanged after merge; McRetro.net was untouched.
+
+# Individual eight-frame RAM pairs and combined workbench acceptance
+
+Verify all ten unordered pairs from A11–A15 exactly once, write-only access and
+completion after eight emulated frames. Prove the previous eight-write limit is
+removed by recording more than eight affected writes; no-write frames must still
+expire correctly. Paused/hidden execution waits for emulated ticks. Check CPU
+intervention history stays unchanged on completion, and explicit disconnect/reset/
+restart/new-ROM/replacement cancellation never restores a late contact. Refuse
+active RAM/VRAM/pulses/held contacts and malformed state before mutation. Rejected,
+throwing or unverified setters/releases must retain truthful outcomes and pause
+when needed. Keep existing advanced force-resume pulses and compact CPU reset.
+
+Exercise a combined flow across configuration save/preview/apply, presets, chip
+randomisation, the pair pulses, running/paused all-domain removal, memory-only
+CPU recovery, clean restart, exports and read-only comparison. Retain preview
+isolation, chip independence, recorded histories and explicit unknown/partial
+results. Reuse existing domain tests and original actual-core cartridges for
+normal/runtime compatibility. Verify keyboard operation and viewport fit. Native
+Mac/audible/physical validation remains distinct from Linux synthetic acceptance.

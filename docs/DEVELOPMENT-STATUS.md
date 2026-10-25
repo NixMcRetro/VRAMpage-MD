@@ -1,5 +1,23 @@
 # Development status and continuation checkpoint
 
+## Current priority: individual eight-frame RAM pairs and combined acceptance
+
+Resume verified checkpoint `4b25ffc` atop main `b4424e0`. Replace the random
+eight-write/one-frame shortcut with ten individual WRITE-only buttons, covering
+every distinct pair within A11–A15. Each lasts exactly eight emulated frames,
+without an affected-write cap or automatic CPU recovery. Reuse the existing
+frame scheduler and fault setter; retain preflight, pause, audio, cancellation,
+unknown-state handling, export metadata and existing advanced pulse behavior.
+Test all ten pairs, more than eight writes, paused/no-write completion, failures,
+cancellation, optional normal-core support, keyboard access and the compact UI.
+
+Then complete the queued combined configuration/preset/randomisation/removal/
+recovery/restart/export/comparison acceptance using existing models and original
+synthetic fixtures. Reuse individual-domain evidence. If essential flows pass,
+enter Phase D feature freeze and stabilisation; record concrete remaining limits.
+Independent review and passing PR/main CI gate integration. Preserve public
+v0.4.1 and McRetro.net. No new native model or intermediate release is planned.
+
 ## PR #52 integration checkpoint — 25 October 2026
 
 [PR #52](https://github.com/NixMcRetro/VRAMpage-MD/pull/52) merged as

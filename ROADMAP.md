@@ -23,7 +23,8 @@ pass. PR #52 delivered a compact CPU reset shortcut, an A11–A15 random write
 burst (eight affected writes/one-frame maximum, no CPU recovery at completion),
 and all-domain clearing without forced pause on confirmed success. Its seven
 PR and main checks pass; evidence is recorded in the current checkpoint. Next,
-review combined flows before the Phase D feature freeze.
+replace the earlier random RAM shortcut with ten individual eight-frame A11–A15
+WRITE pair buttons, then complete combined acceptance before the Phase D freeze.
 Do not repeat the completed configuration or chip integration.
 
 Reuse the merged VRAM engine, API and runtime builder. Focused correctness and
