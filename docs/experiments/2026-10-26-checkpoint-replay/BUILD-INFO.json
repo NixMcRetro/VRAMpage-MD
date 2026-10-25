@@ -1,0 +1,16 @@
+{
+  "core_revision": "6090aff9e9b2f578cd28882bd4571d2e35b1d674",
+  "source_commit": "d2247e62c11abf0d24b978895655c4807a81ab73",
+  "file_sha256": {
+    "scripts/checkpoint-proof/audio-hooks.patch.py": "f6f2f030cdd7f7aa5759b10e715164df312190f1ec469664a413768e92e1ccdb",
+    "scripts/checkpoint-proof/build-and-run.sh": "050289c75ad1706dae9a7ed9b5269650e261d8f4016552c0ac833106dc856806",
+    "scripts/checkpoint-proof/build.py": "187ce455c56100fa458db72398b2d1361a84a363f0e9d1b4698183acb6cddc13",
+    "scripts/checkpoint-proof/dynamic-proof.cjs": "6a571972491147facc960494c99407c07c378ae0e7baa7ae66e154a4a4b03413",
+    "scripts/checkpoint-proof/fm-replay-proof.cjs": "c9a61812f9d2f7260bafff3b40fc414f42793ed99c3dc6355bed3d04b74fb148",
+    "scripts/checkpoint-proof/replay-proof.cjs": "1ceb058133682cf820ab42fce56663188d20d1f2f7739e07b6a8c845dc157231",
+    "scripts/checkpoint-proof/state-proof-audio-hooks.c": "79f1aaef4c67077d1922059ce8c80b6fb17173617adad3dc3f7c9c5ea493abca",
+    "scripts/checkpoint-proof/state-proof-hooks.c": "5218b97b21954d46cc1f5170472759d1911aae5de74b0b265bfb1c4d800aa5e8",
+    "scripts/patch_core.py": "2f8bbf089ed88195c60714a49e2ea2abe145b5ce0c65d1428a14943b8f7d02ca",
+    "tests/checkpoint_blip_smoke.c": "1086b5b72042700be7e1ea39f6b10cc7d5d3b26f042efc436e48c9ef366f8394"
+  }
+}

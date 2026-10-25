@@ -1,4 +1,4 @@
-# Native checkpoint replay proof (developer only)
+# Native Checkpoint Replay Proof (Developer Only)
 
 This is a private feasibility experiment, not a product checkpoint API. It runs the pinned C core in an isolated Emscripten build against original synthetic cartridges. The runner never accepts external state bytes and uses no commercial ROM or captured memory. All experimental hooks are added to the copied core only.
 
@@ -25,3 +25,12 @@ read/mix paths. The shared core patch replaces the four `s << 6` operations with
 and fits signed32-bit values. No filter coefficient or intended sample value changes.
 Golden synthetic PCM hashes must remain unchanged after rebuilding. This correction
 also applies to normal/runtime builds; the snapshot API remains proof-only.
+
+
+Final local verification rebuilt both production profiles and confirmed no proof
+exports in either normal or runtime modules. All115 SDK/source tests pass, as do
+seven fresh Chromium compiled-core cases. The final portable proof build passes
+fatal native sanitizers and all five WASM cases; every pixel/PCM hash still matches
+the committed pre-correction recordings. [Build provenance](experiments/2026-10-26-checkpoint-replay/BUILD-INFO.json)
+identifies the actual proof source and file hashes. Independent specialist review
+approved the signed-math equivalence, missing-source refusal and staging guards.

@@ -1525,3 +1525,27 @@ avoiding a race against a 134 ms transient message. These focused cases pass in
 Chromium and WebKit; the final source receives its own complete CI run.
 
 PR #61 final delivery: all seven PR checks40221361461 and main checks40221890031 passed. Final local Chromium103 passed217.138s; main436a8e0 source equals ea699a55. No native model/version/public artifact change.
+
+
+# Native checkpoint proof and Blip signed arithmetic
+
+The developer-only isolated builder runs actual private snapshot helpers with
+capacity/guard checks and five original synthetic replay cases. A native ASan/UBSan
+smoke test uses fatal findings, tests output refusals and pointer ownership, and
+covers queued stereo PCM and the three-buffer mixer. The initial pinned Blip run
+reported negative signed left shifts; replacing the four clamped-sample shifts with
+equivalent multiplication removes those findings. All five rebuilt WASM outputs
+retain every pre-correction pixel/PCM hash. No filter coefficient or fault model
+changes. Shared patch source drift and missing Blip input fail before source writes.
+
+The full SDK/source suite passes115 tests (145.167s) with normal sanitizer settings
+and fresh WASM. Twelve focused patcher/path tests pass; the portable build refuses
+symlinks/ancestors, source paths, unmarked output and dirty source before cleanup.
+Both production profiles rebuild; neither exposes experimental checkpoint hooks.
+Chromium actual-core7 passes on the fresh production modules. Prototype snapshots
+are never offered by the UI or accepted from files. SRAM/device/input/mapper/fault
+state and full-core/WASM sanitizer coverage remain unproven; the proof cannot
+establish general gameplay restore or native Mac audible behavior.
+
+Evidence: `/workspace/scratch/checkpoint-proof`; immutable recorded synthetic hashes
+and source provenance are linked from `CHECKPOINT-REPLAY-PROOF.md`.

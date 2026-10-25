@@ -16,8 +16,10 @@ with defined multiplication, using the existing clamped16-bit sample and factor6
 Intended output is unchanged. The native smoke now runs with fatal sanitizers,
 capacity/null refusal, guards, live pointers, PCM replay and three-buffer mixing.
 Independent specialist review approves through158715e; twelve focused source/path
-checks pass. Full SDK/source113 passed before two final guard cases were added;
-fresh production cores/browser checks and required PR/main CI are integration gates.
+checks pass. Final SDK/source115 passes; fresh production profiles have no experimental
+checkpoint exports and compiled-core7 passes. Portable proof/native sanitizers
+and allfive pre-correction pixel/PCM goldens pass. Runtime/normal handoff checks,
+package provenance and required PR/main CI remain integration gates.
 
 Builder refuses missing/drifted source, symlink output/ancestors, source paths,
 unmarked output and dirty tracked source before cleanup. Committed source identity
