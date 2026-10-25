@@ -14,9 +14,13 @@ A genuine-context/compiled-core probe reproduced 120 new queued sources across
 120 emulated frames while context time was suspended. The fixed probe creates
 zero. The 150-cycle mixed fault/pulse/reset/audio/visibility run reports no stale
 queue violations, a peak of four active sources and fixed 32 MiB WASM memory.
-The extended 1,500-cycle run and complete source/browser/package/CI gates are
-being completed; do not claim universal leak freedom or audible/native Mac
-validation. Scratch evidence: `/workspace/scratch/stability`.
+The 1,500-cycle run passes after 411.73 seconds: no queue violations/page
+errors, zero allocations during suspension, 15 peak active sources, all 15,767
+sources ended and constant 32 MiB WASM memory. Post-GC JS heap measured about
+2.83–3.29 MiB; this includes warm-up/browser/automation state, not a universal
+no-leak proof. Full source/SDK107, Chromium72/72, actual-core5/5 and focused
+WebKit audio1/1 pass. Package and required PR/main CI remain integration gates;
+no audible/native Mac validation is claimed. Scratch evidence: `/workspace/scratch/stability`.
 
 The proposed v0.5.0 auto-resume/checkpoint milestone is deferred until after
 stabilisation; no new recovery feature, version bump or public release change is

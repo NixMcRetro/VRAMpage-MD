@@ -1172,3 +1172,23 @@ Post-GC JS heap measurements include browser/JIT/DOM warm-up and are diagnostic,
 not a universal no-leak guarantee. Keep raw samples/logs under
 `/workspace/scratch/stability`; the longer run and integration results belong in
 the final checkpoint. Preserve original failure logs and public v0.4.1 evidence.
+
+The extended genuine-core Chromium run completed 1,500 mixed fault/pulse/audio/
+pause/visibility/CPU-reset/restart iterations in 411.73 seconds while other
+regressions ran concurrently. It reported zero boundary violations/page errors;
+zero new sources over the controlled suspended-clock interval (121 emulated
+frames); 15 peak active sources; a 199.10 ms maximum scheduling lead; and 15,767
+created/ended sources with none active at final pause. WASM stayed at 33,554,432
+bytes. Post-GC JS heap was 2,971,936 bytes after warm-up and 3,454,152 at final
+pause; this small observed rise includes browser/JIT/automation state and is
+not attributed to an application leak or claimed as proof of leak freedom.
+Raw reports: `baseline.json`, `soak-fixed.json`, `soak-1500.json` and their logs
+in the task scratch directory. The baseline uses an ended-aware active set, so
+its paused/muted sources are genuinely unfinished, unlike the withdrawn earlier
+explicit-connection-only probe.
+
+The full source/native/SDK107 script passes with normal sanitizers/fresh WASM.
+Complete Chromium72/72, actual compiled-core5/5 and focused genuine WebKit audio
+1/1 pass on final source `23ec56b`. The app diff has no C, chip-model, fault-state,
+CPU recovery, PCM-copying or emulation-timing changes. Independent review approves
+that source; exact final package identity and PR/main CI are integration gates.
