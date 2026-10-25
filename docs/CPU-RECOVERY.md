@@ -16,7 +16,8 @@ repairs corrupted RAM or guarantees that gameplay continues.
 Both CPU interventions leave PSG/FM input faults and sound-chip state unchanged.
 The development workbench also exposes **CPU reset** beside the Randomiser
 buttons. It invokes the same CPU-only reset action; it is not a full reboot and
-does not change the app's pause state.
+does not change the app's pause state. A **Clean restart** copy immediately
+to its right invokes the same full reboot as the original toolbar button.
 Use the separate development-source all-fault action below when audio faults
 also need to be removed. CPU recovery does not reset the whole system.
 

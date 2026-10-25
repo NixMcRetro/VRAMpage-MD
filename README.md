@@ -35,7 +35,9 @@ Development source also adds a [read-only comparison of two saved experiment exp
 
 The development-source [Randomiser](docs/CHIP-WORKBENCH.md#development-source-randomiser) has separate **PSG**, **FM** and **VRAM** buttons. Each selects cuts or a joined pair within that chip, leaving the other chips unchanged. Save the resulting configuration to keep a useful setup. The public v0.4.1 ZIP is preserved.
 
-The same area includes **CPU reset** and ten individual **RAM WRITE** pair buttons covering every combination within A11–A15. Each joins its selected pair for **eight emulated frames**, then disconnects without automatic CPU recovery. There is no affected-write cap on these frame pulses; use experiment JSON to retain their history.
+The same area includes **CPU reset**, a copy of **Clean restart** immediately to its right, and ten **RAM WRITE** pair buttons covering every combination within A11–A15. The default joins a pair for **eight emulated frames**, then disconnects without automatic CPU recovery. Choose **Hold** to latch a write-only pair until explicitly released; click the active pair again to release it. Neither mode has an affected-write cap. Removing a fault does not repair earlier corruption.
+
+Development-source fault shortcuts **1–9** target the chip selected by **0**: **VRAM → WRAM → FM → PSG**. A pale green chip body and text label identify the keyboard target, independently of active faults. Shift holds a temporary contact until release. WRAM digits cover the first nine displayed A11–A15 pairs; the tenth remains available by button. Reconnect/disconnect buttons remain available; **0 now changes target**. Browser Control/Command/Alt shortcuts keep their normal behaviour.
 
 Development source also stages cartridge replacements: rejected files keep the
 current game and its identity intact, older asynchronous reads cannot replace a
