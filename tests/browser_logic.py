@@ -54,7 +54,7 @@ class BrowserLogicTests(unittest.TestCase):
             context.close()
         self.assertEqual(self.errors, [], "Uncaught application errors")
 
-    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False):
+    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False, manual_frames=False):
         context = self.browser.new_context(
             viewport={"width": 1366, "height": 768},
             color_scheme="light",
@@ -62,6 +62,12 @@ class BrowserLogicTests(unittest.TestCase):
         )
         self.contexts.append(context)
         page = context.new_page()
+        if manual_frames:
+            page.add_init_script("""
+                window.testFrames=[];window.testTime=0;
+                window.requestAnimationFrame=cb=>testFrames.push(cb);
+                window.stepTestFrame=()=>{const callbacks=testFrames.splice(0);testTime+=17;callbacks.forEach(cb=>cb(testTime));};
+            """)
         page.on("pageerror", lambda error: self.errors.append(str(error)))
         if circuit_config:
             page.add_init_script("window.__circuitConfigCore = true;")
@@ -1501,7 +1507,7 @@ class BrowserLogicTests(unittest.TestCase):
         pairs=self.page.locator("[data-ram-frame-pair]")
         self.assertEqual(pairs.count(),10)
         self.assertEqual(self.page.locator("#randomRamPulseBtn").count(),0)
-        self.assertEqual(self.page.locator(".ram-frame-pairs > strong").inner_text(),"RAM WRITE")
+        self.assertEqual(self.page.locator(".ram-frame-pairs > strong").inner_text(),"RAM Write")
         expect(self.page.locator('#ramWriteMode')).to_have_value('pulse')
         rows=self.page.evaluate("""() => [...document.querySelectorAll('[data-ram-frame-pair]')].map(button=>{
           const rect=button.getBoundingClientRect();return {text:button.textContent,x:rect.x,right:rect.right,y:rect.y};
@@ -2644,8 +2650,50 @@ class BrowserLogicTests(unittest.TestCase):
         entry=self.export_payload()['cpuInterventions'][-1]
         self.assertEqual(entry['trigger'],'armed-halt-streak')
         self.assertFalse(entry['attempted'],'RAM clear failure occurs before native CPU recovery')
+        self.assertIn('RAM clear',entry['reason'])
         self.assertEqual(entry['outcome'],'aborted')
 
+
+    def test_direct_ram_disconnect_restarts_the_armed_halt_streak(self):
+        self.page.close();self.page=self.new_page(manual_frames=True)
+        self.page.locator('#romFile').set_input_files({'name':'streak.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
+        expect(self.page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+        self.page.locator('#pauseBtn').click()
+        self.page.evaluate('stepTestFrame()')  # Prime the app clock while paused.
+        self.page.evaluate("""() => {
+            mockCore.logic.cpuFlags=2;
+            document.querySelector('#logicApplyBtn').click();
+            document.querySelector('#pauseBtn').click();
+            document.querySelector('#armCpuRecoveryBtn').click();
+            stepTestFrame();
+        }""")
+        expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('ARMED · HALT 1/2')
+        self.page.evaluate("document.querySelector('#logicDisconnectBtn').click();stepTestFrame()")
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[])
+        expect(self.page.locator('#cpuRecoveryStatus')).to_have_text('ARMED · HALT 1/2')
+        self.page.evaluate('stepTestFrame()')
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[2])
+
+    def test_issued_cpu_reset_retains_its_outcome_when_post_reset_telemetry_fails(self):
+        self.load_rom()
+        self.page.evaluate("""() => {
+            const nativeRecover=mockCore.core._recover_logic_cpu;
+            mockCore.core._recover_logic_cpu=mode=>{
+                const status=nativeRecover(mode);mockCore.throwCpuFlags=true;return status;
+            };
+            mockCore.logic.cpuFlags=2;
+        }""")
+        self.page.locator('#armCpuRecoveryBtn').click()
+        self.page.wait_for_function("document.querySelector('#pauseBtn').textContent==='Resume'")
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[2])
+        expect(self.page.locator('#logicStatus')).to_contain_text('CPU-only reset issued; post-reset telemetry unavailable')
+        self.page.evaluate('mockCore.throwCpuFlags=false')
+        entry=self.export_payload()['cpuInterventions'][-1]
+        self.assertEqual(entry['action'],'cpu-only-reset')
+        self.assertEqual(entry['outcome'],'issued')
+        self.assertTrue(entry['attempted'])
+        self.assertIsNone(entry['flagsAfter'])
+        self.assertIn('CPU flag telemetry trap',entry['telemetryError'])
 
     def assert_build_export(self, expected):
         rom=self.load_rom()
@@ -2790,7 +2838,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.locator("#compareFileB").set_input_files({"name":"export-b.json","mimeType":"application/json","buffer":json.dumps(pair_payload).encode()})
         expect(self.page.locator("#compareOutput table")).to_be_visible()
         expect(self.page.locator("#compareOutput")).to_contain_text("ROM SHA-256")
-        expect(self.page.locator("#compareOutput")).to_contain_text("RAM recorded kind")
+        expect(self.page.locator("#compareOutput")).to_contain_text("RAM Recorded Kind")
         expect(self.page.locator("#compareOutput")).to_contain_text("mismatch")
         self.assertLessEqual(self.page.locator("#compareOutput").evaluate("el=>el.clientHeight"),460)
         self.assertGreater(self.page.locator("#compareOutput table").evaluate("el=>el.scrollWidth"),

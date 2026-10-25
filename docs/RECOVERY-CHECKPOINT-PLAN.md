@@ -1,9 +1,9 @@
 # v0.5.0 recovery and checkpoints — reviewed design
 
-Status: **Reviewed design; step 1 under implementation in development source.** Based on main
+Status: **Reviewed design; step 1 implemented in development source; checkpoint steps remain planned.** Based on main
 `5d0425a64acb0f883789c67e8c6ec41e5d2c0c02` and upstream core
 `6090aff9e9b2f578cd28882bd4571d2e35b1d674`. The public release and `VERSION`
-remain v0.4.1. Existing manual CPU reset and Clean restart retain their semantics.
+remain v0.4.1. Existing manual CPU Reset and Clean Restart retain their semantics.
 
 The goal is to offer two independent ways to continue experimenting: a bounded
 CPU intervention and returning to a deliberately saved machine state. Neither
@@ -11,7 +11,7 @@ can guarantee that a game continues. Default operation remains unassisted.
 
 ## 1. One armed CPU recovery attempt
 
-Add an **Arm CPU recovery once** control near existing recovery controls, with
+Add an **Arm CPU Recovery Once** control near existing recovery controls, with
 an explicit armed/off status. It starts off and is never enabled by loading a
 configuration, restoring a checkpoint or starting a cartridge.
 
@@ -26,7 +26,7 @@ configuration, restoring a checkpoint or starting a cartridge.
   a transient contact in progress is disabled. Persistent faults may be present;
   recovery clears RAM/VRAM faults using the existing checked operations.
 - Pause, visibility loss/window blur, manual recovery, imported configuration
-  application, Disconnect all faults, checkpoint operations, Clean restart and
+  application, Disconnect All Faults, checkpoint operations, Clean Restart and
   new ROM disarm and reset observation. Ordinary fault edits reset the observation
   count but retain arming, so a user can arm before applying a randomiser.
   Automatic pulse expiry alone does not arm anything. No hidden-tab catch-up.
@@ -34,7 +34,7 @@ configuration, restoring a checkpoint or starting a cartridge.
   getter, rejected clear or recovery failure disarms and pauses for inspection.
   Never retry, escalate to full reboot, restore a checkpoint or fake a bus status.
 - On successful intervention preserve play/pause semantics and FM/PSG faults and
-  chip state, exactly as manual CPU reset does. Game code may later reprogram
+  chip state, exactly as manual CPU Reset does. Game code may later reprogram
   sound. A cleared HALT flag is an attempted intervention, not gameplay success.
 
 This is opt-in automatic intervention after arming, not a lockup detector for all
@@ -78,11 +78,11 @@ are never restored; only newly synthesized audio may play after Resume. Block
 currently held gamepad/keyboard inputs until released so the first resumed tick
 cannot inherit a stale press.
 
-New ROM activation or Clean restart invalidates the slot; rejected ROM selection
+New ROM activation or Clean Restart invalidates the slot; rejected ROM selection
 before activation leaves it valid. CPU-only reset does not invalidate it. Saving
 again atomically replaces it only after capture succeeds. Restore failure after
 native mutation stays paused and invalidates the slot if its safety is uncertain;
-report that Clean restart may be needed. Do not promise transactional rollback.
+report that Clean Restart may be needed. Do not promise transactional rollback.
 
 Restoration starts a new experiment segment: retain the intervention/restore
 history in order, record saved and pre-restore frame plus segment ID, and reset
@@ -130,7 +130,7 @@ upstream `core/state.c`, `core/state.h`, `core/vdp_ctrl.c:vdp_context_*`,
    throwing/missing capability, partial clear failure, one attempt even on repeated
    HALT, explicit rearm, and no audio reset. Actual-WASM generated cartridges
    demonstrate nested-error HALT and legitimate STOP; compare disabled-policy runs
-   with the current baseline. Keep manual reset and Clean restart regressions.
+   with the current baseline. Keep manual reset and Clean Restart regressions.
 2. **Private checkpoint core wrapper:** verify capacity and context coverage before
    UI exposure. Original synthetic ROM round trips compare all 64 KiB WRAM,
    ZRAM/banking, CPU/IRQ/HALT, VDP/VRAM/cache, FM/PSG output and cart state. Replay
@@ -141,7 +141,7 @@ upstream `core/state.c`, `core/state.h`, `core/vdp_ctrl.c:vdp_context_*`,
    mutation; failed saves preserve the previous slot. Run native sanitizers.
 3. **Checkpoint UI and experiment segments:** exercise Save, deliberate corruption,
    Restore, pause/Resume, stale keyboard/gamepad contacts, queue flushing, failed
-   clears, repeated capture, ROM replacement races, CPU reset and Clean restart.
+   clears, repeated capture, ROM replacement races, CPU Reset and Clean Restart.
    Verify runtime/fallback capability handling; no import or persistent memory.
 4. **v0.5.0 integration:** independent specialist review, full applicable source,
    native/WASM and packaged Chromium/Firefox/WebKit checks, meaningful manual Mac

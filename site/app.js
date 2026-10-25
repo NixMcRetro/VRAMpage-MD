@@ -1120,14 +1120,19 @@
     if (succeeded && latest && cpuInterventions.length>interventionStart) {
       Object.assign(latest,{trigger:'armed-halt-streak',observedFlags:flags,
         observedFrames,attempted:true,outcome:'issued'});
+      if (latest.telemetryError) {
+        if (!paused) pauseToggle();
+        setLogicStatus(`CPU-only reset issued; post-reset telemetry unavailable (${latest.telemetryError}). Emulation paused for inspection; no retry will occur.`);
+      }
     } else {
+      reason=lastCpuRecoveryAttempt?.reason || reason;
       if (latest && cpuInterventions.length>interventionStart && latest.action==='recovery-aborted') {
         Object.assign(latest,{trigger:'armed-halt-streak',observedFlags:flags,
           observedFrames,attempted:false,outcome:'aborted'});
       } else if (latest && cpuInterventions.length>interventionStart &&
           ['cpu-only-reset','force-resume','cpu-recovery-rejected'].includes(latest.action)) {
         Object.assign(latest,{trigger:'armed-halt-streak',observedFlags:flags,observedFrames,
-          attempted:true,outcome:'aborted',reason});
+          attempted:true,outcome:latest.action==='cpu-recovery-rejected'?'rejected':'aborted',reason});
       } else cpuInterventions.push({action:'automatic-recovery-aborted',trigger:'armed-halt-streak',
         frame,observedFlags:flags,observedFrames,attempted:!!lastCpuRecoveryAttempt?.nativeCalled,
         outcome:'aborted',reason});
@@ -1285,6 +1290,7 @@
   }
 
   function disconnectLogic({silent=false,pulseReason='fault disconnected'}={}) {
+    resetCpuRecoveryObservation();
     if (!logicActive) {
       cancelPulse(pulseReason);
       if (!silent) setLogicStatus('No logic fault is active.');
@@ -1324,13 +1330,14 @@
   }
 
   function recoverLogicCPU(mode) {
-    disarmCpuRecovery();
     lastCpuRecoveryAttempt={nativeCalled:false,status:null};
+    disarmCpuRecovery();
     if (!started || typeof emulator?._recover_logic_cpu !== 'function') return false;
     const frame=Number(emulator._get_logic_frame());
     const flagsBefore=Number(emulator._get_logic_cpu_flags());
     const hadRamFault=logicActive;
     if (!disconnectLogic({silent:true,pulseReason:'manual CPU recovery'})) {
+      lastCpuRecoveryAttempt.reason='RAM clear rejected or unavailable';
       setLogicStatus('Recovery stopped: could not disconnect RAM fault.');
       return false;
     }
@@ -1351,6 +1358,7 @@
     const status=emulator._recover_logic_cpu(mode);
     lastCpuRecoveryAttempt.status=status;
     if (status!==0) {
+      lastCpuRecoveryAttempt.reason=`CPU recovery rejected (status ${status})`;
       cpuInterventions.push({action:'cpu-recovery-rejected',frame,flagsBefore,
         status,attempted:true,outcome:'rejected'});
       setLogicStatus(`CPU recovery rejected (status ${status}).`);
@@ -1359,7 +1367,12 @@
     const action=mode===1 ? 'force-resume' : 'cpu-only-reset';
     const intervention={action,frame,flagsBefore,flagsAfter:null,attempted:true,outcome:'issued'};
     cpuInterventions.push(intervention);
-    intervention.flagsAfter=emulator._get_logic_cpu_flags();
+    try {
+      const flags=emulator._get_logic_cpu_flags();
+      if (typeof flags!=='number' || !Number.isInteger(flags) || flags<0 || flags>3)
+        throw new Error('CPU flag telemetry is invalid');
+      intervention.flagsAfter=flags;
+    } catch (error) { intervention.telemetryError=error.message; }
     logicResetState=`${action}; RAM/VRAM faults disconnected; audio faults unchanged; RAM preserved`;
     setLogicStatus(`${mode===1 ? 'Forced resume attempted' : 'CPU-only reset issued'}. RAM/VRAM faults disconnected; audio faults unchanged; RAM preserved. Recovery is not guaranteed.`);
     stamp(`CPU intervention: ${action}; RAM/VRAM faults disconnected; audio faults unchanged; RAM preserved`);

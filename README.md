@@ -31,19 +31,19 @@ If your Mac blocks `START.command`, right-click it and choose **Open**, or follo
 
 **Development source after v0.4.1:** coordinated fault removal clears every modeled domain while preserving play/pause after a confirmed complete clear. Failed or unverified clears pause for inspection. CPU recovery still clears RAM/VRAM faults and preserves audio faults. These unreleased controls are not in the public ZIP above; see [recovery semantics](docs/CPU-RECOVERY.md).
 
-Development source also offers **Arm CPU recovery once**, off by default: after explicit arming it attempts one CPU-only reset on two eligible completed HALT frames. It ignores ordinary STOP and static pictures, preserves audio faults, and does not guarantee recovery. See [recovery semantics](docs/CPU-RECOVERY.md#development-source-arm-cpu-recovery-once).
+Development source also offers **Arm CPU Recovery Once**, off by default: after explicit arming it attempts one CPU-only reset on two eligible completed HALT frames. It ignores ordinary STOP and static pictures, preserves audio faults, and does not guarantee recovery. See [recovery semantics](docs/CPU-RECOVERY.md#development-source-arm-cpu-recovery-once).
 
 Development source also adds a [read-only comparison of two saved experiment exports](docs/EXPERIMENTS.md#compare-saved-exports-development-source). Inspect identities, settings and recorded results locally; loading an export never applies its settings or replays a run. Missing metadata remains unknown.
 
 The development-source [Randomiser](docs/CHIP-WORKBENCH.md#development-source-randomiser) has separate **PSG**, **FM** and **VRAM** buttons. Each selects cuts or a joined pair within that chip, leaving the other chips unchanged. Save the resulting configuration to keep a useful setup. The public v0.4.1 ZIP is preserved.
 
-The same area includes **CPU reset**, a copy of **Clean restart** immediately to its right, and ten **RAM WRITE** pair buttons covering every combination within A11–A15. The default **Hold while pressed** keeps a write-only pair active only while its mouse button or shortcut key is held down; releasing it disconnects the pair. Choose **8-frame pulse** for a contact that disconnects after eight emulated frames without automatic CPU recovery. Neither mode has an affected-write cap. Removing a fault does not repair earlier corruption.
+The same area includes **CPU Reset**, a copy of **Clean Restart** immediately to its right, and ten **RAM WRITE** pair buttons covering every combination within A11–A15. The default **Hold while pressed** keeps a write-only pair active only while its mouse button or shortcut key is held down; releasing it disconnects the pair. Choose **8-frame pulse** for a contact that disconnects after eight emulated frames without automatic CPU recovery. Neither mode has an affected-write cap. Removing a fault does not repair earlier corruption.
 
 Development-source fault shortcuts **1–9** target the chip selected by **0**: **VRAM → WRAM → FM → PSG**. The text label identifies the keyboard target. An active fault gives its chip a pale green fill and outline; idle chips keep their normal theme colours. Shift holds a temporary contact until release. WRAM digits cover the first nine displayed A11–A15 pairs; the tenth remains available by button. Reconnect/disconnect buttons remain available; **0 now changes target**. Browser Control/Command/Alt shortcuts keep their normal behaviour.
 
 Development source also stages cartridge replacements: rejected files keep the
 current game and its identity intact, older asynchronous reads cannot replace a
-newer selection, and Clean restart uses the last accepted cartridge. If core
+newer selection, and Clean Restart uses the last accepted cartridge. If core
 activation becomes uncertain, emulation stops explicitly; it does not pretend
 the previous machine state was restored.
 
@@ -57,7 +57,7 @@ the previous machine state was restored.
 - **Bend audio inputs:** Apply separate FM or PSG write-input bridges, inspect counters and remove them independently. Start at low volume.
 - **Compare experiments:** Record fault settings and export JSON containing reproducibility metadata, including a build identifier when available.
 
-The interface fits different window sizes, follows your system Light/Dark preference and offers both corrected video output and raw diagnostic output. Some faults can freeze a game or leave persistent RAM corruption until a **Clean restart**.
+The interface fits different window sizes, follows your system Light/Dark preference and offers both corrected video output and raw diagnostic output. Some faults can freeze a game or leave persistent RAM corruption until a **Clean Restart**.
 
 **Experimental limitations:** VRAM offers frame projection and logical-byte transaction models; neither VRAM nor RAM faults reproduce every physical electrical effect. The circuit diagrams are conceptual, not verified motherboard pinouts. Rendering remains line-batched rather than cycle-accurate. Automated Linux browser/core tests are not the same as native Mac Firefox or physical-hardware validation.
 

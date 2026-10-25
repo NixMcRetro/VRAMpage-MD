@@ -1,5 +1,23 @@
 # Development work queue
 
+## Bounded CPU recovery integration — 26 October 2026 (Sydney)
+
+Development source implements plan step 1: **Arm CPU Recovery Once**, off by
+default, observes HALT on two consecutive eligible completed frames and consumes
+one CPU-only reset attempt. It ignores STOP-only and deliberate transient contacts;
+failed telemetry/clears/recovery pause without retry. Lifecycle operations disarm;
+ordinary fault edits reset the streak while retaining arming. FM/PSG are preserved
+by the existing CPU-only reset path. Intervention metadata records armed triggers
+and aborts. The frame catch-up loop now stops immediately on a failure pause.
+
+Buttons and labels use Title Case, including **Work RAM**, **CPU Reset**,
+**Clean Restart** and **Hold While Pressed**. Preserve this style in future work.
+No native model, VERSION, public release or McRetro.net change. Checkpoint
+save/restore remains gated by serializer capacity and complete state/replay proof.
+Current task: finish independent review, full applicable source/browser checks,
+then seven required PR/main checks and exact package provenance before delivery.
+
+
 ## v0.5.0 design checkpoint
 
 Resume from verified main `5d0425a64acb0f883789c67e8c6ec41e5d2c0c02` (PR #60,

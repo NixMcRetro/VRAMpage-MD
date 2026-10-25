@@ -359,7 +359,7 @@ footer { padding-top:9px; font-size:10px; }
 .chip-card.fault-active .ram-chip-body small { color:#243d27; }
 .chip-card h2 { display:flex; flex-direction:column; gap:1px; margin:0 0 5px; font-size:12px; line-height:1.15; }
 .chip-card h2 small { color:var(--muted); font:10px ui-monospace,SFMono-Regular,Consolas,monospace; }
-.chip-compact-control { display:flex; align-items:center; justify-content:space-between; gap:4px; margin:3px 0; color:var(--muted); font-size:10px; }
+.chip-compact-control { white-space:nowrap; display:flex; align-items:center; justify-content:space-between; gap:4px; margin:3px 0; color:var(--muted); font-size:10px; }
 .chip-compact-control select { min-width:0; max-width:72%; padding:3px 4px; border:1px solid var(--rule); border-radius:2px; background:var(--surface); color:var(--ink); font:10px ui-monospace,SFMono-Regular,Consolas,monospace; }
 .chip-workbench .pin-grid, .chip-workbench .ram-chip, .data-chip {
   display:grid; grid-template-columns:38px minmax(48px,1fr) 38px; gap:0; padding:0;
@@ -403,7 +403,7 @@ footer { padding-top:9px; font-size:10px; }
 .randomiser-row button { min-width:40px; padding:5px 8px; font-size:10px; }
 .randomiser-status { min-height:1em; margin:0 12px 6px; color:var(--muted); font:9px/1.25 ui-monospace,SFMono-Regular,Consolas,monospace; }
 .ram-frame-pairs { margin:0 12px 6px; color:var(--muted); font:9px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace; }
-.ram-frame-pairs > strong { display:inline-block; margin:0 8px 4px 0; }
+.ram-frame-pairs > strong { display:inline-block; margin:0 8px 3px 0; }
 .ram-frame-pairs select { padding:2px 4px; background:var(--surface); color:var(--ink); font:inherit; }
 .ram-frame-pair-buttons { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:3px; min-width:0; }
 .ram-frame-pair-buttons button { min-width:0; padding:4px 2px; font-size:9px; white-space:nowrap; }
