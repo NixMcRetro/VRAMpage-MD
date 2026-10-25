@@ -99,13 +99,15 @@
           </section>
         </div>
         <div class="logic-actions chip-workbench-actions">
-          <button id="disconnectAllFaultsBtn" type="button" disabled title="Pauses emulation and attempts to clear VRAM, work RAM, PSG and FM faults. It does not restart the console.">Disconnect all faults</button>
+          <button id="disconnectAllFaultsBtn" type="button" disabled title="Attempts to clear VRAM, work RAM, PSG and FM faults. Confirmed success preserves the current run state; any uncertainty pauses before the next frame.">Disconnect all faults</button>
         </div>
         <div class="randomiser-row" role="group" aria-label="Randomiser chip controls">
           <strong>Randomiser</strong>
           <button id="randomPsgBtn" type="button" disabled>PSG</button>
           <button id="randomFmBtn" type="button" disabled>FM</button>
           <button id="randomVramBtn" type="button" disabled>VRAM</button>
+          <button id="logicCpuResetBtn" type="button" disabled title="CPU-only reset: clears RAM/VRAM faults, preserves PSG/FM faults, and keeps the current run state.">CPU reset</button>
+          <button id="randomRamPulseBtn" type="button" disabled title="Write-only Work RAM pulse: random distinct A11–A15 pair, up to 8 affected writes, at most 1 emulated frame. Automatically disconnects without CPU recovery.">RAM WRITE pulse A11–A15 (≤8 writes / 1 frame)</button>
           <span id="randomiserStatus" role="status" aria-live="polite">Load a ROM to randomise a chip.</span>
         </div>
         <p id="disconnectAllFaultsStatus" class="logic-status" role="status" aria-live="polite">Load a ROM to disconnect all fault domains.</p>
@@ -155,9 +157,8 @@
       </div>
       <div class="logic-actions">
         <button id="logicResumeBtn" type="button" disabled>Disconnect and force resume</button>
-        <button id="logicCpuResetBtn" type="button" disabled>CPU-only reset</button>
       </div>
-        <p class="logic-note">CPU recovery disconnects RAM and VRAM faults, leaves PSG/FM faults unchanged, preserves corrupted RAM and may immediately stop again. CPU-only reset leaves other chips running. Use Disconnect all faults to pause and clear each fault domain, or Clean restart for a full reboot.</p>
+        <p class="logic-note">CPU recovery disconnects RAM and VRAM faults, leaves PSG/FM faults unchanged, preserves corrupted RAM and may immediately stop again. CPU-only reset leaves other chips running. Disconnect all faults pauses only when clearing a domain is unavailable, partial or unverified; Clean restart fully reboots.</p>
       <div class="logic-actions pulse-settings">
         <label for="logicPulseFrames">Pulse length</label>
         <select id="logicPulseFrames" disabled aria-label="Pulse limit: emulated frames or affected writes">

@@ -1,6 +1,65 @@
 # Development work queue
 
-## Current user priority: chip-local Randomiser
+## Current user priority: compact CPU reset, RAM burst and running disconnect
+
+Reuse PR #51's verified workbench and checkpoint `ffb330f`. Add **CPU reset**
+next to the Randomiser buttons using the existing memory-clearing/audio-preserving
+CPU-only recovery. Add a separate random **write-only A11–A15 joined pair**,
+limited to eight affected writes with a one-frame maximum. It clears without
+CPU recovery. Refuse existing memory faults/pulses/held contacts rather than
+overwriting them; preserve audio, staged files, pause state and existing advanced
+pulse behavior. Record the chosen pair, limits and explicit no-recovery outcome
+in the existing pulse history. No new native model or claim of lockup-free use.
+
+Remove the upfront pause from **Disconnect all faults**. A confirmed complete
+clear preserves prior play/pause; unsafe partial, failed or unknown state pauses
+before another tick. Keep callback cancellation, successful clears, per-domain
+outcomes and no automatic CPU intervention. Test original advanced pulses and
+recovery alongside these changes, not just new controls. Preserve the compact
+viewport, optional legacy APIs, v0.4.1 release and McRetro.net boundary. Independent
+review, full applicable regression, actual-core checks and PR/main CI remain gates.
+
+Implementation `c0e79a0`, hardening `2dbd1f4`, review fixes `53c710b` and
+normal-core acceptance `72f67ad` are complete. Independent Luna High review
+approves the final source. The full source/SDK107 suite and normal sanitizers
+pass, as do display6/6, focused WebKit7/7 and independent actual-core running/
+paused and normal-fallback pulse cases. Review tightened malformed VRAM-state
+refusal before any mutation. Final full browser and PR/main checks remain the
+integration gates; no public release or external-site changes are authorised.
+
+## PR #51 integration checkpoint — 25 October 2026
+
+[PR #51](https://github.com/NixMcRetro/VRAMpage-MD/pull/51) merged as
+`53d8de70e37fe67301a4b3841b49b45a57adffe0` after all seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40111996963)
+passed on `63856ab494c8055320c95559adfcfb4e0cf77173`.
+All seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40112535488)
+pass; the merged tree exactly matches the reviewed head. Independent Luna High
+review approved source `2cc4914`.
+
+**Randomiser — PSG · FM · VRAM** is complete in source. Each button chooses
+cuts or a joined pair only within its selected chip, preserving the other chip
+settings and Work RAM. VRAM retains its model and refuses active RAM/pulse/held
+handoffs. Failure status distinguishes unchanged, observed partial and unknown
+state. Existing configuration/experiment formats capture the selected settings.
+Native/core code is unchanged. Local verification: native/SDK107 and source
+script, final Chromium66/66, focused WebKit5/5, actual-core5/5, transaction3/3,
+display6/6 and an exact-source 682-entry review ZIP. Final CI repeats full
+interfaces in all three browsers and tests the extracted runtime in Firefox/WebKit.
+
+[Ready-to-run review build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40112535488/artifacts/12567700494)
+contains the merged source changes. This is separate from the public v0.4.1
+release: its original tag, metadata and asset digests remain unchanged.
+McRetro.net was not modified or deployed. No integration blocker remains.
+Next: combined configuration/randomisation/removal/recovery/comparison acceptance,
+then Phase D feature freeze. Bundle this checkpoint with that task; no
+intermediate public release or documentation-only PR. Reuse environment notes
+and evidence in `/workspace/scratch/VRAMPAGE-ENVIRONMENT.md` and
+`/workspace/scratch/randomise`. No native macOS, audible or physical evidence
+is claimed.
+
+
+## Completed user priority: chip-local Randomiser
 
 Add a compact **Randomiser** label followed by **PSG**, **FM**, **VRAM** buttons,
 as explicitly requested. Each button selects cuts or a distinct joined pair
@@ -19,7 +78,7 @@ McRetro.net; return to combined workbench acceptance after this requested slice.
 
 Implemented `5be6d9e`, independently reviewed/fixed `2cc4914`. The full native/SDK107
 and source script pass. Final Chromium66/66, WebKit focused5/5, compiled-core5/5,
-transaction3/3 and display6/6 pass. Required PR/main CI remains before integration.
+transaction3/3 and display6/6 pass. All seven PR and main checks passed; see the final integration checkpoint above.
 Keep the corrected deterministic selection test and held-key restoration test;
 do not weaken assertions to accommodate unforced random outcomes.
 
@@ -222,7 +281,7 @@ passes in both Chromium and WebKit. All seven final-head PR and main checks pass
 ## Next bounded task: combined workbench acceptance
 
 Reuse the merged implementation and existing original synthetic cartridge tests.
-Exercise configuration save/preview/apply, presets, fault removal, memory-only
+Exercise configuration save/preview/apply, presets, chip-local randomisation, fault removal, memory-only
 CPU recovery, clean restart, export and comparison as a combined workflow on
 runtime and normal fallback cores. Check active state and retained history,
 truthful partial/unavailable results and keyboard/pulse boundaries without

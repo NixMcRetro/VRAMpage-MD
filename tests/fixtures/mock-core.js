@@ -130,7 +130,7 @@ window.Module = async () => {
         if (window.mockCore.rejectVramModelAfterMutation) return 9;
         return 0;
       },
-      _get_vram_fault_model_state:()=>window.mockCore.nullVramState?null:({modelId:vramModel.modelId,modelVersion:vramModel.modelId===2
+      _get_vram_fault_model_state:()=>window.mockCore.nullVramState?null:(window.mockCore.vramStateOverride||{modelId:vramModel.modelId,modelVersion:vramModel.modelId===2
         ?'logical-byte-transaction-v1':'frame-projection-v1',mask:vramModel.mask,
         bridgeA:vramModel.bridgeA,bridgeB:vramModel.bridgeB,supportedModelsMask:vramModel.supportedModelsMask,
         effective:!!(vramModel.mask||vramModel.bridgeA>=0),reason:vramModel.mask||vramModel.bridgeA>=0?'active':'no-fault',
@@ -213,9 +213,12 @@ window.Module = async () => {
       _get_logic_address_mask:()=>logic.addressMask,
       _arm_logic_write_pulse(kind,a,b,limit) {
         if (!Number.isInteger(limit) || limit<1 || limit>1024) return 5;
+        if (window.mockCore.rejectPulseArm) return 5;
         const status=setLogicFault(kind,2,a,b);
         if (status!==0) return status;
-        logic.pulseState=1;logic.budget=limit;return 0;
+        logic.pulseState=1;logic.budget=limit;
+        if (window.mockCore.throwPulseArmAfter) throw new Error('synthetic pulse arm trap after mutation');
+        return 0;
       },
       _get_logic_pulse_state:()=>logic.pulseState,
       _set_logic_fault: setLogicFault,

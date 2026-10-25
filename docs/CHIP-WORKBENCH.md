@@ -37,8 +37,10 @@ records. The original v0.4.0 download remains unchanged; new packages are identi
 
 ## Development-source coordinated removal
 
-**Disconnect all faults** pauses emulation and attempts every modeled domain,
-including audio masks and pair bridges. It abandons pending leg selections and
+**Disconnect all faults** attempts every modeled domain without forcing a pause
+on a confirmed complete clear. It preserves an existing pause; partial or
+unverified failure pauses for inspection. This includes audio masks and pair
+bridges. It abandons pending leg selections and
 held/momentary restore actions so they cannot reinstate a connection afterward.
 The result reports partial failure rather than claiming every chip is clear.
 This does not reset the CPU or repair earlier corruption. See
@@ -66,3 +68,13 @@ JSON to retain the recorded state and counters. Randomisation does not consume
 a staged configuration preview or add a new file format. Removing a fault
 changes future accesses, without repairing prior corruption. These remain
 digital approximations, not physical open-wire or electrical fault simulation.
+
+## Development-source compact recovery and RAM burst
+
+**CPU reset** beside the Randomiser buttons invokes the existing CPU-only reset:
+RAM/VRAM faults clear while PSG/FM faults and the app's pause state are preserved.
+It does not reload the cartridge. The nearby **RAM pulse** chooses one write-only
+address bridge within A11–A15 for up to eight affected writes, capped at one
+emulated frame. It disconnects without automatic CPU recovery. Existing memory
+faults/pulses and held contacts block this shortcut instead of being overwritten;
+audio faults can coexist. See [pulse timing and records](RAM-PULSES.md).

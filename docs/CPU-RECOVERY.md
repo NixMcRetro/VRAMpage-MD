@@ -1,6 +1,6 @@
 # v0.2.1 experimental CPU recovery
 
-The work-RAM panel offers two explicit interventions after a fault. They are
+The workbench offers two explicit interventions after a fault. They are
 emulator debugging actions, not additional simulated hardware shorts. Neither
 repairs corrupted RAM or guarantees that gameplay continues.
 
@@ -14,6 +14,9 @@ repairs corrupted RAM or guarantees that gameplay continues.
   mixed state can fail even when a complete console restart works.
 
 Both CPU interventions leave PSG/FM input faults and sound-chip state unchanged.
+The development workbench also exposes **CPU reset** beside the Randomiser
+buttons. It invokes the same CPU-only reset action; it is not a full reboot and
+does not change the app's pause state.
 Use the separate development-source all-fault action below when audio faults
 also need to be removed. CPU recovery does not reset the whole system.
 
@@ -23,16 +26,19 @@ an interrupt, rewind an exception or establish physical-hardware fidelity.
 **Clean restart** remains the full cartridge reboot. Pausing is independent:
 recovery never changes pause state, so press Resume if the application is paused.
 
-## Development source: pause and disconnect all faults
+## Development source: disconnect all faults
 
 The new **Disconnect all faults** action is separate from CPU recovery and
-**Clean restart**. It pauses emulation, cancels app-side RAM pulse completion and
+**Clean restart**. It cancels app-side RAM pulse completion and
 held/momentary restore actions, then attempts to clear VRAM, work RAM, PSG and
 FM through their existing APIs. Successful clears are retained if another
 domain fails; old faults are never reinstalled as rollback. Status distinguishes
 cleared, failed and unavailable state. Older cores without pulse telemetry are
-reported conservatively as unverified after an accepted RAM clear. Emulation remains paused, including on
-partial failure. Choose **Resume** explicitly when ready.
+reported conservatively as unverified after an accepted RAM clear. A confirmed
+complete clear preserves the app's prior pause state: running stays running and
+paused stays paused. Partial, failed or unverified clears pause emulation for
+inspection before another tick; successful clears are retained. The synchronous
+operation does not run an emulator tick between its domain setters.
 
 This action does not resume/reset the 68000, reload the cartridge, undo earlier
 memory writes or restore sound-chip registers. Existing audio clear operations

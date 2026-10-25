@@ -1,6 +1,57 @@
 # Development status and continuation checkpoint
 
-## Current user priority — Randomiser
+## Current user priority — compact RAM pulse and recovery
+
+The user requested CPU reset beside Randomiser, a temporary Work RAM write
+randomiser confined to A11–A15, and no forced pause during all-domain clearing.
+Implementation is isolated on `experiment/workbench-ram-pulse` from checkpoint
+`ffb330f`. The new burst uses the existing eight-affected-write/one-frame limit
+without CPU recovery; the existing advanced forced-resume pulses remain intact.
+Confirmed complete disconnection preserves prior play/pause, while partial or
+unknown outcomes pause for inspection. Reuse existing native code/evidence,
+preserve v0.4.1 and keep McRetro.net untouched. Required final CI remains before integration.
+
+Implementation `c0e79a0`, hardening `2dbd1f4`, review fixes `53c710b` and
+normal-core acceptance `72f67ad` are complete. Independent Luna High review
+approves the final source. The full source/SDK107 suite and normal sanitizers
+pass, as do display6/6, focused WebKit7/7 and independent actual-core running/
+paused and normal-fallback pulse cases. Review tightened malformed VRAM-state
+refusal before any mutation. Final full browser and PR/main checks remain the
+integration gates; no public release or external-site changes are authorised.
+
+## PR #51 integration checkpoint — 25 October 2026
+
+[PR #51](https://github.com/NixMcRetro/VRAMpage-MD/pull/51) merged as
+`53d8de70e37fe67301a4b3841b49b45a57adffe0` after all seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40111996963)
+passed on `63856ab494c8055320c95559adfcfb4e0cf77173`.
+All seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40112535488)
+pass; the merged tree exactly matches the reviewed head. Independent Luna High
+review approved source `2cc4914`.
+
+**Randomiser — PSG · FM · VRAM** is complete in source. Each button chooses
+cuts or a joined pair only within its selected chip, preserving the other chip
+settings and Work RAM. VRAM retains its model and refuses active RAM/pulse/held
+handoffs. Failure status distinguishes unchanged, observed partial and unknown
+state. Existing configuration/experiment formats capture the selected settings.
+Native/core code is unchanged. Local verification: native/SDK107 and source
+script, final Chromium66/66, focused WebKit5/5, actual-core5/5, transaction3/3,
+display6/6 and an exact-source 682-entry review ZIP. Final CI repeats full
+interfaces in all three browsers and tests the extracted runtime in Firefox/WebKit.
+
+[Ready-to-run review build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40112535488/artifacts/12567700494)
+contains the merged source changes. This is separate from the public v0.4.1
+release: its original tag, metadata and asset digests remain unchanged.
+McRetro.net was not modified or deployed. No integration blocker remains.
+Next: combined configuration/randomisation/removal/recovery/comparison acceptance,
+then Phase D feature freeze. Bundle this checkpoint with that task; no
+intermediate public release or documentation-only PR. Reuse environment notes
+and evidence in `/workspace/scratch/VRAMPAGE-ENVIRONMENT.md` and
+`/workspace/scratch/randomise`. No native macOS, audible or physical evidence
+is claimed.
+
+
+## Earlier Randomiser implementation checkpoint
 
 The user requested **Randomiser** followed by independent **PSG**, **FM** and
 **VRAM** buttons. Implementation is isolated on `experiment/random-chip-faults`
@@ -16,8 +67,8 @@ compiled-core5/5, transaction3/3 and display6/6 checks pass, including actual
 native Randomiser settings and configuration export. Visual checks put the
 Randomiser row below all four chips within 1366 by 768, with no horizontal page
 overflow at 1366, 768 or 390 pixels. A nondeterministic new test was corrected
-to force the expected mode; the failed log is retained. Required PR/main CI
-and matching review-package verification remain before integration.
+to force the expected mode; the failed log is retained. Required PR/main CI and matching review-package verification passed;
+see the final integration checkpoint above.
 
 ## PR #50 integration checkpoint — 25 October 2026
 

@@ -124,6 +124,30 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     })
                     self.assertNotIn('rom', saved)
                     self.assertNotIn('inputWrites', json.dumps(saved))
+                    expect(page.locator('#randomRamPulseBtn')).to_be_enabled()
+                    page.evaluate("""() => {
+                      const nativeRandom=Math.random, values=[0.99,0];
+                      Math.random=()=>values.shift();
+                      document.querySelector('#randomRamPulseBtn').click();
+                      Math.random=nativeRandom;
+                    }""")
+                    expect(page.locator('#pauseBtn')).to_have_text('Resume')
+                    self.assertEqual(page.evaluate('testCore._get_logic_pulse_state()'),1,
+                                     'normal-core legacy VRAM getters permit the bounded RAM pulse')
+                    page.locator('#pauseBtn').click()
+                    expect(page.locator('#randomiserStatus')).to_contain_text(
+                        'fault disconnected automatically',timeout=8000)
+                    page.locator('#logicExperiment > summary').click()
+                    with page.expect_download() as pulse_download:
+                        page.locator('#logicExperimentBtn').click()
+                    pulse_payload=json.loads(Path(pulse_download.value.path()).read_text())
+                    pulse=pulse_payload['faultPulses'][-1]
+                    self.assertEqual((pulse['a'],pulse['b']),(10,14))
+                    self.assertEqual(pulse['access'],2)
+                    self.assertLessEqual(pulse['writeCount'],8)
+                    self.assertLessEqual(pulse['endFrame']-pulse['startFrame'],1)
+                    self.assertFalse(pulse['cpuRecoveryAttempted'])
+                    self.assertFalse(pulse['recoveryAccepted'])
                     self.assertEqual(errors, [])
                     browser.close()
             finally:
@@ -670,17 +694,56 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     frame=page.evaluate('testCore._get_logic_frame()')
                     for attempt in range(2):
                         if attempt:
+                            # The first clear began paused and deliberately kept it paused.
+                            # Exercise the running-success path separately after an explicit resume.
+                            page.locator('#pauseBtn').click()
+                            page.wait_for_function('frame=>testCore._get_logic_frame()>frame',arg=frame)
+                            frame=page.evaluate('testCore._get_logic_frame()')
                             page.locator('[data-chip-line]').nth(0).click()
                             self.assertEqual(page.evaluate('testCore._get_logic_address_mask()'),1)
-                        page.locator('#disconnectAllFaultsBtn').click()
-                        expect(page.locator('#pauseBtn')).to_have_text('Resume')
-                        self.assertEqual(page.evaluate('testCore._get_logic_frame()'),frame)
+                        paused_before=page.locator('#pauseBtn').inner_text()=='Resume'
+                        frame=page.evaluate("""() => {
+                          const frame=testCore._get_logic_frame();
+                          document.querySelector('#disconnectAllFaultsBtn').click();
+                          return frame;
+                        }""")
+                        all_domains_available=psg_api and fm_api
+                        expected_pause='Resume' if paused_before or not all_domains_available else 'Pause'
+                        self.assertEqual(page.locator('#pauseBtn').inner_text(),expected_pause,
+                                         page.locator('#disconnectAllFaultsStatus').inner_text())
+                        if paused_before or not all_domains_available:
+                            self.assertEqual(page.evaluate('testCore._get_logic_frame()'),frame,
+                                             'paused or incomplete disconnect must stop before another frame')
+                        else:
+                            self.assertGreaterEqual(page.evaluate('testCore._get_logic_frame()'),frame)
+                        frame=page.evaluate('testCore._get_logic_frame()')
                         self.assertEqual(page.evaluate('[window.__disconnectCpuCalls,window.__disconnectStartCalls]'),[0,0])
                         self.assertEqual(page.evaluate('testCore._get_vram_address_mask()'),0)
                         self.assertEqual(page.evaluate('testCore._get_logic_address_mask()'),0)
                         for kind,available in [('psg',psg_api),('fm',fm_api)]:
                             if available:
                                 self.assertFalse(page.evaluate(f'testCore._get_{kind}_data_bridge_state().configured'))
+                        page.wait_for_timeout(40)
+                        if all_domains_available and not paused_before:
+                            self.assertGreater(page.evaluate('testCore._get_logic_frame()'),frame,
+                                               'confirmed running clear must keep emulation ticking')
+                        else:
+                            self.assertEqual(page.evaluate('testCore._get_logic_frame()'),frame,
+                                             'paused or incomplete disconnect must stop before another frame')
+                        frame=page.evaluate('testCore._get_logic_frame()')
+                    self.assertTrue(page.evaluate("typeof testCore._arm_logic_write_pulse==='function'"),
+                                    'actual core exposes affected-write pulse support')
+                    if page.locator('#pauseBtn').inner_text()!='Pause':
+                        page.locator('#pauseBtn').click()
+                    before=page.evaluate("testCore._get_logic_frame()")
+                    page.evaluate("""() => {
+                      const nativeRandom=Math.random, values=[0,0];
+                      Math.random=()=>values.shift();
+                      document.querySelector('#randomRamPulseBtn').click();
+                      Math.random=nativeRandom;
+                    }""")
+                    expect(page.locator('#randomiserStatus')).to_contain_text('fault disconnected automatically')
+                    expect(page.locator('#pauseBtn')).to_have_text('Pause')
                     with page.expect_download() as download:
                         page.locator('#logicExperimentBtn').click()
                     cleared=json.loads(Path(download.value.path()).read_text())
@@ -688,6 +751,14 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     self.assertEqual(len(cleared['faultDisconnects']),2)
                     self.assertEqual([row['domain'] for row in cleared['faultDisconnects'][-1]['results']],['VRAM','RAM','PSG','FM'])
                     self.assertEqual(cleared['faultDisconnects'][-1]['action'],'all-domain-disconnect')
+                    burst=cleared['faultPulses'][-1]
+                    self.assertEqual((burst['a'],burst['b']),(10,11))
+                    self.assertEqual(burst['access'],2)
+                    self.assertLessEqual(burst['writeCount'],8)
+                    self.assertEqual(burst['endFrame']-burst['startFrame'],1)
+                    self.assertFalse(burst['cpuRecoveryAttempted'])
+                    self.assertFalse(burst['recoveryAccepted'])
+                    self.assertGreaterEqual(burst['endFrame'],before)
                     page.evaluate('testCore._recover_logic_cpu=window.__disconnectRecover;testCore._start=window.__disconnectStart')
                     page.locator('#resetBtn').click()
                     page.wait_for_function('testCore._get_logic_address_mask()===0')

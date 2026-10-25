@@ -15,11 +15,14 @@ fault removal with explicit partial-failure status, retaining memory-only CPU
 recovery and clean restart as separate actions. PR #49 completed that slice with
 passing PR/main CI. PR #50 completed read-only comparison of two saved experiment exports,
 separating identity compatibility from recorded settings and results; all seven
-PR/main checks pass. The user's next requested addition is a compact Randomiser
-row with independent PSG, FM and VRAM buttons. Reuse existing chip-local cut and
-bridge models, preserve Work RAM and the other chips, and retain truthful state,
-configuration/export and failure behavior. Then review combined workbench flows
-before the Phase D feature freeze.
+PR/main checks pass. PR #51 completed the requested compact Randomiser
+row with independent PSG, FM and VRAM buttons. It reuses existing chip-local cut
+and bridge models, preserves Work RAM and the other chip settings, and retains
+truthful configuration/export and failure behavior. All seven PR/main checks
+pass. The next requested workbench slice adds a compact CPU reset shortcut,
+an A11–A15 random write burst (eight affected writes/one-frame maximum, no CPU
+recovery at completion), and all-domain clearing without forced pause on
+confirmed success. Then review combined flows before the Phase D feature freeze.
 Do not repeat the completed configuration or chip integration.
 
 Reuse the merged VRAM engine, API and runtime builder. Focused correctness and

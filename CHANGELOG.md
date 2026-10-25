@@ -2,9 +2,10 @@
 
 ## Unreleased workbench improvements
 
+- Add compact CPU reset and an A11–A15 write-only random RAM burst, capped at eight affected writes/one frame and cleared without automatic CPU recovery.
 - Add a Randomiser row with separate PSG, FM and VRAM buttons for chip-local cuts or bridges, reusing existing models and exports.
 - Compare two saved experiment exports locally without changing emulation; distinguish matching, different and unavailable identities and inspect recorded settings, counters and recovery outcomes.
-- Add a distinct pause-and-disconnect action for all fault domains, with pulse/held-action cancellation and per-domain partial-failure reporting.
+- Add all-domain disconnection with pulse/held-action cancellation and partial-failure reporting. Preserve play/pause on confirmed complete clears; pause failed or unverified clears for inspection.
 - Clarify that CPU recovery clears RAM/VRAM faults while leaving audio faults unchanged. Preserve explicit resume and clean restart as separate actions.
 - Keep the public v0.4.1 package and historical evidence unchanged.
 

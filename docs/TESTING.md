@@ -1042,3 +1042,40 @@ unreadable pulse state and held-bridge restoration after refusal. A first full
 64-case run had one nondeterministic test expectation; it was replaced with an
 explicit mode choice, and the failed log remains under `/workspace/scratch/randomise`.
 The native/SDK107 and source script pass with unchanged native model code.
+
+# Compact RAM burst and recovery acceptance (development source)
+
+Force deterministic endpoints within A11–A15 (zero-based 10–14), writes only,
+eight affected writes maximum and one-frame expiry. Assert that completion
+disconnects without a CPU intervention; the existing advanced pulse controls
+must retain their forced-resume behavior. Cover paused/no-write expiry, missing
+APIs, overlap/held-contact refusal, cancellation by disconnect/reset/new-ROM,
+setter/release failures, truthful pulse/export metadata and audio isolation.
+
+Verify the compact CPU reset invokes the existing CPU-only action, preserves
+RAM contents/audio faults and app pause state, and cancels pending work without
+late callbacks. Successful all-domain disconnection must preserve running and
+paused states; failed, partial or unverified results must remain inspectable
+and pause before another tick, without discarding successful clears. Update
+old always-paused assertions to test these requested semantics explicitly.
+Run the applicable complete source/browser suite and actual compiled core,
+retaining normal sanitizers and the four-chip/compact-controls viewport checks.
+
+The full source script passes 107 native/SDK tests with normal sanitizers and
+fresh WASM profiles, plus the JavaScript/schema/property/smoke checks. The first
+restricted-sandbox run could not use localhost or LeakSanitizer; the unchanged
+checks passed with the required execution permissions. No assertions were disabled.
+All six Chromium display/input regressions and seven focused WebKit pulse/status/
+run-state cases pass. The initial full Chromium interface run passed 68 of 71;
+the remaining assertions used the old status/three-button row or an ineffective
+arm-trap injection, and were corrected with targeted fixture fault flags.
+Independent review also tightened malformed VRAM-state rejection before mutation.
+Logs, the exact-source review ZIP and continuation evidence are retained under
+`/workspace/scratch/workbench-ram-pulse`. Required final PR/main CI remains the
+integration gate. Native model code and the public v0.4.1 package are unchanged.
+
+Independent Luna High review approves source `72f67ad` with malformed-state
+preflight fix `53c710b`. Focused actual-core tests pass for running/paused
+disconnection, bounded pulse exports and the normal-core legacy-getter fallback.
+The stale actual-core test was corrected to start each run-state case explicitly
+and measure disconnect/no-tick state in the same JavaScript task.
