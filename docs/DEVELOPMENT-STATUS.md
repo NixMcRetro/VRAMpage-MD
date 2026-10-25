@@ -14,8 +14,10 @@ Buttons and labels use Title Case, including **Work RAM**, **CPU Reset**,
 **Clean Restart** and **Hold While Pressed**. Preserve this style in future work.
 No native model, VERSION, public release or McRetro.net change. Checkpoint
 save/restore remains gated by serializer capacity and complete state/replay proof.
-Current task: finish independent review, full applicable source/browser checks,
-then seven required PR/main checks and exact package provenance before delivery.
+Independent review approves through c6930dc. Source/native smoke97 (two SDK/vendor
+classes skipped), Chromium core7/display7, WebKit focused7/actual-HALT1 and direct
+WASM25 pass. Final-source Chromium103 rerun, required seven PR/main checks and
+package provenance remain integration gates; see the latest testing record.
 
 
 ## v0.5.0 design checkpoint

@@ -1472,3 +1472,35 @@ reprogram sound normally. No sound reset behaviour is modified by this cleanup.
 Disabled-style follow-up: Chromium compact 6, display 7, logic 96 and actual-core 6 tests passed; targeted WebKit appearance and CPU/clean-restart cases passed. Visual probe passed 48 states. CPU preservation is supported by source review; snapshots verify fault configuration, not nonzero sound registers. Unchanged native build evidence is reused.
 
 PR #60 final integration: all seven PR checks (40206196863) and all seven main checks (40206671753) passed. The extracted local bundle also passed all six actual-core cases. Main source is 5d0425a64acb0f883789c67e8c6ec41e5d2c0c02; release/tag/assets unchanged.
+
+
+# Bounded recovery and Title Case integration
+
+Development source adds one explicitly armed HALT-triggered CPU-only reset attempt.
+Focused browser coverage exercises default off, genuine STOP exclusion, two-frame
+HALT streak, ordinary-edit reset, held/pulse exclusion, cancellation, telemetry and
+fault-clear failures, explicit rearm and synchronous audio-fault preservation.
+Original generated cartridges verify actual HALT/STOP in Chromium and WebKit;
+these establish CPU intervention behavior, not continued gameplay or audible sound.
+The post-reset telemetry regression preserves the issued reset record while pausing
+for inspection, and manually stepped frames prove two fresh observations after
+RAM disconnection. The original all-domain cancellation regression exposed an extra
+telemetry read during disarm; a pure UI update fixes it without weakening the check.
+
+Local source/native smoke script passed 97 Python checks (two SDK/vendor-dependent
+classes skipped in the isolated worktree), remaining JS/protocol/native smoke
+commands passed; unchanged full SDK/native evidence is reused. Seven Chromium
+actual-core cases, seven display cases, seven focused WebKit logic cases and the
+WebKit actual HALT/STOP case passed. Direct WASM CPU checks passed 25 original
+cartridge cases. All 103 Chromium logic cases completed with one pre-fix cancellation
+failure; its focused regression now passes, and the final-source full rerun plus
+required fresh CI are integration gates. Original failure logs are retained under
+`/workspace/scratch/bounded-recovery`.
+
+Title Case includes static/dynamic controls, metric/option/comparison labels,
+keyboard target and Work RAM. Compact labels stay on one line; a one-pixel heading
+spacing adjustment retains the existing 768-pixel RAM-pair visibility requirement.
+No C models, serializer, VERSION or public release changed. Checkpoints remain
+planned. Independent code review approved through c6930dc after resolving three
+findings. Requested reviewer profile was Luna High; the reviewer identified its
+model as GPT-6, so no unavailable model identity is claimed here.
