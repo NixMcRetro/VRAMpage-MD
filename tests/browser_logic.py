@@ -453,7 +453,7 @@ class BrowserLogicTests(unittest.TestCase):
         pins.nth(1).click()
         expect(self.page.locator("#connectionLabel")).to_have_text("AD0 ↔ AD1")
         expect(self.page.locator("#logicStatus")).to_have_text(
-            "VRAM patch active; logic/work RAM fault disconnected.")
+            "VRAM patch active; logic/Work RAM fault disconnected.")
         self.assertFalse(self.page.evaluate("window.mockCore.logic.active"))
         self.assertEqual(self.page.evaluate("window.mockCore.short"), [0, 1])
 
@@ -461,7 +461,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.wait_for_function("window.mockCore.starts === 2")
         expect(self.page.locator("#connectionLabel")).to_have_text("NONE — NORMAL ADDRESSING")
         expect(self.page.locator("#logicStatus")).to_have_text(
-            "Clean restart: VRAM/work RAM faults cleared; counters reset.")
+            "Clean Restart: VRAM/Work RAM faults cleared; counters reset.")
         self.assertEqual(self.page.evaluate("window.mockCore.short"), [-1, -1])
         self.assertFalse(self.page.evaluate("window.mockCore.logic.active"))
         self.assertEqual(self.page.evaluate("window.mockCore.logic.reads"), 0)
@@ -974,7 +974,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.page=self.new_page(circuit_config=True)
         self.load_rom()
         self.assertEqual(self.page.locator('.randomiser-row button').all_text_contents(),
-                         ['PSG','FM','VRAM','CPU reset','Clean restart'])
+                         ['PSG','FM','VRAM','CPU Reset','Clean Restart'])
         expect(self.page.locator('#randomiserStatus')).to_have_text('Choose PSG, FM, or VRAM to randomise a chip.')
         before=self.page.evaluate('({starts:mockCore.starts,ramCalls:mockCore.logic.setterCalls.length,fm:mockCore.fm.calls.length,vram:mockCore.vramModel.calls.length})')
         def randomise(selector, value):
@@ -2486,7 +2486,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.load_rom()
         button=self.page.locator('#armCpuRecoveryBtn')
         expect(button).to_be_enabled()
-        expect(button).to_have_text('Arm CPU recovery once')
+        expect(button).to_have_text('Arm CPU Recovery Once')
         self.page.evaluate("mockCore.logic.cpuFlags=2;mockCore.core._set_psg_data_bridge(1,0,1);mockCore.core._set_fm_data_bridge(1,2,3)")
         start=self.page.evaluate('mockCore.ticks')
         self.page.wait_for_function('mockCore.ticks >= '+str(start+4))
@@ -2537,7 +2537,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.wait_for_function('mockCore.ticks >= '+str(start+4))
         self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[])
         self.page.keyboard.up('Space')
-        expect(self.page.locator('#armCpuRecoveryBtn')).to_have_text('Disarm CPU recovery')
+        expect(self.page.locator('#armCpuRecoveryBtn')).to_have_text('Disarm CPU Recovery')
         self.page.wait_for_function('mockCore.logic.recoveries.length===1')
 
         # Pause, window blur and a successfully activated replacement each disarm.

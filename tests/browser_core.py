@@ -702,7 +702,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     page.locator('#logicCpuResetBtn').click()
                     expect(page.locator('#pauseBtn')).to_have_text('Resume')
                     self.assertEqual(page.evaluate('''() => ({fm:testCore._get_fm_data_bridge_state(),psg:testCore._get_psg_data_bridge_state()})'''),audio_before,
-                                     'paused CPU reset preserves audio fault settings and counters')
+                                     'paused CPU Reset preserves audio fault settings and counters')
                     self.assertEqual(page.evaluate('nativeCalls._recover_logic_cpu'), [[2]])
                     self.assertEqual(page.evaluate('nativeCalls._start.length'), 1)
                     self.assertEqual(page.locator('[data-keyboard-chip=FM].fault-active,[data-keyboard-chip=PSG].fault-active').count(), 2)
@@ -991,7 +991,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                                              'paused or incomplete disconnect must stop before another frame')
                         frame=page.evaluate('testCore._get_logic_frame()')
                     self.assertTrue(page.evaluate("typeof testCore._set_logic_fault==='function'"),
-                                    'actual core exposes ordinary work RAM bridge support')
+                                    'actual core exposes ordinary Work RAM bridge support')
                     if page.locator('#pauseBtn').inner_text()!='Pause':
                         page.locator('#pauseBtn').click()
                     before=page.evaluate("testCore._get_logic_frame()")

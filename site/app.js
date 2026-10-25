@@ -879,9 +879,9 @@
     latched=targetPair; momentary=null; selectedPin=null;
     if (removedLogic) {
       logicResetState='Logic fault disconnected because VRAM fault was activated';
-      logicStatusMessage='VRAM patch active; logic/work RAM fault disconnected.';
+      logicStatusMessage='VRAM patch active; logic/Work RAM fault disconnected.';
       $('logicStatus').textContent=logicStatusMessage;
-      stamp('Logic/work RAM fault disconnected because the VRAM patch was activated');
+      stamp('Logic/Work RAM fault disconnected because the VRAM patch was activated');
     }
     if (oldModel!==modelId || oldMask!==mask || !samePair(oldPair,targetPair)) {
       vramModelTransitions.push({frame:oldFrame,from:oldModel,to:modelId,
@@ -1039,7 +1039,7 @@
       typeof emulator?._get_logic_cpu_flags==='function';
     $('armCpuRecoveryBtn').disabled=!recoveryReady || (!cpuRecoveryArmed && recoveryTransientActive());
     $('armCpuRecoveryBtn').setAttribute('aria-pressed',String(cpuRecoveryArmed));
-    $('armCpuRecoveryBtn').textContent=cpuRecoveryArmed?'Disarm CPU recovery':'Arm CPU recovery once';
+    $('armCpuRecoveryBtn').textContent=cpuRecoveryArmed?'Disarm CPU Recovery':'Arm CPU Recovery Once';
     $('cpuRecoveryStatus').textContent=cpuRecoveryArmed
       ? `ARMED${cpuRecoveryHaltFrames.length?` · HALT ${cpuRecoveryHaltFrames.length}/2`:''}` : 'OFF';
     for (const id of ['logicResumeBtn','logicCpuResetBtn'])
@@ -1276,7 +1276,7 @@
       cpuFlags:Number(emulator._get_logic_cpu_flags()) || 0
     };
     setLogicStatus(`Applied ${kindLabel} ${lineA} ↔ ${lineB} on ${accessLabel}.`);
-    stamp(`LOGIC / WORK RAM FAULT: ${kindLabel} ${lineA} ↔ ${lineB}, ${accessLabel}`);
+    stamp(`LOGIC / Work RAM FAULT: ${kindLabel} ${lineA} ↔ ${lineB}, ${accessLabel}`);
     return true;
   }
 
@@ -1313,7 +1313,7 @@
     if (!silent) {
       logicResetState='Logic fault disconnected; RAM writes persist';
       setLogicStatus('Logic fault disconnected. Any projected writes remain in RAM until a clean restart.');
-      stamp('Logic/work RAM fault disconnected; projected RAM writes persist');
+      stamp('Logic/Work RAM fault disconnected; projected RAM writes persist');
     }
     updateLogicControls();
     return true;
@@ -2683,11 +2683,11 @@
       vramModelId=1;vramModelTransitions=[];
       vramModelStatusMessage='';
       logicAddressMask=0;addressLineChanges=[];
-      logicActive=false; // runtime_start clears the work RAM fault and counters.
+      logicActive=false; // runtime_start clears the Work RAM fault and counters.
       activeRamConfiguration=null;
       ramSelectedPin=null;psgSelectedPin=null;fmSelectedPin=null;
       logicStatsRetained=false;
-      logicResetState=cleanRestart ? 'Clean restart; work RAM fault and counters reset' : 'Cartridge loaded; work RAM fault and counters reset';
+      logicResetState=cleanRestart ? 'Clean Restart; Work RAM fault and counters reset' : 'Cartridge loaded; Work RAM fault and counters reset';
       resetLogicSelection();
       logicStatusMessage=logicApiReady() ? 'Load or apply a logic fault when ready.' : 'Rebuild core for logic faults';
       ensureWasmViews();
@@ -2722,7 +2722,7 @@
         $('resetBtn').disabled=!romBytes;
         $('compactResetBtn').disabled=!romBytes;
         error.cartridgeActivationUncertain=true;
-        message('CARTRIDGE ACTIVATION UNCERTAIN',`${error.message} The core may have changed; use Clean restart to reload the last accepted cartridge.`);
+        message('CARTRIDGE ACTIVATION UNCERTAIN',`${error.message} The core may have changed; use Clean Restart to reload the last accepted cartridge.`);
       } else started=wasStarted;
       throw error;
     }
@@ -2753,8 +2753,8 @@
       await startCartridge(romBytes,loadedName,{cleanRestart:true});
       possibleVramResidue = false;
       updateFaultUI();
-      setLogicStatus(logicApiAvailable ? 'Clean restart: VRAM/work RAM faults cleared; counters reset.' : 'Rebuild core for logic faults');
-      stamp('Clean restart: VRAM/work RAM reset; all fault domains disconnected');
+      setLogicStatus(logicApiAvailable ? 'Clean Restart: VRAM/Work RAM faults cleared; counters reset.' : 'Rebuild core for logic faults');
+      stamp('Clean Restart: VRAM/Work RAM reset; all fault domains disconnected');
     } catch (error) { stamp(`Restart failed: ${error.message}`); }
   }
 
