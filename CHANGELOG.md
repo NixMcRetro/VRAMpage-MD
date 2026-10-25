@@ -2,9 +2,9 @@
 
 ## Unreleased workbench improvements
 
-- Default RAM WRITE to Hold while pressed; retain explicit eight-frame pulses and their exact timing.
+- Default RAM WRITE to Hold while pressed; retain explicit eight-frame pulses and their exact timing. Fill active fault chips pale green while keeping their green outline and readable pin labels.
 
-- Show active faults with pale green chip outlines and neutral infill; prevent fault digits on a focused Work RAM preset from activating global VRAM. Clearly distinguish the VRAM Randomiser's temporary disabled state during RAM contacts from a press.
+- Show active faults with pale green chip fills and outlines; prevent fault digits on a focused Work RAM preset from activating global VRAM. Clearly distinguish the VRAM Randomiser's temporary disabled state during RAM contacts from a press.
 
 - Add a compact Clean restart copy, optional sustained A11–A15 write contacts, and chip-targeted 1–9 shortcuts with 0 cycling VRAM/WRAM/FM/PSG and a separate keyboard-target label.
 - Record user-reported Mac Safari audio, tab/app switching, randomiser, RAM pulse and recovery acceptance.

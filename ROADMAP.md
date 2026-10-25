@@ -65,6 +65,11 @@ infill, distinguishes unavailable VRAM randomisation during RAM contacts, and
 prevents conflicting VRAM shortcuts on focused RAM controls. All seven PR checks
 pass; integration evidence is recorded in the latest checkpoint.
 
+The latest user refinement makes **Hold while pressed** the fresh-page RAM WRITE
+default, with explicit eight-frame pulses still available. Active fault chips now
+receive pale green fills as well as outlines; idle chips remain neutral. No native
+fault, recovery or timing changes are involved.
+
 ## Planned after stabilisation: v0.5.0 recovery milestone
 
 The user approved a target combining independent, optional bounded CPU halt

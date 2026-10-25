@@ -27,7 +27,7 @@ export reasons and the longword-hook correction. The frame options below remain.
 
 ### Development-source A11–A15 individual eight-frame write pulses
 
-The compact workbench provides ten **RAM WRITE · 8 frames** buttons, one for
+In **8-frame pulse** mode, the compact workbench provides ten RAM WRITE buttons, one for
 every distinct pair within **A11–A15**: A11/A12, A11/A13, A11/A14, A11/A15,
 A12/A13, A12/A14, A12/A15, A13/A14, A13/A15 and A14/A15. Clicking a button joins
 that pair on **writes only** for **eight emulated frames** (about 134 ms at normal

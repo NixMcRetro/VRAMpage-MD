@@ -89,8 +89,9 @@ corruption intact. Audio faults can coexist. See [RAM pulses](RAM-PULSES.md).
 
 Press **0** to cycle **VRAM → WRAM → FM → PSG** without applying or removing a
 fault. The keyboard-target label identifies which chip receives **1–9**. A pale green
-chip outline indicates an active fault on that chip, independently of keyboard
-selection. Chip bodies and text retain their normal theme colours. Clearing a
+chip fill and outline indicate an active fault on that chip, independently of
+keyboard selection. Idle chips retain their normal theme colours. Active bodies
+use dark text while applied/hovered pins retain their readable theme accents. Clearing a
 fault removes its outline; previous RAM or sound-chip corruption can persist. Existing
 Reconnect/Disconnect buttons remove faults; 0 no longer reconnects them in the
 development build. The original public v0.4.1 shortcut behaviour is unchanged.

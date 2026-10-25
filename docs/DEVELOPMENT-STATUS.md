@@ -1,6 +1,6 @@
 # Development status and continuation checkpoint
 
-## Source checkpoint: RAM WRITE Hold default
+## Source checkpoint: RAM WRITE Hold default and active chip fills
 
 The user requests **Hold while pressed** as the RAM WRITE default. On a fresh
 page the selector now starts on Hold; the existing **8-frame pulse** option remains
@@ -9,9 +9,10 @@ recovery or public version changes are required. Pulse-specific regression
 cases select Pulse explicitly; cold-start mock and actual-core tests check the
 new default and release semantics rather than overriding the selector first.
 
-The user's chip-fill sentence was truncated and is pending clarification; do
-not infer a colour/style or change the active-chip indication yet. The dotted
-VRAM Randomiser border already means unavailable, both before a ROM is loaded
+Active faults also give their chips pale green fill while retaining the green
+outline. Idle chips and keyboard target changes remain neutral; body text and
+plain/applied/hovered pin labels retain readable contrast in both themes. The
+dotted VRAM Randomiser border means unavailable, both before a ROM is loaded
 and during RAM contacts; it remains a safety-disabled command, not a press.
 
 ## PR #58 integration checkpoint — 26 October 2026 (Sydney)

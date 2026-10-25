@@ -1407,3 +1407,19 @@ Merge `d3b8d7eec4a2dd16c99734eecbce73d345bb8c26` exactly matches that tree.
 All seven main checks pass in run40197674169. The current integration checkpoint
 links the verified review download.
 Public v0.4.1 metadata/tag/assets are unchanged; McRetro.net is untouched.
+
+# Default press-duration Hold and active fault fills
+
+Fresh-page RAM WRITE now selects **Hold while pressed** without a fixture or
+initialisation script overriding the value. Mock and real compiled-core tests
+assert that default, hold beyond eight frames, and release on pointer/key up.
+Pulse-specific tests select **8-frame pulse** explicitly and retain exact timing,
+write-count, cancellation, rejection and legacy assertions.
+
+Active fault chips use pale green fills and outlines; idle chips remain themed,
+and changing only keyboard target never fills a chip. Updated colour regressions
+verify active fill, restoration on release, ordinary idle light/dark backgrounds
+and readable body, plain-pin, applied-pin and hovered-pin text. The first full
+browser run's two obsolete neutral-active colour assertions are retained with
+its log; the corrected assertions preserve the idle theme check and explicitly
+verify the new active-fill behaviour. Native models/handlers/timing are unchanged.
