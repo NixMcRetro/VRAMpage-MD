@@ -1447,3 +1447,24 @@ Merge `00be32ff8c9c705c60b1aafe4dd264d799c22fa2` matches that reviewed tree.
 All seven main checks pass in run40202700942. The current checkpoint links the
 verified review download. Public v0.4.1
 metadata/tag/assets remain unchanged; McRetro.net is untouched.
+
+# Consistent unavailable controls and CPU/sound reset confirmation
+
+The user reports active fill/Hold working well and prefers normal disabled styling
+for all Randomiser buttons. The VRAM-specific CSS override is removed. The browser
+regression compares all three chip buttons while no ROM is loaded, then retains
+the RAM-held disable, title, zero click/setter and release assertions.
+
+Independent Luna High source review confirms `scripts/work_ram_runtime.c` calls
+only work-RAM fault clearing and `m68k_pulse_reset()` for CPU-only reset; upstream
+`m68kcpu.c` changes 68000 flags/registers/vectors/cycles only. Full `system_reset()`
+calls `sound_reset()`, which reaches FM/PSG reset. The separate Genesis soft-reset
+path can partially reset FM, but CPU-only recovery does not call that path. The
+existing direct actual-WASM CPU test passes 25 checks.
+
+A paused compiled-core UI regression also verifies unchanged FM/PSG fault snapshots
+across CPU reset, exactly one mode-2 recover call and no cartridge start, followed
+by both Clean restart controls clearing audio fault configuration. This fixture
+can have zero audio fault counters; the general register/nonzero-counter claim
+rests on the native source call graph. After execution resumes, game code can
+reprogram sound normally. No sound reset behaviour is modified by this cleanup.

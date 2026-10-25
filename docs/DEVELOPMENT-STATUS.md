@@ -1,5 +1,28 @@
 # Development status and continuation checkpoint
 
+## Active cleanup: consistent disabled controls and CPU/audio confirmation
+
+The user accepts the active fill and Hold behaviour, and requests removal of the
+VRAM-only dotted unavailable styling. Remove that one CSS override so all chip
+Randomiser buttons share the normal disabled appearance. Preserve disable/title
+behaviour both before ROM loading and during RAM contacts; no VRAM action should
+be triggered. Native fault models, Hold defaults and audio behaviour are unchanged.
+
+Independent source review confirms CPU reset reaches only work-RAM fault clearing
+and `m68k_pulse_reset()`, with no VDP/Z80/FM/PSG/sound-reset call. Clean restart's
+full `system_reset()` reaches `sound_reset()` and FM/PSG reset. Cartridge code can
+later write sound registers once CPU execution resumes. New paused actual-core
+coverage compares FM/PSG configuration snapshots around the CPU reset and verifies
+that both Clean restart buttons clear them. Counters can be zero in this fixture;
+nonzero counter/register preservation rests on the reviewed native call graph,
+not an unsupported claim about that snapshot test. Existing actual-WASM CPU/RAM
+checks pass (25 original synthetic 68000 checks).
+
+Next after this bounded cleanup: v0.5.0 design for optional bounded CPU recovery
+and explicit save/restore checkpoints, preserving unassisted glitch outcomes by
+default. No v0.5.0 implementation/version bump is included here. Preserve public
+v0.4.1, historical artifacts and McRetro.net; require seven PR/main CI checks.
+
 ## PR #59 integration checkpoint — 26 October 2026 (Sydney)
 
 [PR #59](https://github.com/NixMcRetro/VRAMpage-MD/pull/59) merged as
