@@ -16,8 +16,10 @@ No native model, VERSION, public release or McRetro.net change. Checkpoint
 save/restore remains gated by serializer capacity and complete state/replay proof.
 Independent review approves through c6930dc. Source/native smoke97 (two SDK/vendor
 classes skipped), Chromium core7/display7, WebKit focused7/actual-HALT1 and direct
-WASM25 pass. Final-source Chromium103 rerun, required seven PR/main checks and
-package provenance remain integration gates; see the latest testing record.
+WASM25 pass. Final-source Chromium103 passes. Initial CI found native-control viewport
+differences in Firefox/WebKit; desktop-only sizing fixes both locally reproduced
+WebKit cases without changing the strict assertions. Required seven PR/main
+checks and updated package provenance remain integration gates.
 
 
 ## v0.5.0 design checkpoint

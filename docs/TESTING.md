@@ -1493,8 +1493,8 @@ commands passed; unchanged full SDK/native evidence is reused. Seven Chromium
 actual-core cases, seven display cases, seven focused WebKit logic cases and the
 WebKit actual HALT/STOP case passed. Direct WASM CPU checks passed 25 original
 cartridge cases. All 103 Chromium logic cases completed with one pre-fix cancellation
-failure; its focused regression now passes, and the final-source full rerun plus
-required fresh CI are integration gates. Original failure logs are retained under
+failure; its focused regression passes and the final-source full rerun passes all 103
+Chromium cases in 234.528 seconds. Required fresh CI remains the integration gate. Original failure logs are retained under
 `/workspace/scratch/bounded-recovery`.
 
 Title Case includes static/dynamic controls, metric/option/comparison labels,
@@ -1504,3 +1504,13 @@ No C models, serializer, VERSION or public release changed. Checkpoints remain
 planned. Independent code review approved through c6930dc after resolving three
 findings. Requested reviewer profile was Luna High; the reviewer identified its
 model as GPT-6, so no unavailable model identity is claimed here.
+
+
+First PR #61 CI run 40219940177 passed source, Chromium, the fresh build, and both
+packaged browsers, but Firefox/WebKit interface tests found two 768-pixel viewport
+violations after Title Case increased native control sizing. Desktop-only heights
+now normalize compact selects and Randomiser buttons; mobile controls retain their
+existing sizing. Both failing cases pass locally in Chromium and WebKit, and all
+seven WebKit display cases pass. The original strict viewport assertions remain.
+Final required CI reruns the complete browser matrix; Firefox is unavailable in
+the local Playwright cache, so its new evidence must come from that CI run.
