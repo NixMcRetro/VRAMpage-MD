@@ -1,6 +1,71 @@
 # Development work queue
 
-## Current Phase D slice: audio lifecycle stability
+## Source checkpoint: safe cartridge replacement
+
+Implementation `5b378f9` stages file reads and accepted ROM identity, rejects
+known size limits before reading and ignores stale selections/errors. Explicit
+Clean restart invalidates pending reads and uses retained accepted bytes. Export
+cancels rather than mixing identities after asynchronous hashing. Preflight
+rejection preserves the running/paused game, faults, audio, pulse and history.
+An activation attempt that may mutate the core stops/reports uncertainty on
+failure; there is no hidden rollback or automatic CPU rescue.
+
+Independent Luna High review/fixes `f85ac61` mark mutation before native start,
+retain pre-start audio drain and pulse cancellation only after acceptance, and
+refuse pending export if the core becomes uncertain. New-mode rejection coverage
+`141bdd9` and reset contract `522c13e` retain exact pulse timing and real native
+restart behaviour. Focused ROM/failure/race/export/pulse checks pass. The old
+source-only reset regex demanded premature disconnect calls; it was updated to
+assert real native restart plus read invalidation instead, with behavioural
+reset/cleanup evidence retained. The failed first source log is preserved.
+
+Independent compiled-core before/after proof: the old build exported the rejected
+file's hash under the accepted filename and failed to restart; the fixed build
+retains the accepted hash/name and performs native Clean restart. Raw evidence:
+`/workspace/scratch/rom-stability`. Final source/SDK107, Chromium80/80, actual compiled-core5/5 and focused
+WebKit ROM6/6 pass. Package provenance and required PR/main CI remain
+integration gates. Preserve public v0.4.1 and
+McRetro.net; this is Phase D failure handling, not the v0.5.0 recovery milestone.
+
+## PR #54 integration checkpoint — 25 October 2026
+
+[PR #54](https://github.com/NixMcRetro/VRAMpage-MD/pull/54) merged as
+`841239996c11446ec11a94fe757cd9991f6ca7b4` after all seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40163855382)
+passed on `f9ae124e097ad3ee9623183610997259e262a84b`.
+The merged tree exactly matches the reviewed head.
+All seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40164254321)
+pass. No integration blocker remains.
+
+This Phase D slice fixes host audio queues: no buffer allocation while the
+browser context cannot run; queued playback stops/disconnects on pause, mute,
+visibility and accepted ROM restart; ended/start-error paths release tracking.
+Core sound still runs and normal PCM copying, fault models/settings, CPU/chip
+state and game-recovery behaviour are unchanged. No smoothing or automatic
+rescue was added. Independent Luna High review approves source `23ec56b`.
+
+Full source/SDK107 with normal sanitizers/fresh WASM, Chromium72/72, extracted
+compiled-core5/5 and genuine WebKit lifecycle1/1 pass. The 682-file ROM-free
+review ZIP matches `f9ae124`, version0.4.1 and UI/runtime bytes. A 1,500-cycle
+actual-core mixed run completed in 411.73 seconds without page errors or queue
+violations: zero allocations during controlled context suspension, 15 peak
+active sources, all 15,767 sources ended and fixed 32 MiB WASM. Post-GC JS heap
+measured 2.83–3.29 MiB, including browser/JIT/automation state; this does not
+establish universal leak freedom. Raw logs/reports: `/workspace/scratch/stability`.
+
+[Ready-to-run audio-stability review build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40164254321/artifacts/12587573637)
+contains merged source and matching runtime, separate from public v0.4.1.
+
+Public v0.4.1 tag, metadata and original asset digests were verified unchanged
+after merge. McRetro.net was not modified or deployed. Phase D stabilisation
+continues; no additional reproducible source blocker remains from this slice.
+Next: targeted compatibility/failure/performance and native Mac/audible/OS
+background acceptance. These Linux synthetic checks do not establish the latter.
+The optional recovery/checkpoint v0.5.0 milestone remains planned only, after
+stabilisation. Preserve completed models/evidence; no speculative features,
+RAM research, intermediate release or standalone documentation PR is needed.
+
+## Completed Phase D slice: audio lifecycle stability
 
 Resume checkpoint `426c4fc` atop main `2736d59`; preserve all completed feature
 and hardware-model evidence. Source `23ec56b` fixes host-side queued audio only:
@@ -19,7 +84,7 @@ errors, zero allocations during suspension, 15 peak active sources, all 15,767
 sources ended and constant 32 MiB WASM memory. Post-GC JS heap measured about
 2.83–3.29 MiB; this includes warm-up/browser/automation state, not a universal
 no-leak proof. Full source/SDK107, Chromium72/72, actual-core5/5 and focused
-WebKit audio1/1 pass. Package and required PR/main CI remain integration gates;
+WebKit audio1/1 pass. Package provenance and PR/main CI are recorded in the checkpoint above;
 no audible/native Mac validation is claimed. Scratch evidence: `/workspace/scratch/stability`.
 
 The proposed v0.5.0 auto-resume/checkpoint milestone is deferred until after

@@ -37,6 +37,12 @@ The development-source [Randomiser](docs/CHIP-WORKBENCH.md#development-source-ra
 
 The same area includes **CPU reset** and ten individual **RAM WRITE** pair buttons covering every combination within A11–A15. Each joins its selected pair for **eight emulated frames**, then disconnects without automatic CPU recovery. There is no affected-write cap on these frame pulses; use experiment JSON to retain their history.
 
+Development source also stages cartridge replacements: rejected files keep the
+current game and its identity intact, older asynchronous reads cannot replace a
+newer selection, and Clean restart uses the last accepted cartridge. If core
+activation becomes uncertain, emulation stops explicitly; it does not pretend
+the previous machine state was restored.
+
 **RAM research:** a [reproducible bounded experiment](docs/RAM-STATUS-FOLLOWUP.md) now shows player-trajectory divergence while recorded demo inputs continue at the same phase. This uses the existing public core and does not establish physical electrical accuracy.
 
 ## What can it do?

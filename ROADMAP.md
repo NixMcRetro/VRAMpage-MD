@@ -38,6 +38,11 @@ regression and browser verification happen at integration boundaries. Do not
 repeat completed research or publish minor intermediate releases. Historical
 milestones below remain available as evidence.
 
+The first Phase D slice, PR #54, removes stale/unconsumable host audio queues
+without changing emulated sound, fault outcomes or recovery. Its 1,500-cycle
+actual-core soak, complete regressions and all seven PR/main checks pass;
+integration evidence is in the current checkpoint. Continue concrete stability/compatibility and manual checks.
+
 ## Planned after stabilisation: v0.5.0 recovery milestone
 
 The user approved a target combining independent, optional bounded CPU halt

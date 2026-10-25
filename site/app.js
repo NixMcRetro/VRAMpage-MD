@@ -48,7 +48,8 @@
   let circuitConfigLoadGeneration=0, circuitConfigLoading=false;
   let logicAddressMask = 0, addressLineChanges = [];
   let logicResetState = 'No cartridge loaded';
-  let romHashPromise = Promise.resolve(null);
+  let romLoadGeneration = 0;
+  let romIdentity = null;
   const CORE_PIN = '6090aff9e9b2f578cd28882bd4571d2e35b1d674';
   const APPLICATION_VERSION = '0.4.1';
   let buildInfo = {status:'unavailable',applicationVersion:APPLICATION_VERSION,sourceCommit:null};
@@ -1969,8 +1970,11 @@
   }
 
   async function downloadExperimentJSON() {
+    const exportIdentity=romIdentity;
     let romSha256=null;
-    try { romSha256=await romHashPromise; } catch (_) { /* Hashing failure never blocks emulation. */ }
+    try { romSha256=await (exportIdentity?.hashPromise ?? Promise.resolve(null)); } catch (_) { /* Hashing failure never blocks emulation. */ }
+    if (exportIdentity!==romIdentity) throw new Error('ROM changed while preparing export; download canceled.');
+    if (!started || !emulator) throw new Error('Cartridge activation is uncertain; restart the last accepted cartridge before exporting.');
     const currentFrame=logicApiReady() ? Number(emulator._get_logic_frame()) || 0 : 0;
     const coreReads=logicApiReady() ? Number(emulator._get_logic_reads()) || 0 : 0;
     const coreWrites=logicApiReady() ? Number(emulator._get_logic_writes()) || 0 : 0;
@@ -1993,7 +1997,7 @@
       faultPulses:faultPulses.map(entry=>({...entry})),
       cpuInterventions:cpuInterventions.map(entry=>({...entry})),
       faultDisconnects:faultDisconnectActions.map(entry=>({...entry,results:entry.results.map(result=>({...result}))})),
-      rom:{name:loadedName || null,sha256:romSha256},
+      rom:{name:exportIdentity?.name || null,sha256:romSha256},
       logicFault:lastLogicExperiment ? {...lastLogicExperiment} : null,
       faultActive:logicActive,
       resetState:logicResetState,
@@ -2310,66 +2314,91 @@
     // Ordinary .bin/.md ROMs contain the SEGA ID at offset 0x100.
     const marker = new TextDecoder('ascii').decode(bytes.subarray(0x100,0x104));
     if (marker !== 'SEGA') throw new Error('ROM header missing "SEGA" at offset 0x100. Supply a valid uncompressed .bin/.md file.');
-    // Stop the loop while we replace the cartridge image and reset the core.
+    // Stop the loop while preparing the new ROM. Before _start, failures leave
+    // the current cartridge and all of its controls untouched.
     const wasStarted=started; started=false;
-    const ptr=emulator._get_rom_buffer_ref(bytes.length);
-    if (!ptr) {started=wasStarted;throw new Error('Emulator refused ROM buffer allocation.');}
-    ensureWasmViews();
-    new Uint8Array(emulator.HEAPU8.buffer,ptr,bytes.length).set(bytes);
-    if (logicActive) disconnectLogic({silent:true});
-    clearAudioQueue();
-    emulator._start();
-    if (typeof emulator._set_vram_short !== 'function')
-      throw new Error('Core missing _set_vram_short. You must build the patched core (not the upstream prebuilt WASM).');
-    frameView=null;
-    started=true;
-    cpuInterventions=[];
-    faultPulses=[]; pendingPulse=null;
-    vramAddressMask=0;vramAddressLineChanges=[];
-    latched=null;momentary=null;momentaryRestorePair=null;selectedPin=null;
-    vramModelId=1;vramModelTransitions=[];
-    vramModelStatusMessage='';
-    logicAddressMask=0;addressLineChanges=[];
-    logicActive=false; // runtime_start clears the work RAM fault and counters.
-    activeRamConfiguration=null;
-    ramSelectedPin=null;psgSelectedPin=null;fmSelectedPin=null;
-    logicStatsRetained=false;
-    logicResetState=cleanRestart ? 'Clean restart; work RAM fault and counters reset' : 'Cartridge loaded; work RAM fault and counters reset';
-    resetLogicSelection();
-    logicStatusMessage=logicApiReady() ? 'Load or apply a logic fault when ready.' : 'Rebuild core for logic faults';
-    ensureWasmViews();
-    const vramStatus=callVramModel(1,0,null);
-    if (vramStatus!==0) throw new Error(`Could not restore default frame-projection VRAM model (status ${vramStatus}).`);
-    updateFaultUI();
-    $('screenPlaceholder').hidden=true;
-    loadedName=name;
-    $('romName').textContent=name.toUpperCase().slice(0,60);
-    setRunning(true);
-    paused=false;
-    $('pauseBtn').textContent='Pause';
-    faultDisconnectActions=[];
-    $('disconnectAllFaultsStatus').textContent='No all-domain disconnect has been attempted for this cartridge.';
-    accumulated=0;lastFrame=0;resetStats();
-    updateLogicControls();
-    refreshPsgDataControls();
-    refreshFmDataControls();
-    stamp(`Cartridge inserted: ${name} (forced NTSC-U)`);
+    let coreMutated=false;
+    try {
+      const ptr=emulator._get_rom_buffer_ref(bytes.length);
+      if (!ptr) throw new Error('Emulator refused ROM buffer allocation.');
+      ensureWasmViews();
+      new Uint8Array(emulator.HEAPU8.buffer,ptr,bytes.length).set(bytes);
+      // The accepted new image is about to replace core state; drain old audio
+      // and cancel app-scheduled pulse work before native activation can throw.
+      clearAudioQueue();
+      cancelPulse(cleanRestart ? 'clean restart' : 'cartridge replaced');
+      coreMutated=true; // _start can mutate native state before it throws.
+      emulator._start();
+      if (typeof emulator._set_vram_short !== 'function')
+        throw new Error('Core missing _set_vram_short. You must build the patched core (not the upstream prebuilt WASM).');
+      frameView=null;
+      started=true;
+      cpuInterventions=[];
+      faultPulses=[]; pendingPulse=null;
+      vramAddressMask=0;vramAddressLineChanges=[];
+      latched=null;momentary=null;momentaryRestorePair=null;selectedPin=null;
+      vramModelId=1;vramModelTransitions=[];
+      vramModelStatusMessage='';
+      logicAddressMask=0;addressLineChanges=[];
+      logicActive=false; // runtime_start clears the work RAM fault and counters.
+      activeRamConfiguration=null;
+      ramSelectedPin=null;psgSelectedPin=null;fmSelectedPin=null;
+      logicStatsRetained=false;
+      logicResetState=cleanRestart ? 'Clean restart; work RAM fault and counters reset' : 'Cartridge loaded; work RAM fault and counters reset';
+      resetLogicSelection();
+      logicStatusMessage=logicApiReady() ? 'Load or apply a logic fault when ready.' : 'Rebuild core for logic faults';
+      ensureWasmViews();
+      const vramStatus=callVramModel(1,0,null);
+      if (vramStatus!==0) throw new Error(`Could not restore default frame-projection VRAM model (status ${vramStatus}).`);
+      updateFaultUI();
+      $('screenPlaceholder').hidden=true;
+      setRunning(true);
+      paused=false;
+      $('pauseBtn').textContent='Pause';
+      faultDisconnectActions=[];
+      $('disconnectAllFaultsStatus').textContent='No all-domain disconnect has been attempted for this cartridge.';
+      accumulated=0;lastFrame=0;resetStats();
+      refreshPsgDataControls();
+      refreshFmDataControls();
+      const hashPromise=cleanRestart && romIdentity?.bytes===bytes
+        ? romIdentity.hashPromise
+        : sha256Hex(bytes).catch(error=>{
+            if (romIdentity?.bytes===bytes) stamp(`ROM SHA-256 unavailable: ${error.message}`);
+            return null;
+          });
+      romBytes=bytes;
+      loadedName=name;
+      $('romName').textContent=name.toUpperCase().slice(0,60);
+      romIdentity={bytes,name,hashPromise};
+      updateLogicControls();
+      stamp(`Cartridge inserted: ${name} (forced NTSC-U)`);
+    } catch (error) {
+      if (coreMutated) {
+        started=false;
+        setRunning(false);
+        $('resetBtn').disabled=!romBytes;
+        error.cartridgeActivationUncertain=true;
+        message('CARTRIDGE ACTIVATION UNCERTAIN',`${error.message} The core may have changed; use Clean restart to reload the last accepted cartridge.`);
+      } else started=wasStarted;
+      throw error;
+    }
     // Browser audio is unlocked by a separate Sound button after user gesture.
   }
 
   async function loadLocalRom(file) {
     if (!file) return;
+    const generation=++romLoadGeneration;
     try {
       stamp(`Loading local cartridge: ${file.name}`);
-      romBytes=new Uint8Array(await file.arrayBuffer());
-      romHashPromise=sha256Hex(romBytes).catch(error=>{
-        stamp(`ROM SHA-256 unavailable: ${error.message}`);
-        return null;
-      });
-      await startCartridge(romBytes,file.name);
+      if (file.size<0x200 || file.size>4*1024*1024)
+        throw new Error('Expected a 512-byte to 4-MB uncompressed Mega Drive ROM.');
+      const bytes=new Uint8Array(await file.arrayBuffer());
+      if (generation!==romLoadGeneration) return;
+      await startCartridge(bytes,file.name);
     } catch(e) {
+      if (generation!==romLoadGeneration) return;
       stamp(`ERROR: ${e.message}`);
-      message('CARTRIDGE COULD NOT START',e.message);
+      if (!started && !e.cartridgeActivationUncertain) message('CARTRIDGE COULD NOT START',e.message);
     }
   }
 
@@ -2560,10 +2589,9 @@
     $('romFile').addEventListener('change',event=>{loadLocalRom(event.target.files?.[0]);event.target.value='';});
     $('resetBtn').addEventListener('click',async()=>{
       if (!romBytes) return;
+      ++romLoadGeneration;
       // Reset the VDP and reload the original cartridge without any bridged pins.
       // VRAM content altered by earlier simulated shorts cannot be undone by disconnecting alone.
-      disconnect();
-      disconnectLogic({silent:true});
       try {
         await startCartridge(romBytes,loadedName,{cleanRestart:true});
         possibleVramResidue = false;

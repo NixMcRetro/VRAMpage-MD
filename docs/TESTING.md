@@ -1192,3 +1192,66 @@ Complete Chromium72/72, actual compiled-core5/5 and focused genuine WebKit audio
 1/1 pass on final source `23ec56b`. The app diff has no C, chip-model, fault-state,
 CPU recovery, PCM-copying or emulation-timing changes. Independent review approves
 that source; exact final package identity and PR/main CI are integration gates.
+
+Final local review head `f9ae124` has a complete 682-file package with unique
+entries and exact source/version/UI/core byte checks; all five tests pass on the
+extracted runtime. The first packaging attempt rejected missing corresponding
+source in the isolated worktree; copying the unchanged full source from the
+canonical built checkout resolved it without rebuilding/replacing public assets.
+All seven PR #54 checks pass, including complete interfaces in all three browsers
+and extracted Firefox/WebKit audio/controls/runtime/fallback checks. Merge
+`841239996c11446ec11a94fe757cd9991f6ca7b4` has the reviewed tree. Main CI and
+ready-to-run review evidence are in the current integration checkpoint.
+
+All seven main checks pass on `841239996c11446ec11a94fe757cd9991f6ca7b4` in
+[run 40164254321](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40164254321).
+The merged tree matches the independently reviewed head. Public v0.4.1 metadata,
+tag and asset digests were verified unchanged after merge; McRetro.net was not
+modified or deployed. This host-audio slice is complete; manual macOS/audible/OS
+background validation and broader Phase D work remain distinct from these results.
+
+# Phase D cartridge replacement and export identity
+
+The compiled-core baseline on `8412399` loads an original generated cartridge,
+rejects a 512-byte bad-header file, and exports the original filename with the
+rejected file's SHA-256. The core starts once; attempting Clean restart does not
+start it again because stored restart bytes were overwritten. Raw proof and the
+original-cartridge-only harness are retained under `/workspace/scratch/rom-stability`.
+
+Acceptance: stage files; reject known size limits before arrayBuffer work; retain
+the accepted bytes/name/hash and core/pause/fault/audio/history on non-mutating
+rejection; initial invalid load stays off. Drive delayed read promises in both
+orders, including stale read errors and a newer invalid choice. Clean restart
+must cancel older pending reads and use retained valid bytes. Delay hashing and
+replace cartridges during export to require a coherent identity or explicit
+cancellation. A core-mutating failure must stop/report uncertainty, not fake
+rollback. Verify actual-core good/rejected/restart identities, existing normal/
+runtime compatibility and all pulse/recovery/audio lifecycle regressions. No
+commercial ROMs, raw memory exports, new file formats or fault models are needed.
+
+Implementation `5b378f9` and independent review `f85ac61` pass focused rejection,
+size/read/allocation, latest-selection/stale-error, reset/read, native-mutation
+trap and export/hash race checks. Review restores audio drain before native
+start, marks mutation before the call (not after a potential trap), cancels
+pulses only after preflight, and prevents export from an uncertain core.
+The direct paused eight-frame pulse + bad-header case (`141bdd9`) preserves
+identity, paused frame, native fault and active pulse, then completes at exactly
+eight frames without CPU recovery. Reset's static contract (`522c13e`) now pins
+read invalidation, shared startup and native `_start`, rather than premature
+disconnection calls; existing behavioural reset/counter/history checks remain.
+
+The independent fixed compiled-core probe retains both the accepted filename
+and its original SHA after bad-header rejection, keeps the live screen visible,
+and increments native start calls from one to two on explicit Clean restart.
+It creates no uncaught page error. Reports `baseline.json` and `fixed.json` are
+kept separately; no original failure evidence was overwritten. Native model,
+version, file formats and emulation/glitch behaviour are unchanged.
+
+Final full source/native/SDK107 passes with normal sanitizers and fresh WASM
+profiles. The first run failed only the obsolete reset source regex; its original
+log remains, and the final full script passes after the reviewed contract fix.
+Complete Chromium80/80, actual compiled-core5/5 and focused WebKit ROM6/6 pass.
+An initial WebKit selector matched no tests; that empty run is retained separately
+and is not counted as evidence. The explicit six-case run verifies rejection,
+latest-choice order, restart/read cancellation, native-start trap, hash/export
+race and paused-pulse rejection on WebKit. Source C/native models are unchanged.
