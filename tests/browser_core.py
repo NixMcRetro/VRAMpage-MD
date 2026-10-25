@@ -673,14 +673,30 @@ class ActualCoreBrowserTests(unittest.TestCase):
                             page.locator('[data-chip-line]').nth(0).click()
                             self.assertEqual(page.evaluate('testCore._get_logic_address_mask()'),1)
                         page.locator('#disconnectAllFaultsBtn').click()
-                        expect(page.locator('#pauseBtn')).to_have_text('Resume')
-                        self.assertEqual(page.evaluate('testCore._get_logic_frame()'),frame)
+                        expect(page.locator('#pauseBtn')).to_have_text('Pause')
+                        self.assertGreaterEqual(page.evaluate('testCore._get_logic_frame()'),frame)
+                        frame=page.evaluate('testCore._get_logic_frame()')
                         self.assertEqual(page.evaluate('[window.__disconnectCpuCalls,window.__disconnectStartCalls]'),[0,0])
                         self.assertEqual(page.evaluate('testCore._get_vram_address_mask()'),0)
                         self.assertEqual(page.evaluate('testCore._get_logic_address_mask()'),0)
                         for kind,available in [('psg',psg_api),('fm',fm_api)]:
                             if available:
                                 self.assertFalse(page.evaluate(f'testCore._get_{kind}_data_bridge_state().configured'))
+                        page.wait_for_timeout(40)
+                        self.assertGreater(page.evaluate('testCore._get_logic_frame()'),frame,
+                                           'confirmed clear must leave running emulation ticking')
+                        frame=page.evaluate('testCore._get_logic_frame()')
+                    self.assertTrue(page.evaluate("typeof testCore._arm_logic_write_pulse==='function'"),
+                                    'actual core exposes affected-write pulse support')
+                    before=page.evaluate("testCore._get_logic_frame()")
+                    page.evaluate("""() => {
+                      const nativeRandom=Math.random, values=[0,0];
+                      Math.random=()=>values.shift();
+                      document.querySelector('#randomRamPulseBtn').click();
+                      Math.random=nativeRandom;
+                    }""")
+                    expect(page.locator('#randomiserStatus')).to_contain_text('fault disconnected automatically')
+                    expect(page.locator('#pauseBtn')).to_have_text('Pause')
                     with page.expect_download() as download:
                         page.locator('#logicExperimentBtn').click()
                     cleared=json.loads(Path(download.value.path()).read_text())
@@ -688,6 +704,14 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     self.assertEqual(len(cleared['faultDisconnects']),2)
                     self.assertEqual([row['domain'] for row in cleared['faultDisconnects'][-1]['results']],['VRAM','RAM','PSG','FM'])
                     self.assertEqual(cleared['faultDisconnects'][-1]['action'],'all-domain-disconnect')
+                    burst=cleared['faultPulses'][-1]
+                    self.assertEqual((burst['a'],burst['b']),(10,11))
+                    self.assertEqual(burst['access'],2)
+                    self.assertLessEqual(burst['writeCount'],8)
+                    self.assertEqual(burst['endFrame']-burst['startFrame'],1)
+                    self.assertFalse(burst['cpuRecoveryAttempted'])
+                    self.assertFalse(burst['recoveryAccepted'])
+                    self.assertGreaterEqual(burst['endFrame'],before)
                     page.evaluate('testCore._recover_logic_cpu=window.__disconnectRecover;testCore._start=window.__disconnectStart')
                     page.locator('#resetBtn').click()
                     page.wait_for_function('testCore._get_logic_address_mask()===0')
