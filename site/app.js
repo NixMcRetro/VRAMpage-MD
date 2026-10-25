@@ -1035,13 +1035,7 @@
     for (const id of ['logicKind','logicAccess','logicLineA','logicLineB','logicApplyBtn'])
       $(id).disabled = !canUse;
     $('logicDisconnectBtn').disabled = !canUse;
-    const recoveryReady=canUse && !paused && typeof emulator?._recover_logic_cpu==='function' &&
-      typeof emulator?._get_logic_cpu_flags==='function';
-    $('armCpuRecoveryBtn').disabled=!recoveryReady || (!cpuRecoveryArmed && recoveryTransientActive());
-    $('armCpuRecoveryBtn').setAttribute('aria-pressed',String(cpuRecoveryArmed));
-    $('armCpuRecoveryBtn').textContent=cpuRecoveryArmed?'Disarm CPU Recovery':'Arm CPU Recovery Once';
-    $('cpuRecoveryStatus').textContent=cpuRecoveryArmed
-      ? `ARMED${cpuRecoveryHaltFrames.length?` · HALT ${cpuRecoveryHaltFrames.length}/2`:''}` : 'OFF';
+    updateCpuRecoveryControls(canUse);
     for (const id of ['logicResumeBtn','logicCpuResetBtn'])
       $(id).disabled = !canUse || typeof emulator._recover_logic_cpu !== 'function';
     for (const control of document.querySelectorAll('[data-ram-frame-pair]'))
@@ -1068,6 +1062,16 @@
     refreshRandomiserControls();
   }
 
+  function updateCpuRecoveryControls(canUse=started && logicApiReady()) {
+    const recoveryReady=canUse && !paused && typeof emulator?._recover_logic_cpu==='function' &&
+      typeof emulator?._get_logic_cpu_flags==='function';
+    $('armCpuRecoveryBtn').disabled=!recoveryReady || (!cpuRecoveryArmed && recoveryTransientActive());
+    $('armCpuRecoveryBtn').setAttribute('aria-pressed',String(cpuRecoveryArmed));
+    $('armCpuRecoveryBtn').textContent=cpuRecoveryArmed?'Disarm CPU Recovery':'Arm CPU Recovery Once';
+    $('cpuRecoveryStatus').textContent=cpuRecoveryArmed
+      ? `ARMED${cpuRecoveryHaltFrames.length?` · HALT ${cpuRecoveryHaltFrames.length}/2`:''}` : 'OFF';
+  }
+
   function recoveryTransientActive() {
     return !!(momentary || keyboardHeld || ownedAddressHold || pendingPulse);
   }
@@ -1077,7 +1081,7 @@
   function disarmCpuRecovery() {
     cpuRecoveryArmed=false;
     resetCpuRecoveryObservation();
-    if (typeof $==='function' && $('cpuRecoveryStatus')) updateLogicControls();
+    updateCpuRecoveryControls();
   }
 
   function abortAutomaticCpuRecovery(reason, frame=null, flags=null, observedFrames=[]) {
