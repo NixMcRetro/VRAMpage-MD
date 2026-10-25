@@ -217,6 +217,27 @@ class BrowserDisplayTests(unittest.TestCase):
         self.page.locator('#pauseBtn').click()
         self.page.wait_for_function('(n) => window.mockCore.ticks > n', arg=ticks)
 
+    def test_modified_shortcuts_do_not_control_game(self):
+        self.page.locator('h1').click()
+        for code, key, modifier in [
+                ('KeyP', 'p', 'ctrlKey'), ('KeyP', 'p', 'metaKey'),
+                ('KeyP', 'p', 'altKey'), ('Digit1', '1', 'ctrlKey'),
+                ('KeyC', 'c', 'metaKey')]:
+            with self.subTest(code=code, modifier=modifier):
+                allowed = self.page.evaluate('''({code,key,modifier}) => {
+                  const event = new KeyboardEvent('keydown', {
+                    code,key,bubbles:true,cancelable:true,[modifier]:true
+                  });
+                  return document.dispatchEvent(event);
+                }''', {'code': code, 'key': key, 'modifier': modifier})
+                self.assertTrue(allowed, f'{modifier}+{key} must remain available to the browser')
+        self.assertEqual(self.page.evaluate('''() => ({
+          pause:document.querySelector('#pauseBtn').textContent.trim(),
+          connection:document.querySelector('#connectionLabel').textContent.trim(),
+          a:window.mockCore.inputs[10]
+        })'''), {
+            'pause': 'Pause', 'connection': 'NONE — NORMAL ADDRESSING', 'a': 0})
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)

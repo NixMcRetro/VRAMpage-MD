@@ -222,6 +222,12 @@ pulses, write budgets, legacy fallback, recovery and export. CI runs Chromium,
 Firefox and WebKit interface suites and a fresh compiled-core Chromium smoke.
 See each release's linked Actions run for the final commit's outcomes.
 
+The focused Phase D keyboard regression runs
+`python3 tests/browser_display.py --browser chromium --executable /usr/bin/chromium BrowserDisplayTests.test_modified_shortcuts_do_not_control_game`.
+It checks that Ctrl/Meta/Alt combinations stay uncanceled and cannot trigger
+pause, preset or controller actions. Existing controller and patchbay display
+tests retain coverage for plain keys and Shift momentary presets.
+
 The final ZIP must carry the merged commit in BUILD-INFO.json. Extract it,
 launch START.command from an unrelated working directory and verify nonempty
 HTTP responses for every runtime asset. Packaging checks executable permissions,

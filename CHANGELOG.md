@@ -13,6 +13,7 @@
 - Clarify that CPU recovery clears RAM/VRAM faults while leaving audio faults unchanged. Preserve explicit resume and clean restart as separate actions.
 - Keep the public v0.4.1 package and historical evidence unchanged.
 - Complete combined workbench acceptance across configuration, presets, chip randomisation, eight-frame contacts, removal, recovery, restart, export and comparison; enter feature freeze for stabilisation.
+- Ignore Ctrl/Meta/Alt modified keyboard events in game controls so browser shortcuts do not pause, change faults or press controller buttons; retain unmodified keys and Shift momentary presets.
 
 ## v0.4.1 - compact chip workbench
 

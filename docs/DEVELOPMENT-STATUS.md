@@ -27,6 +27,17 @@ output and OS background transitions; do not repeat completed automated gates or
 implement speculative recovery. v0.5.0 remains planned after stabilisation.
 Intentional faults can still halt or corrupt a game; no automatic rescue was added.
 
+## Phase D input shortcut follow-up
+
+On `014f901`, Chromium reproduced Ctrl+P pausing the game; the same DOM handler
+also processes modified preset and controller keys. The bounded follow-up ignores
+Ctrl/Meta/Alt keydowns, preserving browser shortcuts while leaving plain controls
+and Shift momentary presets unchanged. Focused Chromium shortcut, controller and
+patchbay tests pass; the compiled-core modifier reproduction is recorded by the
+parent coordinator. Visibility-only input cleanup was not added after the
+synthetic visible-page event probe proved inconclusive for real backgrounding.
+This experiment is committed separately for independent review and integration.
+
 ## Source checkpoint: safe cartridge replacement
 
 Implementation `5b378f9` stages file reads and accepted ROM identity, rejects

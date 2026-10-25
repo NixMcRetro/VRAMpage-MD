@@ -27,6 +27,16 @@ output and OS background transitions; do not repeat completed automated gates or
 implement speculative recovery. v0.5.0 remains planned after stabilisation.
 Intentional faults can still halt or corrupt a game; no automatic rescue was added.
 
+## Phase D keyboard shortcut follow-up
+
+The input stability work reproduced browser shortcut conflicts on `014f901`:
+Ctrl+P paused, and modified preset/controller keys were accepted as game input.
+The experiment branch adds a modifier guard and focused browser regression while
+retaining plain controller and Shift momentary behavior. See the matching status
+checkpoint and focused test command in `docs/TESTING.md`; independent review and
+integration remain with the coordinator. A synthetic visibility event did not
+justify changing focus-loss lifecycle behavior.
+
 ## Source checkpoint: safe cartridge replacement
 
 Implementation `5b378f9` stages file reads and accepted ROM identity, rejects
