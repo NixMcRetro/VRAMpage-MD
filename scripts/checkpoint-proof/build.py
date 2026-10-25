@@ -8,6 +8,8 @@ import sys
 import tarfile
 
 PIN = "6090aff9e9b2f578cd28882bd4571d2e35b1d674"
+MARKER = ".checkpoint-proof-output"
+MARKER_TEXT = f"VRAMpage private checkpoint proof\n{PIN}\n"
 
 def run(args, **kwargs):
     subprocess.run(args, check=True, **kwargs)
@@ -15,6 +17,8 @@ def run(args, **kwargs):
 def main():
     repo, output = Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve()
     vendor = Path(os.environ.get("VRAMPAGE_WASM_GENPLUS", repo / "vendor/wasm-genplus")).resolve()
+    if not (vendor / ".git").exists():
+        raise SystemExit(f"Pinned vendor checkout not found: {vendor}; set VRAMPAGE_WASM_GENPLUS")
     got = subprocess.check_output(["git", "-C", str(vendor), "rev-parse", "HEAD"], text=True).strip()
     if got != PIN:
         raise SystemExit(f"Refusing unsupported core source: expected {PIN}, got {got}")
@@ -23,9 +27,14 @@ def main():
     if output.is_symlink():
         raise SystemExit("Refusing symlink proof output")
     if output.exists():
+        marker = output / MARKER
+        if not output.is_dir() or marker.is_symlink() or not marker.is_file() or marker.read_text() != MARKER_TEXT:
+            raise SystemExit(f"Refusing to replace unmarked proof output: {output}")
         shutil.rmtree(output)
+    output.mkdir(parents=True)
+    (output / MARKER).write_text(MARKER_TEXT)
     core = output / "source"
-    core.mkdir(parents=True)
+    core.mkdir()
     archive = subprocess.check_output(["git", "-C", str(vendor), "archive", "--format=tar", PIN])
     with tarfile.open(fileobj=__import__('io').BytesIO(archive), mode="r:") as tar:
         tar.extractall(core, filter="data")
