@@ -33,6 +33,12 @@ window.Module = async () => {
       logic.activationFrame = 0;
       return 0;
     }
+    if (window.mockCore.throwLogicFaultAfter) {
+      logic.active=true;logic.config={kind,access,a,b};logic.reads=0;logic.writes=0;
+      logic.activationFrame=logic.frame;
+      throw new Error('synthetic RAM setter trap after mutation');
+    }
+    if (window.mockCore.rejectLogicFault) return 5;
     const lineLimit = kind === 1 ? 15 : kind === 2 ? 16 : 0;
     if (!lineLimit || ![1, 2, 3].includes(access) || a < 0 || b < 0 ||
         a >= lineLimit || b >= lineLimit || a === b)

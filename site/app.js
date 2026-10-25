@@ -1009,7 +1009,8 @@
     $('logicDisconnectBtn').disabled = !canUse;
     for (const id of ['logicResumeBtn','logicCpuResetBtn'])
       $(id).disabled = !canUse || typeof emulator._recover_logic_cpu !== 'function';
-    $('randomRamPulseBtn').disabled = !started || !writePulseApiReady();
+    for (const control of document.querySelectorAll('[data-ram-frame-pair]'))
+      control.disabled = !canUse;
     for (const control of document.querySelectorAll('[data-ram-pulse], #logicPulseBtn, #logicPulseFrames'))
       control.disabled = !canUse || typeof emulator._recover_logic_cpu !== 'function';
     for (const option of $('logicPulseFrames').querySelectorAll('[data-write-limit]'))
@@ -1078,7 +1079,7 @@
     updateLogicControls();
   }
 
-  function setRandomRamPulseStatus(message) {
+  function setAddressFramePulseStatus(message) {
     setLogicStatus(message);
     $('randomiserStatus').textContent=message;
   }
@@ -1240,8 +1241,10 @@
       const frame=Number(emulator._get_logic_frame());
       pendingPulse.endFrame=Number.isFinite(frame)&&frame>=0?frame:null;
     } catch (_) { pendingPulse.endFrame=null; }
-    if (pendingPulse.mode==='random-address-affected-writes')
-      $('randomiserStatus').textContent=`Random Work RAM pulse cancelled: ${reason}.`;
+    if (pendingPulse.mode==='address-frames') {
+      pendingPulse.cancelReason=reason;
+      $('randomiserStatus').textContent=`Work RAM WRITE pulse cancelled: ${reason}; no CPU recovery was attempted.`;
+    }
     pendingPulse=null;
   }
 
@@ -1427,16 +1430,13 @@
     setLogicStatus(`RAM pulse active for ${length}; then disconnect and force resume.${paused?' Paused: press Resume to advance.':''}`);
   }
 
-  function randomRamAddressPair() {
-    const a=10+Math.floor(Math.random()*5), slot=Math.floor(Math.random()*4);
-    const b=10+(slot>=a-10?slot+1:slot);
-    return canonical([a,b]);
-  }
-
-  function startRandomRamPulse() {
-    if (!started || !writePulseApiReady()) return false;
-    let pulseState, vramState, startFrame;
+  function startAddressFramePulse(pair) {
+    if (!started || !logicApiReady()) return false;
+    let pulseState, pulseStateAvailable, vramState, startFrame;
     try {
+      if (!Array.isArray(pair) || pair.length!==2 || !pair.every(Number.isInteger) ||
+          pair[0]<10 || pair[0]>14 || pair[1]<10 || pair[1]>14 || pair[0]===pair[1])
+        throw new Error('choose two distinct A11–A15 lines');
       if (logicActive) throw new Error('Work RAM fault active');
       if (pendingPulse) throw new Error('RAM pulse already active');
       if (momentary) throw new Error('held VRAM bridge active');
@@ -1447,7 +1447,10 @@
         vramState={mask:Number(emulator._get_vram_address_mask()),
           bridgeA:Number(emulator._get_vram_short_a()),bridgeB:Number(emulator._get_vram_short_b())};
       } else throw new Error('VRAM runtime state unavailable');
-      pulseState=emulator._get_logic_pulse_state();
+      pulseStateAvailable=typeof emulator._get_logic_pulse_state==='function';
+      if (typeof emulator._arm_logic_write_pulse==='function' && !pulseStateAvailable)
+        throw new Error('RAM pulse state is unreadable');
+      pulseState=pulseStateAvailable ? emulator._get_logic_pulse_state() : 0;
       if (!Number.isInteger(pulseState) || ![0,2,3,4].includes(pulseState)) throw new Error('RAM pulse state active or unreadable');
       if (!vramState || !Number.isInteger(vramState.mask) || !Number.isInteger(vramState.bridgeA) ||
           !Number.isInteger(vramState.bridgeB)) throw new Error('VRAM runtime state unavailable');
@@ -1460,14 +1463,14 @@
       startFrame=Number(emulator._get_logic_frame());
       if (!Number.isFinite(startFrame) || startFrame<0) throw new Error('RAM frame state unavailable');
     } catch (error) {
-      setRandomRamPulseStatus(`Random RAM pulse refused: ${error.message}. No fault was applied.`);
+      setAddressFramePulseStatus(`Work RAM WRITE pulse refused: ${error.message}. No fault was applied.`);
       return false;
     }
-    const [a,b]=randomRamAddressPair();
-    const pulse={kind:1,access:2,a,b,mode:'random-address-affected-writes',requestedWrites:8,
-      requestedFrames:1,startFrame,status:'active',cpuRecoveryAttempted:false,recoveryAccepted:false};
+    const [a,b]=canonical(pair);
+    const pulse={kind:1,access:2,a,b,mode:'address-frames',requestedFrames:8,
+      startFrame,status:'active',cpuRecoveryAttempted:false,recoveryAccepted:false};
     try {
-      if (!applyLogicFault(8,{kind:1,access:2,a,b})) {
+      if (!applyLogicFault(null,{kind:1,access:2,a,b})) {
         $('randomiserStatus').textContent=$('logicStatus').textContent;
         return false;
       }
@@ -1476,23 +1479,23 @@
       pendingPulse=null; faultPulses.push(pulse);
       logicActive=true; activeRamConfiguration={type:'line-pair',kind:1,access:2,a,b};
       if (!paused) pauseToggle();
-      setRandomRamPulseStatus(`Random RAM pulse outcome is unknown (${error.message}); emulation paused. No CPU recovery was attempted.`);
-      stamp('Random Work RAM pulse outcome unknown; emulation paused; no CPU recovery attempted');
+      setAddressFramePulseStatus(`Work RAM WRITE pulse outcome is unknown (${error.message}); emulation paused. No CPU recovery was attempted.`);
+      stamp('Work RAM WRITE pulse outcome unknown; emulation paused; no CPU recovery attempted');
       updateLogicControls();
       return false;
     }
     pendingPulse=pulse;
     faultPulses.push(pendingPulse);
-    setRandomRamPulseStatus(`Random Work RAM WRITE pulse active on A${a+1} ↔ A${b+1}: up to 8 affected writes, at most 1 emulated frame; automatic disconnect, no CPU recovery.`);
-    stamp(`Random Work RAM WRITE pulse: A${a+1} ↔ A${b+1}, maximum 8 affected writes / 1 emulated frame`);
+    setAddressFramePulseStatus(`Work RAM WRITE bridge active on A${a+1} ↔ A${b+1} for 8 emulated frames; automatic disconnect, no CPU recovery.`);
+    stamp(`Work RAM WRITE bridge: A${a+1} ↔ A${b+1}, 8 emulated frames; no CPU recovery`);
     updateLogicControls();
     return true;
   }
 
   function finishFaultPulse() {
     if (!pendingPulse) return;
-    if (pendingPulse.mode==='random-address-affected-writes') {
-      finishRandomRamPulse();
+    if (pendingPulse.mode==='address-frames') {
+      finishAddressFramePulse();
       return;
     }
     const frame=Number(emulator._get_logic_frame());
@@ -1518,44 +1521,61 @@
     }
   }
 
-  function finishRandomRamPulse() {
+  function finishAddressFramePulse() {
     const pulse=pendingPulse;
-    let frame,state,reads,writes,flags;
+    let frame,state,stateAvailable,reads,writes,flags;
     try {
       frame=Number(emulator._get_logic_frame());
       if (!Number.isFinite(frame) || frame<0) throw new Error('RAM frame expiry metadata is unavailable');
-      if (frame-pulse.startFrame<1) return;
-      state=Number(emulator._get_logic_pulse_state());
+      if (frame-pulse.startFrame<pulse.requestedFrames) return;
+      stateAvailable=typeof emulator._get_logic_pulse_state==='function';
+      state=stateAvailable ? Number(emulator._get_logic_pulse_state()) : null;
       reads=Number(emulator._get_logic_reads());
       writes=Number(emulator._get_logic_writes());
       flags=Number(emulator._get_logic_cpu_flags());
-      if (![2,3].includes(state) || ![reads,writes,flags].every(Number.isFinite)) throw new Error('pulse release or counters are unknown');
+      if ((stateAvailable && ![0,2,3,4].includes(state)) || ![reads,writes,flags].every(Number.isFinite))
+        throw new Error('pulse state or counters are unknown');
       const status=emulator._set_logic_fault(0,0,-1,-1);
-      const stateAfter=Number(emulator._get_logic_pulse_state());
-      if (status!==0 || ![2,3,4].includes(stateAfter)) throw new Error(`pulse clear unverified (status ${status})`);
+      const stateAfter=stateAvailable ? Number(emulator._get_logic_pulse_state()) : 0;
+      if (status!==0 || (stateAvailable && ![0,2,3,4].includes(stateAfter)))
+        throw new Error(`pulse clear unverified (status ${status})`);
     } catch (error) {
       pulse.status='incomplete'; pulse.endFrame=null; pulse.releaseReason='unknown';
-      pulse.corePulseState=Number.isInteger(state)?state:null;
+      if (stateAvailable) pulse.corePulseState=Number.isInteger(state)?state:null;
       pulse.cpuRecoveryAttempted=false; pulse.recoveryAccepted=false;
       pendingPulse=null;
       logicActive=true; activeRamConfiguration={type:'line-pair',kind:1,access:2,a:pulse.a,b:pulse.b};
       if (!paused) pauseToggle();
-      setRandomRamPulseStatus(`Random RAM pulse release is unknown (${error.message}); emulation paused. No CPU recovery was attempted.`);
-      stamp('Random Work RAM pulse release unknown; emulation paused; no CPU recovery attempted');
+      setAddressFramePulseStatus(`Work RAM WRITE pulse release is unknown (${error.message}); emulation paused. No CPU recovery was attempted.`);
+      stamp('Work RAM WRITE pulse release unknown; emulation paused; no CPU recovery attempted');
       return;
     }
     pulse.endFrame=frame; pulse.status='completed';
-    pulse.releaseReason=state===2?'affected-write-limit':'one-frame-limit';
-    pulse.corePulseState=state; pulse.readCount=reads; pulse.writeCount=writes; pulse.cpuFlagsAtEnd=flags;
+    pulse.releaseReason='frame-limit';
+    if (stateAvailable) pulse.corePulseState=state;
+    pulse.readCount=reads; pulse.writeCount=writes; pulse.cpuFlagsAtEnd=flags;
     pulse.cpuRecoveryAttempted=false; pulse.recoveryAccepted=false;
     pendingPulse=null; logicActive=false; activeRamConfiguration=null; logicStatsRetained=true;
     if (lastLogicExperiment) {
       lastLogicExperiment.disconnectedAtFrame=frame; lastLogicExperiment.readCount=reads;
       lastLogicExperiment.writeCount=writes; lastLogicExperiment.cpuFlags=flags;
     }
-    setRandomRamPulseStatus(`Random Work RAM pulse ended after ${writes} affected writes; fault disconnected automatically. No CPU recovery was attempted.`);
-    stamp(`Random Work RAM pulse ended; ${writes} affected writes; no CPU recovery attempted`);
+    setAddressFramePulseStatus(`Work RAM WRITE bridge ended after 8 emulated frames and ${writes} affected writes; fault disconnected automatically. No CPU recovery was attempted.`);
+    stamp(`Work RAM WRITE bridge ended after 8 emulated frames; ${writes} affected writes; no CPU recovery attempted`);
     updateLogicControls();
+  }
+
+  function setupAddressFramePairButtons() {
+    const pairs=$('ramFramePairs');
+    for (let a=10;a<15;a++) for (let b=a+1;b<15;b++) {
+      const button=document.createElement('button');
+      button.type='button'; button.disabled=true;
+      button.dataset.ramFramePair=`${a},${b}`;
+      button.textContent=`A${a+1} ↔ A${b+1}`;
+      button.setAttribute('aria-label',`Write-only bridge A${a+1} and A${b+1} for eight emulated frames`);
+      button.addEventListener('click',()=>startAddressFramePulse([a,b]));
+      pairs.append(button);
+    }
   }
 
   function setupPulseButtons() {
@@ -2506,7 +2526,7 @@
     $('randomPsgBtn').addEventListener('click',()=>randomiseAudio('psg'));
     $('randomFmBtn').addEventListener('click',()=>randomiseAudio('fm'));
     $('randomVramBtn').addEventListener('click',randomiseVram);
-    $('randomRamPulseBtn').addEventListener('click',startRandomRamPulse);
+    setupAddressFramePairButtons();
     setupCircuitConfigurationControls();
     setupExperimentComparison();
     $('rawVideoToggle').addEventListener('change', () => {
