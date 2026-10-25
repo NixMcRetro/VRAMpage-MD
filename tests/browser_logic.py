@@ -1981,8 +1981,14 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertEqual(self.page.evaluate('mockCore.vramModel.calls.length'),vram_calls,
                          'zero remains a keyboard-target selector while the RAM button is focused')
 
-    def test_vram_randomiser_disabled_state_is_clear_during_wram_hold(self):
+    def test_vram_randomiser_disabled_appearance_matches_other_chips(self):
         self.page.close();self.page=self.new_page(circuit_config=True)
+        expect(self.page.locator('#powerLabel')).to_have_text('WAITING FOR ROM')
+        styles=[self.page.locator(selector).evaluate("button=>({disabled:button.disabled,opacity:getComputedStyle(button).opacity,background:getComputedStyle(button).backgroundColor,borderStyle:getComputedStyle(button).borderStyle,color:getComputedStyle(button).color})")
+                for selector in ['#randomPsgBtn','#randomFmBtn','#randomVramBtn']]
+        self.assertTrue(all(style['disabled'] for style in styles))
+        self.assertEqual(styles[0],styles[1])
+        self.assertEqual(styles[1],styles[2])
         self.load_rom()
         self.page.locator('#ramWriteMode').select_option('hold')
         pair=self.page.locator('[data-ram-frame-pair="10,11"]')
@@ -1994,9 +2000,9 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertTrue(snapshot['disabled'],snapshot)
         self.assertFalse(snapshot['active'],snapshot)
         self.assertEqual(snapshot['title'],'Disconnect the active Work RAM fault first.')
-        self.assertEqual(snapshot['borderStyle'],'dashed',snapshot)
-        self.assertEqual(snapshot['opacity'],'1',snapshot)
-        self.assertNotEqual(snapshot['background'],self.page.locator('#randomFmBtn').evaluate('button=>getComputedStyle(button).backgroundColor'))
+        self.assertEqual(snapshot['borderStyle'],'solid',snapshot)
+        self.assertEqual(snapshot['opacity'],'0.45',snapshot)
+        self.assertEqual(snapshot['background'],styles[2]['background'])
         button.evaluate('button=>button.click()')
         self.assertEqual(self.page.evaluate('window.__vramRandomClicks'),0)
         self.assertTrue(self.page.evaluate('mockCore.logic.active'))
