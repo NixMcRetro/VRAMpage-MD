@@ -1246,3 +1246,12 @@ and increments native start calls from one to two on explicit Clean restart.
 It creates no uncaught page error. Reports `baseline.json` and `fixed.json` are
 kept separately; no original failure evidence was overwritten. Native model,
 version, file formats and emulation/glitch behaviour are unchanged.
+
+Final full source/native/SDK107 passes with normal sanitizers and fresh WASM
+profiles. The first run failed only the obsolete reset source regex; its original
+log remains, and the final full script passes after the reviewed contract fix.
+Complete Chromium80/80, actual compiled-core5/5 and focused WebKit ROM6/6 pass.
+An initial WebKit selector matched no tests; that empty run is retained separately
+and is not counted as evidence. The explicit six-case run verifies rejection,
+latest-choice order, restart/read cancellation, native-start trap, hash/export
+race and paused-pulse rejection on WebKit. Source C/native models are unchanged.

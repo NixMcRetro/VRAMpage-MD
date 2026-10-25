@@ -22,8 +22,9 @@ reset/cleanup evidence retained. The failed first source log is preserved.
 Independent compiled-core before/after proof: the old build exported the rejected
 file's hash under the accepted filename and failed to restart; the fixed build
 retains the accepted hash/name and performs native Clean restart. Raw evidence:
-`/workspace/scratch/rom-stability`. Full final regression, package provenance
-and required PR/main CI remain integration gates. Preserve public v0.4.1 and
+`/workspace/scratch/rom-stability`. Final source/SDK107, Chromium80/80, actual compiled-core5/5 and focused
+WebKit ROM6/6 pass. Package provenance and required PR/main CI remain
+integration gates. Preserve public v0.4.1 and
 McRetro.net; this is Phase D failure handling, not the v0.5.0 recovery milestone.
 
 ## PR #54 integration checkpoint — 25 October 2026
