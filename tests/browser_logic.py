@@ -1896,17 +1896,23 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertTrue(self.page.evaluate('mockCore.logic.active'))
         self.page.keyboard.up('Digit1')
         self.assertFalse(self.page.evaluate('mockCore.logic.active'))
-        self.page.keyboard.press('Digit0')
-        expect(target).to_have_text('Keyboard fault target: FM')
+
+    def test_focused_wram_preset_does_not_route_digits_to_vram(self):
+        self.page.close();self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        self.page.locator('#ramWriteMode').select_option('hold')
+        pair=self.page.locator('[data-ram-frame-pair="10,11"]')
+        vram_calls=self.page.evaluate('mockCore.vramModel.calls.length')
+        pair.focus()
+        self.page.keyboard.down('Space')
+        self.assertTrue(self.page.evaluate('mockCore.logic.active'))
         self.page.keyboard.press('Digit1')
-        self.assertTrue(self.page.evaluate('mockCore.fm.configured'),self.page.evaluate('({target:document.querySelector("#keyboardTarget").textContent,fm:mockCore.fm,psg:mockCore.psg,status:document.querySelector("#fmBridgeStatus").textContent})'))
-        self.page.keyboard.press('Digit0')
-        self.page.keyboard.press('Digit1')
-        self.assertTrue(self.page.evaluate('mockCore.psg.configured'))
-        self.page.keyboard.press('Digit0')
-        self.page.keyboard.press('Digit9')
-        self.assertEqual(self.page.evaluate('mockCore.vramModel.calls.at(-1).slice(1)'),[0,0,7])
-        self.assertFalse(self.page.evaluate('mockCore.logic.active'))
+        observed=self.page.evaluate('({vramCalls:mockCore.vramModel.calls,ramActive:mockCore.logic.active,ramCalls:mockCore.logic.setterCalls})')
+        self.assertEqual(self.page.evaluate('mockCore.vramModel.calls.length'),vram_calls,
+                         f'digit shortcuts must not escape a focused native Work RAM preset: {observed}')
+        self.assertTrue(self.page.evaluate('mockCore.logic.active'),
+                        'a key on the focused Work RAM preset must not hand the fault to VRAM')
+        self.page.keyboard.up('Space')
 
     def test_ram_write_hold_persists_past_eight_frames_and_releases_same_owned_pair(self):
         self.page.close();self.page=self.new_page(circuit_config=True)
