@@ -47,14 +47,15 @@
           <button id="fullscreenBtn" type="button" aria-pressed="false">Fullscreen</button>
         </div>
         <div class="instructions">
-          <p><strong>PLAY</strong> Arrows / Z X C / Enter <span class="help-divider">|</span> <strong>FAULTS</strong> 1–8 toggle / Shift+1–8 hold / 0 reconnect / P pause</p>
+          <p><strong>PLAY</strong> Arrows / Z X C / Enter <span class="help-divider">|</span> <strong>FAULTS</strong> 1–9 toggle / Shift+1–9 hold / 0 next chip / P pause</p>
+          <p id="keyboardTarget" class="keyboard-target" role="status" aria-live="polite">Keyboard fault target: VRAM</p>
           <p id="faultHint" class="fault-hint" hidden>A previous VRAM fault may have changed VRAM. Clean restart resets emulation; it cannot correct missing emulator output rows.</p>
         </div>
       </section>
 
       <aside class="chip-workbench" aria-label="Console chip fault workbench">
         <div class="chip-workbench-grid">
-          <section class="chip-card" aria-label="VRAM chip">
+          <section class="chip-card" data-keyboard-chip="VRAM" aria-label="VRAM chip">
             <h2>VRAM <small>VDP address nets</small></h2>
             <label class="chip-compact-control">Model
               <select id="vramModel" aria-describedby="vramModelStatus">
@@ -70,7 +71,7 @@
             <p id="connectionLabel" class="chip-state" aria-live="polite">NONE — NORMAL ADDRESSING</p>
             <p id="vramModelStatus" class="chip-state" role="status" aria-live="polite">Frame projection is the default model.</p>
           </section>
-          <section class="chip-card" aria-label="Work RAM chip">
+          <section class="chip-card" data-keyboard-chip="WRAM" aria-label="Work RAM chip">
             <h2>WORK RAM <small>logical address lines</small></h2>
             <label class="chip-compact-control">Leg action
               <select id="ramLegAction"><option value="cut">Cut / reconnect</option><option value="bridge">Bridge pair</option></select>
@@ -81,7 +82,7 @@
             <button id="chipRestoreBtn" type="button" disabled>Reconnect all A lines</button>
             <p id="ramChipState" class="chip-state" aria-live="polite">Address lines are connected.</p>
           </section>
-          <section class="chip-card" aria-label="FM chip">
+          <section class="chip-card" data-keyboard-chip="FM" aria-label="FM chip">
             <h2>FM <small>YM2612 register data</small></h2>
             <label class="chip-compact-control">Leg action
               <select id="fmLegMode"><option value="bridge">Bridge two bits</option><option value="ground" data-audio-mask>Force selected bits low</option></select>
@@ -89,7 +90,7 @@
             <div id="fmChip" class="data-chip" role="group" aria-label="FM data inputs D0 through D7"></div>
             <p id="fmChipState" class="chip-state" aria-live="polite">No FM data fault.</p>
           </section>
-          <section class="chip-card" aria-label="PSG chip">
+          <section class="chip-card" data-keyboard-chip="PSG" aria-label="PSG chip">
             <h2>PSG / VDP <small>programmable sound data</small></h2>
             <label class="chip-compact-control">Leg action
               <select id="psgLegMode"><option value="bridge">Bridge two bits</option><option value="ground" data-audio-mask>Force selected bits low</option></select>
@@ -107,9 +108,11 @@
           <button id="randomFmBtn" type="button" disabled>FM</button>
           <button id="randomVramBtn" type="button" disabled>VRAM</button>
           <button id="logicCpuResetBtn" type="button" disabled title="CPU-only reset: clears RAM/VRAM faults, preserves PSG/FM faults, and keeps the current run state.">CPU reset</button>
+          <button id="compactResetBtn" type="button" disabled title="Disconnect faults and reboot from the same cartridge">Clean restart</button>
         </div>
-        <div class="ram-frame-pairs" role="group" aria-label="Eight-frame RAM write pairs">
-          <strong>RAM WRITE · 8 frames</strong>
+        <div class="ram-frame-pairs" role="group" aria-label="RAM write pairs">
+          <strong>RAM WRITE</strong>
+          <label>Mode <select id="ramWriteMode"><option value="pulse">8-frame pulse</option><option value="hold">Hold until clicked again</option></select></label>
           <div id="ramFramePairs" class="ram-frame-pair-buttons"></div>
         </div>
         <p id="randomiserStatus" class="randomiser-status" role="status" aria-live="polite">Load a ROM to randomise a chip.</p>
