@@ -9,8 +9,15 @@ Implementation is isolated on `experiment/workbench-ram-pulse` from checkpoint
 without CPU recovery; the existing advanced forced-resume pulses remain intact.
 Confirmed complete disconnection preserves prior play/pause, while partial or
 unknown outcomes pause for inspection. Reuse existing native code/evidence,
-preserve v0.4.1 and keep McRetro.net untouched. Implementation, independent review
-and required CI remain before integration.
+preserve v0.4.1 and keep McRetro.net untouched. Required final CI remains before integration.
+
+Implementation `c0e79a0`, hardening `2dbd1f4`, review fixes `53c710b` and
+normal-core acceptance `72f67ad` are complete. Independent Luna High review
+approves the final source. The full source/SDK107 suite and normal sanitizers
+pass, as do display6/6, focused WebKit7/7 and independent actual-core running/
+paused and normal-fallback pulse cases. Review tightened malformed VRAM-state
+refusal before any mutation. Final full browser and PR/main checks remain the
+integration gates; no public release or external-site changes are authorised.
 
 ## PR #51 integration checkpoint — 25 October 2026
 

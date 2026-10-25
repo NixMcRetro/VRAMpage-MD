@@ -1060,3 +1060,22 @@ and pause before another tick, without discarding successful clears. Update
 old always-paused assertions to test these requested semantics explicitly.
 Run the applicable complete source/browser suite and actual compiled core,
 retaining normal sanitizers and the four-chip/compact-controls viewport checks.
+
+The full source script passes 107 native/SDK tests with normal sanitizers and
+fresh WASM profiles, plus the JavaScript/schema/property/smoke checks. The first
+restricted-sandbox run could not use localhost or LeakSanitizer; the unchanged
+checks passed with the required execution permissions. No assertions were disabled.
+All six Chromium display/input regressions and seven focused WebKit pulse/status/
+run-state cases pass. The initial full Chromium interface run passed 68 of 71;
+the remaining assertions used the old status/three-button row or an ineffective
+arm-trap injection, and were corrected with targeted fixture fault flags.
+Independent review also tightened malformed VRAM-state rejection before mutation.
+Logs, the exact-source review ZIP and continuation evidence are retained under
+`/workspace/scratch/workbench-ram-pulse`. Required final PR/main CI remains the
+integration gate. Native model code and the public v0.4.1 package are unchanged.
+
+Independent Luna High review approves source `72f67ad` with malformed-state
+preflight fix `53c710b`. Focused actual-core tests pass for running/paused
+disconnection, bounded pulse exports and the normal-core legacy-getter fallback.
+The stale actual-core test was corrected to start each run-state case explicitly
+and measure disconnect/no-tick state in the same JavaScript task.
