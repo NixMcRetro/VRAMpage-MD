@@ -401,6 +401,7 @@ footer { padding-top:9px; font-size:10px; }
 .chip-workbench .ram-chip .chip-pin { min-height:24px; }
 .randomiser-row { display:flex; align-items:center; flex-wrap:wrap; gap:5px; padding:3px 12px 6px; }
 .randomiser-row strong { margin-right:3px; font-size:11px; }
+.compact-recovery-actions { display:inline-flex; gap:5px; }
 .randomiser-row button { min-width:48px; padding:5px 8px; font-size:10px; }
 .randomiser-status { min-height:1em; margin:0 12px 6px; color:var(--muted); font:9px/1.25 ui-monospace,SFMono-Regular,Consolas,monospace; }
 .ram-frame-pairs { margin:0 12px 6px; color:var(--muted); font:9px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace; }
