@@ -1297,3 +1297,13 @@ Merge `c8753f5ad8c677873587f91a1f49a7e4b7be7b34` exactly matches the reviewed tr
 All seven main checks pass in run40179292731; the current checkpoint links the
 verified review download. Public
 v0.4.1 release metadata/tag/assets remain unchanged; McRetro.net is untouched.
+
+# User-reported Mac Safari acceptance — 25 October 2026 (Sydney)
+
+After PR #56, the user confirms audible sound, mute/re-enable, chip randomisers,
+eight-frame RAM buttons, CPU reset and Clean restart. Same-browser tab switching
+pauses emulation and returning resumes it; switching apps keeps emulation running
+without observed stuck keys or notes. This closes the reported Safari manual
+acceptance items; it does not establish native macOS Firefox, all OS/browser
+lifecycle paths or physical electrical fidelity. The supplied screenshot is user
+evidence and is not committed as a private game capture.

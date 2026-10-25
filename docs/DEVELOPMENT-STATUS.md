@@ -1,5 +1,35 @@
 # Development status and continuation checkpoint
 
+## Active user follow-up: compact recovery, held RAM and chip shortcuts
+
+Resume verified main `c8753f5` / checkpoint `53b653e`; preserve public v0.4.1,
+existing hardware models and McRetro.net. The user explicitly requested this
+bounded workbench refinement after manual acceptance: duplicate Clean restart
+immediately right of CPU reset, a sustained option for RAM WRITE pair buttons,
+and 1–9 fault shortcuts with 0 cycling VRAM → WRAM → FM → PSG. Mark the selected
+keyboard chip pale green with a readable target label. Reuse shared restart,
+fault application/removal, capability checks, state/history and pulse handling;
+no native model, automatic recovery or version bump is required.
+
+Acceptance: both restart buttons have identical enabled/error/reset behaviour;
+eight-frame default remains exact; sustained writes affect only the chosen
+A11–A15 pair and can be explicitly released without CPU recovery; mode changes
+never apply/remove faults; shortcuts target one chip with correct held-action
+release, focus/modifier/repeat guards and truthful unsupported/failure state.
+Keep all ten RAM pair buttons; digits address the first nine. Verify ninth preset,
+all four modes, chip highlight in light/dark, keyboard/pointer and compact/mobile
+layout. Independent specialist review, focused actual-core proof, full applicable
+regressions and seven PR/main CI checks remain required before completion.
+
+## User-reported Mac Safari acceptance — 25 October 2026 (Sydney)
+
+The user confirms audible playback, mute/re-enable, randomisers, eight-frame RAM
+buttons, CPU reset and Clean restart work. Switching tabs in the same Safari
+browser pauses emulation and returning resumes it. Switching apps leaves it
+running, with no stuck keys or notes observed. Record this as user-reported Mac
+Safari acceptance; it is not automated native macOS Firefox or physical-chip
+validation. Do not repeat these checks as an unfulfilled prerequisite.
+
 ## PR #56 integration checkpoint — 25 October 2026
 
 [PR #56](https://github.com/NixMcRetro/VRAMpage-MD/pull/56) merged as
