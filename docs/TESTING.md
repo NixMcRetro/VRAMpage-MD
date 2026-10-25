@@ -1307,3 +1307,32 @@ without observed stuck keys or notes. This closes the reported Safari manual
 acceptance items; it does not establish native macOS Firefox, all OS/browser
 lifecycle paths or physical electrical fidelity. The supplied screenshot is user
 evidence and is not committed as a private game capture.
+
+# Press-duration RAM contacts and keyboard chip targets
+
+User-requested source `593d4f5` / `c6d8c31` adds a shared compact Clean restart,
+RAM WRITE **8-frame pulse / Hold while pressed**, chip-local 1–9 presets and
+0 target cycling. Independent Luna High fixes (`a602394`) cover cross-contact
+ownership, rejected/throwing release and restore, stale restart callbacks and
+compact restart availability after an uncertain native start. Review also approves
+the target-label placement (`bcf6134`) and synthetic pointer-state test (`f0bd2f1`).
+
+Full source/native/SDK107 passes with normal sanitizers/fresh WASM in 176.933 s.
+No native/core source changes followed that run; final JavaScript syntax and
+compact UI6 pass after review. Chromium display7 and compiled-core6 pass. The
+original generated cartridge directly exercises ninth presets, sustained keyboard
+and pointer contacts beyond twelve frames, changed A11/A12 writes, explicit
+release without `_recover_logic_cpu`, independent FM/PSG settings, and both
+restart buttons through native `_start`. The cartridge writes FF1000: it
+distinguishes A11/A12, not every possible pair, so zero changed writes on a
+different pair is a valid result rather than evidence the setting was rejected.
+
+The 16-state layout probe verifies four targets in both themes at 1366 and 375
+pixels: exactly one pale green chip body, readable labels, no horizontal overflow
+or page errors, and Clean restart immediately right of CPU reset. The existing
+landscape-window budget remains enforced without reducing the player minimum;
+the target label is above the chip grid. A synthetic `pointercancel` test releases
+Playwright's physical mouse state before its next press, matching two distinct
+contacts; the release and inactive assertions remain enforced. These automated
+checks do not establish native Mac behaviour for the newly added controls.
+Raw logs, images and retained first failures: `/workspace/scratch/shortcut-modes`.

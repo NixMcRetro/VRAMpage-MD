@@ -97,7 +97,9 @@ For VRAM, FM and PSG, nine chip-local bridge presets use zero-based pairs
 nine displayed A11–A15 write pairs; A14/A15 remains available by button. Ordinary
 presses toggle chip pairs; WRAM uses its RAM duration option (eight-frame pulse
 or a write-only contact lasting until key release).
-**Shift+1–9** makes a temporary contact; release restores the originating chip's
-prior supported setting. Changing keyboard target does not redirect release.
+**Shift+1–9** makes a temporary contact tied to its originating chip. FM/PSG
+restore their prior pair or mask, and WRAM restores its prior supported RAM
+setting. VRAM retains its existing prior-pair restoration; a mask replaced by
+a temporary bridge is cleared. Changing keyboard target does not redirect release.
 A newer manual action cancels stale restoration. Browser modifier shortcuts,
 editable fields and comparison-result navigation retain their existing guards.
