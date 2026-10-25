@@ -124,6 +124,30 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     })
                     self.assertNotIn('rom', saved)
                     self.assertNotIn('inputWrites', json.dumps(saved))
+                    expect(page.locator('#randomRamPulseBtn')).to_be_enabled()
+                    page.evaluate("""() => {
+                      const nativeRandom=Math.random, values=[0.99,0];
+                      Math.random=()=>values.shift();
+                      document.querySelector('#randomRamPulseBtn').click();
+                      Math.random=nativeRandom;
+                    }""")
+                    expect(page.locator('#pauseBtn')).to_have_text('Resume')
+                    self.assertEqual(page.evaluate('testCore._get_logic_pulse_state()'),1,
+                                     'normal-core legacy VRAM getters permit the bounded RAM pulse')
+                    page.locator('#pauseBtn').click()
+                    expect(page.locator('#randomiserStatus')).to_contain_text(
+                        'fault disconnected automatically',timeout=8000)
+                    page.locator('#logicExperiment > summary').click()
+                    with page.expect_download() as pulse_download:
+                        page.locator('#logicExperimentBtn').click()
+                    pulse_payload=json.loads(Path(pulse_download.value.path()).read_text())
+                    pulse=pulse_payload['faultPulses'][-1]
+                    self.assertEqual((pulse['a'],pulse['b']),(10,14))
+                    self.assertEqual(pulse['access'],2)
+                    self.assertLessEqual(pulse['writeCount'],8)
+                    self.assertLessEqual(pulse['endFrame']-pulse['startFrame'],1)
+                    self.assertFalse(pulse['cpuRecoveryAttempted'])
+                    self.assertFalse(pulse['recoveryAccepted'])
                     self.assertEqual(errors, [])
                     browser.close()
             finally:
