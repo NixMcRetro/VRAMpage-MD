@@ -1030,6 +1030,70 @@ class ActualCoreBrowserTests(unittest.TestCase):
                 server.shutdown()
 
 
+    def test_one_shot_recovery_observes_real_halt_and_ignores_real_stop(self):
+        handler=partial(SimpleHTTPRequestHandler,directory=OPTIONS.site_root)
+        with ThreadingHTTPServer(('127.0.0.1',0),handler) as server:
+            threading.Thread(target=server.serve_forever,daemon=True).start()
+            try:
+                with sync_playwright() as p:
+                    kwargs={'executable_path':OPTIONS.executable} if OPTIONS.executable else {}
+                    browser=getattr(p,OPTIONS.browser).launch(**kwargs)
+                    try:
+                        for kind,words in [('halt',[0x2e7c,0,1,0x3039,0x00ff,1,0x4e72,0x2700]),
+                                           ('stop',[0x4e72,0x2700,0x60fe])]:
+                            with self.subTest(cpu=kind):
+                                page=browser.new_page(accept_downloads=True)
+                                errors=[]
+                                page.on('pageerror',lambda error:errors.append(str(error)))
+                                core_js=(OPTIONS.site_root/'core/genplus.js').read_text()
+                                core_js+='''\nconst originalFactory=window.Module;
+                                window.Module=opts=>originalFactory(opts).then(c=>{
+                                    window.testCore=c;window.recoveryCalls=[];
+                                    const recover=c._recover_logic_cpu;
+                                    c._recover_logic_cpu=mode=>{
+                                        const before=[c._get_psg_data_bridge_state?.(),c._get_fm_data_bridge_state?.()];
+                                        const status=recover(mode);
+                                        recoveryCalls.push({mode,status,before,after:[c._get_psg_data_bridge_state?.(),c._get_fm_data_bridge_state?.()]});
+                                        return status;
+                                    };return c;
+                                });\n'''
+                                page.route('**/core/genplus.js',lambda route:route.fulfill(content_type='text/javascript',body=core_js))
+                                page.goto(f'http://127.0.0.1:{server.server_port}/')
+                                rom=bytearray(original_cartridge())
+                                for i,value in enumerate(words):struct.pack_into('>H',rom,0x200+2*i,value)
+                                page.locator('#romFile').set_input_files({'name':f'original-{kind}.bin','mimeType':'application/octet-stream','buffer':bytes(rom)})
+                                expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+                                flag=2 if kind=='halt' else 1
+                                page.wait_for_function(f'(testCore._get_logic_cpu_flags() & {flag})!==0 && testCore._get_logic_frame()>4')
+                                self.assertEqual(page.evaluate('recoveryCalls'),[],'Default policy must leave genuine halted/stopped CPU alone')
+                                page.locator('#logicExperiment > summary').click()
+                                if kind=='halt':
+                                    page.locator('#psgBridgeApply').click()
+                                    page.locator('#fmBridgeApply').click()
+                                page.locator('#armCpuRecoveryBtn').click()
+                                if kind=='halt':
+                                    page.wait_for_function('recoveryCalls.length===1')
+                                    expect(page.locator('#cpuRecoveryStatus')).to_have_text('OFF')
+                                    call=page.evaluate('recoveryCalls[0]')
+                                    self.assertEqual((call['mode'],call['status']),(2,0))
+                                    self.assertEqual(call['before'],call['after'],'CPU-only reset preserves synchronous audio fault snapshots')
+                                    self.assertTrue(all(state['configured'] for state in call['before']))
+                                    with page.expect_download() as downloaded:page.locator('#logicExperimentBtn').click()
+                                    payload=json.loads(Path(downloaded.value.path()).read_text())
+                                    entry=payload['cpuInterventions'][-1]
+                                    self.assertEqual(entry['trigger'],'armed-halt-streak')
+                                    self.assertEqual(entry['observedFrames'][1]-entry['observedFrames'][0],1)
+                                else:expect(page.locator('#cpuRecoveryStatus')).to_have_text('ARMED')
+                                frame=page.evaluate('testCore._get_logic_frame()')
+                                page.wait_for_function(f'testCore._get_logic_frame()>={frame+5}')
+                                self.assertEqual(page.evaluate('recoveryCalls.length'),1 if kind=='halt' else 0)
+                                self.assertTrue(page.evaluate(f'(testCore._get_logic_cpu_flags() & {flag})!==0'))
+                                self.assertEqual(errors,[])
+                                page.close()
+                    finally:browser.close()
+            finally:server.shutdown()
+
+
 if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--browser',choices=['chromium','firefox','webkit'],default='chromium')
