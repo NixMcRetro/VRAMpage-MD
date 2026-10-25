@@ -12,9 +12,15 @@ the fault clears, without implying earlier corruption has been repaired.
 A before-fix compiled-core probe reproduces a cross-domain bug: with an A11/A12
 Work RAM button focused, Space starts its held write contact, but Digit1 reaches
 the still-selected VRAM shortcut and applies AD0/AD1 while disconnecting RAM.
-Keep fault digits local to the focused native RAM control, preserve Space/Enter
+Block conflicting VRAM fault digits on the focused native RAM control, preserve Space/Enter
 release and ordinary global shortcuts elsewhere, and retain safe 0 target cycling.
 Raw original-cartridge-only proof: `/workspace/scratch/active-outline/baseline-core.json`.
+
+The user further identifies the VRAM Randomiser's apparent pressed appearance.
+A pointer-contact probe confirms it is disabled by the RAM safety guard, not
+active: zero click events and no VRAM setter changes, with `:active=false` and
+no pressed attribute. Make that disabled state visually distinct with a muted
+dashed border while retaining the safety guard and explanatory title.
 
 Acceptance: no green idle/default VRAM; active chip outline only, neutral infill,
 correct light/dark contrast, multiple independent audio outlines, exact eight-frame

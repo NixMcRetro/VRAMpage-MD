@@ -713,8 +713,11 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     page.locator('#pauseBtn').click()
                     page.locator('#ramWriteMode').select_option('hold')
                     button = page.locator('[data-ram-frame-pair="10,11"]')
+                    page.evaluate("window.randomVramClicks=0;document.querySelector('#randomVramBtn').addEventListener('click',()=>window.randomVramClicks++)")
                     button.focus()
                     page.keyboard.down('Space')
+                    expect(page.locator('#randomVramBtn')).to_be_disabled()
+                    self.assertFalse(page.locator('#randomVramBtn').evaluate("b=>b.matches(':active')"))
                     ram_calls = page.evaluate('nativeCalls._set_logic_fault.length')
                     before_vram = page.evaluate('''() => {
                       const v=testCore._get_vram_fault_model_state();return [v.modelId,v.mask,v.bridgeA,v.bridgeB];
@@ -732,6 +735,8 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     self.assertEqual(page.evaluate('nativeCalls._set_logic_fault.length'), ram_calls)
                     page.keyboard.up('Space')
                     self.assertEqual(page.evaluate('nativeCalls._set_logic_fault.at(-1)'), [0, 0, -1, -1])
+                    expect(page.locator('#randomVramBtn')).to_be_enabled()
+                    self.assertEqual(page.evaluate('window.randomVramClicks'), 0)
                     self.assertEqual(page.locator('.chip-card.fault-active').count(), 0)
                     self.assertEqual(errors, [])
                     browser.close()

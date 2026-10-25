@@ -1377,3 +1377,9 @@ through pulse/Hold and explicit cleanup, separate keyboard-target text, retained
 button. The compiled-core regression also checks Space release, independent
 FM/PSG active state and restart clearing. These indicators describe configured
 faults, not proof that every access changed or earlier corruption was repaired.
+
+The user's button clarification is verified separately: during pointer-held RAM,
+the VRAM Randomiser has `disabled=true`, `:active=false`, no pressed attribute,
+zero click events and unchanged VRAM setters. Its old 0.45 opacity looked sunken;
+a distinct disabled style retains the guard/title. Numeric-key isolation applies
+to conflicting VRAM shortcuts, preserving independently selected FM/PSG inputs.
