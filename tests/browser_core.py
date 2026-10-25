@@ -673,7 +673,8 @@ class ActualCoreBrowserTests(unittest.TestCase):
                             page.locator('[data-chip-line]').nth(0).click()
                             self.assertEqual(page.evaluate('testCore._get_logic_address_mask()'),1)
                         page.locator('#disconnectAllFaultsBtn').click()
-                        expect(page.locator('#pauseBtn')).to_have_text('Pause')
+                        all_domains_available=psg_api and fm_api
+                        expect(page.locator('#pauseBtn')).to_have_text('Pause' if all_domains_available else 'Resume')
                         self.assertGreaterEqual(page.evaluate('testCore._get_logic_frame()'),frame)
                         frame=page.evaluate('testCore._get_logic_frame()')
                         self.assertEqual(page.evaluate('[window.__disconnectCpuCalls,window.__disconnectStartCalls]'),[0,0])
@@ -683,8 +684,12 @@ class ActualCoreBrowserTests(unittest.TestCase):
                             if available:
                                 self.assertFalse(page.evaluate(f'testCore._get_{kind}_data_bridge_state().configured'))
                         page.wait_for_timeout(40)
-                        self.assertGreater(page.evaluate('testCore._get_logic_frame()'),frame,
-                                           'confirmed clear must leave running emulation ticking')
+                        if all_domains_available:
+                            self.assertGreater(page.evaluate('testCore._get_logic_frame()'),frame,
+                                               'confirmed clear must leave running emulation ticking')
+                        else:
+                            self.assertEqual(page.evaluate('testCore._get_logic_frame()'),frame,
+                                             'unavailable audio clear must pause before another frame')
                         frame=page.evaluate('testCore._get_logic_frame()')
                     self.assertTrue(page.evaluate("typeof testCore._arm_logic_write_pulse==='function'"),
                                     'actual core exposes affected-write pulse support')
