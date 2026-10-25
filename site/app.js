@@ -2339,7 +2339,7 @@
 
   function setKeyboardTarget(target) {
     keyboardTarget=target;
-    $('keyboardTarget').textContent=`Keyboard fault target: ${target}`;
+    $('keyboardTarget').textContent=`Keyboard Fault Target: ${target}`;
     document.querySelectorAll('[data-keyboard-chip]').forEach(card=>
       card.classList.toggle('keyboard-target',card.dataset.keyboardChip===target));
   }
