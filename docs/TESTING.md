@@ -222,6 +222,12 @@ pulses, write budgets, legacy fallback, recovery and export. CI runs Chromium,
 Firefox and WebKit interface suites and a fresh compiled-core Chromium smoke.
 See each release's linked Actions run for the final commit's outcomes.
 
+The focused Phase D keyboard regression runs
+`python3 tests/browser_display.py --browser chromium --executable /usr/bin/chromium BrowserDisplayTests.test_modified_shortcuts_do_not_control_game`.
+It checks that Ctrl/Meta/Alt combinations stay uncanceled and cannot trigger
+pause, preset or controller actions. Existing controller and patchbay display
+tests retain coverage for plain keys and Shift momentary presets.
+
 The final ZIP must carry the merged commit in BUILD-INFO.json. Extract it,
 launch START.command from an unrelated working directory and verify nonempty
 HTTP responses for every runtime asset. Packaging checks executable permissions,
@@ -1255,3 +1261,29 @@ An initial WebKit selector matched no tests; that empty run is retained separate
 and is not counted as evidence. The explicit six-case run verifies rejection,
 latest-choice order, restart/read cancellation, native-start trap, hash/export
 race and paused-pulse rejection on WebKit. Source C/native models are unchanged.
+
+Final extracted-package compiled-core5/5 passes. The 682 unique package entries
+identify exact source `18c692a33fa9e2ba0fd75bafa5174c3a7f7d2fd9`, version0.4.1
+and byte-identical application/runtime files. All seven PR #55 checks passed in
+[run 40174231430](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40174231430).
+Merge `ed62981a62a3a32477308cec85bee2b62a7583ba` exactly matches that tree.
+All seven main checks pass in run40174600830; the current checkpoint links the
+verified build. The public
+v0.4.1 tag and both asset digests remain unchanged; no McRetro.net changes occurred.
+
+# Phase D browser modifier shortcut isolation
+
+Original generated-cartridge proof on `ed62981` reproduces Ctrl+P canceling its
+browser default and pausing the game, plus Meta+C pressing controller A. With
+`feb9277`, the same genuine-core probe preserves Pause, leaves default uncanceled
+and controller A at zero, with no page errors. These are synthetic DOM modifier
+events, not native Mac/OS shortcut acceptance. Both reports remain in
+`/workspace/scratch/input-stability`; deliberate faults/recovery are unchanged.
+
+Independent Luna High review approves the one-line source guard (`feb9277`) and
+final test timing fix (`ac44e96`): the shortcut regression waits for a tick after
+dispatch and verifies modified keyup releases a previously held button. Final
+source/native/SDK107 passes with normal sanitizers and fresh WASM (339.615 s).
+Chromium display7/7 and logic80/80, actual compiled-core5/5, and focused WebKit3/3
+pass; the final tightened shortcut case also passes in Chromium1/1 and WebKit1/1.
+Source C/native models, fault outcomes and public version remain unchanged.

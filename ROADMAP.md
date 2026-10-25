@@ -43,6 +43,11 @@ without changing emulated sound, fault outcomes or recovery. Its 1,500-cycle
 actual-core soak, complete regressions and all seven PR/main checks pass;
 integration evidence is in the current checkpoint. Continue concrete stability/compatibility and manual checks.
 
+PR #55 completes safe cartridge replacement and coherent export identity, including
+rejected files, stale reads and uncertain native-start failures. It preserves
+accepted restart bytes and intentional glitch outcomes. Integration evidence and
+remaining manual acceptance are recorded in the current checkpoint.
+
 ## Planned after stabilisation: v0.5.0 recovery milestone
 
 The user approved a target combining independent, optional bounded CPU halt

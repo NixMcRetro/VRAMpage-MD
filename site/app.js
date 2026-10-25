@@ -2404,6 +2404,7 @@
 
   function installKeyboard() {
     document.addEventListener('keydown', event => {
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
       if (event.target instanceof HTMLInputElement ||
           event.target instanceof HTMLSelectElement ||
           event.target instanceof HTMLTextAreaElement ||
