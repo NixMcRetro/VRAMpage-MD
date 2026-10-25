@@ -213,9 +213,12 @@ window.Module = async () => {
       _get_logic_address_mask:()=>logic.addressMask,
       _arm_logic_write_pulse(kind,a,b,limit) {
         if (!Number.isInteger(limit) || limit<1 || limit>1024) return 5;
+        if (window.mockCore.rejectPulseArm) return 5;
         const status=setLogicFault(kind,2,a,b);
         if (status!==0) return status;
-        logic.pulseState=1;logic.budget=limit;return 0;
+        logic.pulseState=1;logic.budget=limit;
+        if (window.mockCore.throwPulseArmAfter) throw new Error('synthetic pulse arm trap after mutation');
+        return 0;
       },
       _get_logic_pulse_state:()=>logic.pulseState,
       _set_logic_fault: setLogicFault,

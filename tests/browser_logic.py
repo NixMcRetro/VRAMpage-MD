@@ -539,7 +539,8 @@ class BrowserLogicTests(unittest.TestCase):
         page = self.new_page()
         self.load_rom(page)
         page.locator("#disconnectAllFaultsBtn").click()
-        expect(page.locator("#disconnectAllFaultsStatus")).to_contain_text("All-domain disconnect attempted")
+        expect(page.locator("#disconnectAllFaultsStatus")).to_contain_text("All-domain disconnect was incomplete")
+        expect(page.locator("#disconnectAllFaultsStatus")).to_contain_text("Emulation paused before the next frame")
         self.assertEqual(len(self.export_payload_for(page)["faultDisconnects"]), 1)
         page.locator("#resetBtn").click()
         page.wait_for_function("window.mockCore.starts===2")
@@ -1244,17 +1245,14 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.close()
         self.page=self.new_page(circuit_config=True)
         self.load_rom()
-        self.page.evaluate("window.mockCore._arm_logic_write_pulse=()=>5")
+        self.page.evaluate("window.mockCore.rejectPulseArm=true")
         self.page.locator("#randomRamPulseBtn").click()
         expect(self.page.locator("#randomiserStatus")).to_contain_text("Core rejected this logic fault")
         expect(self.page.locator("#pauseBtn")).to_have_text("Pause")
         self.assertEqual(self.export_payload()["faultPulses"],[])
         self.assertFalse(self.page.evaluate("window.mockCore.logic.active"))
 
-        self.page.evaluate("""() => {
-          const original=window.mockCore._arm_logic_write_pulse;
-          window.mockCore._arm_logic_write_pulse=(...args)=>{original(...args);throw new Error('synthetic arm trap after mutation')};
-        }""")
+        self.page.evaluate("window.mockCore.rejectPulseArm=false;window.mockCore.throwPulseArmAfter=true")
         self.page.locator("#randomRamPulseBtn").click()
         expect(self.page.locator("#pauseBtn")).to_have_text("Resume")
         pulse=self.export_payload()["faultPulses"][0]

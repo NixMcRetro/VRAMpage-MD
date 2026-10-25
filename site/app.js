@@ -1518,7 +1518,8 @@
     let frame,state,reads,writes,flags;
     try {
       frame=Number(emulator._get_logic_frame());
-      if (!Number.isFinite(frame) || frame-pulse.startFrame<1) return;
+      if (!Number.isFinite(frame) || frame<0) throw new Error('RAM frame expiry metadata is unavailable');
+      if (frame-pulse.startFrame<1) return;
       state=Number(emulator._get_logic_pulse_state());
       reads=Number(emulator._get_logic_reads());
       writes=Number(emulator._get_logic_writes());

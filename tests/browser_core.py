@@ -688,6 +688,8 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         frame=page.evaluate('testCore._get_logic_frame()')
                     self.assertTrue(page.evaluate("typeof testCore._arm_logic_write_pulse==='function'"),
                                     'actual core exposes affected-write pulse support')
+                    if page.locator('#pauseBtn').inner_text()!='Pause':
+                        page.locator('#pauseBtn').click()
                     before=page.evaluate("testCore._get_logic_frame()")
                     page.evaluate("""() => {
                       const nativeRandom=Math.random, values=[0,0];
