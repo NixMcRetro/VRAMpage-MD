@@ -1,5 +1,49 @@
 # Development status and continuation checkpoint
 
+## PR #62 verified delivery — 26 October 2026 (Sydney)
+
+[PR #62](https://github.com/NixMcRetro/VRAMpage-MD/pull/62) merged as
+`0b8263c1eb3f731f808c2cc6555ecde79b8a396a` after all seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40224455470)
+passed on `ebce69a94389694dceafe5e12bfaeaf2721f4907`; merged source tree matches.
+All seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40224889344)
+pass on the latest main, attempt2. Initial build attempt had one real-time browser
+scheduling start20.317ms late against the unchanged5ms limit. The other six core
+cases passed. Logs were inspected/retained, isolated local recheck passed3.742s,
+then only failed/dependent jobs were retried once without any source/threshold change.
+[Ready-to-run main review build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40224889344/artifacts/12610843393).
+
+Private replay proof and defined Blip arithmetic are complete. No product checkpoint
+API/controls exist. Native fatal ASan/UBSan and five actual-WASM replay cases pass;
+all prior recorded PCM/pixel hashes remain unchanged. Full SDK/source115 passes
+(145.167s); fresh production core7/handoff3 and extracted core7/handoff3 pass.
+Twelve focused staging/source checks pass. Both production profiles have no proof
+exports. Package704 unique files matches exact source/version/UI/core; SHA256
+`85535807920bbdbfb044975299d285b286f5dd64544705a5cab5817bed622d22`.
+Independent specialist review approved the corrections through158715e. Cached
+canonical `site/core`/`site/source` now use the verified production builds; canonical
+vendor was upgraded by the supported idempotent patcher. No private hooks installed.
+
+Public v0.4.1 title/tag/assets are unchanged; original tag
+`e579c571f14b3549a5befa33d9e62ba3f3c9d45b`, ZIP digest
+`36133552de9c7dafb9502dea957b6a4934fe4b503d19e311fb898834162ec6fd`,
+SHA256SUMS digest `961ff2e54e34e511355e736f0106fcd8cda71777977f1e29663683e08ed7b1bc`.
+McRetro.net untouched. No new native Mac audible/physical claim.
+
+User authorizes continued work. Next bounded gate is default six-button controller
+state and warmed mid-session SRAM replay in scratch (worker `v050_state_audit`).
+Initial3-button input-consuming and plain64KiB SRAM experiments pass with a bounded
+SRAM copyback. Stock state omits SRAM; bytes/hashes after stock load prove the gap.
+Root reran full input/SRAM build with normal default leak/address/UB sanitizers
+(`env -u ASAN_OPTIONS -u LSAN_OPTIONS`, tool additional network permission); all
+pass. Earlier worker disabled leak detection after sandbox ptrace failure; that
+limitation is superseded by the root default-sanitizer rerun, not hidden.
+Evidence: `/workspace/scratch/checkpoint-input-sram/root-default-sanitizers.log`.
+No tracked input/SRAM implementation or production checkpoint wrapper yet. Keep
+EEPROM/SVP/custom mappings/peripherals gated; capture/restore remains explicit,
+one in-memory same-session slot, default unassisted faults, Title Case controls.
+
+
 ## Private checkpoint proof and defined Blip arithmetic integration
 
 Developer-only code in `scripts/checkpoint-proof` archives the exact upstream pin,

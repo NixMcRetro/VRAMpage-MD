@@ -1551,3 +1551,5 @@ Evidence: `/workspace/scratch/checkpoint-proof`; immutable recorded synthetic ha
 and source provenance are linked from `CHECKPOINT-REPLAY-PROOF.md`.
 
 Fresh production Chromium runtime/normal transaction handoff tests3 pass; neither production factory exposes a proof export. The normal build used a clean isolated CMake cache; the corrected command supplies a directory to `--normal-core`.
+
+PR #62 final: seven PR checks40224455470 and seven main checks40224889344 pass (main attempt2 after one unchanged audio scheduling outlier). Main0b8263c equals reviewed ebce69a tree. Source/version/public assets preserved.
