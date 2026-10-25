@@ -29,7 +29,7 @@
   let keyboardTarget='VRAM', keyboardHeld=null, ownedAddressHold=null, keyboardMutation=false;
   const logEl = $('experimentLog');
   let emulator = null, started = false, paused = false;
-  let loadedName = '', latched = null, momentary = null, momentaryRestorePair = null, selectedPin = null;
+  let loadedName = '', latched = null, momentary = null, momentaryRestorePair = null, momentaryRestoreMask=0, selectedPin = null;
   let audioCtx = null, audioOn = false, nextAudioTime = 0;
   const activeAudioSources = new Set();
   let romBytes = null, frameView = null, inputView = null, leftAudio = null, rightAudio = null;
@@ -1027,10 +1027,10 @@
       control.disabled = !canUse;
     $('ramWriteMode').disabled=!canUse;
     for (const control of document.querySelectorAll('[data-ram-frame-pair]')) {
-      const owned=ownedAddressHold===control.dataset.ramFramePair;
+      const owned=ownedAddressHold?.key===control.dataset.ramFramePair;
       control.setAttribute('aria-pressed',String(owned));
       control.classList.toggle('active',owned);
-      control.setAttribute('aria-label',`${owned?'Release':'Write-only bridge'} A${Number(control.dataset.ramFramePair.split(',')[0])+1} and A${Number(control.dataset.ramFramePair.split(',')[1])+1}${$('ramWriteMode').value==='hold'?' until clicked again':' for eight emulated frames'}`);
+      control.setAttribute('aria-label',`${owned?'Held':'Write-only bridge'} A${Number(control.dataset.ramFramePair.split(',')[0])+1} and A${Number(control.dataset.ramFramePair.split(',')[1])+1}${$('ramWriteMode').value==='hold'?' while pressed':' for eight emulated frames'}`);
     }
     for (const control of document.querySelectorAll('[data-ram-pulse], #logicPulseBtn, #logicPulseFrames'))
       control.disabled = !canUse || typeof emulator._recover_logic_cpu !== 'function';
@@ -1454,10 +1454,10 @@
     setLogicStatus(`RAM pulse active for ${length}; then disconnect and force resume.${paused?' Paused: press Resume to advance.':''}`);
   }
 
-  function startAddressFramePulse(pair) {
-    if (!started || !logicApiReady()) return false;
+  function addressFramePairPreflight(pair) {
     let pulseState, pulseStateAvailable, vramState, startFrame;
     try {
+      if (!started || !logicApiReady()) throw new Error('Work RAM fault APIs are unavailable');
       if (!Array.isArray(pair) || pair.length!==2 || !pair.every(Number.isInteger) ||
           pair[0]<10 || pair[0]>14 || pair[1]<10 || pair[1]>14 || pair[0]===pair[1])
         throw new Error('choose two distinct A11–A15 lines');
@@ -1486,10 +1486,18 @@
       if (vramState.mask || bridgeValid) throw new Error('VRAM fault active');
       startFrame=Number(emulator._get_logic_frame());
       if (!Number.isFinite(startFrame) || startFrame<0) throw new Error('RAM frame state unavailable');
-    } catch (error) {
+      return {ok:true,startFrame};
+    } catch (error) { return {ok:false,error}; }
+  }
+
+  function startAddressFramePulse(pair) {
+    const preflight=addressFramePairPreflight(pair);
+    if (!preflight.ok) {
+      const error=preflight.error;
       setAddressFramePulseStatus(`Work RAM WRITE pulse refused: ${error.message}. No fault was applied.`);
       return false;
     }
+    const startFrame=preflight.startFrame;
     const [a,b]=canonical(pair);
     const pulse={kind:1,access:2,a,b,mode:'address-frames',requestedFrames:8,
       startFrame,status:'active',cpuRecoveryAttempted:false,recoveryAccepted:false};
@@ -1597,29 +1605,55 @@
       button.dataset.ramFramePair=`${a},${b}`;
       button.textContent=`A${a+1} ↔ A${b+1}`;
       button.setAttribute('aria-label',`Write-only bridge A${a+1} and A${b+1} for eight emulated frames`);
-      button.addEventListener('click',()=>activateAddressFramePair([a,b]));
+      let suppressClick=false;
+      button.addEventListener('pointerdown',event=>{
+        if ($('ramWriteMode').value!=='hold' || event.button!==0) return;
+        suppressClick=true;
+        if (startAddressFrameHold([a,b],{type:'pointer',pointerId:event.pointerId,button})) {
+          try { button.setPointerCapture(event.pointerId); } catch (_) { /* release remains covered by window blur */ }
+        }
+      });
+      const releasePointer=event=>{
+        if (event.type!=='pointerup') suppressClick=false;
+        if (ownedAddressHold?.type==='pointer' && ownedAddressHold.pointerId===event.pointerId)
+          endAddressFrameHold('pointer',event.pointerId);
+      };
+      button.addEventListener('pointerup',releasePointer);
+      button.addEventListener('pointercancel',releasePointer);
+      button.addEventListener('lostpointercapture',releasePointer);
+      button.addEventListener('keydown',event=>{
+        if ($('ramWriteMode').value!=='hold' || !['Space','Enter'].includes(event.code)) return;
+        event.preventDefault();
+        if (event.repeat || keyboardHeld) return;
+        if (startAddressFrameHold([a,b],{type:'keyboard',code:event.code}))
+          keyboardHeld={code:event.code,target:'WRAM',pair:[a,b],restore:null};
+      });
+      button.addEventListener('click',()=>{
+        if (suppressClick) { suppressClick=false; return; }
+        if ($('ramWriteMode').value==='pulse') startAddressFramePulse([a,b]);
+      });
       pairs.append(button);
     }
     $('ramWriteMode').addEventListener('change',()=>{
-      if (ownedAddressHold && !disconnectLogic()) {
+      if (ownedAddressHold && !endAddressFrameHold(ownedAddressHold.type,ownedAddressHold.pointerId)) {
         $('ramWriteMode').value='hold';
         setAddressFramePulseStatus('Mode change refused because the held RAM fault could not be disconnected.');
       }
     });
   }
 
-  function activateAddressFramePair(pair) {
+  function startAddressFrameHold(pair,source) {
     const [a,b]=canonical(pair), key=`${a},${b}`;
-    if ($('ramWriteMode').value==='pulse') return startAddressFramePulse([a,b]);
-    if (ownedAddressHold===key) return disconnectLogic();
-    if (logicActive || pendingPulse || momentary) {
-      setAddressFramePulseStatus('Hold refused: disconnect the active RAM fault or pulse first.');
+    if (ownedAddressHold) return false;
+    const preflight=addressFramePairPreflight(pair);
+    if (!preflight.ok) {
+      setAddressFramePulseStatus(`Work RAM WRITE Hold refused: ${preflight.error.message}. No fault was applied.`);
       return false;
     }
     try {
       if (!applyLogicFault(null,{kind:1,access:2,a,b})) return false;
-      ownedAddressHold=key;
-      setAddressFramePulseStatus(`Work RAM WRITE bridge held on A${a+1} ↔ A${b+1}; click the same pair to release. No CPU recovery will be attempted.`);
+      ownedAddressHold={key,...source};
+      setAddressFramePulseStatus(`Work RAM WRITE bridge held on A${a+1} ↔ A${b+1}; release the control to disconnect. No CPU recovery will be attempted.`);
       updateLogicControls();
       return true;
     } catch(error) {
@@ -1629,6 +1663,26 @@
       updateLogicControls();
       return false;
     }
+  }
+
+  function endAddressFrameHold(type,pointerId=undefined) {
+    const held=ownedAddressHold;
+    if (!held || held.type!==type || (type==='pointer' && held.pointerId!==pointerId)) return false;
+    const config=activeRamConfiguration;
+    if (!logicActive || !config || config.type!=='line-pair' || config.kind!==1 || config.access!==2 ||
+        `${config.a},${config.b}`!==held.key) { ownedAddressHold=null; return false; }
+    const released=disconnectLogic();
+    if (released) {
+      keyboardHeld=null;
+      if (type==='pointer' && held.button?.hasPointerCapture?.(pointerId)) {
+        try { held.button.releasePointerCapture(pointerId); } catch (_) { /* Pointerup may have released capture already. */ }
+      }
+    }
+    else {
+      if (!paused) pauseToggle();
+      setAddressFramePulseStatus('Work RAM WRITE Hold release was not confirmed; emulation paused. The fault may remain active.');
+    }
+    return released;
   }
 
   function setupPulseButtons() {
@@ -2147,8 +2201,10 @@
   function startMomentaryBridge(pair) {
     const sorted=canonical(pair);
     const restorePair=canonical(latched);
+    const restoreMask=vramAddressMask;
     if (!applyVramModel(vramModelId,0,sorted,'momentary VRAM bridge activated')) return false;
     momentaryRestorePair=restorePair;
+    momentaryRestoreMask=restoreMask;
     latched=null; momentary=sorted;
     updateFaultUI();
     return true;
@@ -2158,8 +2214,9 @@
     if (!momentary) return;
     const state=currentVramModelState();
     const targetModel=vramModelId===2 && (state.supportedModelsMask&4)===0 ? 1 : vramModelId;
-    if (applyVramModel(targetModel,0,momentaryRestorePair,'momentary VRAM bridge released'))
-      momentaryRestorePair=null;
+    if (applyVramModel(targetModel,momentaryRestoreMask,momentaryRestorePair,'momentary VRAM bridge released')) {
+      momentaryRestorePair=null;momentaryRestoreMask=0;
+    }
   }
 
   function setKeyboardTarget(target) {
@@ -2209,7 +2266,11 @@
         keyboardHeld={code:`Digit${index+1}`,target:'WRAM',pair:[a,b],restore};
         return true;
       }
-      return activateAddressFramePair([a,b]);
+      if ($('ramWriteMode').value==='pulse') return startAddressFramePulse([a,b]);
+      if (keyboardHeld || ownedAddressHold) return false;
+      if (!startAddressFrameHold([a,b],{type:'numeric',code:`Digit${index+1}`})) return false;
+      keyboardHeld={code:`Digit${index+1}`,target:'WRAM',pair:[a,b],restore:null};
+      return true;
     }
     const before=audioState(keyboardTarget), pair=SHORTCUT_PAIRS[index];
     if (!before) return false;
@@ -2232,6 +2293,8 @@
     if (held.target==='WRAM') {
       const active=activeRamConfiguration;
       if (!logicActive || !active || active.type!=='line-pair' || active.kind!==1 || active.access!==2 || active.a!==held.pair[0] || active.b!==held.pair[1]) return;
+      const expectedOwner=held.code.startsWith('Digit')?'numeric':'keyboard';
+      if (ownedAddressHold && (ownedAddressHold.type!==expectedOwner || ownedAddressHold.code!==held.code || ownedAddressHold.key!==`${held.pair[0]},${held.pair[1]}`)) return;
       if (!applyKeyboardMutation(()=>disconnectLogic())) return;
       if (held.restore) applyKeyboardMutation(()=>held.restore.type==='address-mask'
         ? applyAddressMask(held.restore.mask,held.restore.access)
@@ -2587,10 +2650,12 @@
     document.addEventListener('keyup', event=> {
       pressed.delete(event.code);
       if (/^Digit[1-9]$/.test(event.code)) endKeyboardHold(event.code);
+      else if (['Space','Enter'].includes(event.code) && keyboardHeld?.target==='WRAM') endKeyboardHold(event.code);
     });
     window.addEventListener('blur',()=>{
       pressed.clear();
       endKeyboardHold();
+      if (ownedAddressHold?.type==='pointer') endAddressFrameHold('pointer',ownedAddressHold.pointerId);
       if(momentary) endMomentaryBridge();
       focusReleased=true;
     });

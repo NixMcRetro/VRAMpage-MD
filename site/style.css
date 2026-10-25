@@ -345,18 +345,20 @@ footer { padding-top:9px; font-size:10px; }
 .chip-workbench { min-width:0; }
 .chip-workbench-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
 .chip-card { min-width:0; padding:8px; border:1px solid var(--rule); background:var(--surface); }
-#keyboardTarget { padding:0 12px 6px; color:#4d6949; font:700 10px/1.3 ui-monospace,SFMono-Regular,Consolas,monospace; }
+#keyboardTarget { padding:0 12px 6px; color:var(--ink); font:700 10px/1.3 ui-monospace,SFMono-Regular,Consolas,monospace; }
 [data-keyboard-chip="VRAM"].keyboard-target .chip-middle,
 [data-keyboard-chip="WRAM"].keyboard-target .ram-chip-body,
-[data-keyboard-chip="FM"].keyboard-target .data-chip,
-[data-keyboard-chip="PSG"].keyboard-target .data-chip { background:#dcebd8; color:#243d27; outline:2px solid #8eb18a; outline-offset:1px; }
+[data-keyboard-chip="FM"].keyboard-target .data-chip .chip-middle,
+[data-keyboard-chip="PSG"].keyboard-target .data-chip .chip-middle { background:#dcebd8; color:#243d27; outline:2px solid #8eb18a; outline-offset:1px; }
 [data-keyboard-chip="VRAM"].keyboard-target .chip-middle strong,
 [data-keyboard-chip="VRAM"].keyboard-target .chip-middle span,
 [data-keyboard-chip="WRAM"].keyboard-target .ram-chip-body strong,
 [data-keyboard-chip="WRAM"].keyboard-target .ram-chip-body span,
 [data-keyboard-chip="WRAM"].keyboard-target .ram-chip-body small { color:#243d27; }
-[data-keyboard-chip="FM"].keyboard-target .data-chip .data-pin,
-[data-keyboard-chip="PSG"].keyboard-target .data-chip .data-pin { color:#243d27; }
+[data-keyboard-chip="FM"].keyboard-target .data-chip .chip-middle strong,
+[data-keyboard-chip="FM"].keyboard-target .data-chip .chip-middle span,
+[data-keyboard-chip="PSG"].keyboard-target .data-chip .chip-middle strong,
+[data-keyboard-chip="PSG"].keyboard-target .data-chip .chip-middle span { color:#243d27; }
 .chip-card h2 { display:flex; flex-direction:column; gap:1px; margin:0 0 5px; font-size:12px; line-height:1.15; }
 .chip-card h2 small { color:var(--muted); font:10px ui-monospace,SFMono-Regular,Consolas,monospace; }
 .chip-compact-control { display:flex; align-items:center; justify-content:space-between; gap:4px; margin:3px 0; color:var(--muted); font-size:10px; }
