@@ -957,6 +957,17 @@ def upgrade_vram_runtime_guards(wasm: str, dma: str, render_c: str):
     return wasm, dma, render_c
 
 
+def patch_blip_highpass(source: str) -> str:
+    """CLAMP bounds s to 16 bits; multiplication preserves the filter without signed-shift UB."""
+    before = 's << (delta_bits - bass_shift)'
+    after = 's * (1 << (delta_bits - bass_shift))'
+    if source.count(before) == 4 and after not in source:
+        return source.replace(before, after)
+    if before not in source and source.count(after) == 4:
+        return source
+    raise SystemExit('Expected four pinned Blip high-pass expressions; source changed.')
+
+
 def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     """Patch a clean or previously patched pinned source tree; return changed."""
     patch = Path(__file__).with_name('vram_fault_patch.c').read_text()
@@ -969,7 +980,9 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     dma_c = root / 'src/main/c/core/vdp_ctrl.c'
     psg_c = root / 'src/main/c/core/sound/psg.c'
     fm_c = root / 'src/main/c/core/sound/sound.c'
+    blip_c = root / 'src/main/c/core/sound/blip_buf.c'
 
+    blip = patch_blip_highpass(blip_c.read_text()) if blip_c.exists() else None
     wasm = wasm_c.read_text()
     config = config_c.read_text()
     render = render_h.read_text()
@@ -1076,13 +1089,16 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
         render_c = patch_mode5_render_reads(render_c)
         psg = patch_psg_input_fault(psg)
         fm = patch_fm_data_fault(fm)
-    changed = (wasm != wasm_c.read_text() or config != config_c.read_text() or
+    changed = ((blip is not None and blip != blip_c.read_text()) or
+               wasm != wasm_c.read_text() or config != config_c.read_text() or
                render != render_h.read_text() or m68k != m68k_h.read_text() or
                z80 != z80_c.read_text() or dma != dma_c.read_text() or
                (transaction_adapter and (render_c != render_c_path.read_text() or
                                           psg != psg_c.read_text() or
                                           fm != fm_c.read_text())))
     if changed:
+        if blip is not None:
+            blip_c.write_text(blip)
         wasm_c.write_text(wasm)
         config_c.write_text(config)
         render_h.write_text(render)

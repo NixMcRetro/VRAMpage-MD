@@ -61,6 +61,14 @@ def main():
     if text.count(anchor) != 1 or flag in text:
         raise SystemExit("Pinned CMake anchor changed or proof flag already present")
     cmake.write_text(text.replace(anchor, flag + "\n" + anchor, 1))
+    audio = core / "src/main/c/core/sound"
+    sanitizer_flags = ["-std=c11", "-O1", "-g", "-Wall", "-Wextra", "-DBLIP_ASSERT",
+                       "-fsanitize=address,undefined", "-fno-sanitize-recover=all", "-fno-omit-frame-pointer"]
+    native_object, native_check = output / "blip-proof.o", output / "blip-sanitizers"
+    run(["cc", *sanitizer_flags, "-I", str(audio), "-c", str(audio / "blip_buf.c"), "-o", str(native_object)])
+    run(["cc", *sanitizer_flags, "-Werror", "-I", str(audio), str(native_object),
+         str(repo / "tests/checkpoint_blip_smoke.c"), "-lm", "-o", str(native_check)])
+    run([str(native_check)])
     build = core / "build"
     run(["emcmake", "cmake", "-S", str(core), "-B", str(build), "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"])
     run(["cmake", "--build", str(build), "-j2"])

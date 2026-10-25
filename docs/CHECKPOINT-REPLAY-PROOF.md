@@ -2,7 +2,7 @@
 
 This is a private feasibility experiment, not a product checkpoint API. It runs the pinned C core in an isolated Emscripten build against original synthetic cartridges. The runner never accepts external state bytes and uses no commercial ROM or captured memory. All experimental hooks are added to the copied core only.
 
-Run `scripts/checkpoint-proof/build-and-run.sh` from a checkout with Emscripten, CMake and Node on `PATH`, plus the pinned core checkout. If the vendor tree is outside this worktree, set `VRAMPAGE_WASM_GENPLUS=/path/to/vendor/wasm-genplus`. For example, in this environment: `VRAMPAGE_WASM_GENPLUS=/workspace/VRAMpage-MD/vendor/wasm-genplus scripts/checkpoint-proof/build-and-run.sh`. It recreates only a marked isolated output directory (`build/checkpoint-proof/` by default) and runs five replay cases. The builder refuses to remove an unmarked output directory, symlink output/ancestors, source directories or ancestors containing the source. Set `CHECKPOINT_PROOF_DIR` to select a disposable output directory outside repository source and the vendor checkout (or under repository `build/`). The builder verifies the exact core commit `6090aff9e9b2f578cd28882bd4571d2e35b1d674`, applies the existing `scripts/patch_core.py` runtime patch, then appends proof-only hooks in the copied source.
+Run `scripts/checkpoint-proof/build-and-run.sh` from a checkout with a host C compiler (`cc`), Emscripten, CMake and Node on `PATH`, plus the pinned core checkout. If the vendor tree is outside this worktree, set `VRAMPAGE_WASM_GENPLUS=/path/to/vendor/wasm-genplus`. For example, in this environment: `VRAMPAGE_WASM_GENPLUS=/workspace/VRAMpage-MD/vendor/wasm-genplus scripts/checkpoint-proof/build-and-run.sh`. It recreates only a marked isolated output directory (`build/checkpoint-proof/` by default) and runs five replay cases. The builder refuses to remove an unmarked output directory, symlink output/ancestors, source directories or ancestors containing the source. Set `CHECKPOINT_PROOF_DIR` to select a disposable output directory outside repository source and the vendor checkout (or under repository `build/`). The builder verifies the exact core commit `6090aff9e9b2f578cd28882bd4571d2e35b1d674`, applies the existing `scripts/patch_core.py` runtime patch, then appends proof-only hooks in the copied source.
 
 Each case saves through stock `state_save`, advances six frames, restores with stock `state_load`, supplements omitted audio runtime state, and checks byte-identical stock state reserialization, pixel hashes, PCM sample counts and left/right PCM hashes against both the first continuation and a fresh same-build core. The synthetic dynamic cartridge loops through CRAM updates, so its successive frame hashes must differ. PSG-only and FM+PSG cases run with low-pass mode; FM+PSG and dynamic CRAM cases also run with EQ mode. State and audio buffers have 64-byte sentinels and verify untouched payload tails.
 
@@ -13,3 +13,15 @@ The recorded build used Emscripten 4.0.23, CMake and Node 24.19.0. The supplemen
 The supplement experiment copies Blip factor, offset, integrators and its two live sample rings; PSG runtime fields omitted from its native context save; FM last samples and cycle bookkeeping; and system EQ/low-pass history, VDP cycle position and audio profile. It restores into existing allocations and keeps the FM pointer bound to the existing static buffer. The sample/frame rate is checked; filter mode is held fixed per case and is not validated as a load-time identity. This is still proof scaffolding: the hooks use same-process internal data and do not establish a safe persistent format.
 
 Not established: SRAM/EEPROM or special mapper carts, SVP, input-consuming gameplay, external app input state, browser audio queues, other build profiles, fault-model runtime and diagnostics, untrusted-state loading, sanitizers, packaged browsers, or a production one-slot checkpoint. SRAM contents are outside this test and remain a hard gate. No static-image heuristic or automatic restore is tested or proposed here.
+
+
+The native smoke check compiles the actual isolated Blip helpers with AddressSanitizer
+and UndefinedBehaviorSanitizer (fatal findings), checks null/short capacity refusal,
+guard bytes, live pointers, queued PCM restoration and the three-buffer mixer. The
+harness uses strict warnings; existing signed-comparison warnings in pinned vendor
+code remain visible. The initial run reported negative signed shifts in all high-pass
+read/mix paths. The shared core patch replaces the four `s << 6` operations with
+`s * 64`: `CLAMP` bounds `s` to signed16-bit values, so the multiplication is defined
+and fits signed32-bit values. No filter coefficient or intended sample value changes.
+Golden synthetic PCM hashes must remain unchanged after rebuilding. This correction
+also applies to normal/runtime builds; the snapshot API remains proof-only.
