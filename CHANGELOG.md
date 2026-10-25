@@ -2,6 +2,8 @@
 
 ## Unreleased workbench improvements
 
+- Stage cartridge replacements so rejected or stale file reads cannot poison the running cartridge, Clean restart or export identity; stop truthfully if core activation fails after mutation.
+
 - Stop stale queued audio across pause/mute/visibility/restart boundaries and avoid accumulating buffers while the browser AudioContext is suspended, without changing emulated sound or fault state.
 
 - Add compact CPU reset and ten individual A11–A15 write-only RAM pair buttons. Each lasts eight emulated frames and disconnects without automatic CPU recovery; these replace the earlier random eight-write/one-frame shortcut.

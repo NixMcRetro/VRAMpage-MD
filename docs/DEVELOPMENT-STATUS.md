@@ -1,5 +1,27 @@
 # Development status and continuation checkpoint
 
+## Current Phase D slice: safe cartridge replacement
+
+Resume verified checkpoint `59cb65b` atop main `8412399`. A rejected replacement
+currently overwrites stored ROM bytes/hash before validation while the previous
+core and filename remain active. An independent compiled-core probe reproduced
+old filename/new rejected-file SHA and a Clean restart that never called the core
+again. Stage candidate files separately and commit active identity only after
+accepted activation. Reject oversize inputs before reading their entire contents.
+
+Preserve the active cartridge, identity, play/pause, fault/audio state and history
+on non-mutating validation/read/allocation rejection. Initial invalid loads still
+need a helpful waiting/error state. Latest file selection wins; older pending
+reads/errors must not override it, and explicit Clean restart invalidates older
+reads. Export hashing must not combine one cartridge's hash with another's name
+and live state. Native mutation/start failures cannot be rolled back honestly:
+stop/report uncertain state instead of pretending the old machine was restored.
+
+Keep all fault/glitch/recovery models unchanged. Independent review, full
+applicable tests and required PR/main CI gate integration; public v0.4.1 and
+McRetro.net remain untouched. No v0.5.0 recovery feature or version change is
+part of this failure-handling slice. Evidence: `/workspace/scratch/rom-stability`.
+
 ## PR #54 integration checkpoint — 25 October 2026
 
 [PR #54](https://github.com/NixMcRetro/VRAMpage-MD/pull/54) merged as

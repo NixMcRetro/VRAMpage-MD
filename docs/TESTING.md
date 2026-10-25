@@ -1209,3 +1209,22 @@ The merged tree matches the independently reviewed head. Public v0.4.1 metadata,
 tag and asset digests were verified unchanged after merge; McRetro.net was not
 modified or deployed. This host-audio slice is complete; manual macOS/audible/OS
 background validation and broader Phase D work remain distinct from these results.
+
+# Phase D cartridge replacement and export identity
+
+The compiled-core baseline on `8412399` loads an original generated cartridge,
+rejects a 512-byte bad-header file, and exports the original filename with the
+rejected file's SHA-256. The core starts once; attempting Clean restart does not
+start it again because stored restart bytes were overwritten. Raw proof and the
+original-cartridge-only harness are retained under `/workspace/scratch/rom-stability`.
+
+Acceptance: stage files; reject known size limits before arrayBuffer work; retain
+the accepted bytes/name/hash and core/pause/fault/audio/history on non-mutating
+rejection; initial invalid load stays off. Drive delayed read promises in both
+orders, including stale read errors and a newer invalid choice. Clean restart
+must cancel older pending reads and use retained valid bytes. Delay hashing and
+replace cartridges during export to require a coherent identity or explicit
+cancellation. A core-mutating failure must stop/report uncertainty, not fake
+rollback. Verify actual-core good/rejected/restart identities, existing normal/
+runtime compatibility and all pulse/recovery/audio lifecycle regressions. No
+commercial ROMs, raw memory exports, new file formats or fault models are needed.
