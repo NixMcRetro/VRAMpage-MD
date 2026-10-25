@@ -1397,3 +1397,13 @@ keyboard target cycling, pulse/held-contact cleanup and a dashed disabled VRAM
 Randomiser with zero click events or VRAM setter changes from RAM pointer input.
 Before/fixed native probes and original failing baseline are retained separately.
 These checks do not establish a new native Safari or physical-chip test.
+
+Final local review head `00aa262f351feeb7f16687ce472fb45e42dd01f4` produces
+682 unique ROM-free package entries, exact source/version0.4.1 metadata and
+byte-identical UI/core files. All six compiled-core tests pass on the extracted
+package (18.587 s). All seven PR #58 checks pass in
+[run 40197239190](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40197239190).
+Merge `d3b8d7eec4a2dd16c99734eecbce73d345bb8c26` exactly matches that tree.
+All seven main checks pass in run40197674169. The current integration checkpoint
+links the verified review download.
+Public v0.4.1 metadata/tag/assets are unchanged; McRetro.net is untouched.
