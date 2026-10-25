@@ -28,7 +28,7 @@ blur cleanup. Default eight-frame pulses remain unchanged. Held state cannot
 restore over newer faults; release rejection/uncertainty pauses with explicit
 status, without CPU recovery. Compact and toolbar restart share one handler,
 including retained-cartridge availability after an uncertain native start.
-Review approves final source and markup/test follow-ups through `f0bd2f1`.
+Review approves final source and markup/test/style follow-ups through `79690f5`.
 The chip target indicator sits above the grid so short landscape windows retain
 the player budget, and the recovery buttons stay together when rows wrap.
 
@@ -38,8 +38,10 @@ and compact UI6, Chromium display7 and actual compiled-core6 pass. Compiled-core
 proof covers all four keyboard targets, ninth pairs, keyboard/pointer contacts
 beyond eight frames, changed writes, release without recovery and both restarts.
 Sixteen visual states (four targets × light/dark × desktop/mobile) pass tint,
-contrast, overflow and adjacent-restart checks. Final full logic/WebKit results,
-package provenance and required PR/main CI remain integration gates. Raw logs,
+contrast, overflow and adjacent-restart checks. Full Chromium logic93/93 passes (221.230 s). Focused WebKit covers twelve
+contact/recovery cases across runs, three compact-layout cases and the new
+compiled-core controls case; all pass. Package provenance and required PR/main CI
+remain integration gates. Raw logs,
 screenshots and retained first failures: `/workspace/scratch/shortcut-modes`.
 
 ## User-reported Mac Safari acceptance — 25 October 2026 (Sydney)

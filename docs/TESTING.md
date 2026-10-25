@@ -1336,3 +1336,18 @@ Playwright's physical mouse state before its next press, matching two distinct
 contacts; the release and inactive assertions remain enforced. These automated
 checks do not establish native Mac behaviour for the newly added controls.
 Raw logs, images and retained first failures: `/workspace/scratch/shortcut-modes`.
+
+Final Chromium logic93/93 passes in 221.230 s, display7/7 in 26.314 s, and
+compiled-core6/6 in 28.932 s. Focused WebKit covers twelve distinct contact/
+recovery cases across runs (the corrected cancellation case passes separately),
+three desktop layout/workflow cases and the new genuine compiled-core controls
+case (6.708 s); all pass. The full Chromium suite includes the cancellation
+assertions, while its final corrected harness case also passes independently.
+
+Initial full-suite layout failures were fixed without relaxing viewport budgets:
+recovery controls stay adjacent, the mode selector shares the RAM WRITE heading,
+and target-label spacing accommodates WebKit. The expected Randomiser control
+list now includes the requested Clean restart. Independent review approves
+`dc22f1d` and `79690f5`; chip dimensions/fonts and the player minimum are unchanged.
+Original logs remain alongside final passing logs. Final syntax and compact UI6
+pass, and native/core source is unchanged from the full SDK107 evidence above.
