@@ -1738,6 +1738,42 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.wait_for_timeout(200)
         self.assertEqual(self.page.evaluate("window.mockCore.logic.recoveries.length"), 1)
 
+    def test_bad_rom_rejection_preserves_paused_address_frame_pulse(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True)
+        rom=self.load_rom()
+        self.page.locator("#pauseBtn").click()
+        self.page.evaluate("window.mockCore.logic.writesPerTick=0")
+        self.page.locator("[data-ram-frame-pair='10,11']").click()
+        before=self.export_payload()
+        beforePulse=before["faultPulses"][-1]
+        self.assertEqual(beforePulse["status"],"active")
+        self.assertTrue(self.page.evaluate("window.mockCore.logic.active"))
+        starts=self.page.evaluate("window.mockCore.starts")
+        frame=self.page.evaluate("window.mockCore.logic.frame")
+
+        self.page.locator("#romFile").set_input_files({
+            "name":"bad-header-during-pulse.bin","mimeType":"application/octet-stream","buffer":bytes(512)})
+        expect(self.page.locator("#powerLabel")).to_have_text("CONSOLE ON")
+        expect(self.page.locator("#pauseBtn")).to_have_text("Resume")
+        expect(self.page.locator("#romName")).to_have_text("SYNTHETIC-TEST.BIN")
+        after=self.export_payload()
+        self.assertEqual(after["rom"],before["rom"])
+        self.assertEqual(after["rom"]["sha256"],hashlib.sha256(rom).hexdigest())
+        self.assertEqual(self.page.evaluate("window.mockCore.starts"),starts)
+        self.assertEqual(self.page.evaluate("window.mockCore.logic.frame"),frame)
+        self.assertTrue(self.page.evaluate("window.mockCore.logic.active"))
+        self.assertEqual(after["faultPulses"][-1]["status"],"active")
+        self.assertEqual(after["faultPulses"][-1]["startFrame"],beforePulse["startFrame"])
+
+        self.page.locator("#pauseBtn").click()
+        expect(self.page.locator("#randomiserStatus")).to_contain_text("ended after 8 emulated frames",timeout=5000)
+        finished=self.export_payload()["faultPulses"][-1]
+        self.assertEqual(finished["endFrame"]-finished["startFrame"],8)
+        self.assertFalse(finished["cpuRecoveryAttempted"])
+        self.assertFalse(finished["recoveryAccepted"])
+        self.assertEqual(self.page.evaluate("window.mockCore.logic.recoveries"),[])
+
     def test_manual_disconnect_and_replacement_cancel_pending_pulse(self):
         self.load_rom()
         self.page.locator("#pauseBtn").click()
