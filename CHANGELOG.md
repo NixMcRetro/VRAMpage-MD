@@ -2,6 +2,8 @@
 
 ## Unreleased workbench improvements
 
+- Design the v0.5.0 opt-in single-attempt CPU recovery and explicit one-slot session checkpoint, with native state/capacity verification gates. No runtime behavior or version change in the design checkpoint.
+
 - Remove the VRAM-only dotted disabled-button styling; retain consistent unavailable controls and RAM/VRAM safety guards. Verify CPU-only reset preserves audio fault configuration while Clean restart clears it.
 
 - Default RAM WRITE to Hold while pressed; retain explicit eight-frame pulses and their exact timing. Fill active fault chips pale green while keeping their green outline and readable pin labels.

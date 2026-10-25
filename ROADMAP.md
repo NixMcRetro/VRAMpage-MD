@@ -73,6 +73,10 @@ PR checks pass; integration evidence is in the latest checkpoint.
 
 ## Planned after stabilisation: v0.5.0 recovery milestone
 
+The [reviewed v0.5.0 design](docs/RECOVERY-CHECKPOINT-PLAN.md) defines the first
+bounded implementation and acceptance gates. No runtime changes are included in
+that design checkpoint.
+
 The user approved a target combining independent, optional bounded CPU halt
 recovery and explicit save/restore checkpoints. Defaults must preserve unassisted
 glitch outcomes; record interventions and never silently rewind or invent a

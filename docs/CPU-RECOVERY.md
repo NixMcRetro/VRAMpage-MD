@@ -123,3 +123,9 @@ node scripts/run-cpu-recovery.cjs /private/path/cartridge.md > /tmp/recovery.jso
 
 This is one trial per action, not a repeated recovery success rate. Actual
 post-recovery visuals, sound and native macOS behavior remain unverified.
+
+## Planned v0.5.0
+
+The [recovery and checkpoint design](RECOVERY-CHECKPOINT-PLAN.md) specifies an
+opt-in, single armed HALT intervention and explicit one-slot session checkpoints.
+Neither is implemented yet; current manual recovery behavior above is unchanged.

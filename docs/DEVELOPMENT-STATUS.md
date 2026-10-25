@@ -1,5 +1,27 @@
 # Development status and continuation checkpoint
 
+## v0.5.0 design checkpoint
+
+Resume from verified main `5d0425a64acb0f883789c67e8c6ec41e5d2c0c02` (PR #60,
+all seven PR/main checks passed). No new open PR or main changes were found.
+[Recovery/checkpoint plan](RECOVERY-CHECKPOINT-PLAN.md) now defines the next
+implementation: one explicitly armed HALT-triggered CPU reset attempt; then one
+manual in-memory same-session checkpoint after native round-trip/capacity proof.
+Unassisted operation remains default, audio remains outside CPU reset, and no
+static-image heuristic, repeated rescue or automatic rewind is planned.
+
+This is a design-only continuation checkpoint. No runtime/build/package change,
+version bump, release replacement or McRetro.net action. Previous CI evidence
+is reused; new runtime tests are acceptance gates, not executed claims. Independent
+Luna High source audit covered existing serializer and CPU recovery paths;
+full design review approved with no blocking findings. Six documentation tests,
+changed Markdown local-link validation and `git diff --check` passed. Design saved
+on `experiment/v050-recovery-design`; no documentation-only integration PR.
+Native serialization bounds/complete replay and manual Mac acceptance remain
+implementation gates. First implementation scope is plan step 1, with focused
+positive/negative/failure tests and all required CI before merging.
+
+
 ## PR #60 verified delivery checkpoint — 26 October 2026 (Sydney)
 
 [PR #60](https://github.com/NixMcRetro/VRAMpage-MD/pull/60) merged as
