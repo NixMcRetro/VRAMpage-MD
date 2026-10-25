@@ -982,7 +982,9 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     fm_c = root / 'src/main/c/core/sound/sound.c'
     blip_c = root / 'src/main/c/core/sound/blip_buf.c'
 
-    blip = patch_blip_highpass(blip_c.read_text()) if blip_c.exists() else None
+    if not blip_c.is_file():
+        raise SystemExit('Expected pinned Blip source missing. No modifications made.')
+    blip = patch_blip_highpass(blip_c.read_text())
     wasm = wasm_c.read_text()
     config = config_c.read_text()
     render = render_h.read_text()
@@ -1089,7 +1091,7 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
         render_c = patch_mode5_render_reads(render_c)
         psg = patch_psg_input_fault(psg)
         fm = patch_fm_data_fault(fm)
-    changed = ((blip is not None and blip != blip_c.read_text()) or
+    changed = (blip != blip_c.read_text() or
                wasm != wasm_c.read_text() or config != config_c.read_text() or
                render != render_h.read_text() or m68k != m68k_h.read_text() or
                z80 != z80_c.read_text() or dma != dma_c.read_text() or
@@ -1097,8 +1099,7 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
                                           psg != psg_c.read_text() or
                                           fm != fm_c.read_text())))
     if changed:
-        if blip is not None:
-            blip_c.write_text(blip)
+        blip_c.write_text(blip)
         wasm_c.write_text(wasm)
         config_c.write_text(config)
         render_h.write_text(render)

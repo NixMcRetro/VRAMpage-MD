@@ -2,6 +2,7 @@
 import importlib.util
 from pathlib import Path
 import unittest
+import tempfile
 
 ROOT=Path(__file__).resolve().parents[1]
 SPEC=importlib.util.spec_from_file_location('blip_patch_core',ROOT/'scripts/patch_core.py')
@@ -22,3 +23,10 @@ class BlipHighpassPatchTests(unittest.TestCase):
                      expression*3+'sum -= s * (1 << (delta_bits - bass_shift));'):
             with self.subTest(text=text),self.assertRaises(SystemExit):
                 PATCH.patch_blip_highpass(text)
+
+    def test_missing_blip_refuses_before_other_source_reads_or_writes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary)
+            with self.assertRaisesRegex(SystemExit,'Blip source missing'):
+                PATCH.patch_core(root)
+            self.assertEqual(list(root.iterdir()),[])

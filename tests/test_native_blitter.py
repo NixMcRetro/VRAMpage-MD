@@ -129,6 +129,9 @@ class NativeBlitterPatchTests(unittest.TestCase):
             m68k = root / 'src/main/c/core/m68k/m68kcpu.h'
             z80 = root / 'src/main/c/core/memz80.c'
             dma = root / 'src/main/c/core/vdp_ctrl.c'
+            blip = root / 'src/main/c/core/sound/blip_buf.c'
+            blip.parent.mkdir(parents=True)
+            blip.write_text('sum -= s << (delta_bits - bass_shift);\n' * 4)
             wasm.parent.mkdir(parents=True)
             m68k.parent.mkdir(parents=True)
             render.parent.mkdir(parents=True, exist_ok=True)
@@ -178,12 +181,12 @@ class NativeBlitterPatchTests(unittest.TestCase):
 
             self.assertTrue(patch_core.patch_core(root, transaction_adapter=False))
             first_outputs = (wasm.read_text(), config.read_text(), render.read_text(),
-                             m68k.read_text(), z80.read_text(), dma.read_text())
+                             m68k.read_text(), z80.read_text(), dma.read_text(), blip.read_text())
             self.assertFalse(patch_core.patch_core(root, transaction_adapter=False))
             self.assertIn('set_vram_address_mask', wasm.read_text())
             self.assertIn('    bend_reset();', wasm.read_text())
             self.assertEqual(first_outputs, (wasm.read_text(), config.read_text(), render.read_text(),
-                                             m68k.read_text(), z80.read_text(), dma.read_text()))
+                                             m68k.read_text(), z80.read_text(), dma.read_text(), blip.read_text()))
             self.assertEqual(render.read_text().count(patch_core.NATIVE_BLITTER_MARKER), 1)
             self.assertNotIn('line * 2 * bitmap.pitch', render.read_text())
             self.assertNotIn('w * bitmap.pitch', render.read_text())

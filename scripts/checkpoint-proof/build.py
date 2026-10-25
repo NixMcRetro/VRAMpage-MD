@@ -43,13 +43,18 @@ def main():
         marker = output / MARKER
         if not output.is_dir() or marker.is_symlink() or not marker.is_file() or marker.read_text() != MARKER_TEXT:
             raise SystemExit(f"Refusing to replace unmarked proof output: {output}")
+    source_commit = subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"], text=True).strip()
+    dirty = subprocess.check_output(["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=no"], text=True).strip()
+    if dirty:
+        raise SystemExit("Commit tracked changes before building the checkpoint proof")
+    if output.exists():
         shutil.rmtree(output)
     output.mkdir(parents=True)
     (output / MARKER).write_text(MARKER_TEXT)
     proof_files = sorted((repo / "scripts/checkpoint-proof").glob("*"))
     proof_files += [repo / "scripts/patch_core.py", repo / "tests/checkpoint_blip_smoke.c"]
     metadata = {"core_revision": PIN,
-                "source_commit": subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"], text=True).strip(),
+                "source_commit": source_commit,
                 "file_sha256": {str(path.relative_to(repo)): hashlib.sha256(path.read_bytes()).hexdigest()
                                 for path in proof_files if path.is_file()}}
     (output / "BUILD-INFO.json").write_text(json.dumps(metadata, indent=2) + "\n")
