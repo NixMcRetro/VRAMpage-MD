@@ -1,22 +1,38 @@
 # Development status and continuation checkpoint
 
-## Current priority: individual eight-frame RAM pairs and combined acceptance
+## Source checkpoint: eight-frame pairs and combined acceptance
 
-Resume verified checkpoint `4b25ffc` atop main `b4424e0`. Replace the random
-eight-write/one-frame shortcut with ten individual WRITE-only buttons, covering
-every distinct pair within A11–A15. Each lasts exactly eight emulated frames,
-without an affected-write cap or automatic CPU recovery. Reuse the existing
-frame scheduler and fault setter; retain preflight, pause, audio, cancellation,
-unknown-state handling, export metadata and existing advanced pulse behavior.
-Test all ten pairs, more than eight writes, paused/no-write completion, failures,
-cancellation, optional normal-core support, keyboard access and the compact UI.
+Implementation `2465987` and layout fix `ddaebad` replace the random RAM shortcut
+with all ten individual A11–A15 WRITE pairs. Each runs for eight emulated frames
+without an affected-write cap, then disconnects without CPU recovery. Independent
+Luna High review approved cancellation/keyboard acceptance fix `21a80e7`
+(cherry-picked from `772f749`). No source review blocker remains.
 
-Then complete the queued combined configuration/preset/randomisation/removal/
-recovery/restart/export/comparison acceptance using existing models and original
-synthetic fixtures. Reuse individual-domain evidence. If essential flows pass,
-enter Phase D feature freeze and stabilisation; record concrete remaining limits.
-Independent review and passing PR/main CI gate integration. Preserve public
-v0.4.1 and McRetro.net. No new native model or intermediate release is planned.
+Focused tests cover all ten pairs (160 affected writes each, zero reads, exactly
+eight frames and no CPU intervention), keyboard/no-write/paused timing, active
+and malformed-state refusal, failed setters/releases, all cancellation paths,
+legacy optional APIs and actual normal/runtime cores. Full source/SDK107 with
+normal sanitizers and fresh WASM, display6/6 and focused WebKit5/5 pass. The
+independent final focused Chromium7/7 run passes. Full final interfaces, package
+provenance and required PR/main CI remain integration gates. Logs and the plan
+are under `/workspace/scratch/eight-frame-ram-pairs`.
+
+The combined workbench flow passes: save/preview/apply, presets, independent chip
+randomisation, pulse save/apply guards, explicit CPU-only reset preserving audio,
+running/paused all-domain removal, experiment/configuration exports, read-only
+comparison and clean restart. Existing individual-domain negative and actual-core
+evidence is reused. Phase C automated acceptance is complete in source.
+
+## Active Phase D: feature freeze and stabilisation
+
+Freeze the implemented feature set. Continue compatibility, crash/failure safety,
+audio/visibility scheduling, performance and usability checks; fix concrete gaps
+rather than add models or infrastructure. Current CI repeats all three browser
+interfaces and extracted Firefox/WebKit packages. Reuse existing native and
+performance evidence when source is unchanged. Native macOS Firefox, audible
+output and physical validation remain explicitly unverified, not integration
+claims. Preserve public v0.4.1, historical evidence and McRetro.net. No speculative
+Z80 RAM faults, intermediate public release or documentation-only PR is needed.
 
 ## PR #52 integration checkpoint — 25 October 2026
 

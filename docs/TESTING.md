@@ -1112,3 +1112,23 @@ isolation, chip independence, recorded histories and explicit unknown/partial
 results. Reuse existing domain tests and original actual-core cartridges for
 normal/runtime compatibility. Verify keyboard operation and viewport fit. Native
 Mac/audible/physical validation remains distinct from Linux synthetic acceptance.
+
+Source `2465987` and final layout `ddaebad` pass focused all-pair tests with
+exact eight-frame contacts and 160 affected writes per case, proving the old
+eight-write cap is removed. Final independent review/fix `21a80e7` adds keyboard
+Enter activation, paused/no-write completion and cancellation by disconnect,
+replacement, CPU reset, clean restart and new ROM. Advancing later frames with
+a replacement ordinary RAM fault proves no late clear/recovery. Existing
+advanced selected-limit/forced-resume controls remain intact. Invalid private
+pair arguments have no external input path; the closed generator covers all ten
+valid combinations, while malformed runtime-state refusals are directly tested.
+
+The final combined source flow covers preview isolation, applied configuration
+save, presets, independent PSG/FM randomisation, audio-preserving CPU reset,
+running/paused coordinated clearing, pulse save/apply refusal with preview
+retention, later apply, history exports, read-only comparison and clean restart.
+Actual normal/runtime cores confirm eight frames and more than eight affected
+writes. SDK107, display6/6, focused WebKit5/5 and independent Chromium7/7 pass;
+complete interface and PR/main gates are recorded at the integration checkpoint.
+Native/core model code and public v0.4.1 are unchanged. Phase C automated
+acceptance is complete in source; Phase D feature freeze is active.

@@ -8,6 +8,7 @@
 - Add all-domain disconnection with pulse/held-action cancellation and partial-failure reporting. Preserve play/pause on confirmed complete clears; pause failed or unverified clears for inspection.
 - Clarify that CPU recovery clears RAM/VRAM faults while leaving audio faults unchanged. Preserve explicit resume and clean restart as separate actions.
 - Keep the public v0.4.1 package and historical evidence unchanged.
+- Complete combined workbench acceptance across configuration, presets, chip randomisation, eight-frame contacts, removal, recovery, restart, export and comparison; enter feature freeze for stabilisation.
 
 ## v0.4.1 - compact chip workbench
 

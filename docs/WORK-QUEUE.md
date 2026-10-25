@@ -1,22 +1,38 @@
 # Development work queue
 
-## Current priority: individual eight-frame RAM pairs and combined acceptance
+## Source checkpoint: eight-frame pairs and combined acceptance
 
-Resume verified checkpoint `4b25ffc` atop main `b4424e0`. Replace the random
-eight-write/one-frame shortcut with ten individual WRITE-only buttons, covering
-every distinct pair within A11–A15. Each lasts exactly eight emulated frames,
-without an affected-write cap or automatic CPU recovery. Reuse the existing
-frame scheduler and fault setter; retain preflight, pause, audio, cancellation,
-unknown-state handling, export metadata and existing advanced pulse behavior.
-Test all ten pairs, more than eight writes, paused/no-write completion, failures,
-cancellation, optional normal-core support, keyboard access and the compact UI.
+Implementation `2465987` and layout fix `ddaebad` replace the random RAM shortcut
+with all ten individual A11–A15 WRITE pairs. Each runs for eight emulated frames
+without an affected-write cap, then disconnects without CPU recovery. Independent
+Luna High review approved cancellation/keyboard acceptance fix `21a80e7`
+(cherry-picked from `772f749`). No source review blocker remains.
 
-Then complete the queued combined configuration/preset/randomisation/removal/
-recovery/restart/export/comparison acceptance using existing models and original
-synthetic fixtures. Reuse individual-domain evidence. If essential flows pass,
-enter Phase D feature freeze and stabilisation; record concrete remaining limits.
-Independent review and passing PR/main CI gate integration. Preserve public
-v0.4.1 and McRetro.net. No new native model or intermediate release is planned.
+Focused tests cover all ten pairs (160 affected writes each, zero reads, exactly
+eight frames and no CPU intervention), keyboard/no-write/paused timing, active
+and malformed-state refusal, failed setters/releases, all cancellation paths,
+legacy optional APIs and actual normal/runtime cores. Full source/SDK107 with
+normal sanitizers and fresh WASM, display6/6 and focused WebKit5/5 pass. The
+independent final focused Chromium7/7 run passes. Full final interfaces, package
+provenance and required PR/main CI remain integration gates. Logs and the plan
+are under `/workspace/scratch/eight-frame-ram-pairs`.
+
+The combined workbench flow passes: save/preview/apply, presets, independent chip
+randomisation, pulse save/apply guards, explicit CPU-only reset preserving audio,
+running/paused all-domain removal, experiment/configuration exports, read-only
+comparison and clean restart. Existing individual-domain negative and actual-core
+evidence is reused. Phase C automated acceptance is complete in source.
+
+## Active Phase D: feature freeze and stabilisation
+
+Freeze the implemented feature set. Continue compatibility, crash/failure safety,
+audio/visibility scheduling, performance and usability checks; fix concrete gaps
+rather than add models or infrastructure. Current CI repeats all three browser
+interfaces and extracted Firefox/WebKit packages. Reuse existing native and
+performance evidence when source is unchanged. Native macOS Firefox, audible
+output and physical validation remain explicitly unverified, not integration
+claims. Preserve public v0.4.1, historical evidence and McRetro.net. No speculative
+Z80 RAM faults, intermediate public release or documentation-only PR is needed.
 
 ## PR #52 integration checkpoint — 25 October 2026
 
@@ -217,7 +233,8 @@ and [versioning](VERSIONING.md). Status describes evidence, not promised effects
 | Done B2 | Actual Z80-to-PSG route | Original bootstrap under BUSREQ/RESET, no 68K PSG writes, normal/off equal, active mapping/tone change, reset baseline, independent review | Luna High test author; FM author independent review | Implemented with encoded bootstrap-store validation; independent review and actual FM-enabled runtime pass: exactly three Z80 writes, two changed bytes; included with FM integration |
 
 | Done B3 | Complete audio acceptance | Actual Z80-to-FM and simultaneous FM/PSG traffic; repeated-active determinism, bounded queue/pause behavior and concise audio model overview | Luna High implementation/review; coordinator docs | Implemented and independently reviewed; both FM backend mixed/deterministic tests and Chromium scheduling pass locally; all seven PR/main checks, complete public package and downloaded-core verification passed |
-| Active C | Combined workbench acceptance | Versioned save/restore settings with validation, reproducible presets, combined recovery and useful experiment comparison; preserve existing defaults | Luna High architecture/implementation and independent review; basic UI/docs support | Configurations, chip workbench, coordinated removal and saved-export comparison are integrated through PR #50 with passing PR/main CI. Finish combined acceptance, then freeze features; do not add Z80 RAM faults or speculative features |
+| Done C | Combined workbench acceptance | Versioned save/restore settings with validation, reproducible presets, combined recovery and useful experiment comparison; preserve existing defaults | Luna High architecture/implementation and independent review; basic UI/docs support | Essential flows and the new eight-frame controls pass combined source acceptance; feature freeze is active. Preserve the implemented models and release; do not add Z80 RAM faults or speculative features |
+| Active D | Feature freeze and stabilisation | Accepted essential flows; full browser/audio/visibility, failure safety, usability and existing performance/package gates before a meaningful release | Coordinator; bounded basic checks and Luna High review for risky fixes | Freeze features; fix concrete regressions only. Current automated gates continue; native macOS, audible and physical validation remain unclaimed. Preserve v0.4.1 and McRetro.net |
 
 Configuration slice verified: PR #47 merged `ccc80e12`; PR CI40083076183 and
 main CI40083371467 pass all seven checks. Do not rebuild this completed feature.
@@ -334,13 +351,14 @@ Final Chromium60/60 and extracted package core4/4 plus transaction3/3 pass.
 Independent review approves final keyboard fix `2d29d0a`; focused comparison3/3
 passes in both Chromium and WebKit. All seven final-head PR and main checks pass; see the integration checkpoint above.
 
-## Next bounded task: combined workbench acceptance
+## Completed source acceptance: combined workbench
 
-Reuse the merged implementation and existing original synthetic cartridge tests.
-Exercise configuration save/preview/apply, presets, chip-local randomisation, fault removal, memory-only
+Acceptance criteria covered by the eight-frame integration and existing original
+synthetic cartridge tests: configuration save/preview/apply, presets, chip-local
+randomisation, fault removal, memory-only
 CPU recovery, clean restart, export and comparison as a combined workflow on
 runtime and normal fallback cores. Check active state and retained history,
 truthful partial/unavailable results and keyboard/pulse boundaries without
 adding another fault model or repeating completed RAM research. Reuse valid
 individual-domain and core evidence. Record any concrete acceptance gaps;
-after the essential flows pass, freeze features for Phase D stabilisation.
+essential flows now pass in source, so Phase D feature freeze is active.

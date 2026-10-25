@@ -68,7 +68,7 @@ Clean restart clears pulse/intervention history and cannot trigger stale recover
 A stopped CPU does not stop the emulator's frame counter, so the scheduled
 contact still ends. Recovery leaves the app's pause state unchanged.
 
-Current experiment exports use `0.2.4-experimental` and include `faultPulses`, ordered
+Current experiment exports use `0.4.1-experimental` and include `faultPulses`, ordered
 records of kind/access/zero-based line indices, requested frame count, start/end
 frame, active/completed/cancelled status and cancellation reason. For address
 pairs, indices 0–14 correspond to A1–A15. A completed pulse also records affected reads/writes and the CPU flags at the
