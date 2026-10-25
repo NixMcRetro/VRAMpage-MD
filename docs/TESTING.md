@@ -1255,3 +1255,12 @@ An initial WebKit selector matched no tests; that empty run is retained separate
 and is not counted as evidence. The explicit six-case run verifies rejection,
 latest-choice order, restart/read cancellation, native-start trap, hash/export
 race and paused-pulse rejection on WebKit. Source C/native models are unchanged.
+
+Final extracted-package compiled-core5/5 passes. The 682 unique package entries
+identify exact source `18c692a33fa9e2ba0fd75bafa5174c3a7f7d2fd9`, version0.4.1
+and byte-identical application/runtime files. All seven PR #55 checks passed in
+[run 40174231430](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40174231430).
+Merge `ed62981a62a3a32477308cec85bee2b62a7583ba` exactly matches that tree.
+All seven main checks pass in run40174600830; the current checkpoint links the
+verified build. The public
+v0.4.1 tag and both asset digests remain unchanged; no McRetro.net changes occurred.

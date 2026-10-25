@@ -1,5 +1,32 @@
 # Development status and continuation checkpoint
 
+## PR #55 integration checkpoint — 25 October 2026
+
+[PR #55](https://github.com/NixMcRetro/VRAMpage-MD/pull/55) merged as
+`ed62981a62a3a32477308cec85bee2b62a7583ba` after all seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40174231430)
+passed on `18c692a33fa9e2ba0fd75bafa5174c3a7f7d2fd9`.
+The merged tree exactly matches the independently reviewed head.
+All seven main checks pass; no integration blocker remains.
+Main verification: [run 40174600830](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40174600830).
+
+Safe replacement retains accepted restart bytes/name/hash on rejected files;
+latest selection wins, Clean restart invalidates stale reads, and asynchronous
+export cannot mix cartridge identities. Native-start failure stops with explicit
+uncertainty and manual restart, without automatic recovery or fake rollback.
+Independent Luna High review approves the source. Final source/SDK107,
+Chromium80/80, actual compiled-core5/5, extracted-package5/5 and focused WebKit6/6
+pass. The ROM-free 682-file package matches exact source/version/runtime bytes.
+[Ready-to-run ROM-free review build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40174600830/artifacts/12591218799).
+Raw before/after evidence and logs: `/workspace/scratch/rom-stability`.
+
+Public v0.4.1 title/tag and both original asset digests are verified unchanged;
+McRetro.net was not modified or deployed. Phase D remains active. Next bounded
+work is remaining compatibility/manual acceptance, especially native Mac audible
+output and OS background transitions; do not repeat completed automated gates or
+implement speculative recovery. v0.5.0 remains planned after stabilisation.
+Intentional faults can still halt or corrupt a game; no automatic rescue was added.
+
 ## Source checkpoint: safe cartridge replacement
 
 Implementation `5b378f9` stages file reads and accepted ROM identity, rejects
@@ -23,8 +50,8 @@ Independent compiled-core before/after proof: the old build exported the rejecte
 file's hash under the accepted filename and failed to restart; the fixed build
 retains the accepted hash/name and performs native Clean restart. Raw evidence:
 `/workspace/scratch/rom-stability`. Final source/SDK107, Chromium80/80, actual compiled-core5/5 and focused
-WebKit ROM6/6 pass. Package provenance and required PR/main CI remain
-integration gates. Preserve public v0.4.1 and
+WebKit ROM6/6 pass. Package provenance and PR/main integration evidence are
+recorded above. Preserve public v0.4.1 and
 McRetro.net; this is Phase D failure handling, not the v0.5.0 recovery milestone.
 
 ## PR #54 integration checkpoint — 25 October 2026
