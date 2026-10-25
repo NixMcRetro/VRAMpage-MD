@@ -1079,3 +1079,16 @@ preflight fix `53c710b`. Focused actual-core tests pass for running/paused
 disconnection, bounded pulse exports and the normal-core legacy-getter fallback.
 The stale actual-core test was corrected to start each run-state case explicitly
 and measure disconnect/no-tick state in the same JavaScript task.
+
+Final local source `a1a142e` passes Chromium71/71 and the extracted compiled-core
+5/5 suite. The final 682-entry ROM-free review ZIP has unique entries, exact
+source commit/version and byte-identical UI/runtime assets. All seven PR #52
+checks pass, including full Chromium/Firefox/WebKit interfaces and extracted
+Firefox/WebKit runtime/normal-fallback checks. Main CI is recorded in the current
+integration checkpoint.
+
+All seven main checks also pass on merged commit
+`b4424e0d6a68ed12a36b8dc8fff70a502ca16a02` in
+[run 40154014908](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40154014908).
+The merged tree matches the reviewed head. The public v0.4.1 tag, metadata and
+asset digests were verified unchanged after merge; McRetro.net was untouched.

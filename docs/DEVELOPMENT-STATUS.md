@@ -1,6 +1,44 @@
 # Development status and continuation checkpoint
 
-## Current user priority — compact RAM pulse and recovery
+## PR #52 integration checkpoint — 25 October 2026
+
+[PR #52](https://github.com/NixMcRetro/VRAMpage-MD/pull/52) merged as
+`b4424e0d6a68ed12a36b8dc8fff70a502ca16a02` after all seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40153718149)
+passed on `a1a142eb612fee260c9adc3479079f279549c933`.
+The merged tree exactly matches the reviewed head.
+All seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40154014908)
+pass. No integration blocker remains.
+
+CPU reset now sits beside Randomiser. The separate Work RAM WRITE pulse chooses
+a distinct A11–A15 pair, stops after eight affected writes or one emulated frame,
+and disconnects without CPU recovery. Active or unknown memory/held/pulse state
+is refused before mutation. Existing advanced forced-resume pulses are unchanged.
+Successful Disconnect all preserves the prior running/paused state; partial or
+unverified outcomes pause before another tick. Held player input is preserved.
+Independent Luna High review approved source `72f67ad`, including malformed-state
+hardening `53c710b` and normal-core legacy-getter acceptance.
+
+Local verification passes: full source/native/SDK107 with normal sanitizers and
+fresh WASM profiles; final Chromium71/71; WebKit focused7/7; display6/6; extracted
+compiled-core5/5. The 682-file review ZIP matches `a1a142e`, version0.4.1 and the
+built assets. Initial sandbox restrictions and stale test expectations were
+corrected without weakening assertions; logs remain under
+`/workspace/scratch/workbench-ram-pulse`. Native/core model code is unchanged.
+
+[Ready-to-run review build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40154014908/artifacts/12584305775)
+contains the merged controls and matching source, separately from the public release.
+
+The public v0.4.1 tag, release metadata and original asset digests are unchanged.
+McRetro.net was not modified or deployed. No native macOS, audible or physical
+evidence is claimed. A pulse can still stop a game; recovery remains explicit.
+Next: combined configuration/randomisation/removal/recovery/
+comparison acceptance, then Phase D feature freeze. Preserve the completed
+models, existing release and evidence; do not reopen RAM research or publish an
+intermediate release. Bundle this checkpoint with the next implementation task;
+no documentation-only PR is needed.
+
+## Completed user priority — compact RAM pulse and recovery
 
 The user requested CPU reset beside Randomiser, a temporary Work RAM write
 randomiser confined to A11–A15, and no forced pause during all-domain clearing.
@@ -9,15 +47,15 @@ Implementation is isolated on `experiment/workbench-ram-pulse` from checkpoint
 without CPU recovery; the existing advanced forced-resume pulses remain intact.
 Confirmed complete disconnection preserves prior play/pause, while partial or
 unknown outcomes pause for inspection. Reuse existing native code/evidence,
-preserve v0.4.1 and keep McRetro.net untouched. Required final CI remains before integration.
+preserve v0.4.1 and keep McRetro.net untouched. Integrated by PR #52; see the current checkpoint above.
 
 Implementation `c0e79a0`, hardening `2dbd1f4`, review fixes `53c710b` and
 normal-core acceptance `72f67ad` are complete. Independent Luna High review
 approves the final source. The full source/SDK107 suite and normal sanitizers
 pass, as do display6/6, focused WebKit7/7 and independent actual-core running/
 paused and normal-fallback pulse cases. Review tightened malformed VRAM-state
-refusal before any mutation. Final full browser and PR/main checks remain the
-integration gates; no public release or external-site changes are authorised.
+refusal before any mutation. Final browser and PR/main results are recorded in the checkpoint above; no
+public release or external-site changes are authorised.
 
 ## PR #51 integration checkpoint — 25 October 2026
 
