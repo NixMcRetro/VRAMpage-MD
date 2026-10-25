@@ -48,12 +48,12 @@
         </div>
         <div class="instructions">
           <p><strong>PLAY</strong> Arrows / Z X C / Enter <span class="help-divider">|</span> <strong>FAULTS</strong> 1–9 toggle / Shift+1–9 hold / 0 next chip / P pause</p>
-          <p id="keyboardTarget" class="keyboard-target" role="status" aria-live="polite">Keyboard fault target: VRAM</p>
           <p id="faultHint" class="fault-hint" hidden>A previous VRAM fault may have changed VRAM. Clean restart resets emulation; it cannot correct missing emulator output rows.</p>
         </div>
       </section>
 
       <aside class="chip-workbench" aria-label="Console chip fault workbench">
+          <p id="keyboardTarget" class="keyboard-target" role="status" aria-live="polite">Keyboard fault target: VRAM</p>
         <div class="chip-workbench-grid">
           <section class="chip-card" data-keyboard-chip="VRAM" aria-label="VRAM chip">
             <h2>VRAM <small>VDP address nets</small></h2>
