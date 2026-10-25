@@ -14,18 +14,29 @@ MARKER_TEXT = f"VRAMpage private checkpoint proof\n{PIN}\n"
 def run(args, **kwargs):
     subprocess.run(args, check=True, **kwargs)
 
+def validated_output(repo, vendor, requested):
+    raw = Path(requested).expanduser().absolute()
+    if any(path.is_symlink() for path in (raw, *raw.parents)):
+        raise ValueError("Refusing symlink proof output or ancestor")
+    output = raw.resolve()
+    if any(output == source or output in source.parents for source in (repo, vendor)):
+        raise ValueError("Proof output cannot contain repository or vendor source")
+    if vendor in output.parents or (repo in output.parents and repo / "build" not in output.parents):
+        raise ValueError("Proof output must be outside source or under repository build/")
+    return output
+
 def main():
-    repo, output = Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve()
+    repo = Path(sys.argv[1]).resolve()
     vendor = Path(os.environ.get("VRAMPAGE_WASM_GENPLUS", repo / "vendor/wasm-genplus")).resolve()
+    try:
+        output = validated_output(repo, vendor, sys.argv[2])
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
     if not (vendor / ".git").exists():
         raise SystemExit(f"Pinned vendor checkout not found: {vendor}; set VRAMPAGE_WASM_GENPLUS")
     got = subprocess.check_output(["git", "-C", str(vendor), "rev-parse", "HEAD"], text=True).strip()
     if got != PIN:
         raise SystemExit(f"Refusing unsupported core source: expected {PIN}, got {got}")
-    if output == repo or output == vendor or vendor in output.parents or output == repo / "site" or repo / "site" in output.parents:
-        raise SystemExit("Proof output must be outside repository source and vendor")
-    if output.is_symlink():
-        raise SystemExit("Refusing symlink proof output")
     if output.exists():
         marker = output / MARKER
         if not output.is_dir() or marker.is_symlink() or not marker.is_file() or marker.read_text() != MARKER_TEXT:
