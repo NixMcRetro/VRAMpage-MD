@@ -346,7 +346,7 @@ footer { padding-top:9px; font-size:10px; }
 .chip-workbench-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
 .chip-card { min-width:0; padding:8px; border:1px solid var(--rule); background:var(--surface); }
 [data-keyboard-chip].keyboard-target .chip-signal { color:#243d27; }
-#keyboardTarget { padding:0 12px 6px; color:var(--ink); font:700 10px/1.3 ui-monospace,SFMono-Regular,Consolas,monospace; }
+#keyboardTarget { padding:0 12px 2px; color:var(--ink); font:700 10px/1.3 ui-monospace,SFMono-Regular,Consolas,monospace; }
 [data-keyboard-chip="VRAM"].keyboard-target .chip-middle,
 [data-keyboard-chip="WRAM"].keyboard-target .ram-chip-body,
 [data-keyboard-chip="FM"].keyboard-target .data-chip .chip-middle,
