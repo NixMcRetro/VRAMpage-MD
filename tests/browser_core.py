@@ -390,6 +390,10 @@ class ActualCoreBrowserTests(unittest.TestCase):
                                 window.__audioScheduleProbe.live++;
                                 source.addEventListener('ended', () => {
                                     window.__audioScheduleProbe.live--;
+                                    if (source.__probeConnected) {
+                                        source.__probeConnected = false;
+                                        window.__audioScheduleProbe.connected--;
+                                    }
                                 }, {once: true});
                                 const nativeConnect = source.connect;
                                 source.connect = function(...args) {
@@ -479,7 +483,8 @@ class ActualCoreBrowserTests(unittest.TestCase):
                                              'scheduled audio lead stays within the 200 ms cap plus tolerance')
 
                     suspended = page.evaluate('''async () => {
-                        const before = window.__audioScheduleProbe.created;
+                        const before = {created: window.__audioScheduleProbe.created,
+                            connected: window.__audioScheduleProbe.connected};
                         await window.testAudioContext.suspend();
                         const frame = testCore._get_logic_frame();
                         await new Promise(resolve => {
@@ -488,11 +493,14 @@ class ActualCoreBrowserTests(unittest.TestCase):
                             requestAnimationFrame(check);
                         });
                         const during = window.__audioScheduleProbe.created;
+                        const connected = window.__audioScheduleProbe.connected;
                         await window.testAudioContext.resume();
-                        return {before, during, connected: window.__audioScheduleProbe.connected};
+                        return {before, during, connected};
                     }''')
-                    self.assertLessEqual(suspended['during'] - suspended['before'], 1,
+                    self.assertLessEqual(suspended['during'] - suspended['before']['created'], 1,
                                          'suspended context does not accumulate new source buffers')
+                    self.assertEqual(suspended['connected'], 0,
+                                     'suspended context disconnects prior live sources once')
                     resume_start_count = len(initial['starts'])
                     page.wait_for_function('n=>window.__audioScheduleProbe.starts.length > n',
                                            arg=resume_start_count)
@@ -501,12 +509,21 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     self.assertLessEqual(resumed_start['lead'], 0.055,
                                          'audio resumes with a fresh source near current time')
 
-                    page.locator('#pauseBtn').click()
+                    page.wait_for_function('window.__audioScheduleProbe.starts.some(s=>s.when>s.now)',
+                                           timeout=3000)
+                    pause_probe = page.evaluate('''() => {
+                        const future = window.__audioScheduleProbe.starts.filter(s=>s.when>s.now).length;
+                        document.querySelector('#pauseBtn').click();
+                        return {future, live: window.__audioScheduleProbe.live,
+                                connected: window.__audioScheduleProbe.connected};
+                    }''')
                     expect(page.locator('#pauseBtn')).to_have_text('Resume')
                     paused_count = page.evaluate('window.__audioScheduleProbe.starts.length')
-                    paused_connected = page.evaluate('window.__audioScheduleProbe.connected')
+                    paused_connected = pause_probe['connected']
+                    self.assertGreater(pause_probe['future'], 0,
+                                       'pause reproduction begins with genuinely future-scheduled sources')
                     self.assertEqual(paused_connected, 0,
-                                     'pause disconnects every queued real AudioBufferSource')
+                                     f'pause disconnects future real sources: {pause_probe}')
                     page.wait_for_timeout(250)
                     self.assertEqual(page.evaluate('window.__audioScheduleProbe.starts.length'), paused_count,
                                      'pause stops scheduling new sources')
@@ -544,6 +561,22 @@ class ActualCoreBrowserTests(unittest.TestCase):
                                     'this is a dispatched visibility event, not OS backgrounding')
                     self.assertLessEqual(visibility_start['lead'], 0.055,
                                          'observed source start after the synthetic event is near current time')
+                    page.wait_for_function('window.__audioScheduleProbe.connected > 0')
+                    page.evaluate('''() => {
+                        const start = testCore._start;
+                        window.__startConnectedSources = [];
+                        testCore._start = function(...args) {
+                            window.__startConnectedSources.push(window.__audioScheduleProbe.connected);
+                            return Reflect.apply(start, this, args);
+                        };
+                    }''')
+                    page.locator('#romFile').set_input_files({
+                        'name':'replacement-audio-queue.bin',
+                        'mimeType':'application/octet-stream',
+                        'buffer':original_cartridge()})
+                    expect(page.locator('#romName')).to_have_text('REPLACEMENT-AUDIO-QUEUE.BIN')
+                    self.assertEqual(page.evaluate('window.__startConnectedSources'), [0],
+                                     'ROM replacement drains live old sources before the new core starts')
                     all_starts = page.evaluate('window.__audioScheduleProbe.starts')
                     peak_connected = page.evaluate('window.__audioScheduleProbe.peakConnected')
                     self.assertLessEqual(peak_connected, 16,

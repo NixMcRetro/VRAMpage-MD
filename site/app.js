@@ -2317,8 +2317,8 @@
     ensureWasmViews();
     new Uint8Array(emulator.HEAPU8.buffer,ptr,bytes.length).set(bytes);
     if (logicActive) disconnectLogic({silent:true});
-    emulator._start();
     clearAudioQueue();
+    emulator._start();
     if (typeof emulator._set_vram_short !== 'function')
       throw new Error('Core missing _set_vram_short. You must build the patched core (not the upstream prebuilt WASM).');
     frameView=null;
