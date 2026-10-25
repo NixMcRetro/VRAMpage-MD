@@ -188,6 +188,9 @@
             : `Active: D${state.bridgeA} ↔ D${state.bridgeB}; future PSG writes only.`)
           : 'No PSG data bridge is active.';
     updateAudioChip('psg',state);
+    document.querySelector('[data-keyboard-chip="PSG"]').classList.toggle('fault-active',
+      started && !!state?.supported && !!state?.configured &&
+      (!!Number(state.dataMask||0) || (state.bridgeA>=0 && state.bridgeB>=0)));
     refreshRandomiserControls();
   }
 
@@ -265,6 +268,9 @@
             : `Active: D${state.bridgeA} ↔ D${state.bridgeB}; future FM register writes only.`)
           : 'No FM data bridge is active.';
     updateAudioChip('fm',state);
+    document.querySelector('[data-keyboard-chip="FM"]').classList.toggle('fault-active',
+      started && !!state?.supported && !!state?.configured &&
+      (!!Number(state.dataMask||0) || (state.bridgeA>=0 && state.bridgeB>=0)));
     refreshRandomiserControls();
   }
 
@@ -1041,6 +1047,7 @@
     else if (!started && ['Checking core support…','Rebuild core for logic faults'].includes(logicStatusMessage))
       logicStatusMessage = 'Load a ROM to enable logic faults.';
     $('logicStatus').textContent = logicStatusMessage;
+    document.querySelector('[data-keyboard-chip="WRAM"]').classList.toggle('fault-active',started && logicActive);
     refreshLogicMetrics();
     refreshChipControls();
     refreshRandomiserControls();
@@ -2165,6 +2172,9 @@
 
   function updateFaultUI() {
     const pair = actualPair();
+    const actual=currentVramModelState();
+    document.querySelector('[data-keyboard-chip="VRAM"]').classList.toggle('fault-active',
+      started && !!(actual.mask || (actual.bridgeA>=0 && actual.bridgeB>=0)));
     const contact=vramAddressMask ? `${vramLines(vramAddressMask).join(', ')} FORCED LOW` : describe(pair);
     $('connectionLabel').textContent = contact;
     pinButtons.forEach((button, index) => {
@@ -2667,6 +2677,9 @@
       // Enter/Space as controller inputs (notably the keyboard patchbay).
       if (['Enter','Space'].includes(code) &&
           event.target.closest('button, a, summary, label')) return;
+      // A focused WRAM control should not hand its digit to the still-selected VRAM target.
+      if (/^Digit[1-9]$/.test(code) && keyboardTarget==='VRAM' &&
+          event.target.closest('[data-ram-frame-pair]')) return;
       if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','Enter'].includes(code))event.preventDefault();
       if (/^Digit[0-9]$/.test(code)) {
         event.preventDefault();

@@ -644,6 +644,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     page.wait_for_function('testCore._get_logic_frame()>3')
                     page.locator('#pauseBtn').click()
                     page.locator('h1').click()
+                    self.assertEqual(page.locator('.chip-card.fault-active').count(), 0)
                     expect(page.locator('[data-keyboard-chip="VRAM"]')).to_have_class(
                         re.compile(r'.*keyboard-target.*'))
                     page.keyboard.press('Digit9')
@@ -657,6 +658,8 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     page.locator('h1').click()
                     page.keyboard.down('Digit9')
                     self.assertEqual(page.evaluate('nativeCalls._set_logic_fault.at(-1)'), [1, 2, 12, 14])
+                    expect(page.locator('[data-keyboard-chip=WRAM]')).to_have_class(re.compile(r'.*fault-active.*'))
+                    self.assertEqual(page.locator('[data-keyboard-chip=VRAM].fault-active').count(), 0)
                     calls = page.evaluate('nativeCalls._set_logic_fault.length')
                     start = page.evaluate('testCore._get_logic_frame()')
                     page.locator('#pauseBtn').click()
@@ -694,6 +697,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                       return {fm:[f.bridgeA,f.bridgeB],psg:[p.bridgeA,p.bridgeB]};
                     }''')
                     self.assertEqual(state, {'fm': [0, 7], 'psg': [0, 7]})
+                    self.assertEqual(page.locator('[data-keyboard-chip=FM].fault-active,[data-keyboard-chip=PSG].fault-active').count(), 2)
                     page.keyboard.press('Digit0')
                     expect(page.locator('#keyboardTarget')).to_contain_text('VRAM')
                     self.assertEqual(page.evaluate('nativeCalls._start.length'), 1)
@@ -705,6 +709,35 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         expect(page.locator('#resetBtn')).to_be_enabled()
                         expect(page.locator('#compactResetBtn')).to_be_enabled()
                     self.assertEqual(page.evaluate('nativeCalls._recover_logic_cpu'), [])
+                    self.assertEqual(page.locator('.chip-card.fault-active').count(), 0)
+                    page.locator('#pauseBtn').click()
+                    page.locator('#ramWriteMode').select_option('hold')
+                    button = page.locator('[data-ram-frame-pair="10,11"]')
+                    page.evaluate("window.randomVramClicks=0;document.querySelector('#randomVramBtn').addEventListener('click',()=>window.randomVramClicks++)")
+                    button.focus()
+                    page.keyboard.down('Space')
+                    expect(page.locator('#randomVramBtn')).to_be_disabled()
+                    self.assertFalse(page.locator('#randomVramBtn').evaluate("b=>b.matches(':active')"))
+                    ram_calls = page.evaluate('nativeCalls._set_logic_fault.length')
+                    before_vram = page.evaluate('''() => {
+                      const v=testCore._get_vram_fault_model_state();return [v.modelId,v.mask,v.bridgeA,v.bridgeB];
+                    }''')
+                    page.keyboard.press('Digit1')
+                    self.assertEqual(page.evaluate('nativeCalls._set_logic_fault.length'), ram_calls,
+                                     'a focused WRAM contact must not be cleared by a VRAM shortcut')
+                    self.assertEqual(page.evaluate('''() => {
+                      const v=testCore._get_vram_fault_model_state();return [v.modelId,v.mask,v.bridgeA,v.bridgeB];
+                    }'''), before_vram)
+                    expect(page.locator('[data-keyboard-chip=WRAM]')).to_have_class(re.compile(r'.*fault-active.*'))
+                    self.assertEqual(page.locator('[data-keyboard-chip=VRAM].fault-active').count(), 0)
+                    page.keyboard.press('Digit0')
+                    expect(page.locator('#keyboardTarget')).to_contain_text('WRAM')
+                    self.assertEqual(page.evaluate('nativeCalls._set_logic_fault.length'), ram_calls)
+                    page.keyboard.up('Space')
+                    self.assertEqual(page.evaluate('nativeCalls._set_logic_fault.at(-1)'), [0, 0, -1, -1])
+                    expect(page.locator('#randomVramBtn')).to_be_enabled()
+                    self.assertEqual(page.evaluate('window.randomVramClicks'), 0)
+                    self.assertEqual(page.locator('.chip-card.fault-active').count(), 0)
                     self.assertEqual(errors, [])
                     browser.close()
             finally:

@@ -1351,3 +1351,49 @@ list now includes the requested Clean restart. Independent review approves
 `dc22f1d` and `79690f5`; chip dimensions/fonts and the player minimum are unchanged.
 Original logs remain alongside final passing logs. Final syntax and compact UI6
 pass, and native/core source is unchanged from the full SDK107 evidence above.
+
+Final local review head `db46608478f9245627c389b75dadf43cf83d253e` produces
+682 unique ROM-free package entries, exact application0.4.1/source metadata and
+byte-identical UI/core files. All six compiled-core tests pass on the extracted
+package in 27.948 s. All seven PR #57 checks pass in
+[run 40184481041](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40184481041).
+Merge `5a63331ddf2b100f1f5fd1d9cf73a557a875c536` exactly matches that tree.
+All seven main checks pass in run40184871084. The current integration checkpoint
+links the verified review download.
+Public v0.4.1 metadata/tag/assets are unchanged, and McRetro.net is untouched.
+
+# Active chip outlines and focused Work RAM controls
+
+The user clarifies that green means an active chip fault outline, not a selected
+keyboard target or green body fill. The original generated-cartridge probe on
+main `5a63331` independently reproduces a related focus bug: hold Space on a native
+A11/A12 RAM button, then Digit1 invokes global VRAM AD0/AD1 and clears RAM. Native
+VRAM/RAM setter calls and core state are retained separately in
+`/workspace/scratch/active-outline/baseline-core.json`; no private game data is used.
+
+Acceptance requires neutral idle chips, green outlines matching applied faults
+through pulse/Hold and explicit cleanup, separate keyboard-target text, retained
+0 cycling, and no VRAM setting/RAM release from fault digits on a focused RAM
+button. The compiled-core regression also checks Space release, independent
+FM/PSG active state and restart clearing. These indicators describe configured
+faults, not proof that every access changed or earlier corruption was repaired.
+
+The user's button clarification is verified separately: during pointer-held RAM,
+the VRAM Randomiser has `disabled=true`, `:active=false`, no pressed attribute,
+zero click events and unchanged VRAM setters. Its old 0.45 opacity looked sunken;
+a distinct disabled style retains the guard/title. Numeric-key isolation applies
+to conflicting VRAM shortcuts, preserving independently selected FM/PSG inputs.
+
+Source `fc49c19` and independent Luna High support guard (`250adbf`, reviewed as
+`2ad7d9f`) pass focused review. Audio active markers require confirmed support
+and configuration; unknown support is tested. Full SDK/source107 passes with
+normal sanitizers/fresh WASM (168.034 s). The final JS-only support guard does
+not change native code; final syntax and compact UI6 pass. Complete Chromium
+logic96/96 passes in 228.231 s, display7/7 in 12.607 s, and compiled-core6/6 in
+30.253 s. Focused WebKit6/6 passes in 52.022 s; the expanded real compiled-core
+controls case passes in WebKit in 4.955 s. The 48-state light/dark desktop/mobile
+probe confirms neutral chip fills, green outlines only on active faults, independent
+keyboard target cycling, pulse/held-contact cleanup and a dashed disabled VRAM
+Randomiser with zero click events or VRAM setter changes from RAM pointer input.
+Before/fixed native probes and original failing baseline are retained separately.
+These checks do not establish a new native Safari or physical-chip test.

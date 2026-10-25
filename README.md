@@ -37,7 +37,7 @@ The development-source [Randomiser](docs/CHIP-WORKBENCH.md#development-source-ra
 
 The same area includes **CPU reset**, a copy of **Clean restart** immediately to its right, and ten **RAM WRITE** pair buttons covering every combination within A11–A15. The default joins a pair for **eight emulated frames**, then disconnects without automatic CPU recovery. Choose **Hold** to keep a write-only pair active only while its mouse button or shortcut key is held down; releasing it disconnects the pair. Neither mode has an affected-write cap. Removing a fault does not repair earlier corruption.
 
-Development-source fault shortcuts **1–9** target the chip selected by **0**: **VRAM → WRAM → FM → PSG**. A pale green chip body and text label identify the keyboard target, independently of active faults. Shift holds a temporary contact until release. WRAM digits cover the first nine displayed A11–A15 pairs; the tenth remains available by button. Reconnect/disconnect buttons remain available; **0 now changes target**. Browser Control/Command/Alt shortcuts keep their normal behaviour.
+Development-source fault shortcuts **1–9** target the chip selected by **0**: **VRAM → WRAM → FM → PSG**. The text label identifies the keyboard target. A pale green chip outline identifies an active fault; chip bodies keep their normal colour. Shift holds a temporary contact until release. WRAM digits cover the first nine displayed A11–A15 pairs; the tenth remains available by button. Reconnect/disconnect buttons remain available; **0 now changes target**. Browser Control/Command/Alt shortcuts keep their normal behaviour.
 
 Development source also stages cartridge replacements: rejected files keep the
 current game and its identity intact, older asynchronous reads cannot replace a
