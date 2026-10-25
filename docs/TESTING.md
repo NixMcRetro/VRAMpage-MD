@@ -1279,3 +1279,11 @@ browser default and pausing the game, plus Meta+C pressing controller A. With
 and controller A at zero, with no page errors. These are synthetic DOM modifier
 events, not native Mac/OS shortcut acceptance. Both reports remain in
 `/workspace/scratch/input-stability`; deliberate faults/recovery are unchanged.
+
+Independent Luna High review approves the one-line source guard (`feb9277`) and
+final test timing fix (`ac44e96`): the shortcut regression waits for a tick after
+dispatch and verifies modified keyup releases a previously held button. Final
+source/native/SDK107 passes with normal sanitizers and fresh WASM (339.615 s).
+Chromium display7/7 and logic80/80, actual compiled-core5/5, and focused WebKit3/3
+pass; the final tightened shortcut case also passes in Chromium1/1 and WebKit1/1.
+Source C/native models, fault outcomes and public version remain unchanged.

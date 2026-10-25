@@ -13,7 +13,11 @@ reports and logs: `/workspace/scratch/input-stability`.
 Control/Command/Alt keydowns no longer invoke game/preset/pause actions. Ordinary
 controls and Shift momentary contacts remain supported; keyup cleanup remains
 unconditional. Focused Chromium negative and existing controller/patchbay tests
-pass. Independent review and final integration checks are in progress. Preserve
+pass. Independent Luna High review approves `feb9277` and final test follow-up
+`ac44e96`; the new test waits for a fresh tick and verifies modified keyup release.
+Full source/SDK107, Chromium display7/7 and logic80/80, actual compiled-core5/5
+and focused WebKit3/3 pass; the final tightened shortcut case passes again in
+Chromium and WebKit. Required PR/main CI remain integration gates. Preserve
 v0.4.1, all intentional fault outcomes and McRetro.net; no native model, timing,
 recovery or release change is included. Native Mac/audible/OS-background manual
 acceptance remains open after this bounded compatibility fix.
