@@ -1,0 +1,103 @@
+{
+  "core": "6090aff9e9b2f578cd28882bd4571d2e35b1d674 plus repository-supported runtime patch",
+  "filterMode": 1,
+  "stateLength": 144398,
+  "audioSupplementLength": 35960,
+  "stateCapacity": 1036288,
+  "audioSupplementCapacity": 524288,
+  "capacityGuardPassed": true,
+  "nonzeroWarmPcm": true,
+  "warmSamples": 735,
+  "savedStateReserializationEqual": true,
+  "continuationReplayEqual": true,
+  "freshContinuationEqual": true,
+  "firstContinuation": [
+    {
+      "count": 736,
+      "pixels": "98eb0acb1b3045d51160f6e7b4c32963876c1ad2847ddfa715c6ba40843fc451",
+      "left": "556f32346c066e1a1c7d796a68daa94844e19aa173f6228c3427deff353cc315",
+      "right": "556f32346c066e1a1c7d796a68daa94844e19aa173f6228c3427deff353cc315",
+      "nonzero": true
+    },
+    {
+      "count": 736,
+      "pixels": "ae28de5cb53fc9608bae99beb15ff6399a1c9d4e188e061f4028a4684f70de14",
+      "left": "54fa2b19fc986a834f5b4914107ca1455dd5553a07a4372114cf89ac0aea0d76",
+      "right": "54fa2b19fc986a834f5b4914107ca1455dd5553a07a4372114cf89ac0aea0d76",
+      "nonzero": true
+    },
+    {
+      "count": 736,
+      "pixels": "a81426b05c9766eea8d5661910f6e373eaabdf569128570553c6718e9c840bad",
+      "left": "43c8c9687e165ded64e34b449cc778ac7471eefc74fb3643b782446252ccfbac",
+      "right": "43c8c9687e165ded64e34b449cc778ac7471eefc74fb3643b782446252ccfbac",
+      "nonzero": true
+    },
+    {
+      "count": 736,
+      "pixels": "3bd760b40493a895575d9f4dcf05c6a8b99b7a895c77b4bc64d17618a9ef0185",
+      "left": "67ef5949b9ea57d620e025d1fa49fd43e50d554fd9c3a5efee0cfbafbeb28372",
+      "right": "67ef5949b9ea57d620e025d1fa49fd43e50d554fd9c3a5efee0cfbafbeb28372",
+      "nonzero": true
+    },
+    {
+      "count": 736,
+      "pixels": "c1dff8346c11eb7e019ffbf5602d5f30c4aa929925c46b414aaf85719d9bcdc4",
+      "left": "437565175e4ff4878816b0c71af6872c8b6b8b68fd879186d504a1422f20efb4",
+      "right": "437565175e4ff4878816b0c71af6872c8b6b8b68fd879186d504a1422f20efb4",
+      "nonzero": true
+    },
+    {
+      "count": 736,
+      "pixels": "013b71a91287cbb3190a7815be9dae13df13ed97648ec89af612c6f189373dcd",
+      "left": "1321f8824feda9c4bdc53b53f66918b2304d5a58a1bb7e73878b35ac38c3566c",
+      "right": "1321f8824feda9c4bdc53b53f66918b2304d5a58a1bb7e73878b35ac38c3566c",
+      "nonzero": true
+    }
+  ],
+  "secondContinuation": [
+    {
+      "count": 736,
+      "pixels": "98eb0acb1b3045d51160f6e7b4c32963876c1ad2847ddfa715c6ba40843fc451",
+      "left": "556f32346c066e1a1c7d796a68daa94844e19aa173f6228c3427deff353cc315",
+      "right": "556f32346c066e1a1c7d796a68daa94844e19aa173f6228c3427deff353cc315",
+      "nonzero": true
+    },
+    {
+      "count": 736,
+      "pixels": "ae28de5cb53fc9608bae99beb15ff6399a1c9d4e188e061f4028a4684f70de14",
+      "left": "54fa2b19fc986a834f5b4914107ca1455dd5553a07a4372114cf89ac0aea0d76",
+      "right": "54fa2b19fc986a834f5b4914107ca1455dd5553a07a4372114cf89ac0aea0d76",
+      "nonzero": true
+    },
+    {
+      "count": 736,
+      "pixels": "a81426b05c9766eea8d5661910f6e373eaabdf569128570553c6718e9c840bad",
+      "left": "43c8c9687e165ded64e34b449cc778ac7471eefc74fb3643b782446252ccfbac",
+      "right": "43c8c9687e165ded64e34b449cc778ac7471eefc74fb3643b782446252ccfbac",
+      "nonzero": true
+    },
+    {
+      "count": 736,
+      "pixels": "3bd760b40493a895575d9f4dcf05c6a8b99b7a895c77b4bc64d17618a9ef0185",
+      "left": "67ef5949b9ea57d620e025d1fa49fd43e50d554fd9c3a5efee0cfbafbeb28372",
+      "right": "67ef5949b9ea57d620e025d1fa49fd43e50d554fd9c3a5efee0cfbafbeb28372",
+      "nonzero": true
+    },
+    {
+      "count": 736,
+      "pixels": "c1dff8346c11eb7e019ffbf5602d5f30c4aa929925c46b414aaf85719d9bcdc4",
+      "left": "437565175e4ff4878816b0c71af6872c8b6b8b68fd879186d504a1422f20efb4",
+      "right": "437565175e4ff4878816b0c71af6872c8b6b8b68fd879186d504a1422f20efb4",
+      "nonzero": true
+    },
+    {
+      "count": 736,
+      "pixels": "013b71a91287cbb3190a7815be9dae13df13ed97648ec89af612c6f189373dcd",
+      "left": "1321f8824feda9c4bdc53b53f66918b2304d5a58a1bb7e73878b35ac38c3566c",
+      "right": "1321f8824feda9c4bdc53b53f66918b2304d5a58a1bb7e73878b35ac38c3566c",
+      "nonzero": true
+    }
+  ],
+  "mutatedRamDigest": "a9f7c8bd88332b6a31a5bc0a2d3156099916bbb75f3106a7db96119aef1086df"
+}
