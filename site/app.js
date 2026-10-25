@@ -1242,7 +1242,6 @@
       pendingPulse.endFrame=Number.isFinite(frame)&&frame>=0?frame:null;
     } catch (_) { pendingPulse.endFrame=null; }
     if (pendingPulse.mode==='address-frames') {
-      pendingPulse.cancelReason=reason;
       $('randomiserStatus').textContent=`Work RAM WRITE pulse cancelled: ${reason}; no CPU recovery was attempted.`;
     }
     pendingPulse=null;

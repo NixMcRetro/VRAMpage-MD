@@ -778,7 +778,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.page=self.new_page(circuit_config=True)
         self.load_rom()
         self.assertEqual(self.page.locator('.randomiser-row button').all_text_contents(),
-                         ['PSG','FM','VRAM','CPU reset','RAM WRITE pulse A11–A15 (≤8 writes / 1 frame)'])
+                         ['PSG','FM','VRAM','CPU reset'])
         expect(self.page.locator('#randomiserStatus')).to_have_text('Choose PSG, FM, or VRAM to randomise a chip.')
         before=self.page.evaluate('({starts:mockCore.starts,ramCalls:mockCore.logic.setterCalls.length,fm:mockCore.fm.calls.length,vram:mockCore.vramModel.calls.length})')
         def randomise(selector, value):
@@ -1398,6 +1398,85 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.locator("#pauseBtn").click()
         expect(self.page.locator("#randomiserStatus")).to_contain_text("release is unknown",timeout=5000)
         self.assertEqual(self.page.evaluate("window.mockCore.logic.recoveries.length"),0)
+
+    def test_address_frame_pair_waits_while_paused_and_cancellation_never_clears_later_ram(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        self.page.locator("#pauseBtn").click()
+        self.page.evaluate("window.mockCore.logic.writesPerTick=0")
+        pair=self.page.locator("[data-ram-frame-pair='10,11']")
+        expect(pair).to_be_enabled()
+        pair.focus()
+        self.assertEqual(pair.evaluate("button=>document.activeElement===button"),True)
+        pair.press("Enter")
+        expect(self.page.locator("#randomiserStatus")).to_contain_text("bridge active",timeout=3000)
+        self.assertTrue(self.page.evaluate("window.mockCore.logic.active"))
+        expect(self.page.locator("#pauseBtn")).to_have_text("Resume")
+        pulse=self.export_payload()["faultPulses"][-1]
+        self.assertEqual(pulse["status"],"active")
+        self.assertEqual(self.page.evaluate("window.mockCore.logic.writes"),0)
+        self.page.locator("#pauseBtn").click()
+        expect(self.page.locator("#randomiserStatus")).to_contain_text("ended after 8 emulated frames",timeout=5000)
+        pulse=self.export_payload()["faultPulses"][-1]
+        self.assertEqual(pulse["endFrame"]-pulse["startFrame"],8)
+        self.assertEqual((pulse["readCount"],pulse["writeCount"]),(0,0))
+        self.assertFalse(pulse["cpuRecoveryAttempted"])
+        self.assertFalse(pulse["recoveryAccepted"])
+        self.assertEqual(self.export_payload()["cpuInterventions"],[])
+
+        for action in ("disconnect","replace","cpu-reset","new-rom","restart"):
+            with self.subTest(action=action):
+                self.page.close()
+                self.page=self.new_page(circuit_config=True)
+                self.load_rom()
+                self.page.locator("#pauseBtn").click()
+                self.page.locator("[data-ram-frame-pair='10,11']").click()
+
+                if action=="disconnect":
+                    self.page.locator("#logicDisconnectBtn").click()
+                elif action=="replace":
+                    self.page.locator("#logicAccess").select_option("1")
+                    self.page.locator("#logicLineA").select_option("0")
+                    self.page.locator("#logicLineB").select_option("1")
+                    self.page.locator("#logicApplyBtn").click()
+                elif action=="cpu-reset":
+                    self.page.locator("#logicCpuResetBtn").click()
+                elif action=="new-rom":
+                    self.page.locator("#romFile").set_input_files({
+                        "name":"replacement.bin","mimeType":"application/octet-stream",
+                        "buffer":self.synthetic_rom()})
+                    expect(self.page.locator("#romName")).to_have_text("REPLACEMENT.BIN")
+                else:
+                    self.page.locator("#resetBtn").click()
+                    self.page.wait_for_function("window.mockCore.starts===2")
+
+                if action in ("disconnect","replace","cpu-reset"):
+                    cancelled=self.export_payload()["faultPulses"][0]
+                    self.assertEqual(cancelled["status"],"cancelled")
+                    if action=="cpu-reset":
+                        self.assertEqual(self.export_payload()["cpuInterventions"][0]["action"],"cpu-only-reset")
+                else:
+                    expect(self.page.locator("#randomiserStatus")).to_contain_text("pulse cancelled")
+
+                if action!="replace":
+                    self.page.locator("#logicAccess").select_option("1")
+                    self.page.locator("#logicLineA").select_option("0")
+                    self.page.locator("#logicLineB").select_option("1")
+                    self.page.locator("#logicApplyBtn").click()
+                self.assertTrue(self.page.evaluate("window.mockCore.logic.active"),action)
+                calls_after_apply=self.page.evaluate("window.mockCore.logic.setterCalls.length")
+                frame=self.page.evaluate("window.mockCore.logic.frame")
+                if self.page.locator("#pauseBtn").inner_text()=="Resume":
+                    self.page.locator("#pauseBtn").click()
+                target=frame+10
+                self.page.wait_for_function("target=>window.mockCore.logic.frame>=target",arg=target,timeout=5000)
+                self.assertTrue(self.page.evaluate("window.mockCore.logic.active"),
+                                f"{action}: an expired pair pulse must not clear a later RAM fault")
+                self.assertEqual(self.page.evaluate("window.mockCore.logic.setterCalls.length"),calls_after_apply,
+                                 f"{action}: no late RAM clear setter call")
+                expected_recoveries=1 if action=="cpu-reset" else 0
+                self.assertEqual(self.page.evaluate("window.mockCore.logic.recoveries.length"),expected_recoveries)
 
     def test_address_frame_ram_pairs_refuse_active_domains_before_mutation_and_need_no_recovery_api(self):
         page=self.new_page(legacy_recovery=True,circuit_config=True)
