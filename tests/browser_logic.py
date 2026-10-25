@@ -973,7 +973,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.page=self.new_page(circuit_config=True)
         self.load_rom()
         self.assertEqual(self.page.locator('.randomiser-row button').all_text_contents(),
-                         ['PSG','FM','VRAM','CPU reset'])
+                         ['PSG','FM','VRAM','CPU reset','Clean restart'])
         expect(self.page.locator('#randomiserStatus')).to_have_text('Choose PSG, FM, or VRAM to randomise a chip.')
         before=self.page.evaluate('({starts:mockCore.starts,ramCalls:mockCore.logic.setterCalls.length,fm:mockCore.fm.calls.length,vram:mockCore.vramModel.calls.length})')
         def randomise(selector, value):
