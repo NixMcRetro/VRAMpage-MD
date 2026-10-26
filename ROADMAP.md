@@ -1,5 +1,17 @@
 # VRAMpage MD roadmap
 
+## Hardware Follow-Up Research — 27 October 2026
+
+The user authorized independent research, starting with the bounded Z80 task.
+The [Z80 report](docs/Z80-RAM-RESEARCH.md) specifies a candidate write-only
+8 KiB RAM address bridge and its acceptance tests, preserving native arbitration.
+The [VRAM timing report](docs/VRAM-TIMING-RESEARCH.md) compares primary device
+waveforms, pinned MiSTer HDL and the existing line-batched core; physical timing
+implementation awaits an explicit oracle. These are research outcomes for
+#75/#74, not shipped features or a new release decision. Feature freeze remains.
+[VA6 validation](docs/VA6-RAM-VALIDATION.md) supplies a candidate device map and
+PAL reference; #73 stays open until matching NTSC board evidence is established.
+
 ## v0.5.0 Cross-Platform Release
 
 The browser ZIP/checksum and release notes are published for Windows, macOS and

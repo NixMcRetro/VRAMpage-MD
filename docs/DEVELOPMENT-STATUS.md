@@ -1,5 +1,33 @@
 # Development status and continuation checkpoint
 
+## Hardware Research Checkpoint — 27 October 2026 (Sydney)
+
+The user authorized independent work on #73–#75, starting with the easier
+bounded Z80 scope. Research is based on unchanged main
+`1dc30d654d156653e5fae49cb1f667355e440131`, the existing pinned core and
+primary manufacturer/Sega scans. Historical issue-housekeeping checkpoints
+are carried forward without repeating delivered RAM/VRAM/audio experiments.
+
+- [Z80 RAM research](Z80-RAM-RESEARCH.md): ownership/access/fetch/reset map,
+  bounded write-only address-alias proposal, counters/lifecycle and future
+  acceptance tests. Defer arbitration injection; no runtime feature added.
+- [VRAM timing research](VRAM-TIMING-RESEARCH.md): HM53461 component evidence,
+  MiSTer `adc0c42cfb1fa5d484cc8566767f7d68982bc44a` comparison, identified
+  FIFO/render/serial gaps and fixtures. No physical timing implementation.
+- [VA6 validation](VA6-RAM-VALIDATION.md): candidate HM65256B device pins
+  and PAL VA6.5 topology; requested NTSC VA6 still unverified. Keep #73 open.
+
+Existing actual-core Z80 PSG/FM tests passed; proposed-model tests are specified,
+not executed against a new model. Independent Luna High research review found
+no blocker in Z80/VRAM reports; its DMA function/citation correction is applied.
+VA6 table/qualification review also found no blocker; primary PDF visual checks
+were performed by the coordinator, not independently repeated by the reviewer.
+Final source checks, document link audit and PR/main CI are pending at this
+committed checkpoint. Evidence: `/workspace/scratch/hardware-research/`.
+Preserve all public releases and McRetro.net. After integration, close #74/#75
+as research completed with evidence links, leaving implementation a separate
+feature decision and #73 awaiting matching board evidence.
+
 ## Milestone Issue Housekeeping Completed — 27 October 2026 (Sydney)
 
 After the user approved the audit recommendation, the remaining work was split
@@ -19,8 +47,8 @@ The new issues have explicit scope, sources and acceptance criteria, with no
 implementation, release-version or priority commitment beyond the current plan.
 
 GitHub readback verified all six bodies/titles/states and the three new open
-issues. No comments were posted, source behavior/releases were changed or physical
-experiments rerun. The prior source/main CI evidence remains valid. Drafts and
+issues. No comments were posted. Source behavior and releases were unchanged;
+physical experiments were not rerun. The prior source/main CI evidence remains valid. Drafts and
 before/after metadata are retained in `/workspace/scratch/issue-housekeeping/`.
 Next: use #73–#75 for the remaining optional research; do not repeat the delivered
 RAM/VRAM/FM/PSG milestones or displace stabilization without a new scoped decision.

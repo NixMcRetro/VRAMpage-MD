@@ -14,6 +14,8 @@ The Z80 has its own sound-driver RAM. The 68000 requests its bus through
 `$A11100` and controls Z80 reset through `$A11200`. Original synthetic fixtures
 exercise this ownership sequence. These bridges do not corrupt Z80 RAM or
 change arbitration. Those would be separate models requiring verified mapping.
+The later [Z80 RAM research](Z80-RAM-RESEARCH.md) maps these paths and proposes
+a bounded write-only RAM experiment; it does not implement RAM/arbitration faults.
 
 PSG writes reach the synchronized `psg_write` input, including the Z80 `$7F11`
 route. FM writes pass through the shared YM2612/YM3438 handler with the original
