@@ -1,25 +1,40 @@
 # Development work queue
 
-## Ordered Recovery Switches — Implementation In Progress
+## Ordered Recovery Switches — Reviewed Integration Candidate
 
 User explicitly requests default-On Force Resume and CPU Recovery switches near
-Randomiser, overriding the earlier default-Off/one-shot preference. Independent
-preferences stay On/Off across pause and ROM changes; both initially On. Keep the
-explicit manual Force Resume action in advanced Logic / Work RAM for compatibility.
-Two eligible completed HALT frames confirm an incident. Try Force Resume once;
-if HALT persists on the next eight eligible frames, try one CPU-only reset. User
-selected the longer delay to leave corrupted output visible (~0.13 s). No RAM-data,
-static-picture or elapsed-time heuristic; normal STOP/loops are not reset triggers.
+Randomiser, superseding the earlier default-Off/one-shot interface. Both initial
+On preferences persist across pause/cartridge changes. The advanced explicit
+Disconnect and Force Resume action is retained for manual use.
 
-Bound one sequence per explicit fault experiment. Fault edits, toggle changes,
-new ROM/Restart or explicit Resume permit another sequence. Pause/blur/hidden,
-manual actions and checkpoints cancel pending escalation without changing prefs.
-Held contacts/pulses defer observation. Native/clear/telemetry failures consume the
-attempt and pause, with truthful issued/rejected/aborted history. Retain RAM/audio
-semantics and default no automatic restart/rewind. Verify timing, cancellation,
-partial failures, both toggles independently, real HALT/STOP and compact layout.
-No release or McRetro.net work; independent review and seven PR/main checks required.
+Two eligible HALT frames permit one Force Resume; eight further completed HALT
+frames permit one CPU-only reset if HALT persists. User selected the longer delay
+(~0.13 s) to leave corrupted/frozen output visible. HALT clearing cancels escalation.
+Force Resume Off skips to CPU Reset after two HALT frames; CPU Recovery Off permits
+force resume only; both Off selects unassisted operation. No static-data heuristic.
+One sequence per explicit fault/toggle/ROM/Resume event prevents automatic loops.
+Held/pulse contacts defer observation. Pause/blur/hidden/checkpoints/manual actions
+cancel pending work without altering preferences. No Clean Restart or rewind stage.
 
+Independent specialist review approved the state machine and final deltas through
+05a09f9. Requested Luna High was not confirmed available; reviewer reports GPT-6.
+Review's audit-field gap was fixed: telemetry aborts retain stage/threshold before
+cancellation. Current docs now align with default-On behavior; historical records
+remain identified. Actual-core test author8098c99 is integrated as161183e.
+
+Local checks: Chromium full125 PASS333.624s; WebKit recovery15 PASS148.580s;
+source106 PASS26.101s (two unchanged SDK/vendor classes skipped); display7
+PASS25.288s plus final strict default-On <=768px check PASS. Actual-core browser8
+PASS70.422s and transaction3 PASS6.663s. Actual HALT clears after Force Resume,
+so native tests prove cancellation/independent controls and synchronous Work RAM/
+audio-fault preservation; exact eight-frame persistent-HALT escalation is proven
+with controlled browser telemetry, not claimed from the real-cartridge fixture.
+An initial layout overflow was corrected without weakening viewport assertions.
+
+Remaining gates: extracted-package checks and all seven PR/main CI checks.
+Evidence: `/workspace/scratch/ordered-recovery`. VERSION/public v0.4.1 unchanged;
+no McRetro.net or release work. No automatic rescue of STOP, software loops or a
+browser blocked inside a frame; no universal recovery/gameplay/physical claim.
 
 ## PR #65 Verified Delivery — 26 October 2026 (Sydney)
 

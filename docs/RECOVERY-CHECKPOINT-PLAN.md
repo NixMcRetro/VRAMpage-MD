@@ -36,7 +36,7 @@ wait leaves corrupted/frozen output visible briefly; it does not invent bus heal
 Implementation gates: independent review, deterministic two/eight-frame and
 failure/lifecycle checks, real-core HALT/STOP and RAM/audio preservation, legacy
 fallback, compact desktop/mobile layout, policy/stage metadata and all seven PR/
-main CI checks. No automatic reboot, checkpoint capture or rewind is added.
+main CI checks. No automatic Clean Restart, checkpoint capture or rewind is added.
 
 ## 2. One explicit session checkpoint
 
