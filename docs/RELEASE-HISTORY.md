@@ -10,11 +10,11 @@ Python 3.8 or later is required for local serving; hosted use needs only a brows
 GitHub's automatic source archive does not include the built emulator.
 The v0.4.1 public release and historical downloads below remain unchanged.
 
-## Complete runnable Mac downloads
+## Historical Complete Mac Downloads
 
 | Version | What changed | Download |
 | --- | --- | --- |
-| **[v0.4.1](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.4.1)** (current) | Compact chip controls, audio line masks and saved configurations | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip) |
+| **[v0.4.1](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.4.1)** | Compact chip controls, audio line masks and saved configurations | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip) |
 | **[v0.4.0](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.4.0)** | FM/PSG write-input bridges and verified Z80 routes | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.0/VRAMpage-MD-v0.4.0-macos.zip) |
 | **[v0.3.0](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.3.0)** | Transaction-level VRAM controls and exports | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.3.0/VRAMpage-MD-v0.3.0-macos.zip) |
 | **[v0.2.8](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.8)** | Compact work-RAM chip layout | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.8/VRAMpage-MD-v0.2.8-macos.zip) |
