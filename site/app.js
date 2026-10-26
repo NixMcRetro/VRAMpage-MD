@@ -1572,6 +1572,7 @@
     const flagsBefore=Number(emulator._get_logic_cpu_flags());
     const hadRamFault=logicActive;
     if (!clearZ80RamBridge()) {
+      if (!paused) pauseToggle();
       lastCpuRecoveryAttempt.reason='Z80 RAM clear rejected or unavailable';
       setLogicStatus('Recovery stopped: could not verify Z80 RAM fault removal.');
       return false;

@@ -790,6 +790,29 @@ class BrowserLogicTests(unittest.TestCase):
         expect(self.page.locator("#z80RamBridgeStatus")).to_contain_text("paused for inspection")
         self.assertTrue(self.export_payload()["z80RamFault"]["configured"])
 
+    def test_z80_ram_incomplete_api_blocks_recovery_and_configuration(self):
+        self.load_rom()
+        self.apply_z80_bridge()
+        self.page.evaluate('delete mockCore.core._set_z80_ram_bridge')
+        self.page.locator('#logicCpuResetBtn').click()
+        expect(self.page.locator('#pauseBtn')).to_have_text('Resume')
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[])
+        self.stage_circuit_file(self.circuit_configuration())
+        self.page.locator('#circuitConfigApply').click()
+        expect(self.page.locator('#circuitConfigStatus')).to_contain_text('refused before mutation')
+        self.assertTrue(self.page.evaluate('mockCore.z80Ram.configured'))
+
+    def test_z80_ram_success_status_without_clear_is_unverified(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        self.apply_z80_bridge()
+        self.page.evaluate('mockCore.leaveZ80RamConfigured=true')
+        self.page.locator('#disconnectAllFaultsBtn').click()
+        expect(self.page.locator('#pauseBtn')).to_have_text('Resume')
+        expect(self.page.locator('#disconnectAllFaultsStatus')).to_contain_text('Z80 RAM: clear failed or unverified')
+        self.assertTrue(self.page.evaluate('mockCore.z80Ram.configured'))
+
     def test_z80_ram_checkpoint_and_reset_lifecycle(self):
         page=self.checkpoint_page()
         self.apply_z80_bridge(page)
