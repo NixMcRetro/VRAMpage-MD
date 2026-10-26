@@ -1,5 +1,26 @@
 # Development work queue
 
+## Ordered Recovery Switches — Implementation In Progress
+
+User explicitly requests default-On Force Resume and CPU Recovery switches near
+Randomiser, overriding the earlier default-Off/one-shot preference. Independent
+preferences stay On/Off across pause and ROM changes; both initially On. Keep the
+explicit manual Force Resume action in advanced Logic / Work RAM for compatibility.
+Two eligible completed HALT frames confirm an incident. Try Force Resume once;
+if HALT persists on the next eight eligible frames, try one CPU-only reset. User
+selected the longer delay to leave corrupted output visible (~0.13 s). No RAM-data,
+static-picture or elapsed-time heuristic; normal STOP/loops are not reset triggers.
+
+Bound one sequence per explicit fault experiment. Fault edits, toggle changes,
+new ROM/Restart or explicit Resume permit another sequence. Pause/blur/hidden,
+manual actions and checkpoints cancel pending escalation without changing prefs.
+Held contacts/pulses defer observation. Native/clear/telemetry failures consume the
+attempt and pause, with truthful issued/rejected/aborted history. Retain RAM/audio
+semantics and default no automatic restart/rewind. Verify timing, cancellation,
+partial failures, both toggles independently, real HALT/STOP and compact layout.
+No release or McRetro.net work; independent review and seven PR/main checks required.
+
+
 ## PR #65 Verified Delivery — 26 October 2026 (Sydney)
 
 [PR #65](https://github.com/NixMcRetro/VRAMpage-MD/pull/65) merged as

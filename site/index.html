@@ -108,10 +108,13 @@
           <button id="randomFmBtn" type="button" disabled>FM</button>
           <button id="randomVramBtn" type="button" disabled>VRAM</button>
           <span class="compact-recovery-actions">
+          <button id="logicResumeBtn" class="recovery-switch" type="button" aria-pressed="true">Force Resume: On</button>
+          <button id="armCpuRecoveryBtn" class="recovery-switch" type="button" aria-pressed="true">CPU Recovery: On</button>
           <button id="logicCpuResetBtn" type="button" disabled title="CPU-only reset: clears RAM/VRAM faults, preserves PSG/FM faults, and keeps the current run state.">CPU Reset</button>
           <button id="compactResetBtn" type="button" disabled title="Disconnect faults and reboot from the same cartridge">Clean Restart</button>
           </span>
         </div>
+        <p id="cpuRecoveryStatus" class="randomiser-status" role="status" aria-live="polite">Automatic Recovery Ready After ROM Load</p>
         <div class="ram-frame-pairs" role="group" aria-label="RAM write pairs">
           <strong>RAM Write</strong>
           <label>Mode <select id="ramWriteMode"><option value="pulse">8-Frame Pulse</option><option value="hold" selected>Hold While Pressed</option></select></label>
@@ -164,11 +167,9 @@
         <button id="logicExperimentBtn" type="button" disabled>Download Experiment JSON</button>
       </div>
       <div class="logic-actions">
-        <button id="logicResumeBtn" type="button" disabled>Disconnect and Force Resume</button>
-        <button id="armCpuRecoveryBtn" type="button" disabled aria-pressed="false">Arm CPU Recovery Once</button>
-        <span id="cpuRecoveryStatus" class="logic-status" role="status" aria-live="polite">OFF</span>
+        <button id="manualForceResumeBtn" type="button" disabled>Disconnect and Force Resume</button>
       </div>
-        <p class="logic-note">CPU recovery disconnects RAM and VRAM faults, leaves PSG/FM faults unchanged, preserves corrupted RAM and may immediately stop again. CPU-only reset leaves other chips running. Arm once to attempt a CPU-only reset after HALT is reported on two completed frames; STOP alone does not trigger it. This does not detect software loops or a browser locked inside a frame. Disconnect All Faults pauses only when clearing a domain is unavailable, partial or unverified; Clean Restart fully reboots.</p>
+        <p class="logic-note">CPU recovery disconnects RAM and VRAM faults, leaves PSG/FM faults unchanged, preserves corrupted RAM and may immediately stop again. CPU-only reset leaves other chips running. Force Resume and CPU Recovery start On. Two eligible HALT frames trigger one Force Resume; eight further HALT frames permit one CPU-only reset. Turning Force Resume Off skips directly to one CPU reset after two HALT frames. STOP alone does not trigger recovery. A new fault action, toggle change or explicit Resume permits another sequence. This does not detect software loops or a browser locked inside a frame. Disconnect All Faults pauses only when clearing a domain is unavailable, partial or unverified; Clean Restart fully reboots.</p>
       <div class="logic-actions">
         <button id="saveCheckpointBtn" type="button" disabled>Save Checkpoint</button>
         <button id="restoreCheckpointBtn" type="button" disabled>Restore Checkpoint</button>

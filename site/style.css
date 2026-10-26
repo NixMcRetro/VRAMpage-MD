@@ -399,7 +399,8 @@ footer { padding-top:9px; font-size:10px; }
 .chip-workbench .ram-chip .chip-pin { min-height:24px; }
 .randomiser-row { display:flex; align-items:center; flex-wrap:wrap; gap:4px; padding:3px 12px 6px; }
 .randomiser-row strong { margin-right:3px; font-size:11px; }
-.compact-recovery-actions { display:inline-flex; gap:5px; }
+.compact-recovery-actions { display:inline-flex; flex-wrap:wrap; gap:5px; }
+.recovery-switch[aria-pressed="true"] { font-weight:700; }
 .randomiser-row button { appearance:none; min-width:40px; padding:5px 8px; font-size:10px; }
 /* Keep unavailable actions from looking pressed while a RAM contact is held. */
 .randomiser-row button:disabled { opacity:1; color:var(--muted); }
