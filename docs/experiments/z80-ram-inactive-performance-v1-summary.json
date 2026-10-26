@@ -156,7 +156,9 @@
     "archiveName": "z80-ram-inactive-performance-v1.json.gz",
     "archiveSha256": "5ca30793cb65a33564f3462a5ae8d42c3cd80e3ed67da94564846b4e315afea3",
     "rawSha256": "bb8faf41499b738504c7bcafa7b1dc6a7ea722cf5b12ac3d2cd314e1b94ebc19",
-    "rawBytes": 111013
+    "rawBytes": 111013,
+    "gitCommit": "14313e96028ac2dc3aaaa4d9c9e5068d7ddf5dbe",
+    "url": "https://github.com/NixMcRetro/VRAMpage-MD/blob/14313e96028ac2dc3aaaa4d9c9e5068d7ddf5dbe/docs/experiments/z80-ram-inactive-performance-v1.json.gz"
   },
   "limits": "One original recurring-Z80-store workload on this Linux/Node host, with the new bridge off. A fixed five-pair median-ratio gate is not a guarantee for every game or browser. All samples are retained, including the individual median ratio above 1.05."
 }

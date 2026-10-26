@@ -27,7 +27,9 @@ remaining blocker; its BigInt boundary-coverage request is now tested and passed
   instruction fetch, lifecycle, checkpoint refusal and invalid API atomicity.
 - [Inactive-store measurement](experiments/z80-ram-inactive-performance-v1-summary.json)
   passed the fixed five-pair gate: median frame ratio 1.00618 and p95 ratio
-  1.03573 (limit 1.05). Raw samples and the exact one-off script are retained.
+  1.03573 (limit 1.05). Raw samples are linked from their immutable Git commit;
+  the exact one-off script is retained. The compressed record is excluded from
+  the source tree to preserve the package archive guard.
   This is one synthetic workload, not a universal performance claim.
 
 Next: open the focused PR, require all seven source/browser/build/package checks
