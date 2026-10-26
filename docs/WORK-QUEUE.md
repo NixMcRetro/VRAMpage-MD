@@ -1,5 +1,30 @@
 # Development work queue
 
+## Video Encoder Research — Review Checkpoint
+
+The user requested additional research into CXA1145P or equivalent manipulation
+while reviewing the completed Z80 RAM build. Work is isolated on
+`experiment/video-encoder-research` in `/workspace/vrampage-video-encoder`, based
+on main `1b464a90daa1b8ba8d9ff321475ccb4dc8ff865c`; the preceding verified Z80
+delivery record is carried forward without repeating implementation.
+
+The [research report](VIDEO-ENCODER-RESEARCH.md) covers Sony primary pin/function
+text, Sega encoder variants, RGB/composite/mono-buffer fault hypotheses and the
+current 32-bit RGBA output path. It distinguishes receiver-dependent outcomes,
+analogue source/termination assumptions and the missing waveform/decoder model.
+RGB input contacts are a bounded candidate only; no feature implementation or
+feature-freeze exception is authorized. No application, version, release or
+McRetro.net change. Primary text was inspected; physical/waveform/listening and
+independent visual PDF checks were not performed.
+
+Research acceptance: source-backed device boundaries and core-path map, explicit
+hypothesis/implementation limits, a minimal candidate with future test oracles,
+independent specialist review, document/source checks and required PR/main CI.
+The report and linked documentation are ready for independent GPT-6 Luna High
+review. Next: address review findings, run source/link checks, require all seven
+PR checks before merge and verify main CI. Preserve all published releases.
+Evidence: `/workspace/scratch/video-encoder-research/`.
+
 ## Z80 RAM Write Verified — 27 October 2026 (Sydney)
 
 [PR #77](https://github.com/NixMcRetro/VRAMpage-MD/pull/77) merged as

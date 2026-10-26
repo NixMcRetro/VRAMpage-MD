@@ -62,6 +62,7 @@ The v0.4.1 workbench extends optional, independent
 - [Z80 RAM Write Bridge](Z80-RAM-WRITE-BRIDGE.md): development-source controls, native scope, counters, configuration and recovery for the optional write-only address pair.
 - [VRAM Timing Research](VRAM-TIMING-RESEARCH.md): primary memory-device evidence, pinned MiSTer/core comparison and limits before physical serial/raster modelling.
 - [VA6 Work RAM Validation](VA6-RAM-VALIDATION.md): candidate manufacturer pin map and PAL VA6.5 reference; requested NTSC VA6 mapping remains unverified.
+- [Video Encoder Research](VIDEO-ENCODER-RESEARCH.md): CXA1145 signals, related encoders, plausible output faults and the browser-model boundary; no feature implemented.
 
 - [Circuit configuration files](CIRCUIT-CONFIGURATIONS.md): development save/preview/apply format, capability checks and failure semantics.
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## Video Encoder Research — 27 October 2026
+
+- Research CXA1145 RGB/composite/sync and mono-buffer paths, related encoder differences and the current RGBA browser boundary. Record a bounded RGB-input candidate and future acceptance gates; no runtime feature, version, release or deployment change.
+
 ## Development Source — Z80 RAM Write Bridge
 
 - Add an optional, off-by-default A0–A12 write-address pair within Z80 sound RAM, preserving native bus ownership and read/fetch behavior.
