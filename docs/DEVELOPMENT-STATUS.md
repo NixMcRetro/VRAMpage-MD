@@ -1,23 +1,38 @@
 # Development status and continuation checkpoint
 
-## Session Checkpoint Implementation In Progress — 26 October 2026 (Sydney)
+## Session Checkpoint Integration Candidate — 26 October 2026 (Sydney)
 
-Resumed from verified main `0b8263c` (all seven main CI jobs still pass).
-Scope and acceptance gates: [Session Checkpoint API](SESSION-CHECKPOINT-API.md).
-Native backend branch `experiment/session-checkpoint-core` has committed bounded
-same-instance storage; actual-WASM eligibility/replay validation is still in progress.
-Frontend branch `experiment/session-checkpoint` adds advanced Save Checkpoint /
-Restore Checkpoint, verified fault clearing before restore, paused immediate image,
-held-input suppression, session lifecycle invalidation and metadata-only export
-segments. Twelve focused Chromium cases pass; comparison tests and JS syntax pass.
-A further held-contact cancellation case is being checked. No integrated checkpoint
-build, independent final review, PR or merge is claimed yet.
+Resumed from verified main `0b8263c`; all seven existing main checks were rechecked.
+Explicit **Save Checkpoint / Restore Checkpoint** now use one privately owned,
+same-cartridge/module slot. Save verifies clear faults and neutral controls without
+ticking; failed captures retain the prior slot. Restore pauses, cancels transients,
+releases held inputs, verifies all-domain clearing, restores the saved image without
+ticking and stays paused. CPU Reset retains the slot; Clean Restart/new cartridge
+invalidates it. JSON records metadata-only events/counter baselines/segments.
+Ordinary MD, 3/6-button pads and validated ordinary SRAM/maps are supported;
+other profiles are refused. [API/scope](SESSION-CHECKPOINT-API.md).
 
-Next: finish native ordinary-cart/SRAM eligibility and omitted map state, integrate
-native commits, test actual-core UI round trips, obtain independent native/JS review,
-run full applicable checks and package validation, then require all seven PR/main CI
-jobs. Keep public v0.4.1 unchanged; McRetro.net remains untouched.
+Native author checkpoint163d2ff is integrated as3fa33ff. Independent specialist
+review approved native/JS source at3fa33ff and reran all nine actual-WASM groups.
+The requested Luna High was unavailable; both specialist workers reported actual
+GPT-6-based Codex. Root review caught normal-profile exposure and displaced Start
+reset hooks before PR; corrections restore unchanged normal binary hashes and
+explicit active-fault Start regression coverage. No assertion was weakened.
 
+Local evidence: full SDK/source116 PASS209.065s with normal fatal sanitizers and
+fresh builds; native checkpoint9 actual-WASM groups and existing logic25 pass.
+Chromium mock logic116 PASS258.309s plus new unsigned-frame boundary/telemetry
+cases2 PASS4.513s; display7 PASS17.384s. WebKit checkpoint14 PASS112.188s.
+Production actual-core browser8 PASS99.739s, including immediate raw/canvas image,
+no extra tick, paused restore and restart invalidation. Package extraction and
+required PR/main CI are the remaining gates. Evidence logs stay under
+`/workspace/scratch/session-checkpoint-ui`; candidate source, runtime and normal
+builds are retained in the isolated worktrees. No integrated release is claimed.
+
+Public v0.4.1 tag/assets remain unchanged; no version bump or McRetro.net action.
+Next: finish extracted-package checks, open the focused PR, require all seven PR
+checks before merge, verify all seven main checks, and record exact delivery links.
+Native Mac audible/physical and universal mapper compatibility remain unverified.
 
 ## PR #62 verified delivery — 26 October 2026 (Sydney)
 
