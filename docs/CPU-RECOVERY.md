@@ -77,9 +77,10 @@ unavailable state; a failed clear must not be interpreted as restored gameplay.
 Clean Restart/new-ROM initialization clears this attempt history.
 
 An older core with work-RAM hooks but without `_recover_logic_cpu` can still
-play/apply faults; only recovery controls remain disabled. Rebuild the WASM to
-use the new controls. Manual actions never enable automatic recovery. The development-source single-arm
-option below is separately opt-in; older public releases have no automatic recovery.
+play/apply faults. Manual CPU actions require that API; the preference switches
+remain selectable and report Automatic Recovery Unavailable. Rebuild the WASM to
+use recovery. Manual actions never change the On/Off preferences. Current
+development defaults both On; older public releases have no automatic recovery.
 
 ## Verification and reproduction
 

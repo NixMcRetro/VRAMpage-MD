@@ -75,8 +75,9 @@ transaction runtime also offers explicit logical-byte transaction selection. The
 an address or data pair and read, write, or both directions; selecting a pair
 does not apply it until **Apply RAM fault** is pressed. The monitor shows
 affected read/write counts, the model frame and activation frame, plus the
-emulated CPU STOP/HALT flags. It never automatically rescues a stopped game. Explicit v0.2.1
-[CPU recovery](CPU-RECOVERY.md) can attempt resume/reset while preserving RAM. The
+emulated CPU STOP/HALT flags. The monitor itself does not rescue the CPU. Current
+development source adds default-On ordered [CPU recovery](CPU-RECOVERY.md) switches;
+turn both Off for unassisted faults. Manual interventions also preserve RAM. The
 JSON export records model version, pinned core revision, ROM filename and
 SHA-256, fault setup, activation/current frame, reset state, counters and CPU
 flags. It contains no ROM or RAM bytes. Disconnect preserves the last experiment's

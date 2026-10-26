@@ -7,7 +7,8 @@ remain v0.4.1. Existing manual CPU Reset and Clean Restart retain their semantic
 
 The goal is to offer two independent ways to continue experimenting: a bounded
 CPU intervention and returning to a deliberately saved machine state. Neither
-can guarantee that a game continues. Default operation remains unassisted.
+can guarantee that a game continues. Current development defaults both recovery
+switches On; turning both Off selects unassisted operation.
 
 ## 1. Default-On Ordered Recovery Switches
 
@@ -115,7 +116,8 @@ upstream `core/state.c`, `core/state.h`, `core/vdp_ctrl.c:vdp_context_*`,
 ## Ordered implementation and measurable gates
 
 1. **Bounded recovery first:** minimal app/UI/export changes; no new CPU model.
-   Deterministic browser tests cover off by default, HALT on frames 1/2, STOP-only,
+   Deterministic browser tests cover both On by default, independent Off controls,
+   HALT confirmation on frames 1/2, the eight-frame escalation window, STOP-only,
    intervening clear flag, held/pulse exclusion, pause/blur/new-ROM cancellation,
    throwing/missing capability, partial clear failure, one attempt even on repeated
    HALT, explicit rearm, and no audio reset. Actual-WASM generated cartridges

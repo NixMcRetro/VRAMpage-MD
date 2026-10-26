@@ -1506,7 +1506,10 @@ Disabled-style follow-up: Chromium compact 6, display 7, logic 96 and actual-cor
 PR #60 final integration: all seven PR checks (40206196863) and all seven main checks (40206671753) passed. The extracted local bundle also passed all six actual-core cases. Main source is 5d0425a64acb0f883789c67e8c6ec41e5d2c0c02; release/tag/assets unchanged.
 
 
-# Bounded recovery and Title Case integration
+# Historical PR #61: Bounded Recovery and Title Case Integration
+
+This record describes the earlier default-Off policy, superseded by the current
+ordered recovery checks at the top of this guide.
 
 Development source adds one explicitly armed HALT-triggered CPU-only reset attempt.
 Focused browser coverage exercises default off, genuine STOP exclusion, two-frame
