@@ -34,7 +34,8 @@ not universal pin-to-effect promises.
    to this family, not every replacement encoder.
 2. Sony, [CXA1645P/M, E93411A41-ST](https://www.100y.com.tw/pdf_file/CXA1645P.M.pdf):
    PDF pages 1–5. It integrates the chroma filter and luma delay and has driven
-   Y/C outputs. Pins 8/9 become burst monitoring/luma clamp; pin 11 is NC;
+   Y/C outputs. Pin 8 is BFOUT, a burst-flag monitor; pin 9 is YCLPC, setting
+   the Y-clamp time constant. Pin 11 is NC;
    pins 17/18 become YTRAP/FO. It is not a CXA1145 pin-function substitute.
 3. Sega, [Genesis II / Mega Drive II service manual No. 001, June 1993](https://www.backoldgaming.com/data/medias/files/documents/Sega_Service_Manual_-_Genesis_II_-_Mega_Drive_II_PAL_-_001_-_June_1993.pdf#page=2):
    PDF page 2 identifies F = MB3514PF, S = CXA1145M and SM = KA2195D and
@@ -97,6 +98,10 @@ The pinned core remains
   produces RGBA pixels; [`drawActiveVideo`](https://github.com/NixMcRetro/VRAMpage-MD/blob/1b464a90daa1b8ba8d9ff321475ccb4dc8ff865c/site/app.js#L2871)
   copies the frame to a canvas. It does not export a sampled composite waveform,
   colour burst, encoder voltages or a TV decoder state.
+
+Intentional output damage should follow the existing missing-row recovery, or
+explicitly bypass it, so legacy display repair cannot erase the intended fault.
+Keep the untouched core frame available as a diagnostic reference.
 
 A browser implementation therefore needs an explicit output-domain model. A
 small transformation can approximate selected RGB input faults; modelling
