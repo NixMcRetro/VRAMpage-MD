@@ -65,3 +65,13 @@ assert.equal(policies.find(row=>row.label==='CPU Recovery Enabled').status,'matc
 assert.equal(policies.find(row=>row.label==='Recovery Wait Frames').status,'mismatch');
 assert.equal(compare(A,B).find(row=>row.label==='Force Resume Enabled').status,'unknown');
 console.log('Experiment comparison parser and row tests passed.');
+
+const z80A={z80RamFault:{available:true,configured:true,effective:true,bridgeA:0,bridgeB:12,modelVersion:'z80-ram-write-address-pair-v1',activationFrame:8,ramWrites:'9007199254740993',changedAddresses:'4',z80Writes:'3',m68kWrites:'9007199254740990'}};
+const z80B=structuredClone(z80A);z80B.z80RamFault.ramWrites='9007199254740994';
+assert.deepEqual(parse(JSON.stringify(z80A)),z80A);
+assert.equal(compare(z80A,z80B).find(row=>row.label==='Z80 RAM Recorded Writes').status,'mismatch');
+assert.equal(compare(z80A,A).find(row=>row.label==='Z80 RAM Configured').status,'unknown');
+z80B.z80RamFault.bridgeB=13;
+assert.equal(compare(z80A,z80B).find(row=>row.label==='Z80 RAM Bridge B').status,'unknown');
+z80B.z80RamFault.available=false;
+assert.equal(compare(z80A,z80B).find(row=>row.label==='Z80 RAM Recorded Writes').status,'unknown');

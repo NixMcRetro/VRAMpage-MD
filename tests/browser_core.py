@@ -118,10 +118,10 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     with page.expect_download() as download_info:
                         page.locator('#circuitConfigDownload').click()
                     saved = json.loads(Path(download_info.value.path()).read_text())
-                    self.assertEqual(saved['schemaVersion'], 2)
+                    self.assertEqual(saved['schemaVersion'], 3)
                     self.assertEqual(saved['configuration'], {
                         'vram': {'modelId': 1, 'mask': 0, 'pair': None},
-                        'ram': None, 'psg': {'pair':None,'dataMask':0}, 'fm': {'pair':None,'dataMask':0}
+                        'ram': None, 'psg': {'pair':None,'dataMask':0}, 'fm': {'pair':None,'dataMask':0}, 'z80Ram':{'pair':None}
                     })
                     self.assertNotIn('rom', saved)
                     self.assertNotIn('inputWrites', json.dumps(saved))
@@ -189,6 +189,19 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     self.assertEqual(api['supported'] & 4, 4, 'synthetic cartridge enables Mode 5 transaction support')
                     page.locator('#pauseBtn').click()
                     expect(page.locator('#pauseBtn')).to_have_text('Resume')
+                    expect(page.locator('#z80RamBridgeApply')).to_be_enabled()
+                    self.assertFalse(page.evaluate('testCore._get_z80_ram_bridge_state().configured'))
+                    page.locator('#z80RamBridgeA').select_option('0')
+                    page.locator('#z80RamBridgeB').select_option('12')
+                    page.locator('#z80RamBridgeApply').click()
+                    z80=page.evaluate('testCore._get_z80_ram_bridge_state()')
+                    self.assertEqual((z80['modelVersion'],z80['bridgeA'],z80['bridgeB']),
+                                     ('z80-ram-write-address-pair-v1',0,12))
+                    self.assertTrue(z80['configured'] and z80['effective'])
+                    with page.expect_download() as z80_download:
+                        page.locator('#circuitConfigDownload').click()
+                    z80_saved=json.loads(Path(z80_download.value.path()).read_text())
+                    self.assertEqual(z80_saved['configuration']['z80Ram'],{'pair':[0,12]})
                     payload = {
                         'format': 'vrampage-md-circuit-config', 'schemaVersion': 1,
                         'configuration': {
@@ -220,6 +233,8 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         fm: testCore._get_fm_data_bridge_state()
                     })''')
                     self.assertEqual((state['vram']['modelId'], state['vram']['bridgeA'], state['vram']['bridgeB']), (2, 2, 5))
+                    self.assertFalse(page.evaluate('testCore._get_z80_ram_bridge_state().configured'),
+                                     'legacy config import explicitly removes the new RAM fault')
                     self.assertTrue(state['psg']['configured'])
                     self.assertEqual((state['psg']['bridgeA'], state['psg']['bridgeB']), (1, 6))
                     self.assertTrue(state['fm']['configured'])
@@ -243,7 +258,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     with page.expect_download() as download_info:
                         page.locator('#circuitConfigDownload').click()
                     saved = json.loads(Path(download_info.value.path()).read_text())
-                    self.assertEqual(saved['schemaVersion'], 2)
+                    self.assertEqual(saved['schemaVersion'], 3)
                     self.assertEqual(saved['configuration']['fm'], {'pair':None,'dataMask':4})
                     self.assertEqual(saved['configuration']['psg'], {'pair':None,'dataMask':129})
                     self.assertNotIn('rom', saved)
@@ -278,7 +293,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     with page.expect_download() as download_info:
                         page.locator('#circuitConfigDownload').click()
                     ram_saved=json.loads(Path(download_info.value.path()).read_text())
-                    self.assertEqual(ram_saved['schemaVersion'], 2)
+                    self.assertEqual(ram_saved['schemaVersion'], 3)
                     self.assertEqual(ram_saved['configuration']['psg'], {'pair':[1,6],'dataMask':0})
                     self.assertEqual(ram_saved['configuration']['fm'], {'pair':[0,7],'dataMask':0})
                     if not page.locator('#logicExperiment').evaluate('element => element.open'):

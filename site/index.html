@@ -100,7 +100,7 @@
           </section>
         </div>
         <div class="logic-actions chip-workbench-actions">
-          <button id="disconnectAllFaultsBtn" type="button" disabled title="Attempts to clear VRAM, Work RAM, PSG and FM faults. Confirmed success preserves the current run state; any uncertainty pauses before the next frame.">Disconnect All Faults</button>
+          <button id="disconnectAllFaultsBtn" type="button" disabled title="Attempts to clear VRAM, Work RAM, Z80 RAM, PSG and FM faults. Confirmed success preserves the current run state; any uncertainty pauses before the next frame.">Disconnect All Faults</button>
         </div>
         <div class="randomiser-row" role="group" aria-label="Randomiser chip controls">
           <strong>Randomiser</strong>
@@ -121,6 +121,14 @@
         </div>
         <p id="randomiserStatus" class="randomiser-status" role="status" aria-live="polite">Load a ROM to randomise a chip.</p>
         <p id="cpuRecoveryStatus" class="randomiser-status" role="status" aria-live="polite">Automatic Recovery Ready After ROM Load</p>
+        <div class="ram-frame-pairs z80-ram-controls" role="group" aria-label="Z80 Sound RAM Write Bridge">
+          <strong>Z80 RAM Write</strong>
+          <label>Address A <select id="z80RamBridgeA" disabled></select></label>
+          <label>Address B <select id="z80RamBridgeB" disabled></select></label>
+          <button id="z80RamBridgeApply" type="button" disabled>Apply Bridge</button>
+          <button id="z80RamBridgeRemove" type="button" disabled>Remove Bridge</button>
+        </div>
+        <p id="z80RamBridgeStatus" class="randomiser-status" role="status" aria-live="polite">Z80 RAM Write Off</p>
         <p id="disconnectAllFaultsStatus" class="logic-status" role="status" aria-live="polite">Load a ROM to disconnect all fault domains.</p>
         <details class="chip-settings" id="vramSettings">
           <summary>VRAM Presets, Counters and Model Notes</summary>

@@ -127,7 +127,7 @@
     updateLogicControls();
     refreshVramControls();
     refreshPsgDataControls();
-    refreshFmDataControls();
+    refreshFmDataControls(); refreshZ80RamControls();
     refreshRandomiserControls();
     refreshCircuitConfigControls();
   }
@@ -156,6 +156,83 @@
   function fmDataApiReady(core=emulator) {
     return typeof core?._set_fm_data_bridge==='function' &&
       typeof core?._get_fm_data_bridge_state==='function';
+  }
+
+  function z80RamApiReady(core=emulator) {
+    return typeof core?._set_z80_ram_bridge==='function' &&
+      typeof core?._get_z80_ram_bridge_state==='function';
+  }
+
+  function z80RamApiPresent() {
+    return typeof emulator?._set_z80_ram_bridge==='function' ||
+      typeof emulator?._get_z80_ram_bridge_state==='function';
+  }
+
+  function currentZ80RamState() {
+    if (!z80RamApiReady()) return null;
+    try {
+      const state=emulator._get_z80_ram_bridge_state();
+      if (!state || state.modelVersion!=='z80-ram-write-address-pair-v1' ||
+          typeof state.supported!=='boolean' || typeof state.configured!=='boolean' ||
+          state.effective!==(state.supported&&state.configured) ||
+          !Number.isInteger(state.bridgeA) || !Number.isInteger(state.bridgeB) ||
+          (state.configured ? state.bridgeA<0 || state.bridgeA>12 || state.bridgeB<0 ||
+            state.bridgeB>12 || state.bridgeA===state.bridgeB : state.bridgeA!==-1 || state.bridgeB!==-1) ||
+          !['ramWrites','changedAddresses','z80Writes','m68kWrites'].every(key=>
+            typeof state[key]==='string' && /^(0|[1-9][0-9]*)$/.test(state[key]))) return null;
+      return state;
+    } catch (_) { return null; }
+  }
+
+  function refreshZ80RamControls() {
+    const state=currentZ80RamState(), ready=started&&z80RamApiReady();
+    for (const id of ['z80RamBridgeA','z80RamBridgeB','z80RamBridgeApply'])
+      $(id).disabled=!ready || !state?.supported;
+    $('z80RamBridgeRemove').disabled=!ready || state?.configured===false;
+    $('z80RamBridgeStatus').textContent=!started?'Load a ROM for Z80 RAM Write.':
+      !z80RamApiPresent()?'Z80 RAM Write Unavailable in This Core':
+      !state?'Z80 RAM Write State Unavailable':!state.supported?'Z80 RAM Write Unsupported in This Profile':
+      !state.configured?'Z80 RAM Write Off':
+      `Z80 RAM Write A${state.bridgeA} ↔ A${state.bridgeB} · ${state.ramWrites} Writes · ${state.changedAddresses} Addresses Changed`;
+  }
+
+  function setZ80RamBridge(enabled,pairOverride,silent=false) {
+    if (!started || !z80RamApiReady()) return false;
+    const a=enabled?Number(pairOverride===undefined?$('z80RamBridgeA').value:pairOverride[0]):-1;
+    const b=enabled?Number(pairOverride===undefined?$('z80RamBridgeB').value:pairOverride[1]):-1;
+    const before=currentZ80RamState();
+    if (enabled && (!before?.supported || !Number.isInteger(a) || !Number.isInteger(b) ||
+        a<0 || a>12 || b<0 || b>12 || a===b)) {
+      $('z80RamBridgeStatus').textContent='Choose two distinct supported Z80 RAM address lines A0–A12.';
+      return false;
+    }
+    try {
+      const status=emulator._set_z80_ram_bridge(enabled?1:0,a,b);
+      const after=currentZ80RamState();
+      if (status!==0 || !after || after.configured!==enabled ||
+          (enabled && !samePair(canonical([after.bridgeA,after.bridgeB]),canonical([a,b]))))
+        throw new Error(`Z80 RAM Write ${status!==0?`request rejected (${status})`:'result could not be verified'}`);
+      if (enabled) { $('z80RamBridgeA').value=String(a);$('z80RamBridgeB').value=String(b); }
+      if (!silent) {
+        resetCpuRecoveryObservation();
+        stamp(enabled?`Z80 RAM write bridge A${a} ↔ A${b} applied.`:
+          'Z80 RAM write bridge removed; previously stored corruption remains.');
+      }
+      refreshZ80RamControls();updateCheckpointControls();
+      return true;
+    } catch (error) {
+      if (!paused) pauseToggle();
+      refreshZ80RamControls();
+      $('z80RamBridgeStatus').textContent=`${error.message}; emulation paused for inspection.`;
+      if (!silent) stamp($('z80RamBridgeStatus').textContent);
+      return false;
+    }
+  }
+
+  function clearZ80RamBridge() {
+    if (!z80RamApiPresent()) return true;
+    const state=currentZ80RamState();
+    return state?.configured===false || setZ80RamBridge(false,undefined,true);
   }
 
   function psgDataMaskApiReady(core=emulator) { return typeof core?._set_psg_data_mask==='function'; }
@@ -307,14 +384,14 @@
         ? 'FM bridge request rejected: unsupported system profile.'
         : 'FM bridge request rejected: invalid settings.';
       stamp(`FM bridge request rejected (status ${status})`);
-      refreshFmDataControls();
+      refreshFmDataControls(); refreshZ80RamControls();
       return false;
     }
     abandonKeyboardHold('FM');
     if (enabled && pairOverride!==undefined) {
       $('fmBridgeA').value=String(a); $('fmBridgeB').value=String(b);
     }
-    refreshFmDataControls();
+    refreshFmDataControls(); refreshZ80RamControls();
     stamp(enabled
       ? `FM data bridge applied: D${a} ↔ D${b}; existing chip state was not repaired.`
       : 'FM data bridge removed; existing chip state was not repaired.');
@@ -329,10 +406,10 @@
     const status=emulator._set_fm_data_mask(mask);
     if (status!==0) {
       $('fmBridgeStatus').textContent=status===2?'FM mask request rejected: unsupported system profile.':'FM mask request rejected: invalid settings.';
-      refreshFmDataControls(); return false;
+      refreshFmDataControls(); refreshZ80RamControls(); return false;
     }
     abandonKeyboardHold('FM');
-    refreshFmDataControls();
+    refreshFmDataControls(); refreshZ80RamControls();
     stamp(mask?`FM data inputs ${maskLineNames(mask)} forced low before register decode.`:'FM data fault removed; existing chip state was not repaired.');
     return true;
   }
@@ -432,7 +509,7 @@
       if (!observed || (Array.isArray(result) ? !observed.configured || !samePair(canonical([observed.bridgeA,observed.bridgeB]),result)
           : Number(observed.dataMask)!==result)) {
         if (setterAttempted && !paused) pauseToggle();
-        isPsg?refreshPsgDataControls():refreshFmDataControls();
+        isPsg?refreshPsgDataControls():refreshFmDataControls(); refreshZ80RamControls();
         status.textContent=`${kind.toUpperCase()} randomisation could not be confirmed; runtime state is unavailable or differs from the requested setting.`;
         $('randomiserStatus').textContent=`${kind.toUpperCase()} randomisation could not be confirmed${setterAttempted?'; emulation paused for inspection':''}; runtime state is unavailable or differs from the requested setting.`;
         return false;
@@ -443,7 +520,7 @@
       return true;
     } catch (_) {
       if (setterAttempted && !paused) pauseToggle();
-      try { isPsg?refreshPsgDataControls():refreshFmDataControls(); } catch (_) { /* Keep the failure report available. */ }
+      try { isPsg?refreshPsgDataControls():refreshFmDataControls(); refreshZ80RamControls(); } catch (_) { /* Keep the failure report available. */ }
       status.textContent=setterAttempted
         ? `${kind.toUpperCase()} randomisation failed during the setter; emulation paused. Observed state refreshed where available.`
         : `${kind.toUpperCase()} randomisation refused because runtime state could not be read.`;
@@ -559,7 +636,7 @@
     const buttons=isPsg?psgPinButtons:fmPinButtons;
     const state=()=>isPsg?currentPsgDataState():currentFmDataState();
     const mode=()=>$(isPsg?'psgLegMode':'fmLegMode').value;
-    const refresh=()=>isPsg?refreshPsgDataControls():refreshFmDataControls();
+    const refresh=()=>isPsg?refreshPsgDataControls():refreshFmDataControls(); refreshZ80RamControls();
     const selectPair=pair=>isPsg?setPsgDataBridge(true,pair):setFmDataBridge(true,pair);
     const setMask=mask=>isPsg?setPsgDataMask(mask):setFmDataMask(mask);
     for (let bit=0;bit<8;bit++) {
@@ -1122,6 +1199,8 @@
       if (!checkpointAvailability().supported) throw new Error('Checkpoint unavailable for this core or cartridge.');
       if (recoveryTransientActive() || pressed.size || logicActive || logicAddressMask)
         throw new Error('Release held contacts and controls, and disconnect faults before saving.');
+      if (z80RamApiPresent() && currentZ80RamState()?.configured!==false)
+        throw new Error('Disconnect the Z80 RAM write bridge and verify its state before saving.');
       const vram=emulator._get_vram_fault_model_state();
       const audio=[currentPsgDataState(),currentFmDataState()];
       if (!vram || !Number.isInteger(vram.mask) || vram.mask!==0 ||
@@ -1176,7 +1255,7 @@
       catch (error) {event.displayError=error.message;}
       accumulated=0;lastFrame=0;resetStats();
       checkpointMessage=`Restored Frame ${event.savedFrame??'Unknown'} · Paused · Segment ${checkpointSegment}`;
-      updateFaultUI();refreshPsgDataControls();refreshFmDataControls();
+      updateFaultUI();refreshPsgDataControls();refreshFmDataControls(); refreshZ80RamControls();
     } catch (error) {
       const uncertain=event.nativeAttempted && ![1,2,3,6].includes(event.status);
       event.outcome=uncertain?'uncertain':'refused';
@@ -1488,6 +1567,11 @@
     const frame=Number(emulator._get_logic_frame());
     const flagsBefore=Number(emulator._get_logic_cpu_flags());
     const hadRamFault=logicActive;
+    if (!clearZ80RamBridge()) {
+      lastCpuRecoveryAttempt.reason='Z80 RAM clear rejected or unavailable';
+      setLogicStatus('Recovery stopped: could not verify Z80 RAM fault removal.');
+      return false;
+    }
     if (!disconnectLogic({silent:true,pulseReason:'manual CPU recovery'})) {
       lastCpuRecoveryAttempt.reason='RAM clear rejected or unavailable';
       setLogicStatus('Recovery stopped: could not disconnect RAM fault.');
@@ -1681,6 +1765,17 @@
     };
     clearAudio('PSG');
     clearAudio('FM');
+    if (!z80RamApiPresent()) note('Z80 RAM','already off','optional runtime API absent');
+    else {
+      const state=currentZ80RamState();
+      if (state?.configured===false) note('Z80 RAM','already off','no configured Z80 RAM fault');
+      else {
+        const cleared=clearZ80RamBridge();
+        const after=currentZ80RamState();
+        note('Z80 RAM',cleared&&after?.configured===false?'cleared':'clear failed or unverified',
+          !after?'runtime state unknown':after.configured?'configured fault remains':'no configured fault');
+      }
+    }
 
     const summary=results.map(item=>`${item.domain}: ${item.result} (${item.actual})`).join('; ');
     const allClear=results.every(item=>item.result==='already off'||item.result==='cleared');
@@ -1693,7 +1788,7 @@
     catch (_) { /* Disconnect results must still be retained if telemetry is unavailable. */ }
     faultDisconnectActions.push({action:'all-domain-disconnect',frame,results:results.map(item=>({...item}))});
     cancelAutomaticRecovery();
-    updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls();
+    updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls(); refreshZ80RamControls();
     return allClear;
   }
 
@@ -1998,7 +2093,12 @@
     if (circuitPulseIsArmed()) throw new Error('Wait for or cancel the active RAM pulse before saving a configuration.');
     if (logicActive && !activeRamConfiguration)
       throw new Error('The active RAM fault settings are unavailable; no file was created.');
-    let psg={pair:null,dataMask:0}, fm={pair:null,dataMask:0};
+    let psg={pair:null,dataMask:0}, fm={pair:null,dataMask:0}, z80Ram={pair:null};
+    if (z80RamApiPresent()) {
+      const state=currentZ80RamState();
+      if (!state) throw new Error('Z80 RAM state is unavailable; no file was created.');
+      if (state.configured) z80Ram={pair:canonical([state.bridgeA,state.bridgeB])};
+    }
     if (psgDataApiReady()) {
       const state=currentPsgDataState();
       if (!state) throw new Error('PSG state is unavailable; no file was created.');
@@ -2024,7 +2124,7 @@
     }
     return api.validate({format:api.format,schemaVersion:api.version,configuration:{
       vram:{modelId:vramModelId,mask:vramAddressMask,pair},
-      ram:logicActive?{...activeRamConfiguration}:null,psg,fm
+      ram:logicActive?{...activeRamConfiguration}:null,psg,fm,z80Ram
     }});
   }
 
@@ -2038,7 +2138,8 @@
       :`RAM ${c.ram.kind===1?'address':'data'} pair ${c.ram.a}↔${c.ram.b}, access ${c.ram.access}`;
     const audio=(name,target)=>target.pair?`${name} D${target.pair[0]}↔D${target.pair[1]}`
       :target.dataMask?`${name} ${maskLineNames(target.dataMask)} low`:`${name} off`;
-    return `${vram} (${model})\n${ram}\n${audio('PSG',c.psg)}\n${audio('FM',c.fm)}`;
+    const z80=c.z80Ram.pair?`Z80 RAM Write A${c.z80Ram.pair[0]}↔A${c.z80Ram.pair[1]}`:'Z80 RAM off';
+    return `${vram} (${model})\n${ram}\n${audio('PSG',c.psg)}\n${audio('FM',c.fm)}\n${z80}`;
   }
 
   function refreshCircuitConfigControls() {
@@ -2080,7 +2181,7 @@
     const blob=new Blob([JSON.stringify(config,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob);
     const link=document.createElement('a');
-    link.href=url; link.download='vram-page-md-circuit-v2.json';
+    link.href=url; link.download='vram-page-md-circuit-v3.json';
     document.body.append(link); link.click(); link.remove();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
     $('circuitConfigStatus').textContent='Circuit configuration downloaded. ROM and execution history are not included.';
@@ -2121,6 +2222,10 @@
       return 'The active RAM fault cannot be safely identified or disconnected.';
     if (logicActive && vramFaultActive()) return 'RAM and VRAM faults are both active; no setters were called.';
     const c=config.configuration;
+    if (z80RamApiPresent() && !currentZ80RamState())
+      return 'Z80 RAM runtime state is unavailable; no setters were called.';
+    if (c.z80Ram.pair && (!z80RamApiReady() || !currentZ80RamState()?.supported))
+      return 'This core or profile does not support the requested Z80 RAM bridge.';
     let vram;
     try { vram=validateVramModel(c.vram.modelId,c.vram.mask,c.vram.pair); }
     catch (_) { return 'VRAM capability state is unavailable; no setters were called.'; }
@@ -2148,7 +2253,8 @@
         JSON.stringify(c.vram.pair)!==JSON.stringify(canonical(actualPair()))) return false;
     if (!sameCircuitRam(c.ram,logicActive?activeRamConfiguration:null)) return false;
     return !circuitBridgeNeedsChange(c.psg,psgDataApiReady()?currentPsgDataState():null,psgDataApiReady()) &&
-      !circuitBridgeNeedsChange(c.fm,fmDataApiReady()?currentFmDataState():null,fmDataApiReady());
+      !circuitBridgeNeedsChange(c.fm,fmDataApiReady()?currentFmDataState():null,fmDataApiReady()) &&
+      !circuitBridgeNeedsChange(c.z80Ram,currentZ80RamState(),z80RamApiReady());
   }
 
   function syncCircuitSelectors(config) {
@@ -2168,7 +2274,10 @@
     if (c.fm.pair) {
       $('fmBridgeA').value=String(c.fm.pair[0]); $('fmBridgeB').value=String(c.fm.pair[1]);$('fmLegMode').value='bridge';
     } else $('fmLegMode').value=c.fm.dataMask?'ground':'bridge';
-    updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls();
+    if (c.z80Ram.pair) {
+      $('z80RamBridgeA').value=String(c.z80Ram.pair[0]);$('z80RamBridgeB').value=String(c.z80Ram.pair[1]);
+    }
+    updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls(); refreshZ80RamControls();
   }
 
   function pauseAfterCircuitApplyFailure(domain) {
@@ -2186,10 +2295,13 @@
     const bridgeDescription=(state,name)=>state
       ? `${name} ${state.configured?(Number(state.dataMask||0)?`${maskLineNames(Number(state.dataMask))} low`:`D${state.bridgeA}↔D${state.bridgeB}`):'off'}`
       : `${name} state unavailable`;
-    const actual=`Observed state: ${vramDescription}; tracked RAM ${ram}; ${bridgeDescription(psg,'PSG')}; ${bridgeDescription(fm,'FM')}.`;
+    const z80=currentZ80RamState();
+    const z80Description=!z80RamApiPresent()?'Z80 RAM API absent':!z80?'Z80 RAM state unavailable':
+      z80.configured?`Z80 RAM A${z80.bridgeA}↔A${z80.bridgeB}`:'Z80 RAM off';
+    const actual=`Observed state: ${vramDescription}; tracked RAM ${ram}; ${bridgeDescription(psg,'PSG')}; ${bridgeDescription(fm,'FM')}; ${z80Description}.`;
     const message=`Apply stopped at ${domain}; earlier settings may have changed. ${actual} The staged file is retained and emulation is paused.`;
     $('circuitConfigStatus').textContent=message; stamp(message);
-    updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls();
+    updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls(); refreshZ80RamControls();
   }
 
   function applyStagedCircuitConfiguration() {
@@ -2222,6 +2334,7 @@
     }
     const changePsg=circuitBridgeNeedsChange(c.psg,currentPsg,psgDataApiReady());
     const changeFm=circuitBridgeNeedsChange(c.fm,currentFm,fmDataApiReady());
+    const changeZ80=circuitBridgeNeedsChange(c.z80Ram,currentZ80RamState(),z80RamApiReady());
     const changeRam=!sameCircuitRam(c.ram,logicActive?activeRamConfiguration:null);
     const changeVram=c.vram.modelId!==vramModelId || c.vram.mask!==vramAddressMask ||
       JSON.stringify(c.vram.pair)!==JSON.stringify(canonical(actualPair()));
@@ -2267,6 +2380,12 @@
     if (changeFm) { currentDomain='FM'; mutationStarted=true; }
     if (changeFm && !setFmCircuitTarget(c.fm)) {
       pauseAfterCircuitApplyFailure('FM'); return false;
+    }
+    if (changeZ80) {
+      currentDomain='Z80 RAM';mutationStarted=true;
+      if (!setZ80RamBridge(!!c.z80Ram.pair,c.z80Ram.pair, true)) {
+        pauseAfterCircuitApplyFailure('Z80 RAM');return false;
+      }
     }
     syncCircuitSelectors(config);
     stagedCircuitConfiguration=null;
@@ -2372,6 +2491,7 @@
     const runtimeVramState=vramModelApiReady()?currentVramModelState():null;
     const psgState=currentPsgDataState();
     const fmState=currentFmDataState();
+    const z80RamState=currentZ80RamState();
     const transactionCounts=runtimeVramState?.lastFrameCounts
       ? {...runtimeVramState.lastFrameCounts} : null;
     const data={
@@ -2432,6 +2552,13 @@
         dataMask:Number.isInteger(fmState?.dataMask)?fmState.dataMask:0,
         inputWrites:fmState?.inputWrites ?? '0',
         changedWrites:fmState?.changedWrites ?? '0'},
+      z80RamFault:{schemaVersion:1,available:!!z80RamState,
+        modelVersion:z80RamState?.modelVersion??null,supported:z80RamState?.supported??false,
+        configured:z80RamState?.configured??false,effective:z80RamState?.effective??false,
+        reason:z80RamState?.reason??'state-unavailable',bridgeA:z80RamState?.bridgeA??-1,
+        bridgeB:z80RamState?.bridgeB??-1,activationFrame:z80RamState?.activationFrame??null,
+        ramWrites:z80RamState?.ramWrites??null,changedAddresses:z80RamState?.changedAddresses??null,
+        z80Writes:z80RamState?.z80Writes??null,m68kWrites:z80RamState?.m68kWrites??null},
       vramModelTransitions:vramModelTransitions.map(entry=>({...entry})),
       exportedAt:new Date().toISOString()
     };
@@ -2772,7 +2899,7 @@
     refreshVramTelemetry();
     refreshLogicMetrics();
     refreshPsgDataControls();
-    refreshFmDataControls();
+    refreshFmDataControls(); refreshZ80RamControls();
   }
 
   function animationFrame(time) {
@@ -2820,7 +2947,7 @@
     $('soundBtn').textContent=audioOn?'Mute Sound':'Enable Sound';
     $('soundBtn').setAttribute('aria-pressed',String(audioOn));
     refreshPsgDataControls();
-    refreshFmDataControls();
+    refreshFmDataControls(); refreshZ80RamControls();
     stamp(audioOn?'Audio enabled (FM + PSG output)':'Audio muted');
   }
 
@@ -2884,7 +3011,7 @@
       $('disconnectAllFaultsStatus').textContent='No all-domain disconnect has been attempted for this cartridge.';
       accumulated=0;lastFrame=0;resetStats();
       refreshPsgDataControls();
-      refreshFmDataControls();
+      refreshFmDataControls(); refreshZ80RamControls();
       const hashPromise=cleanRestart && romIdentity?.bytes===bytes
         ? romIdentity.hashPromise
         : sha256Hex(bytes).catch(error=>{
@@ -3083,6 +3210,11 @@
   }
 
   function setup() {
+    for (const id of ['z80RamBridgeA','z80RamBridgeB'])
+      $(id).innerHTML=Array.from({length:13},(_,bit)=>`<option value="${bit}">A${bit}</option>`).join('');
+    $('z80RamBridgeA').value='0';$('z80RamBridgeB').value='1';
+    $('z80RamBridgeApply').addEventListener('click',()=>setZ80RamBridge(true));
+    $('z80RamBridgeRemove').addEventListener('click',()=>setZ80RamBridge(false));
     for (const id of ['psgBridgeA','psgBridgeB']) {
       const select=$(id);
       for (let bit=0;bit<8;bit++) {
