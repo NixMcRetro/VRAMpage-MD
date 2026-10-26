@@ -1266,7 +1266,8 @@ class BrowserLogicTests(unittest.TestCase):
         with self.page.expect_download() as info:
             self.page.locator("#circuitConfigDownload").click()
         saved = json.loads(Path(info.value.path()).read_text())
-        self.assertEqual(saved, payload)
+        self.assertEqual(saved, {**payload,"schemaVersion":3,
+            "configuration":{**payload["configuration"],"z80Ram":{"pair":None}}})
         self.assertEqual(set(saved), {"format", "schemaVersion", "configuration"})
         self.assertNotIn("rom", saved)
         self.assertNotIn("inputWrites", json.dumps(saved))
@@ -1836,7 +1837,7 @@ class BrowserLogicTests(unittest.TestCase):
         pairs=self.page.locator("[data-ram-frame-pair]")
         self.assertEqual(pairs.count(),10)
         self.assertEqual(self.page.locator("#randomRamPulseBtn").count(),0)
-        self.assertEqual(self.page.locator(".ram-frame-pairs > strong").inner_text(),"RAM Write")
+        self.assertEqual(self.page.locator("[aria-label=\"RAM write pairs\"] > strong").inner_text(),"RAM Write")
         expect(self.page.locator('#ramWriteMode')).to_have_value('pulse')
         rows=self.page.evaluate("""() => [...document.querySelectorAll('[data-ram-frame-pair]')].map(button=>{
           const rect=button.getBoundingClientRect();return {text:button.textContent,x:rect.x,right:rect.right,y:rect.y};
