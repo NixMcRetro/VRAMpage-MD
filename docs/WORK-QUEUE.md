@@ -1,5 +1,35 @@
 # Development work queue
 
+## PR #65 Verified Delivery — 26 October 2026 (Sydney)
+
+[PR #65](https://github.com/NixMcRetro/VRAMpage-MD/pull/65) merged as
+`88cb73ebffecfe6c233b647ec979785c9c05b377`; tree exactly matches reviewed head
+`45a2ac4943d7fcccccdda04f19336eec809c8a6e`. All seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40261666973)
+and all seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40262214621)
+pass. [Updated runnable review build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40262214621/artifacts/12624119703).
+
+The final requirement is no dimming of ANY Randomiser button during RAM Write,
+including VRAM text. The native VRAM safety interlock stays in place; its RAM-blocked
+visual state now matches its ordinary enabled appearance. Genuine ROM/profile
+unavailability keeps ordinary unavailable styling. No emulator or routing change.
+Regression `test_ram_write_keeps_all_randomiser_button_styles_unchanged` compares
+PSG/FM/VRAM text and text-fill colour, opacity, fill, border and appearance before,
+during and after both hold/eight-frame modes in light/dark themes. Blocked clicks,
+unchanged VRAM calls and post-contact availability are retained. Independent review
+approved; focused Chromium/WebKit and all full CI browser suites pass.
+
+Canonical runnable checkout refreshed. Local main ZIP has 714 unique paths, exact
+source/version/app/style identity and unchanged core bytes; SHA256
+`f2462a2e6cdba004c033a61fb50852b88f433393e254e22223aaa7f1825ba9bf`.
+Evidence: `/workspace/scratch/randomiser-ram-appearance`. Public v0.4.1 release
+name, target, timestamp and both asset digests rechecked unchanged. No McRetro.net
+changes or release publication. PDF remains solely page-length feedback.
+
+Next: user confirms native Mac Safari now leaves all three Randomiser buttons
+fully unchanged during RAM Write. Do not reintroduce a RAM-dependent dimmed label.
+
+
 ## Randomiser Appearance During RAM Write — 26 October 2026 (Sydney)
 
 User clarifies that RAM Write must not dim any Randomiser button, including the
