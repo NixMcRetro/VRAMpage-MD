@@ -1,5 +1,14 @@
 # VRAMpage MD roadmap
 
+## Video Encoder Research — 27 October 2026
+
+The user requested research while reviewing the Z80 RAM build. The
+[CXA1145 report](docs/VIDEO-ENCODER-RESEARCH.md) separates analogue RGB/composite
+signal faults from memory corruption, compares related encoders and proposes
+bounded acceptance evidence. RGB input contacts are the smallest candidate;
+composite sync/subcarrier behaviour needs a receiver/timing model. No encoder
+implementation, feature-freeze exception, release or deployment is authorized.
+
 ## Authorized Z80 RAM Write Bridge — Development Source
 
 The user approved one bounded extension after the research: an off-by-default,
