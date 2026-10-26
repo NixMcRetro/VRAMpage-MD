@@ -31,8 +31,15 @@ Evidence logs stay under
 `/workspace/scratch/session-checkpoint-ui`; candidate source, runtime and normal
 builds are retained in the isolated worktrees. No integrated release is claimed.
 
+Initial [PR #63 CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40254368579)
+passed six of seven checks. Firefox's sole failure was the new mock-image oracle:
+the fixture filled alpha with80 as well as RGB80, so Firefox composited translucent
+pixels to26. Production pixels are opaque. The fixture now sets alpha255 while
+keeping the exact RGB80 assertion; isolated Chromium/WebKit rechecks pass. Product
+source/core and thresholds are unchanged. A new complete CI run is required.
+
 Public v0.4.1 tag/assets remain unchanged; no version bump or McRetro.net action.
-Next: open the focused PR, require all seven PR
+Next: finish PR #63 CI, require all seven PR
 checks before merge, verify all seven main checks, and record exact delivery links.
 Native Mac audible/physical and universal mapper compatibility remain unverified.
 

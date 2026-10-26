@@ -163,12 +163,19 @@ class BrowserLogicTests(unittest.TestCase):
 
     def test_checkpoint_save_restore_no_ticks_and_immediate_saved_image(self):
         page=self.checkpoint_page()
-        page.evaluate("mockCore.core.HEAPU8.fill(80,0,640*480*4)")
+        page.evaluate("""() => {
+            window.setCheckpointTestImage=value=>{
+                const pixels=mockCore.core.HEAPU8.subarray(0,640*480*4);
+                pixels.fill(value);
+                for(let i=3;i<pixels.length;i+=4)pixels[i]=255;
+            };
+            setCheckpointTestImage(80);
+        }""")
         ticks=page.evaluate("mockCore.ticks")
         page.locator("#saveCheckpointBtn").click()
         expect(page.locator("#checkpointStatus")).to_contain_text("Saved Frame")
         expect(page.locator("#pauseBtn")).to_have_text("Pause")
-        page.evaluate("mockCore.core.HEAPU8.fill(170,0,640*480*4)")
+        page.evaluate("setCheckpointTestImage(170)")
         page.locator("#randomFmBtn").click()
         page.locator("#restoreCheckpointBtn").click()
         expect(page.locator("#pauseBtn")).to_have_text("Resume")
