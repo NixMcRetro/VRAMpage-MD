@@ -1,5 +1,11 @@
 # Changelog
 
+## Hardware Research — 27 October 2026
+
+- Map pinned Z80 RAM, fetch, bus ownership and reset paths; specify a separate write-only RAM alias candidate and meaningful original-cartridge tests before implementation.
+- Compare physical HM53461 serial-buffer capabilities, a pinned MiSTer Genesis revision and current VRAM scheduling; identify missing timing evidence and bounded fixtures.
+- Record a candidate HM65256B pin map and PAL VA6.5 reference while leaving target NTSC VA6 validation open. No runtime, version, release or website changes.
+
 ## Repository Presentation — 27 October 2026
 
 - Add restrained README section icons, a native GitHub test-ROM Tip and a chip/features table; preserve all links, credits, terms and release assets.

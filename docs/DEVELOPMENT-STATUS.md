@@ -1,16 +1,97 @@
 # Development status and continuation checkpoint
 
-## README Visual Polish — 27 October 2026 (Sydney)
+## Hardware Research Checkpoint — 27 October 2026 (Sydney)
 
-The requested presentation pass adds restrained section icons, a native GitHub
-Tip for the original test-ROM links and a compact chip/features table. Every
-existing link target, source credit and licence term is preserved. The A11–A15
-write contacts are shown only in the SRAM row. No app, version, release, asset,
-website or release-curation changes are included.
+The user authorized independent work on #73–#75, starting with the easier
+bounded Z80 scope. Research is based on unchanged main
+`1dc30d654d156653e5fae49cb1f667355e440131`, the existing pinned core and
+primary manufacturer/Sega scans. Historical issue-housekeeping checkpoints
+are carried forward without repeating delivered RAM/VRAM/audio experiments.
 
-GitHub's Markdown renderer confirmed the Tip/table markup. Focused existing
-documentation, versioning and curation checks passed. Independent presentation
-review and PR/main CI are the remaining integration gates.
+- [Z80 RAM research](Z80-RAM-RESEARCH.md): ownership/access/fetch/reset map,
+  bounded write-only address-alias proposal, counters/lifecycle and future
+  acceptance tests. Defer arbitration injection; no runtime feature added.
+- [VRAM timing research](VRAM-TIMING-RESEARCH.md): HM53461 component evidence,
+  MiSTer `adc0c42cfb1fa5d484cc8566767f7d68982bc44a` comparison, identified
+  FIFO/render/serial gaps and fixtures. No physical timing implementation.
+- [VA6 validation](VA6-RAM-VALIDATION.md): candidate HM65256B device pins
+  and PAL VA6.5 topology; requested NTSC VA6 still unverified. Keep #73 open.
+
+Existing actual-core Z80 PSG/FM tests passed; proposed-model tests are specified,
+not executed against a new model. Independent Luna High research review found
+no blocker in Z80/VRAM reports; its DMA function/citation correction is applied.
+VA6 table/qualification review also found no blocker; primary PDF visual checks
+were performed by the coordinator, not independently repeated by the reviewer.
+Final source checks, document link audit and PR/main CI are pending at this
+committed checkpoint. Evidence: `/workspace/scratch/hardware-research/`.
+Preserve all public releases and McRetro.net. After integration, close #74/#75
+as research completed with evidence links, leaving implementation a separate
+feature decision and #73 awaiting matching board evidence.
+
+## Milestone Issue Housekeeping Completed — 27 October 2026 (Sydney)
+
+After the user approved the audit recommendation, the remaining work was split
+into three focused GitHub follow-ups before the old trackers were closed:
+
+| Delivered Milestone | Remaining Work |
+| --- | --- |
+| [#1 Work RAM](https://github.com/NixMcRetro/VRAMpage-MD/issues/1), closed | [#73 Verify Model 1 VA6 Work RAM Devices and Pin Mapping](https://github.com/NixMcRetro/VRAMpage-MD/issues/73) |
+| [#2 Transaction VRAM](https://github.com/NixMcRetro/VRAMpage-MD/issues/2), closed | [#74 Research VRAM Serial Access and Scanline Timing](https://github.com/NixMcRetro/VRAMpage-MD/issues/74) |
+| [#3 FM/PSG Audio](https://github.com/NixMcRetro/VRAMpage-MD/issues/3), closed | [#75 Research Z80 Sound RAM and Bus Arbitration Faults](https://github.com/NixMcRetro/VRAMpage-MD/issues/75) |
+
+Each original title/body is preserved, with an appended resolution linking the
+delivered implementation, test/evidence records and its follow-up. Closures mark
+the delivered software milestones; physical mapping, precise timing and the
+separate Z80 RAM/arbitration fault models are not represented as completed.
+The new issues have explicit scope, sources and acceptance criteria, with no
+implementation, release-version or priority commitment beyond the current plan.
+
+GitHub readback verified all six bodies/titles/states and the three new open
+issues. No comments were posted. Source behavior and releases were unchanged;
+physical experiments were not rerun. The prior source/main CI evidence remains valid. Drafts and
+before/after metadata are retained in `/workspace/scratch/issue-housekeeping/`.
+Next: use #73–#75 for the remaining optional research; do not repeat the delivered
+RAM/VRAM/FM/PSG milestones or displace stabilization without a new scoped decision.
+
+## README Polish and Issue Audit Verified — 27 October 2026 (Sydney)
+
+[PR #72](https://github.com/NixMcRetro/VRAMpage-MD/pull/72) merged as
+`1dc30d654d156653e5fae49cb1f667355e440131`; its tree exactly matches reviewed
+head `0df478b2626e14b9c3bb663b9cc7f34c131d4243`. All seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40382903048)
+and all seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40383854322)
+passed. GitHub's Markdown renderer accepted the heading icons, native test-ROM
+Tip and chip table. All existing links, credits and terms are retained; the
+26 focused documentation/versioning/curation checks and independent review passed.
+No app, version, release, asset, curator or website changes were made.
+The CLI watcher hit a credential error on an annotations lookup; the connected
+GitHub app independently confirmed the completed main run and all seven jobs.
+
+The user then requested a read-only audit of the three open milestone issues:
+
+- [#1](https://github.com/NixMcRetro/VRAMpage-MD/issues/1): Work RAM access faults,
+  controls/diagnostics and the bounded attract-mode divergence criterion are
+  delivered. [Recorded proof](RAM-STATUS-FOLLOWUP.md) preserves matching demo input
+  phase with sustained player-trajectory differences. Verified VA6 physical
+  SRAM-device/pin mapping remains unfulfilled; no guaranteed visual wall-sticking
+  or electrical equivalence is established.
+- [#2](https://github.com/NixMcRetro/VRAMpage-MD/issues/2): Logical per-access VRAM
+  transactions, CPU/Z80/DMA coverage and cache coherence shipped in v0.3.0 via
+  [PR #43](https://github.com/NixMcRetro/VRAMpage-MD/pull/43). Frame mode is an
+  intentional retained fallback/default. Physical serial-access waveforms and
+  cycle/beam timing remain outside the documented model.
+- [#3](https://github.com/NixMcRetro/VRAMpage-MD/issues/3): FM/PSG pre-synthesis
+  input faults and both CPU write routes shipped in v0.4.0 via
+  [PR #46](https://github.com/NixMcRetro/VRAMpage-MD/pull/46). Actual Z80 audio-write
+  tests remain in current CI. Z80 sound-driver RAM/arbitration fault models remain
+  explicitly deferred; physical/cycle fidelity and universal recovery are unproven.
+
+Recommendation: retire the delivered software-milestone wording and track any
+remaining VA6 validation, serial/timing research or Z80 extensions as focused
+follow-ups. Do not reimplement the shipped RAM/VRAM/FM/PSG work. No issue was
+commented on, edited or closed. The audit reused pinned evidence/current code and
+passing CI; it did not repeat commercial-cartridge or physical experiments.
+Evidence/logs: `/workspace/scratch/readme-visual-polish/`.
 
 ## Repository Cleanup Verified — 27 October 2026 (Sydney)
 

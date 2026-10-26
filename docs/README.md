@@ -58,6 +58,10 @@ The v0.4.1 workbench extends optional, independent
 
 - [Audio bending](AUDIO-BENDING.md): signal paths, bus ownership, controls, recovery, browser scheduling and evidence limits.
 
+- [Z80 Sound RAM Research](Z80-RAM-RESEARCH.md): verified access/ownership map, proposed write-only alias model and future test gates; no new runtime feature.
+- [VRAM Timing Research](VRAM-TIMING-RESEARCH.md): primary memory-device evidence, pinned MiSTer/core comparison and limits before physical serial/raster modelling.
+- [VA6 Work RAM Validation](VA6-RAM-VALIDATION.md): candidate manufacturer pin map and PAL VA6.5 reference; requested NTSC VA6 mapping remains unverified.
+
 - [Circuit configuration files](CIRCUIT-CONFIGURATIONS.md): development save/preview/apply format, capability checks and failure semantics.
 
 - [Compact chip workbench](CHIP-WORKBENCH.md): chip-local leg controls, audio masks, layout and model limits.
