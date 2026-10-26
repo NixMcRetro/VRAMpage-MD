@@ -25,6 +25,10 @@ HELPER_FILES = (
     "fm_data_fault_core.c",
     "fm_data_fault_runtime.c",
     "fm_data_fault_api.js",
+    "z80_ram_bridge_runtime.c",
+    "z80_ram_bridge_runtime.h",
+    "z80_ram_bridge_core.h",
+    "z80_ram_bridge_api.js",
     "vram_fault_patch.c",
     "vram_transaction.c",
     "vram_transaction.h",
@@ -52,6 +56,7 @@ PATCHED_FILES = (
     "src/main/c/core/vram_transaction_render.h",
     "src/main/c/core/m68k/m68kcpu.h",
     "src/main/c/core/memz80.c",
+    "src/main/c/core/mem68k.c",
     "src/main/c/core/vdp_ctrl.c",
     "src/main/c/core/vram_transaction.h",
     "src/main/c/core/vram_transaction_runtime.h",
@@ -147,6 +152,7 @@ def patch_cmake(cmake: Path) -> None:
         'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/vram_transaction_api.js")',
         'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/psg_data_fault_api.js")',
         'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/fm_data_fault_api.js")',
+        'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/z80_ram_bridge_api.js")',
     )
     if any(flag in text for flag in flags):
         raise RuntimeError("Pinned source already contains runtime profile flags")

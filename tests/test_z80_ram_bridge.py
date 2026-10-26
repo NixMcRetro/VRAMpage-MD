@@ -1,0 +1,30 @@
+from pathlib import Path
+import shutil
+import os
+import subprocess
+import tempfile
+import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+
+class Z80RamBridgeNative(unittest.TestCase):
+    def test_all_local_addresses_and_pairs_under_sanitizers(self):
+        compiler = shutil.which("clang") or shutil.which("cc")
+        if compiler is None:
+            self.skipTest("C compiler unavailable")
+        with tempfile.TemporaryDirectory(prefix="z80-ram-native-") as tmp:
+            binary = Path(tmp) / "bridge-smoke"
+            subprocess.run([compiler, "-std=c11", "-Wall", "-Wextra", "-Werror",
+                            "-fsanitize=address,undefined", "-I", str(ROOT / "scripts"),
+                            str(ROOT / "tests/z80_ram_bridge_smoke.c"), "-o", str(binary)], check=True)
+            env = os.environ.copy()
+            env["ASAN_OPTIONS"] = "detect_leaks=0"
+            subprocess.run([str(binary)], check=True, env=env)
+
+    def test_runtime_hooks_are_runtime_guarded(self):
+        patcher = (ROOT / "scripts/patch_core.py").read_text()
+        self.assertIn("#ifdef VRAM_TX_RUNTIME\\n      z80_ram_bridge_store_z80", patcher)
+        self.assertIn("#ifdef VRAM_TX_RUNTIME\\n      z80_ram_bridge_store_m68k", patcher)
+
+if __name__ == "__main__":
+    unittest.main()

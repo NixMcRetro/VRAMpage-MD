@@ -100,6 +100,9 @@ static int session_checkpoint_state_bound_ok(void)
     return bound != 0 && bound <= STATE_SIZE && bound <= 0x100000u;
 }
 
+extern int get_z80_ram_bridge_enabled(void);
+extern int set_z80_ram_bridge_c(double, double, double);
+
 static int session_checkpoint_faults_clear(void)
 {
     return !work_ram_logic_applies(WORK_RAM_FAULT_APPLY_READ) &&
@@ -107,6 +110,7 @@ static int session_checkpoint_faults_clear(void)
            !get_logic_address_mask() && get_logic_pulse_state() != WORK_RAM_PULSE_ARMED &&
            !get_psg_data_bridge_enabled() && !get_psg_data_mask() &&
            !get_fm_data_bridge_enabled() && !get_fm_data_mask() &&
+           !get_z80_ram_bridge_enabled() &&
            !get_vram_fault_model_effective() && !get_vram_address_mask() &&
            get_vram_short_a() < 0 && get_vram_short_b() < 0;
 }

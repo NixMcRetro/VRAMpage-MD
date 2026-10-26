@@ -32,6 +32,7 @@ def stage_source(vendor: Path, target: Path):
              "vram_transaction.h", "vram_transaction_core.h", "vram_transaction_runtime.h",
              "vram_transaction_render.h",
              "work_ram_fault.c", "work_ram_fault.h", "work_ram_runtime.c", "work_ram_runtime.h",
+             "z80_ram_bridge_runtime.c", "z80_ram_bridge_runtime.h", "z80_ram_bridge_core.h", "z80_ram_bridge_api.js",
              "psg_data_fault.h", "psg_data_fault_core.c", "psg_data_fault_runtime.c",
              "fm_data_fault.h", "fm_data_fault_core.c", "fm_data_fault_runtime.c", "fm_data_fault_api.js")
     for name in names:
@@ -88,6 +89,8 @@ def build(staged: Path, diagnostic: bool, alt_renderer: bool = False, runtime: b
         flags.insert(0, f'add_compile_flags(LD "--pre-js={psg_api_js}")')
         fm_api_js = ROOT / "scripts/fm_data_fault_api.js"
         flags.insert(0, f'add_compile_flags(LD "--pre-js={fm_api_js}")')
+        z80_api_js = ROOT / "scripts/z80_ram_bridge_api.js"
+        flags.insert(0, f'add_compile_flags(LD "--pre-js={z80_api_js}")')
     if ym3438:
         config = staged / "src/main/c/wasm/config.c"
         config_text = config.read_text()

@@ -113,6 +113,19 @@ async function main() {
 
   const off = await createCore(runtimePath, rom);
   assert.equal(typeof off._set_psg_data_bridge, 'function');
+  assert.equal(typeof off._set_z80_ram_bridge, 'function');
+  assert.equal(typeof off._get_z80_ram_bridge_state, 'function');
+  const initialRamState = off._get_z80_ram_bridge_state();
+  assert.deepEqual(initialRamState, {modelVersion:'z80-ram-write-address-pair-v1',supported:true,configured:false,effective:false,reason:'disabled',bridgeA:-1,bridgeB:-1,ramWrites:'0',changedAddresses:'0',z80Writes:'0',m68kWrites:'0',activationFrame:0});
+  assert.equal(off._set_z80_ram_bridge(1, 0, 0), 1, 'duplicate lines are rejected');
+  assert.equal(off._set_z80_ram_bridge(1, 0, 13), 1, 'out-of-range lines are rejected');
+  assert.equal(off._set_z80_ram_bridge(1.5, 0, 1), 1, 'noninteger enable is rejected');
+  assert.deepEqual(off._get_z80_ram_bridge_state(), initialRamState, 'invalid activation is atomic');
+  assert.equal(off._set_z80_ram_bridge(1, 0, 1), 0);
+  assert.deepEqual(off._get_z80_ram_bridge_state(), {...initialRamState,configured:true,effective:true,reason:'active',bridgeA:0,bridgeB:1});
+  assert.equal(off._set_z80_ram_bridge(0, -1, -1), 0, 'runtime disconnect is accepted');
+  assert.deepEqual(off._get_z80_ram_bridge_state(), initialRamState, 'disconnect resets configuration and counters');
+  assert.ok(off._get_z80_ram_ref() > 0, 'actual core exposes backing Z80 RAM to the test');
   const offSamples = nextAudio(off);
   const offState = off._get_psg_data_bridge_state();
   assert.equal(offSamples.count, baseline.count, 'runtime-off sample count matches normal');
