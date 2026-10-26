@@ -1,23 +1,43 @@
 # Development work queue
 
-## SRAM (Work RAM) Label and Release Readiness — 26 October 2026 (Sydney)
+## Chip Label Follow-up — 26 October 2026 (Sydney)
 
-User accepts the PR #66 recovery controls as seeming OK and has no further
-practical testing to add. This records the reported Mac acceptance without
-claiming native Firefox, physical gamepad or universal cartridge coverage.
+User accepts the preceding SRAM label build and requests abbreviated SRAM inside
+the chip, SRAM (Work RAM) above it, and VRAM (Video RAM) above the VRAM chip.
+This is a two-label HTML adjustment; chip internals, fault behavior, identifiers,
+exports and release inputs are unchanged. Verify responsive layout/source checks,
+independent review and all seven PR/main checks. Preserve v0.4.1/McRetro.net.
 
-Rename the chip heading/body, accessible names and advanced-panel heading to
-SRAM (Work RAM). Preserve WRAM identifiers, experiment schemas, all memory models
-and cartridge save SRAM behavior. Acceptance: readable labels within existing
-responsive bounds, source checks and all seven PR/main CI checks.
+## PR #67 Verified Delivery — 26 October 2026 (Sydney)
 
-Checkpoint proof/implementation and ordered recovery are complete (PR #63/#66).
-Correct stale release-blocker text instead of repeating their completed work.
-Next release-candidate gate: align VERSION, UI/export labels, publisher workflow,
-package names and release notes for v0.5.0, then verify matching source/core,
-checksums and a new tag. The existing publisher is fixed to v0.4.1 and must not
-be dispatched for the next version. No release/tag/version changes in this slice;
-public v0.4.1 and McRetro.net remain untouched.
+[PR #67](https://github.com/NixMcRetro/VRAMpage-MD/pull/67) merged as
+`380e517eb85af7a344c1fb723b981fb41a452729`; source tree exactly matches tested
+head `1ac07a0553b7c55fb18f9d8fe625dd791fe0a256`. All seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40285842745)
+and all seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40286496702)
+passed. [Runnable build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40286496702/artifacts/12634666300).
+
+Chip heading/body, accessible names and advanced-panel heading now read
+SRAM (Work RAM); README navigation matches. WRAM schema identifiers, native
+faults, recovery behavior and cartridge save SRAM are unchanged. Independent
+GPT-6 read-only review found no blocker. Local source106 passed (two unchanged
+SDK/vendor classes skipped), Chromium display7 passed, and the longer chip name
+was contained at all nine existing desktop/mobile viewport sizes.
+
+User reports PR #66 recovery seems OK and cannot practically test further;
+record acceptance without inventing native Firefox/physical-gamepad coverage.
+Corrected stale checkpoint-proof and pre-merge blockers already completed in
+PR #63/#66. Next bounded release-candidate task is version alignment across
+VERSION, site/index.html, site/app.js, build-website.yml, publish-local-release.yml,
+version/browser/comparison fixtures and current release documentation. Then test
+and verify a matching new-version package/tag/checksum. Do not dispatch the
+publisher still fixed to v0.4.1 or replace the immutable public release.
+
+Canonical runnable checkout refreshed. Main ZIP has 714 unique paths and exact
+main source/version/UI/core identity; SHA256
+`6d171380cae152e104a97eadf8d4886119333bce7b769528eb2fe7ecd26330f0`.
+Public v0.4.1 release name, target, timestamp and asset digests verified unchanged.
+No McRetro.net changes. Evidence: `/workspace/scratch/sram-label`.
 
 ## PR #66 Verified Delivery — 26 October 2026 (Sydney)
 
