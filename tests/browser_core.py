@@ -509,9 +509,11 @@ class ActualCoreBrowserTests(unittest.TestCase):
                                              'scheduled audio lead stays within the 200 ms cap plus tolerance')
 
                     suspended = page.evaluate('''async () => {
+                        await window.testAudioContext.suspend();
+                        const stateAtSuspension = window.testAudioContext.state;
+                        // suspend() can leave rendering active until its promise resolves.
                         const before = {created: window.__audioScheduleProbe.created,
                             connected: window.__audioScheduleProbe.connected};
-                        await window.testAudioContext.suspend();
                         const frame = testCore._get_logic_frame();
                         await new Promise(resolve => {
                             const check = () => testCore._get_logic_frame() >= frame + 60
@@ -520,10 +522,14 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         });
                         const during = window.__audioScheduleProbe.created;
                         const connected = window.__audioScheduleProbe.connected;
+                        const stateAfterFrames = window.testAudioContext.state;
                         await window.testAudioContext.resume();
                         const resumeStartCount = window.__audioScheduleProbe.starts.length;
-                        return {before, during, connected, resumeStartCount};
+                        return {before, during, connected, resumeStartCount,
+                            stateAtSuspension, stateAfterFrames};
                     }''')
+                    self.assertEqual(suspended['stateAtSuspension'], 'suspended')
+                    self.assertEqual(suspended['stateAfterFrames'], 'suspended')
                     self.assertLessEqual(suspended['during'] - suspended['before']['created'], 1,
                                          'suspended context does not accumulate new source buffers')
                     self.assertEqual(suspended['connected'], 0,

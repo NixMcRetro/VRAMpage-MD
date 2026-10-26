@@ -32,9 +32,23 @@ remaining blocker; its BigInt boundary-coverage request is now tested and passed
   the source tree to preserve the package archive guard.
   This is one synthetic workload, not a universal performance claim.
 
-Next: open the focused PR, require all seven source/browser/build/package checks
-before merge, then verify exact merged source and all seven main checks. Preserve
-all 18 releases and provide the resulting development browser build. No physical
+[PR #77](https://github.com/NixMcRetro/VRAMpage-MD/pull/77) is open. Its first
+complete [CI run](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40416747217)
+passed six jobs, including all three full browser logic/layout suites, actual
+WASM/build and packaged WebKit. Packaged Firefox found a pre-existing test race:
+the audio-source baseline was taken before asynchronous suspension completed.
+The test-only fix moves the baseline after suspension, asserts suspended state
+at both endpoints and retains the same buffer bound. Focused actual Chromium
+passed; a delayed native-suspend probe reproduced the old-order failure and
+passed with the fix on follow-up. An earlier after-probe stopped at the unchanged
+startup audio-lead assertion before suspension; its failure log is retained.
+Independent specialist review approved the test-only fix. The
+compressed performance record is linked from immutable Git history rather than
+nested inside the app package; local package creation and ROM-free checks pass.
+
+Next: require all seven final PR checks before merge, then verify exact merged
+source and all
+seven main checks. Preserve all 18 releases and provide the development build. No physical
 board, commercial gameplay or audible listening claim. Logs:
 `/workspace/scratch/z80-ram-write/`. After delivery, return to stability reports;
 #73 still requires matching NTSC VA6 board evidence.
