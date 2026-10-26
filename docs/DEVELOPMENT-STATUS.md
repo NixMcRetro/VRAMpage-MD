@@ -13,8 +13,10 @@ background, border and appearance before, during and after both held and eight-f
 RAM Write contacts, in light/dark themes. It also verifies native disabled state,
 blocked clicks and unchanged VRAM calls. No emulator or fault-routing change.
 The PDF remains page-length feedback only; no layout changes are included.
-Focused browser/source checks and independent review precede required seven PR
-and seven main checks. Preserve v0.4.1 and McRetro.net.
+Focused Chromium6.097s and WebKit12.829s pass all four mode/theme comparisons.
+Source106 PASS15.186s (two unchanged SDK/vendor classes skipped). Independent
+review approved2178e7c with no blockers. Required seven PR/main checks remain.
+Preserve v0.4.1 and McRetro.net.
 
 
 ## PR #64 Verified Delivery — 26 October 2026 (Sydney)
