@@ -1,5 +1,22 @@
 # Development work queue
 
+## Randomiser Appearance During RAM Write — 26 October 2026 (Sydney)
+
+User clarifies that RAM Write must not dim any Randomiser button, including the
+VRAM label. PR #64's muted-label treatment did not meet that requirement.
+The fix keeps the native VRAM interlock and existing preflight guards while using
+normal text colour specifically when a Work RAM fault/contact/pulse blocks VRAM.
+Missing-ROM/profile failures keep the ordinary unavailable styling.
+
+Acceptance compares PSG, FM and VRAM computed text/text-fill colour, opacity,
+background, border and appearance before, during and after both held and eight-frame
+RAM Write contacts, in light/dark themes. It also verifies native disabled state,
+blocked clicks and unchanged VRAM calls. No emulator or fault-routing change.
+The PDF remains page-length feedback only; no layout changes are included.
+Focused browser/source checks and independent review precede required seven PR
+and seven main checks. Preserve v0.4.1 and McRetro.net.
+
+
 ## PR #64 Verified Delivery — 26 October 2026 (Sydney)
 
 [PR #64](https://github.com/NixMcRetro/VRAMpage-MD/pull/64) merged as

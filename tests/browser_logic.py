@@ -2173,46 +2173,49 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertEqual(self.page.evaluate('mockCore.vramModel.calls.length'),vram_calls,
                          'zero remains a keyboard-target selector while the RAM button is focused')
 
-    def test_vram_randomiser_disabled_appearance_matches_other_chips(self):
+    def test_ram_write_keeps_all_randomiser_button_styles_unchanged(self):
         for theme in ['light','dark']:
-            with self.subTest(theme=theme):
-                page=self.new_page(circuit_config=True)
-                page.emulate_media(color_scheme=theme)
-                expect(page.locator('#powerLabel')).to_have_text('WAITING FOR ROM')
-                style="button=>({disabled:button.disabled,opacity:getComputedStyle(button).opacity,background:getComputedStyle(button).backgroundColor,borderStyle:getComputedStyle(button).borderStyle,color:getComputedStyle(button).color,appearance:getComputedStyle(button).appearance})"
-                styles=[page.locator(selector).evaluate(style)
-                        for selector in ['#randomPsgBtn','#randomFmBtn','#randomVramBtn']]
-                self.assertTrue(all(item['disabled'] for item in styles))
-                self.assertEqual(styles[0],styles[1])
-                self.assertEqual(styles[1],styles[2])
-                self.assertEqual(styles[2]['appearance'],'none')
-                self.load_rom(page)
-                button=page.locator('#randomVramBtn')
-                enabled=button.evaluate(style)
-                page.locator('#ramWriteMode').select_option('hold')
-                pair=page.locator('[data-ram-frame-pair="10,11"]')
-                pair.hover();page.mouse.down()
-                page.evaluate("window.__vramRandomClicks=0;document.querySelector('#randomVramBtn').addEventListener('click',()=>window.__vramRandomClicks++)")
-                before=page.evaluate('mockCore.vramModel.calls.length')
-                snapshot=button.evaluate("button=>({disabled:button.disabled,active:button.matches(':active'),ariaPressed:button.getAttribute('aria-pressed'),className:button.className,title:button.title,opacity:getComputedStyle(button).opacity,background:getComputedStyle(button).backgroundColor,borderStyle:getComputedStyle(button).borderStyle})")
-                self.assertTrue(snapshot['disabled'],snapshot)
-                self.assertFalse(snapshot['active'],snapshot)
-                self.assertNotEqual(snapshot['ariaPressed'],'true')
-                self.assertEqual(snapshot['title'],'Disconnect the active Work RAM fault first.')
-                self.assertEqual(snapshot['borderStyle'],'solid',snapshot)
-                self.assertEqual(snapshot['opacity'],'1',snapshot)
-                self.assertEqual(snapshot['background'],enabled['background'])
-                self.assertNotEqual(button.evaluate(style)['color'],enabled['color'])
-                button.evaluate('button=>button.click()')
-                self.assertEqual(page.evaluate('window.__vramRandomClicks'),0)
-                self.assertTrue(page.evaluate('mockCore.logic.active'))
-                self.assertEqual(page.evaluate('mockCore.vramModel.calls.length'),before)
-                if OPTIONS.artifacts:
-                    page.screenshot(path=str(OPTIONS.artifacts / f'{OPTIONS.browser}-{theme}-randomiser-during-wram-hold.png'),full_page=True)
-                page.mouse.up()
-                expect(button).to_be_enabled()
-                self.assertEqual(button.evaluate(style)['color'],enabled['color'])
-                page.close()
+            for mode in ['hold','pulse']:
+                with self.subTest(theme=theme,mode=mode):
+                    page=self.new_page(circuit_config=True,manual_frames=True)
+                    page.emulate_media(color_scheme=theme)
+                    buttons=page.locator('#randomPsgBtn, #randomFmBtn, #randomVramBtn')
+                    style="buttons=>buttons.map(button=>{const s=getComputedStyle(button);return {opacity:s.opacity,background:s.backgroundColor,border:s.borderColor,borderStyle:s.borderStyle,color:s.color,textFill:s.webkitTextFillColor,appearance:s.appearance};})"
+                    before_rom=buttons.evaluate_all(style)
+                    self.assertEqual(before_rom[0],before_rom[1])
+                    self.assertEqual(before_rom[1],before_rom[2])
+                    page.locator('#romFile').set_input_files({'name':'synthetic.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
+                    expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+                    page.evaluate('stepTestFrame();stepTestFrame()')
+                    page.locator('#ramWriteMode').select_option(mode)
+                    idle=buttons.evaluate_all(style)
+                    self.assertEqual(idle[0],idle[1])
+                    self.assertEqual(idle[1],idle[2])
+                    pair=page.locator('[data-ram-frame-pair="10,11"]')
+                    if mode=='hold':
+                        pair.hover();page.mouse.down()
+                    else:
+                        pair.click()
+                    button=page.locator('#randomVramBtn')
+                    expect(button).to_be_disabled()
+                    expect(page.locator('#randomPsgBtn')).to_be_enabled()
+                    expect(page.locator('#randomFmBtn')).to_be_enabled()
+                    self.assertEqual(buttons.evaluate_all(style),idle,'RAM Write must not dim any Randomiser button')
+                    self.assertFalse(button.evaluate("button=>button.matches(':active')"))
+                    self.assertNotEqual(button.get_attribute('aria-pressed'),'true')
+                    before=page.evaluate('mockCore.vramModel.calls.length')
+                    button.evaluate('button=>button.click()')
+                    self.assertEqual(page.evaluate('mockCore.vramModel.calls.length'),before)
+                    self.assertTrue(page.evaluate('mockCore.logic.active'))
+                    if OPTIONS.artifacts:
+                        page.screenshot(path=str(OPTIONS.artifacts / f'{OPTIONS.browser}-{theme}-{mode}-randomiser-unchanged.png'),full_page=True)
+                    if mode=='hold':
+                        page.mouse.up()
+                    else:
+                        page.evaluate('for(let i=0;i<8;i++)stepTestFrame()')
+                    expect(button).to_be_enabled()
+                    self.assertEqual(buttons.evaluate_all(style),idle)
+                    page.close()
 
     def test_ram_write_hold_persists_past_eight_frames_and_releases_same_owned_pair(self):
         self.page.close();self.page=self.new_page(circuit_config=True)

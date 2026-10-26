@@ -403,6 +403,7 @@ footer { padding-top:9px; font-size:10px; }
 .randomiser-row button { appearance:none; min-width:40px; padding:5px 8px; font-size:10px; }
 /* Keep unavailable actions from looking pressed while a RAM contact is held. */
 .randomiser-row button:disabled { opacity:1; color:var(--muted); }
+.randomiser-row button.ram-contact-blocked:disabled { color:var(--ink); }
 .randomiser-status { min-height:1em; margin:0 12px 6px; color:var(--muted); font:9px/1.25 ui-monospace,SFMono-Regular,Consolas,monospace; }
 .ram-frame-pairs { margin:0 12px 6px; color:var(--muted); font:9px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace; }
 .ram-frame-pairs > strong { display:inline-block; margin:0 8px 3px 0; }
