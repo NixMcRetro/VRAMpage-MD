@@ -368,6 +368,8 @@ class VramTransactionWasm(unittest.TestCase):
         self.assertIn("--pre-js=${CMAKE_SOURCE_DIR}/../scripts/fm_data_fault_api.js", cmake)
         command(["node", str(fixture / "tests/test_runtime_build_profile.cjs"),
                  str(runtime_paths[0])], cwd=fixture)
+        command(["node", str(fixture / "tests/test_session_checkpoint_runtime.cjs"),
+                 str(runtime_paths[0]), str(normal_paths[0])], cwd=fixture)
         command(["node", str(fixture / "tests/test_psg_data_runtime.cjs"),
                  str(runtime_paths[0]), str(normal_paths[0])], cwd=fixture)
         command(["node", str(fixture / "tests/test_z80_psg_runtime.cjs"),

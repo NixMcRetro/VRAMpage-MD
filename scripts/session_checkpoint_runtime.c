@@ -60,7 +60,10 @@ typedef struct {
     uint8_t sram[SESSION_CHECKPOINT_SRAM_BYTES];
     uint32_t pixels[SESSION_CHECKPOINT_FRAME_BYTES / sizeof(uint32_t)];
     struct { int x, y, w, h, ow, oh, changed; } viewport;
-    int width, height, pitch, saved_frame;
+    int width, height, pitch;
+    uint32_t saved_frame;
+    cpu_memory_map cart_map[0x40];
+    struct _zbank_memory_map cart_zmap[0x40];
     uint32_t rom_size, rom_crc, cartridge_special;
     uint8_t *rom_owner, *sram_owner, *frame_owner;
     blip_t *audio_owner;
@@ -72,6 +75,7 @@ typedef struct {
 static session_checkpoint_slot session_checkpoint_slots[2];
 static unsigned session_checkpoint_current;
 static uint64_t session_checkpoint_generation = 1;
+static uint32_t session_checkpoint_loaded_size;
 
 /* This fixed bound follows the pinned state serializer's fixed-size MD path:
  * WRAM/ZRAM/IO, VDP arrays and registers, YM2612/PSG state, fixed 68K/Z80
@@ -118,8 +122,8 @@ static int session_checkpoint_neutral_input(void)
 static int session_checkpoint_profile(void)
 {
     unsigned i;
-    if (system_hw != SYSTEM_MD || svp || config.ym3438 != 0 || !cart.romsize ||
-        cart.romsize > 0x800000 || cart.special || !session_checkpoint_state_bound_ok())
+    if (system_hw != SYSTEM_MD || svp || config.ym3438 != 0 || snd.blips[1] || snd.blips[2] || !cart.romsize ||
+        !session_checkpoint_loaded_size || session_checkpoint_loaded_size > 0x400000 || cart.special || !session_checkpoint_state_bound_ok())
         return 0;
     if (!checkpoint_plain_md_cart()) return 0;
     if (input.system[0] != NO_SYSTEM && input.system[0] != SYSTEM_GAMEPAD) return 0;
@@ -136,7 +140,7 @@ static int session_checkpoint_profile(void)
     if (sram.on) {
         if (!sram.sram || sram.sram != cart.rom + 0x800000 ||
             sram.start > sram.end || sram.end > 0x3fffff ||
-            sram.start < cart.romsize || (sram.start >> 16) != (sram.end >> 16)) return 0;
+            sram.start < session_checkpoint_loaded_size || (sram.start >> 16) != (sram.end >> 16)) return 0;
         if (!sram.detected && (sram.start != 0x200000 || sram.end != 0x20ffff)) return 0;
     }
     return 1;
@@ -163,6 +167,8 @@ void session_checkpoint_runtime_start(void)
 {
     session_checkpoint_invalidate_all();
     ++session_checkpoint_generation;
+    /* md_cart_init overwrites cart.romsize in the pinned core. */
+    session_checkpoint_loaded_size = rom_size;
 }
 
 int SESSION_CHECKPOINT_KEEPALIVE get_session_checkpoint_support(void)
@@ -216,6 +222,8 @@ int SESSION_CHECKPOINT_KEEPALIVE save_session_checkpoint(void)
     memcpy(&slot->viewport, &bitmap.viewport, sizeof(slot->viewport));
     slot->width = bitmap.width; slot->height = bitmap.height; slot->pitch = bitmap.pitch;
     slot->saved_frame = get_logic_frame();
+    memcpy(slot->cart_map, m68k.memory_map, sizeof(slot->cart_map));
+    memcpy(slot->cart_zmap, zbank_memory_map, sizeof(slot->cart_zmap));
     slot->rom_size = cart.romsize; slot->rom_crc = sram.crc;
     slot->cartridge_special = cart.special;
     slot->rom_owner = cart.rom; slot->sram_owner = sram.sram;
@@ -248,11 +256,14 @@ int SESSION_CHECKPOINT_KEEPALIVE restore_session_checkpoint(void)
         !checkpoint_audio_validate(slot->audio, slot->audio_length) ||
         !checkpoint_pad_validate(slot->pad, slot->pad_length)) return SESSION_CHECKPOINT_MISMATCH;
     result = state_load(slot->state);
-    if (result <= 0) {
+    if (result != (int)slot->state_length) {
         slot->valid = 0;
         return SESSION_CHECKPOINT_RESTORE_FAILED;
     }
     if (slot->has_sram) memcpy(sram.sram, slot->sram, sizeof(slot->sram));
+    /* Stock cart state restores SRAM reads but loses its write protection. */
+    memcpy(m68k.memory_map, slot->cart_map, sizeof(slot->cart_map));
+    memcpy(zbank_memory_map, slot->cart_zmap, sizeof(slot->cart_zmap));
     if (checkpoint_pad_load(slot->pad, slot->pad_length) != (int)slot->pad_length ||
         checkpoint_audio_load(slot->audio, slot->audio_length) != (int)slot->audio_length) {
         slot->valid = 0;

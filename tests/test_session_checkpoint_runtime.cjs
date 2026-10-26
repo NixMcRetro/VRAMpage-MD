@@ -1,0 +1,159 @@
+'use strict';
+const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
+const path = require('node:path');
+assert.ok(process.argv[2], 'Pass the production runtime core path');
+const corePath = path.resolve(process.argv[2]);
+const factory = require(corePath);
+const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+
+// Original synthetic programs exercise VDP/audio, pad protocols and ordinary SRAM.
+function cartridge(kind = 'dynamic') {
+  const rom = new Uint8Array(0x10000), v = new DataView(rom.buffer), w = [];
+  for (let p = 0; p < 0x100; p += 4) v.setUint32(p, 0x300);
+  v.setUint32(0, 0xffff00); v.setUint32(4, 0x200);
+  rom.set(Buffer.from('SEGA MEGA DRIVE '), 0x100);
+  rom.set(Buffer.from('VRAMPAGE ORIGINAL CHECKPOINT TEST'), 0x120);
+  v.setUint32(0x1a4, rom.length - 1); v.setUint32(0x1a8, 0xff0000); v.setUint32(0x1ac, 0xffffff);
+  rom[0x1f0] = 0x55;
+  const word = (a, x) => w.push(0x33fc, x, a >>> 16, a & 0xffff);
+  const byte = (a, x) => w.push(0x13fc, x, a >>> 16, a & 0xffff);
+  const branch = loop => w.push(0x6000 | ((2 * (loop - (w.length + 1))) & 0xff));
+  if (kind === 'dynamic') {
+    word(0xc00004, 0x8004); word(0xc00004, 0x8144); word(0xc00004, 0x8c81);
+    word(0xc00004, 0x8f02); word(0xc00004, 0x8701);
+    byte(0xc00011, 0x8a); byte(0xc00011, 0x10); byte(0xc00011, 0x90);
+    const loop = w.length;
+    word(0xc00004, 0xc002); word(0xc00004, 0);
+    w.push(0x5279, 0x00ff, 0x1000, 0x3039, 0x00ff, 0x1000, 0x33c0, 0x00c0, 0x0000);
+    branch(loop);
+  } else if (kind === 'pad6') {
+    rom[0x190] = '6'.charCodeAt(0);
+    byte(0xa10009, 0x40);
+    const loop = w.length;
+    for (let i = 0; i < 3; i++) { byte(0xa10003, 0); byte(0xa10003, 0x40); }
+    w.push(0x1039, 0x00a1, 0x0003, 0x3239, 0x00ff, 0x0000, 0xd240, 0x33c1, 0x00ff, 0x0000);
+    branch(loop);
+  } else if (kind === 'pad3') {
+    const loop = w.length;
+    w.push(0x1039, 0x00a1, 0x0003, 0x33c0, 0x00ff, 0x0000);
+    branch(loop);
+  } else {
+    rom.set(Buffer.from('RA'), 0x1b0); rom[0x1b2] = 0xe0;
+    v.setUint32(0x1b4, 0x200000); v.setUint32(0x1b8, 0x20ffff);
+    if (kind === 'protected-sram') byte(0xa130f1, 3);
+    const loop = w.length;
+    if (kind === 'protected-sram') {
+      // B enables writes once; neutral never reapplies protection. Replay needs the saved handlers.
+      w.push(0x1039, 0x00a1, 0x0003, 0x0200, 0x0010, 0x6608);
+      byte(0xa130f1, 1);
+    }
+    w.push(0x3039, 0x0020, 0x0000, 0x5240, 0x33c0, 0x0020, 0x0000, 0x33c0, 0x00ff, 0x0000);
+    branch(loop);
+  }
+  assert.ok(0x200 + 2 * w.length < 0x300);
+  w.forEach((x, i) => v.setUint16(0x200 + 2 * i, x));
+  [0x4e72, 0x2700, 0x60fe].forEach((x, i) => v.setUint16(0x300 + 2 * i, x));
+  return rom;
+}
+function neutral(c, buttons = []) {
+  const input = new Float32Array(c.HEAPF32.buffer, c._get_input_buffer_ref(), 32);
+  input.fill(0); for (const b of buttons) input[b] = 1;
+  c._wasm_input_update();
+}
+async function create(kind) {
+  const c = await factory({locateFile: n => path.join(path.dirname(corePath), n)});
+  c._init(); install(c, cartridge(kind));
+  assert.equal(c._get_session_checkpoint_support(), 1, `${kind}: ordinary profile supports checkpoints`);
+  assert.equal(c._get_session_checkpoint_ready(), 0);
+  assert.equal(c._restore_session_checkpoint(), 3);
+  return c;
+}
+function install(c, rom) { c.HEAPU8.set(rom, c._get_rom_buffer_ref(rom.length)); c._start(); neutral(c); }
+function pixels(c) { const p = c._get_frame_buffer_ref(); return hash(c.HEAPU8.subarray(p, p + 640 * 480 * 4)); }
+function ram(c) { const p = c._get_logic_ram_ref(); return hash(c.HEAPU8.subarray(p, p + 0x10000)); }
+function frame(c, buttons = []) {
+  neutral(c, buttons); c._tick(); const count = c._sound();
+  const lp = c._get_web_audio_l_ref() >>> 2, rp = c._get_web_audio_r_ref() >>> 2;
+  const left = Float32Array.from(c.HEAPF32.subarray(lp, lp + count));
+  const right = Float32Array.from(c.HEAPF32.subarray(rp, rp + count));
+  assert.ok([...left, ...right].every(Number.isFinite));
+  return {count, pixels: pixels(c), ram: ram(c), left: hash(Buffer.from(left.buffer)), right: hash(Buffer.from(right.buffer)),
+    nonzero: [...left, ...right].some(x => Math.abs(x) > 0.0001)};
+}
+function save(c) {
+  neutral(c); const before = c._get_logic_frame();
+  assert.equal(c._save_session_checkpoint(), 0);
+  assert.equal(c._get_session_checkpoint_saved_frame(), before);
+  assert.equal(c._get_logic_frame(), before, 'capture must not advance a frame');
+  assert.equal(c._get_session_checkpoint_ready(), 1);
+}
+function restore(c, image) {
+  neutral(c); const before = c._get_logic_frame();
+  assert.equal(c._restore_session_checkpoint(), 0);
+  assert.equal(c._get_logic_frame(), before, 'restore keeps monotonic experiment bookkeeping and never ticks');
+  assert.equal(pixels(c), image, 'saved raw image is available before any emulation frame');
+  assert.equal(c._get_session_checkpoint_ready(), 1, 'slot remains reusable');
+}
+(async () => {
+  let groups = 0;
+  if (process.argv[3]) {
+    const normalPath = path.resolve(process.argv[3]);
+    const legacy = await require(normalPath)({locateFile: n => path.join(path.dirname(normalPath), n)});
+    for (const name of ['save_session_checkpoint', 'restore_session_checkpoint', 'discard_session_checkpoint',
+      'get_session_checkpoint_support', 'get_session_checkpoint_ready', 'get_session_checkpoint_saved_frame']) {
+      assert.equal(typeof legacy[`_${name}`], 'undefined', 'normal profile remains checkpoint-free');
+    }
+  }
+  const c = await create('dynamic'); frame(c); save(c); const savedImage = pixels(c), savedFrame = c._get_session_checkpoint_saved_frame();
+  const first = Array.from({length: 6}, () => frame(c));
+  assert.ok(first.some(x => x.nonzero), 'synthetic PSG produces nonzero PCM');
+  assert.ok(new Set(first.map(x => x.pixels)).size > 1, 'VDP scene changes across frames');
+  assert.notEqual(pixels(c), savedImage);
+  restore(c, savedImage);
+  assert.deepEqual(Array.from({length: 6}, () => frame(c)), first, 'dynamic video/audio/WRAM continuation replays exactly'); groups++;
+
+  // Current faults and held inputs must not hide an existing slot/profile from the UI.
+  const setters = [
+    [() => c._set_logic_fault(2, 2, 0, 1), () => c._set_logic_fault(0, 0, -1, -1)],
+    [() => c._set_logic_address_mask(1, 2), () => c._set_logic_address_mask(0, 2)],
+    [() => c._set_vram_fault_model(1, 8, -1, -1), () => c._set_vram_fault_model(1, 0, -1, -1)],
+    [() => c._set_psg_data_bridge(1, 0, 1), () => c._set_psg_data_bridge(0, -1, -1)],
+    [() => c._set_fm_data_bridge(1, 0, 1), () => c._set_fm_data_bridge(0, -1, -1)]
+  ];
+  for (const [set, clear] of setters) {
+    assert.equal(set(), 0); const state = ram(c);
+    assert.equal(c._get_session_checkpoint_support(), 1); assert.equal(c._get_session_checkpoint_ready(), 1);
+    assert.equal(c._save_session_checkpoint(), 2); assert.equal(c._restore_session_checkpoint(), 2);
+    assert.equal(ram(c), state, 'unsafe refusal does not load state');
+    assert.equal(c._get_session_checkpoint_saved_frame(), savedFrame, 'failed replacement retains old slot');
+    assert.equal(clear(), 0);
+  }
+  neutral(c, [11]); assert.equal(c._get_session_checkpoint_support(), 1); assert.equal(c._save_session_checkpoint(), 2);
+  assert.equal(c._restore_session_checkpoint(), 2); neutral(c); restore(c, savedImage); groups++;
+  assert.equal(c._recover_logic_cpu(2), 0); assert.equal(c._get_session_checkpoint_ready(), 1);
+  restore(c, savedImage); assert.deepEqual(Array.from({length: 6}, () => frame(c)), first, 'CPU-only reset retains replay slot'); groups++;
+  c._discard_session_checkpoint(); assert.equal(c._get_session_checkpoint_ready(), 0); assert.equal(c._restore_session_checkpoint(), 3);
+  save(c); c._start(); assert.equal(c._get_session_checkpoint_ready(), 0);
+  neutral(c); save(c); install(c, cartridge('pad3')); assert.equal(c._get_session_checkpoint_ready(), 0); groups++;
+
+  for (const kind of ['pad3', 'pad6', 'sram', 'protected-sram']) {
+    const p = await create(kind);
+    for (let i = 0; i < 30; i++) frame(p);
+    save(p); const image = pixels(p), savedRam = ram(p);
+    const sequence = kind === 'pad6' ? [[8], [], [12], [], [13], [14]] : [[11], [], [11], [], [11], []];
+    const neutralFirst = Array.from({length: 6}, () => frame(p));
+    restore(p, image);
+    const expected = sequence.map(b => frame(p, b));
+    assert.ok(expected.some(x => x.ram !== savedRam), `${kind}: actual 68K accesses change WRAM`);
+    restore(p, image); assert.equal(ram(p), savedRam);
+    assert.deepEqual(Array.from({length: 6}, () => frame(p)), neutralFirst,
+      `${kind}: restoration preserves ordinary SRAM write protection`);
+    restore(p, image);
+    assert.deepEqual(sequence.map(b => frame(p, b)), expected, `${kind}: pad protocol/SRAM replay`);
+    restore(p, image);
+    assert.deepEqual(sequence.map(b => frame(p, b)), expected, `${kind}: repeated restore`);
+    groups++;
+  }
+  console.log(`${groups} Session Checkpoint actual-WASM groups passed`);
+})().catch(e => { console.error(e); process.exitCode = 1; });

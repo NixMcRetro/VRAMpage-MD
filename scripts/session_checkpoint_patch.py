@@ -62,7 +62,11 @@ int checkpoint_blip_load(blip_t *m, const unsigned char *in, unsigned len) {
   return (int)p;
 }''')
 
-append("core/sound/psg.c", "unsigned checkpoint_psg_size(", r'''unsigned checkpoint_psg_size(void) { return (unsigned)sizeof(psg); }
+append("core/sound/psg.c", "unsigned checkpoint_psg_size(", r'''unsigned checkpoint_psg_stock_bound(void) {
+  return (unsigned)(sizeof(psg.clocks)+sizeof(psg.latch)+sizeof(psg.noiseShiftValue)+
+    sizeof(psg.regs)+sizeof(psg.freqInc)+sizeof(psg.freqCounter)+sizeof(psg.polarity)+sizeof(psg.chanOut));
+}
+unsigned checkpoint_psg_size(void) { return (unsigned)sizeof(psg); }
 int checkpoint_psg_save(unsigned char *out, unsigned cap) {
   if (!out || cap<sizeof(psg)) return -1;
   memcpy(out,&psg,sizeof(psg)); return (int)sizeof(psg);
@@ -72,14 +76,31 @@ int checkpoint_psg_load(const unsigned char *in, unsigned len) {
   memcpy(&psg,in,sizeof(psg)); return (int)sizeof(psg);
 }''')
 
-append("core/sound/ym2612.c", "unsigned checkpoint_ym2612_size(", r'''unsigned checkpoint_ym2612_size(void) { return (unsigned)(sizeof(ym2612) + 24u); }''')
+append("core/sound/ym2612.c", "unsigned checkpoint_ym2612_size(", r'''/* Pinned YM serializer advances twice per one-byte DT index (24 slots). */
+unsigned checkpoint_ym2612_size(void) { return (unsigned)(sizeof(ym2612) + 48u); }''')
 
-append("core/cart_hw/md_cart.c", "int checkpoint_plain_md_cart(", r'''int checkpoint_plain_md_cart(void) {
+append("core/cart_hw/md_cart.c", "int checkpoint_plain_md_cart(", r'''#include <stdint.h>
+int checkpoint_plain_md_cart(void) {
   int i;
   if (cart.special || cart.hw.realtec || cart.hw.bankshift || cart.hw.time_r ||
       (cart.hw.time_w && cart.hw.time_w != default_time_w) || cart.hw.regs_r || cart.hw.regs_w)
     return 0;
   for (i=0; i<4; i++) if (cart.hw.mask[i] || cart.hw.addr[i]) return 0;
+  /* Only plain ROM and the core's ordinary SRAM handlers are replayable. */
+  for (i=0; i<0x40; i++) {
+    cpu_memory_map *m = &m68k.memory_map[i];
+    uintptr_t base = (uintptr_t)m->base, rom = (uintptr_t)cart.rom;
+    if (m->base == sram.sram) {
+      if (!sram.on || m->read8 != sram_read_byte || m->read16 != sram_read_word ||
+          zbank_memory_map[i].read != sram_read_byte ||
+          (m->write8 != sram_write_byte && m->write8 != m68k_unused_8_w) ||
+          (m->write16 != sram_write_word && m->write16 != m68k_unused_16_w) ||
+          (zbank_memory_map[i].write != sram_write_byte && zbank_memory_map[i].write != zbank_unused_w)) return 0;
+    } else if (base < rom || base - rom >= 0x800000 || ((base - rom) & 0xffff) ||
+               m->read8 || m->read16 || zbank_memory_map[i].read ||
+               m->write8 != m68k_unused_8_w || m->write16 != m68k_unused_16_w ||
+               zbank_memory_map[i].write != zbank_unused_w) return 0;
+  }
   return 1;
 }''')
 
@@ -118,11 +139,11 @@ int checkpoint_sound_load(const unsigned char *in, unsigned len) {
 }''')
 
 append("core/sound/sound.c", "unsigned checkpoint_stock_sound_bound(", r'''extern unsigned checkpoint_ym2612_size(void);
-extern unsigned checkpoint_psg_size(void);
+extern unsigned checkpoint_psg_stock_bound(void);
 unsigned checkpoint_stock_sound_bound(void) {
   if (config.ym3438 != 0) return 0;
   return (unsigned)(sizeof(config.ym3438) + sizeof(fm_cycles_start)) +
-         checkpoint_ym2612_size() + checkpoint_psg_size();
+         checkpoint_ym2612_size() + checkpoint_psg_stock_bound();
 }''')
 
 append("core/system.c", "int checkpoint_audio_validate(", r'''extern unsigned checkpoint_sound_size(void);
@@ -159,7 +180,7 @@ int checkpoint_audio_load(const unsigned char *in, unsigned len) {
 #define CHECKPOINT_SYSTEM_LOAD(x) do { memcpy(&(x),in+p,sizeof(x)); p+=(unsigned)sizeof(x); } while (0)
   CHECKPOINT_SYSTEM_LOAD(mcycles_vdp); CHECKPOINT_SYSTEM_LOAD(eq); CHECKPOINT_SYSTEM_LOAD(llp); CHECKPOINT_SYSTEM_LOAD(rrp); CHECKPOINT_SYSTEM_LOAD(snd.sample_rate); CHECKPOINT_SYSTEM_LOAD(snd.frame_rate);
 #undef CHECKPOINT_SYSTEM_LOAD
-  int m=checkpoint_sound_load(in+p,len-p); if(m<0)return -1; p+=(unsigned)m;
+  int m=checkpoint_sound_load(in+p,checkpoint_sound_size()); if(m<0)return -1; p+=(unsigned)m;
   m=checkpoint_blip_load(snd.blips[0],in+p,len-p); if(m<0)return -1; p+=(unsigned)m;
   return (int)p;
 }''')

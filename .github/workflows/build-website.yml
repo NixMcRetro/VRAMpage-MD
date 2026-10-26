@@ -62,6 +62,7 @@ jobs:
           test -f site/source/runtime-profile/BUILDING.txt
           test -f site/source/runtime-profile/source/scripts/vram_transaction_api.js
           node tests/test_runtime_build_profile.cjs site/core/genplus.js
+          node tests/test_session_checkpoint_runtime.cjs site/core/genplus.js "$RUNNER_TEMP/normal-core/genplus.js"
           node tests/test_wasm_logic.cjs site/core/genplus.js
       - name: Verify isolated RAM diagnostics with synthetic CPU tests
         shell: bash
