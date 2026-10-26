@@ -12,7 +12,7 @@ Run it in a modern browser on Windows, macOS or Linux. Use the included Python 3
 local server, or serve the built site from static HTTP/HTTPS hosting. macOS users
 can keep using the optional START.command launcher. No ROMs are included.
 
-See [launch instructions](RUNNING-LOCALLY.md). Before publication, candidate
+See [launch instructions](https://github.com/NixMcRetro/VRAMpage-MD/blob/main/docs/RUNNING-LOCALLY.md). Before publication, candidate
 packages are available as expiring GitHub Actions review artifacts. Verify the
 package's BUILD-INFO.json source commit against the reviewed run. A final release
 must provide the matching ZIP, SHA-256 checksum and tag; no v0.5.0 public download
@@ -61,7 +61,7 @@ cartridges. The user reports Mac Safari controls, audio and recovery working;
 this does not establish native Windows/Linux desktop launch, native macOS
 Firefox, physical-gamepad or universal cartridge coverage. Exact candidate CI,
 package identity and checksums belong in the final delivery record before
-publication. See [the testing guide](TESTING.md).
+publication. See [the testing guide](https://github.com/NixMcRetro/VRAMpage-MD/blob/main/docs/TESTING.md).
 
 Upstream non-commercial and corresponding-source terms continue to apply.
 This candidate does not deploy or modify McRetro.net.
