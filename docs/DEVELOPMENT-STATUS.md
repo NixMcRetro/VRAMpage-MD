@@ -1,5 +1,24 @@
 # Development status and continuation checkpoint
 
+## SRAM (Work RAM) Label and Release Readiness — 26 October 2026 (Sydney)
+
+User accepts the PR #66 recovery controls as seeming OK and has no further
+practical testing to add. This records the reported Mac acceptance without
+claiming native Firefox, physical gamepad or universal cartridge coverage.
+
+Rename the chip heading/body, accessible names and advanced-panel heading to
+SRAM (Work RAM). Preserve WRAM identifiers, experiment schemas, all memory models
+and cartridge save SRAM behavior. Acceptance: readable labels within existing
+responsive bounds, source checks and all seven PR/main CI checks.
+
+Checkpoint proof/implementation and ordered recovery are complete (PR #63/#66).
+Correct stale release-blocker text instead of repeating their completed work.
+Next release-candidate gate: align VERSION, UI/export labels, publisher workflow,
+package names and release notes for v0.5.0, then verify matching source/core,
+checksums and a new tag. The existing publisher is fixed to v0.4.1 and must not
+be dispatched for the next version. No release/tag/version changes in this slice;
+public v0.4.1 and McRetro.net remain untouched.
+
 ## PR #66 Verified Delivery — 26 October 2026 (Sydney)
 
 PR #66 merged as `c65ba5c0a6634526f385fca04928e9551b7f6f0e`, with an exact

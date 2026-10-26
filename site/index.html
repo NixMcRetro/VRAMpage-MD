@@ -71,13 +71,13 @@
             <p id="connectionLabel" class="chip-state" aria-live="polite">NONE — NORMAL ADDRESSING</p>
             <p id="vramModelStatus" class="chip-state" role="status" aria-live="polite">Frame projection is the default model.</p>
           </section>
-          <section class="chip-card" data-keyboard-chip="WRAM" aria-label="Work RAM chip">
-            <h2>Work RAM <small>Logical Address Lines</small></h2>
+          <section class="chip-card" data-keyboard-chip="WRAM" aria-label="SRAM (Work RAM) chip">
+            <h2>SRAM (Work RAM) <small>Logical Address Lines</small></h2>
             <label class="chip-compact-control">Leg Action
               <select id="ramLegAction"><option value="cut">Cut / Reconnect</option><option value="bridge">Bridge Pair</option></select>
             </label>
-            <div id="ramChip" class="ram-chip work-ram-chip" role="group" aria-label="Conceptual Work RAM address lines" aria-describedby="chipExplanation">
-              <div class="ram-chip-body"><strong>Work RAM</strong><span>64 KiB</span><small>A1–A15</small></div>
+            <div id="ramChip" class="ram-chip work-ram-chip" role="group" aria-label="Conceptual SRAM (Work RAM) address lines" aria-describedby="chipExplanation">
+              <div class="ram-chip-body"><strong>SRAM (Work RAM)</strong><span>64 KiB</span><small>A1–A15</small></div>
             </div>
             <button id="chipRestoreBtn" type="button" disabled>Reconnect All A Lines</button>
             <p id="ramChipState" class="chip-state" aria-live="polite">Address lines are connected.</p>
@@ -144,7 +144,7 @@
     </div>
 
     <details class="logic-panel" id="logicExperiment">
-      <summary class="section-heading"><h2>05 <span>/</span> Logic / Work RAM</h2><span>Experimental · 68000 Bus Model</span></summary>
+      <summary class="section-heading"><h2>05 <span>/</span> Logic / SRAM (Work RAM)</h2><span>Experimental · 68000 Bus Model</span></summary>
       <p class="logic-intro">Bridge one pair of modeled Work RAM lines. Apply a fault explicitly; the selectors do not activate it by themselves.</p>
       <div class="logic-controls" aria-label="Logic fault configuration">
         <label>Line Type

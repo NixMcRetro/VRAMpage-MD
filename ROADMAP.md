@@ -83,8 +83,11 @@ select unassisted behavior. No static-data heuristic or automatic rewind is adde
 See [recovery semantics](docs/CPU-RECOVERY.md#development-source-ordered-recovery).
 
 Default-On behavior explicitly supersedes the earlier opt-in arming preference.
-Complete independent review, cross-browser/full CI and matching-package checks
-before merge. Retain native Mac acceptance limits and preserve v0.4.1/McRetro.net.
+PR #66 completed independent review, all seven PR/main checks and matching-package
+verification. The user reports the recovery controls seem OK and has no further
+practical tests to add. Continue release-candidate preparation with the SRAM
+(Work RAM) label, current evidence and version-aligned packaging; retain unverified
+native Firefox/gamepad limits and preserve v0.4.1/McRetro.net.
 
 ## Previous public delivery: v0.2.8 compact Work RAM interface
 
