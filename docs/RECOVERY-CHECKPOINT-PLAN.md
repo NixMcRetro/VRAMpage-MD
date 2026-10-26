@@ -1,6 +1,6 @@
 # v0.5.0 recovery and checkpoints — reviewed design
 
-Status: **Reviewed design; step 1 implemented; step 2 has a private replay proof, with production checkpoint controls still planned.** Based on main
+Status: **Step 1 merged; explicit session checkpoint implementation is under integration review and CI validation.** Based on main
 `5d0425a64acb0f883789c67e8c6ec41e5d2c0c02` and upstream core
 `6090aff9e9b2f578cd28882bd4571d2e35b1d674`. The public release and `VERSION`
 remain v0.4.1. Existing manual CPU Reset and Clean Restart retain their semantics.
@@ -49,7 +49,7 @@ CPU action is issued. Do not claim a monotonic counter is the restored game time
 
 ## 2. One explicit session checkpoint
 
-Provide **Save checkpoint** and **Restore checkpoint**, with a slot status and
+Provide **Save Checkpoint** and **Restore Checkpoint**, with a slot status and
 saved frame. First scope: one in-memory slot in this tab, same cartridge load,
 core instance, profile and build. No file import/export, persistent browser
 storage, automatic capture, multiple slots or automatic rewind. These avoid a

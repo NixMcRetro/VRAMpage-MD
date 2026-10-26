@@ -1,3 +1,19 @@
+# Session Checkpoint Development Checks
+
+`tests/test_session_checkpoint.py` runs fatal native ASan/UBSan publication,
+refusal, exact-bound and partial-failure checks. The runtime build gate also runs
+`node tests/test_session_checkpoint_runtime.cjs site/core/genplus.js site/source/src/main/js/genplus.js`:
+changing pixels and generated PSG/FM PCM replay, 3/6-button protocol state, warmed
+SRAM/write protection, fault/input refusal, Start/reset lifecycle and normal-core
+API omission. These use original synthetic cartridges only.
+
+Browser checkpoint regressions are in `tests/browser_logic.py -k checkpoint`;
+`tests/browser_core.py -k session_checkpoint` verifies the production runtime's
+immediate raw/canvas image, fault removal, paused restore, no extra ticks and
+restart invalidation. The ordinary full browser/source/build workflow retains
+these checks. Manual native Mac/audible and physical-hardware validation are
+separate; passing synthetic replay does not prove every cartridge mapper.
+
 # PSG audio development verification
 
 The runtime-only PSG input-data bridge has strict native/sanitizer and patch

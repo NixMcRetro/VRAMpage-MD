@@ -18,6 +18,7 @@ older standalone-model descriptions are historical development records.
 | [Versioning](VERSIONING.md) | Canonical 0.2.x release labels and historical identifier mapping |
 | [Run locally](RUNNING-LOCALLY.md) | Start a ready-built review bundle without building WebAssembly |
 | [Project overview](../README.md) | Current features, limitations, building and repository policy |
+| [Session checkpoints](SESSION-CHECKPOINT-API.md) | Explicit session-only checkpoint semantics, supported profiles and validation gates |
 | [Product roadmap](../ROADMAP.md) | Versions and video, logic and sound milestones |
 | [Documentation roadmap](DOCUMENTATION-ROADMAP.md) | Which Markdown documents to write, in what order, and acceptance criteria |
 | [Testing guide](TESTING.md) | Automated and manual test matrix, commands and release gates |
