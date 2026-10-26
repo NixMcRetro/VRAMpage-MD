@@ -2,6 +2,8 @@
 
 ## Unreleased workbench improvements
 
+- Keep chip bodies abbreviated as SRAM and VRAM; expand the headings to SRAM (Work RAM) and VRAM (Video RAM).
+
 - Label the console memory chip SRAM (Work RAM), distinguishing its role from cartridge save SRAM; preserve existing fault models and saved-data identifiers.
 
 - Add default-On Force Resume and CPU Recovery switches beside Randomiser. Confirm HALT for two frames, attempt Force Resume once, and permit one CPU-only reset after eight further HALT frames. Preserve user preferences, bound retries per explicit fault experiment and export policy/stage metadata; both Off selects unassisted operation.

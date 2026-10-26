@@ -1,5 +1,13 @@
 # Development status and continuation checkpoint
 
+## Chip Label Follow-up — 26 October 2026 (Sydney)
+
+User accepts the preceding SRAM label build and requests abbreviated SRAM inside
+the chip, SRAM (Work RAM) above it, and VRAM (Video RAM) above the VRAM chip.
+This is a two-label HTML adjustment; chip internals, fault behavior, identifiers,
+exports and release inputs are unchanged. Verify responsive layout/source checks,
+independent review and all seven PR/main checks. Preserve v0.4.1/McRetro.net.
+
 ## PR #67 Verified Delivery — 26 October 2026 (Sydney)
 
 [PR #67](https://github.com/NixMcRetro/VRAMpage-MD/pull/67) merged as
