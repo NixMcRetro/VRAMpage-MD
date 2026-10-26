@@ -24,13 +24,15 @@ fresh builds; native checkpoint9 actual-WASM groups and existing logic25 pass.
 Chromium mock logic116 PASS258.309s plus new unsigned-frame boundary/telemetry
 cases2 PASS4.513s; display7 PASS17.384s. WebKit checkpoint14 PASS112.188s.
 Production actual-core browser8 PASS99.739s, including immediate raw/canvas image,
-no extra tick, paused restore and restart invalidation. Package extraction and
-required PR/main CI are the remaining gates. Evidence logs stay under
+no extra tick, paused restore and restart invalidation. Extracted package core8
+PASS44.051s and transaction3 PASS10.227s on code-identical bf547d6; 714 unique
+paths and source/version/UI/core identity verified. Required PR/main CI remain.
+Evidence logs stay under
 `/workspace/scratch/session-checkpoint-ui`; candidate source, runtime and normal
 builds are retained in the isolated worktrees. No integrated release is claimed.
 
 Public v0.4.1 tag/assets remain unchanged; no version bump or McRetro.net action.
-Next: finish extracted-package checks, open the focused PR, require all seven PR
+Next: open the focused PR, require all seven PR
 checks before merge, verify all seven main checks, and record exact delivery links.
 Native Mac audible/physical and universal mapper compatibility remain unverified.
 
