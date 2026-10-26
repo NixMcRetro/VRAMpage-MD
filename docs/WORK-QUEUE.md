@@ -1,43 +1,36 @@
 # Development work queue
 
-## Ordered Recovery Switches — Reviewed Integration Candidate
+## PR #66 Verified Delivery — 26 October 2026 (Sydney)
 
-User explicitly requests default-On Force Resume and CPU Recovery switches near
-Randomiser, superseding the earlier default-Off/one-shot interface. Both initial
-On preferences persist across pause/cartridge changes. The advanced explicit
-Disconnect and Force Resume action is retained for manual use.
+PR #66 merged as `c65ba5c0a6634526f385fca04928e9551b7f6f0e`, with an exact
+source-tree match to reviewed/tested head `5210d4b487e1bfa7efdb6e355b9d01c3708e62d2`.
+All seven [PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40279123549)
+and all seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40279717162)
+passed. [Runnable review build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40279717162/artifacts/12632206278).
+[PR #66](https://github.com/NixMcRetro/VRAMpage-MD/pull/66).
 
-Two eligible HALT frames permit one Force Resume; eight further completed HALT
-frames permit one CPU-only reset if HALT persists. User selected the longer delay
-(~0.13 s) to leave corrupted/frozen output visible. HALT clearing cancels escalation.
-Force Resume Off skips to CPU Reset after two HALT frames; CPU Recovery Off permits
-force resume only; both Off selects unassisted operation. No static-data heuristic.
-One sequence per explicit fault/toggle/ROM/Resume event prevents automatic loops.
-Held/pulse contacts defer observation. Pause/blur/hidden/checkpoints/manual actions
-cancel pending work without altering preferences. No Clean Restart or rewind stage.
+Force Resume and CPU Recovery are independent persistent On/Off switches near
+Randomiser, both initially On. Two eligible HALT frames attempt Force Resume once;
+eight more consecutive eligible HALT frames attempt one CPU Reset if enabled.
+HALT clearing cancels escalation. Both Off selects unassisted operation. Held RAM
+contacts defer observation, and Randomiser appearance remains unchanged.
 
-Independent specialist review approved the state machine and final deltas through
-05a09f9. Requested Luna High was not confirmed available; reviewer reports GPT-6.
-Review's audit-field gap was fixed: telemetry aborts retain stage/threshold before
-cancellation. Current docs now align with default-On behavior; historical records
-remain identified. Actual-core test author8098c99 is integrated as161183e.
+Local Chromium125, WebKit recovery15, source106 (two unchanged SDK/vendor classes
+skipped), actual-core8 and transaction3 passed. Extracted package core8 and
+transaction3 passed. Independent GPT-6 review completed; requested Luna High was
+not confirmed available. The native fixture clears HALT after Force Resume;
+exact eight-frame escalation uses controlled telemetry, not a native re-HALT claim.
 
-Local checks: Chromium full125 PASS333.624s; WebKit recovery15 PASS148.580s;
-source106 PASS26.101s (two unchanged SDK/vendor classes skipped); display7
-PASS25.288s plus final strict default-On <=768px check PASS. Actual-core browser8
-PASS70.422s and transaction3 PASS6.663s. Actual HALT clears after Force Resume,
-so native tests prove cancellation/independent controls and synchronous Work RAM/
-audio-fault preservation; exact eight-frame persistent-HALT escalation is proven
-with controlled browser telemetry, not claimed from the real-cartridge fixture.
-An initial layout overflow was corrected without weakening viewport assertions.
+Canonical runnable checkout refreshed. Main ZIP has 714 unique paths with exact
+main source/version/UI/core identity; SHA256
+`3b3c3014b477c38774601b97ca9c60f0895c9940d43bf7994fcb4b4e6061fc89`.
+Public v0.4.1 name, target, timestamp and both asset digests remain unchanged.
+No McRetro.net changes. Evidence: `/workspace/scratch/ordered-recovery`.
 
-Extracted e5da8c8 package: core8 PASS49.854s and transaction3 PASS11.362s,
-714 unique paths with source/version/UI/core identity verified. Current phase
-metadata uses `waitingAfterForceResume` to avoid confusing a pending window with
-historical actions. Remaining gates: all seven PR/main CI checks.
-Evidence: `/workspace/scratch/ordered-recovery`. VERSION/public v0.4.1 unchanged;
-no McRetro.net or release work. No automatic rescue of STOP, software loops or a
-browser blocked inside a frame; no universal recovery/gameplay/physical claim.
+Next: native Mac/cartridge acceptance of default-On recovery and compact controls;
+continue concrete stabilisation reports. No automatic rewind, software-loop or
+browser-blocked-frame detection, guaranteed gameplay recovery or physical claim.
+No release/version bump.
 
 ## PR #65 Verified Delivery — 26 October 2026 (Sydney)
 
