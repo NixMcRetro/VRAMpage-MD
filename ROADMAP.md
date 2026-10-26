@@ -71,21 +71,20 @@ receive pale green fills as well as outlines; idle chips remain neutral. No nati
 fault, recovery or timing changes are involved. PR #59 is merged after all seven
 PR checks pass; integration evidence is in the latest checkpoint.
 
-## Planned after stabilisation: v0.5.0 recovery milestone
+## Development Recovery Milestone: v0.5.0 Target
 
-The [reviewed v0.5.0 design](docs/RECOVERY-CHECKPOINT-PLAN.md) defines the first
-bounded implementation and acceptance gates. The first development-source implementation adds the opt-in one-attempt HALT
-recovery control. The private replay proof is merged; explicit session checkpoint
-controls and a bounded native backend are now under implementation and verification.
+Manual session checkpoints are merged and user-tested; the source version and
+immutable public release remain v0.4.1. The updated request adds default-On
+**Force Resume** and **CPU Recovery** preferences beside Randomiser. Confirm HALT
+on two eligible frames, attempt Force Resume, and permit one CPU-only reset after
+eight further HALT frames. HALT clearing cancels escalation. One bounded sequence
+per explicit fault experiment prevents automatic reset loops; both switches Off
+select unassisted behavior. No static-data heuristic or automatic rewind is added.
+See [recovery semantics](docs/CPU-RECOVERY.md#development-source-ordered-recovery).
 
-The user approved a target combining independent, optional bounded CPU halt
-recovery and explicit save/restore checkpoints. Defaults must preserve unassisted
-glitch outcomes; record interventions and never silently rewind or invent a
-healthy hardware status. The core has save-state code, but browser exposure,
-complete state/compatibility validation and checkpoint restore semantics need
-design and independent review before implementation. This is a future milestone,
-not part of current stabilisation. Keep `VERSION` and the public release at
-0.4.1 until a tested milestone is ready; preserve existing assets and tags.
+Default-On behavior explicitly supersedes the earlier opt-in arming preference.
+Complete independent review, cross-browser/full CI and matching-package checks
+before merge. Retain native Mac acceptance limits and preserve v0.4.1/McRetro.net.
 
 ## Previous public delivery: v0.2.8 compact Work RAM interface
 

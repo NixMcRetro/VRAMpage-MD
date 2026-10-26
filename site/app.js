@@ -50,7 +50,9 @@
   let logicStatusMessage = 'Checking core support…';
   let lastLogicExperiment = null;
   let cpuInterventions = [];
-  let cpuRecoveryArmed = false, cpuRecoveryHaltFrames = [];
+  let forceResumeEnabled = true, cpuRecoveryEnabled = true, cpuRecoveryHaltFrames = [];
+  let cpuRecoveryForceIssued = false, cpuRecoverySpent = false, cpuRecoveryBusy = false;
+  const CPU_RECOVERY_WAIT_FRAMES = 8;
   let lastCpuRecoveryAttempt = null;
   let faultDisconnectActions = [];
   let faultPulses = [], pendingPulse = null;
@@ -1041,7 +1043,7 @@
       $(id).disabled = !canUse;
     $('logicDisconnectBtn').disabled = !canUse;
     updateCpuRecoveryControls(canUse);
-    for (const id of ['logicResumeBtn','logicCpuResetBtn'])
+    for (const id of ['manualForceResumeBtn','logicCpuResetBtn'])
       $(id).disabled = !canUse || typeof emulator._recover_logic_cpu !== 'function';
     for (const control of document.querySelectorAll('[data-ram-frame-pair]'))
       control.disabled = !canUse;
@@ -1069,13 +1071,18 @@
   }
 
   function updateCpuRecoveryControls(canUse=started && logicApiReady()) {
-    const recoveryReady=canUse && !paused && typeof emulator?._recover_logic_cpu==='function' &&
-      typeof emulator?._get_logic_cpu_flags==='function';
-    $('armCpuRecoveryBtn').disabled=!recoveryReady || (!cpuRecoveryArmed && recoveryTransientActive());
-    $('armCpuRecoveryBtn').setAttribute('aria-pressed',String(cpuRecoveryArmed));
-    $('armCpuRecoveryBtn').textContent=cpuRecoveryArmed?'Disarm CPU Recovery':'Arm CPU Recovery Once';
-    $('cpuRecoveryStatus').textContent=cpuRecoveryArmed
-      ? `ARMED${cpuRecoveryHaltFrames.length?` · HALT ${cpuRecoveryHaltFrames.length}/2`:''}` : 'OFF';
+    for (const [id,label,on] of [['logicResumeBtn','Force Resume',forceResumeEnabled],
+        ['armCpuRecoveryBtn','CPU Recovery',cpuRecoveryEnabled]]) {
+      $(id).disabled=false;
+      $(id).setAttribute('aria-pressed',String(on));
+      $(id).textContent=`${label}: ${on?'On':'Off'}`;
+    }
+    const available=canUse && typeof emulator?._recover_logic_cpu==='function';
+    $('cpuRecoveryStatus').textContent=!forceResumeEnabled&&!cpuRecoveryEnabled?'Automatic Recovery Off':
+      !started?'Automatic Recovery Ready After ROM Load':!available?'Automatic Recovery Unavailable':
+      paused?'Automatic Recovery Paused':cpuRecoverySpent?'Recovery Used / Cancelled · New Fault or Resume to Retry':
+      cpuRecoveryForceIssued?`HALT ${cpuRecoveryHaltFrames.length}/${CPU_RECOVERY_WAIT_FRAMES} After Force Resume`:
+      `Watching for HALT${cpuRecoveryHaltFrames.length?' · 1/2':''}`;
   }
 
   const CHECKPOINT_API=['_get_session_checkpoint_support','_get_session_checkpoint_ready',
@@ -1108,7 +1115,7 @@
   }
 
   function saveCheckpoint() {
-    disarmCpuRecovery();
+    cancelAutomaticRecovery();
     const event={action:'save',nativeAttempted:false,status:null,before:checkpointObservation(),
       segmentBefore:checkpointSegment,savedFrame:sessionCheckpoint?.savedFrame??null};
     try {
@@ -1155,7 +1162,7 @@
     try {
       if (!checkpointAvailability().ready) throw new Error('No compatible checkpoint in this cartridge session.');
       if (!paused) pauseToggle();
-      disarmCpuRecovery();
+      cancelAutomaticRecovery();
       for (const code of pressed) checkpointBlockedKeys.add(code);
       if (keyboardHeld?.code) checkpointBlockedKeys.add(keyboardHeld.code);
       pressed.clear();checkpointBlockGamepad=true;
@@ -1187,22 +1194,30 @@
     return !!(momentary || keyboardHeld || ownedAddressHold || pendingPulse);
   }
 
-  function resetCpuRecoveryObservation() {
-    const hadObservation=cpuRecoveryHaltFrames.length>0;
-    cpuRecoveryHaltFrames=[];
-    if (hadObservation) updateCpuRecoveryControls();
+  function clearCpuRecoveryObservation() {
+    if (cpuRecoveryForceIssued) cpuRecoverySpent=true;
+    cpuRecoveryHaltFrames=[];cpuRecoveryForceIssued=false;
+    updateCpuRecoveryControls();
   }
 
-  function disarmCpuRecovery() {
-    cpuRecoveryArmed=false;
-    resetCpuRecoveryObservation();
+  function resetCpuRecoveryObservation() {
+    if (cpuRecoveryBusy) return;
+    // Explicit fault edits permit a fresh bounded recovery sequence.
+    cpuRecoveryHaltFrames=[];cpuRecoveryForceIssued=false;cpuRecoverySpent=false;
+    updateCpuRecoveryControls();
+  }
+
+  function cancelAutomaticRecovery() {
+    if (cpuRecoveryBusy) return;
+    clearCpuRecoveryObservation();cpuRecoverySpent=true;
     updateCpuRecoveryControls();
   }
 
   function abortAutomaticCpuRecovery(reason, frame=null, flags=null, observedFrames=[]) {
-    cpuRecoveryArmed=false;
-    resetCpuRecoveryObservation();
-    cpuInterventions.push({action:'automatic-recovery-aborted',trigger:'armed-halt-streak',
+    const stage=cpuRecoveryForceIssued?'cpu-reset':forceResumeEnabled?'force-resume':'cpu-reset';
+    const waitFrames=cpuRecoveryForceIssued?CPU_RECOVERY_WAIT_FRAMES:2;
+    cancelAutomaticRecovery();
+    cpuInterventions.push({action:'automatic-recovery-aborted',trigger:'halt-recovery-sequence',stage,waitFrames,
       frame,observedFlags:flags,observedFrames:[...observedFrames],attempted:false,
       outcome:'aborted',reason});
     if (!paused) pauseToggle();
@@ -1212,8 +1227,9 @@
   }
 
   function observeAutomaticCpuRecovery() {
-    if (!cpuRecoveryArmed || paused || !started) return;
-    if (recoveryTransientActive()) { resetCpuRecoveryObservation(); return; }
+    if ((!forceResumeEnabled && !cpuRecoveryEnabled) || cpuRecoverySpent || paused || !started ||
+        !logicApiReady() || typeof emulator?._recover_logic_cpu!=='function') return;
+    if (recoveryTransientActive()) { clearCpuRecoveryObservation(); return; }
     let flags, frame;
     try {
       flags=emulator._get_logic_cpu_flags();
@@ -1225,34 +1241,41 @@
       abortAutomaticCpuRecovery(`CPU telemetry unavailable (${error.message})`,null,null,cpuRecoveryHaltFrames);
       return;
     }
-    if (!(flags&2)) { resetCpuRecoveryObservation(); return; }
+    if (!(flags&2)) { clearCpuRecoveryObservation(); return; }
     cpuRecoveryHaltFrames.push(frame);
-    if (cpuRecoveryHaltFrames.length<2) { updateLogicControls(); return; }
+    const waitFrames=cpuRecoveryForceIssued?CPU_RECOVERY_WAIT_FRAMES:2;
+    if (cpuRecoveryHaltFrames.length<waitFrames) { updateLogicControls(); return; }
+    const mode=cpuRecoveryForceIssued?2:forceResumeEnabled?1:2;
+    const stage=mode===1?'force-resume':'cpu-reset';
     const observedFrames=[...cpuRecoveryHaltFrames];
-    cpuRecoveryArmed=false; // Consume before clears or native recovery can fail.
-    resetCpuRecoveryObservation();
+    cpuRecoverySpent=true; // Consume before clears or native recovery can fail.
+    cpuRecoveryForceIssued=false;cpuRecoveryHaltFrames=[];
     const interventionStart=cpuInterventions.length;
     let succeeded=false, reason='CPU recovery failed';
-    try { succeeded=recoverLogicCPU(2)===true; }
+    cpuRecoveryBusy=true;
+    try { succeeded=recoverLogicCPU(mode)===true; }
     catch (error) { reason=`CPU recovery threw (${error.message})`; }
+    finally { cpuRecoveryBusy=false; }
     const latest=cpuInterventions.at(-1);
     if (succeeded && latest && cpuInterventions.length>interventionStart) {
-      Object.assign(latest,{trigger:'armed-halt-streak',observedFlags:flags,
+      Object.assign(latest,{trigger:'halt-recovery-sequence',stage,waitFrames,observedFlags:flags,
         observedFrames,attempted:true,outcome:'issued'});
       if (latest.telemetryError) {
         if (!paused) pauseToggle();
-        setLogicStatus(`CPU-only reset issued; post-reset telemetry unavailable (${latest.telemetryError}). Emulation paused for inspection; no retry will occur.`);
+        setLogicStatus(`${mode===1?'Force Resume':'CPU-only reset'} issued; post-recovery telemetry unavailable (${latest.telemetryError}). Emulation paused for inspection; no retry will occur.`);
+      } else if (mode===1 && cpuRecoveryEnabled) {
+        cpuRecoveryForceIssued=true;cpuRecoverySpent=false;
       }
     } else {
       reason=lastCpuRecoveryAttempt?.reason || reason;
       if (latest && cpuInterventions.length>interventionStart && latest.action==='recovery-aborted') {
-        Object.assign(latest,{trigger:'armed-halt-streak',observedFlags:flags,
+        Object.assign(latest,{trigger:'halt-recovery-sequence',stage,waitFrames,observedFlags:flags,
           observedFrames,attempted:false,outcome:'aborted'});
       } else if (latest && cpuInterventions.length>interventionStart &&
           ['cpu-only-reset','force-resume','cpu-recovery-rejected'].includes(latest.action)) {
-        Object.assign(latest,{trigger:'armed-halt-streak',observedFlags:flags,observedFrames,
+        Object.assign(latest,{trigger:'halt-recovery-sequence',stage,waitFrames,observedFlags:flags,observedFrames,
           attempted:true,outcome:latest.action==='cpu-recovery-rejected'?'rejected':'aborted',reason});
-      } else cpuInterventions.push({action:'automatic-recovery-aborted',trigger:'armed-halt-streak',
+      } else cpuInterventions.push({action:'automatic-recovery-aborted',trigger:'halt-recovery-sequence',stage,waitFrames,
         frame,observedFlags:flags,observedFrames,attempted:!!lastCpuRecoveryAttempt?.nativeCalled,
         outcome:'aborted',reason});
       if (!paused) pauseToggle();
@@ -1449,8 +1472,18 @@
   }
 
   function recoverLogicCPU(mode) {
+    const wasBusy=cpuRecoveryBusy;
+    cpuRecoveryBusy=true;
+    try {return performLogicCPURecovery(mode);}
+    finally {
+      cpuRecoveryBusy=wasBusy;
+      if (!wasBusy) cancelAutomaticRecovery();
+    }
+  }
+
+  function performLogicCPURecovery(mode) {
     lastCpuRecoveryAttempt={nativeCalled:false,status:null};
-    disarmCpuRecovery();
+    cancelAutomaticRecovery();
     if (!started || typeof emulator?._recover_logic_cpu !== 'function') return false;
     const frame=Number(emulator._get_logic_frame());
     const flagsBefore=Number(emulator._get_logic_cpu_flags());
@@ -1515,7 +1548,7 @@
 
   function disconnectAllFaults() {
     if (!started) return false;
-    disarmCpuRecovery();
+    cancelAutomaticRecovery();
     cancelPulse('all fault domains disconnected');
     selectedPin=null; ramSelectedPin=null; psgSelectedPin=null; fmSelectedPin=null;
     if (momentary) latched=canonical(momentary);
@@ -1659,6 +1692,7 @@
     try { if (logicApiReady()) { const value=Number(emulator._get_logic_frame()); if(Number.isFinite(value)&&value>=0)frame=value; } }
     catch (_) { /* Disconnect results must still be retained if telemetry is unavailable. */ }
     faultDisconnectActions.push({action:'all-domain-disconnect',frame,results:results.map(item=>({...item}))});
+    cancelAutomaticRecovery();
     updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls();
     return allClear;
   }
@@ -2165,7 +2199,7 @@
     }
     const config=stagedCircuitConfiguration;
     if (!config) return false;
-    disarmCpuRecovery();
+    cancelAutomaticRecovery();
     let error;
     try { error=preflightCircuitConfiguration(config); }
     catch (_) { error='Runtime state could not be read; no setters were called.'; }
@@ -2352,6 +2386,8 @@
       faultPulses:faultPulses.map(entry=>({...entry})),
       checkpointEvents:checkpointEvents.map(entry=>({...entry,before:{...entry.before},after:{...entry.after}})),
       checkpointSegment,
+      automaticRecovery:{forceResumeEnabled,cpuRecoveryEnabled,waitFrames:CPU_RECOVERY_WAIT_FRAMES,
+        waitingAfterForceResume:cpuRecoveryForceIssued,sequenceUsedOrCancelled:cpuRecoverySpent},
       cpuInterventions:cpuInterventions.map(entry=>({...entry})),
       faultDisconnects:faultDisconnectActions.map(entry=>({...entry,results:entry.results.map(result=>({...result}))})),
       rom:{name:exportIdentity?.name || null,sha256:romSha256},
@@ -2725,7 +2761,7 @@
     finishFaultPulse();
     drawActiveVideo();
     audioFrame();
-    if (transientAtStart || recoveryTransientActive()) resetCpuRecoveryObservation();
+    if (transientAtStart || recoveryTransientActive()) clearCpuRecoveryObservation();
     else observeAutomaticCpuRecovery();
     frames++;
     // Statistics describe byte differences under the projection model.
@@ -2762,8 +2798,9 @@
 
   function pauseToggle() {
     if (!started) return;
-    if (!paused) disarmCpuRecovery();
+    if (!paused) cancelAutomaticRecovery();
     paused=!paused;
+    if (!paused) resetCpuRecoveryObservation();
     $('pauseBtn').textContent = paused ? 'Resume' : 'Pause';
     if (paused) clearAudioQueue();
     stamp(paused?'Emulation paused':'Emulation resumed');
@@ -2809,7 +2846,7 @@
       target.set(bytes);
       // The accepted new image is about to replace core state; drain old audio
       // and cancel app-scheduled pulse work before native activation can throw.
-      disarmCpuRecovery();
+      cancelAutomaticRecovery();
       clearAudioQueue();
       cancelPulse(cleanRestart ? 'clean restart' : 'cartridge replaced');
       ownedAddressHold=null; keyboardHeld=null;
@@ -2858,6 +2895,7 @@
       loadedName=name;
       $('romName').textContent=name.toUpperCase().slice(0,60);
       romIdentity={bytes,name,hashPromise};
+      resetCpuRecoveryObservation();
       updateLogicControls();
       stamp(`Cartridge inserted: ${name} (forced NTSC-U)`);
     } catch (error) {
@@ -2950,16 +2988,17 @@
       else if (['Space','Enter'].includes(event.code) && keyboardHeld?.target==='WRAM') endKeyboardHold(event.code);
     });
     window.addEventListener('blur',()=>{
-      disarmCpuRecovery();
+      cancelAutomaticRecovery();
       pressed.clear();checkpointBlockedKeys.clear();
       endKeyboardHold();
       if (ownedAddressHold?.type==='pointer') endAddressFrameHold('pointer',ownedAddressHold.pointerId);
+      cancelAutomaticRecovery();
       focusReleased=true;
     });
     window.addEventListener('focus',()=>{if(focusReleased){lastFrame=0;focusReleased=false;}});
     document.addEventListener('visibilitychange',()=>{
       lastFrame=0;clearAudioQueue();
-      if (document.hidden) disarmCpuRecovery();
+      if (document.hidden) cancelAutomaticRecovery();
     });
   }
 
@@ -3074,7 +3113,10 @@
     setupAddressChip();
     $('logicPulseBtn').addEventListener('click',()=>startFaultPulse());
     $('logicApplyBtn').addEventListener('click',()=>applyLogicFault());
-    $('logicResumeBtn').addEventListener('click',()=>recoverLogicCPU(1));
+    $('manualForceResumeBtn').addEventListener('click',()=>recoverLogicCPU(1));
+    $('logicResumeBtn').addEventListener('click',()=>{
+      forceResumeEnabled=!forceResumeEnabled;resetCpuRecoveryObservation();updateLogicControls();
+    });
     $('logicCpuResetBtn').addEventListener('click',()=>{
       recoverLogicCPU(2);
       $('randomiserStatus').textContent=$('logicStatus').textContent;
@@ -3082,13 +3124,7 @@
     $('saveCheckpointBtn').addEventListener('click',saveCheckpoint);
     $('restoreCheckpointBtn').addEventListener('click',restoreCheckpoint);
     $('armCpuRecoveryBtn').addEventListener('click',()=>{
-      if (cpuRecoveryArmed) disarmCpuRecovery();
-      else if (started && !paused && typeof emulator?._recover_logic_cpu==='function' &&
-          typeof emulator?._get_logic_cpu_flags==='function' && !recoveryTransientActive()) {
-        resetCpuRecoveryObservation();cpuRecoveryArmed=true;
-        setLogicStatus('One CPU-only recovery is armed after two eligible HALT frames.');
-        stamp('One CPU-only recovery armed');updateLogicControls();
-      }
+      cpuRecoveryEnabled=!cpuRecoveryEnabled;resetCpuRecoveryObservation();updateLogicControls();
     });
     $('logicDisconnectBtn').addEventListener('click',()=>disconnectLogic());
     $('disconnectAllFaultsBtn').addEventListener('click',runDisconnectAllFaults);

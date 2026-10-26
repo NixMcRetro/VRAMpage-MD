@@ -1,3 +1,19 @@
+# Ordered Recovery Development Checks
+
+`python tests/browser_logic.py -k ordered_recovery` covers default-On preferences,
+independent Off controls, two-frame confirmation, exact eight-frame escalation,
+HALT clearing, bounded repeated HALT, transient/lifecycle cancellation, legacy
+fallback and native/clear/telemetry failures. Most unrelated mock tests explicitly
+select both preferences Off; dedicated default tests and actual-core tests verify
+the real initial On state. No production test-only setting bypasses the controls.
+
+`python tests/browser_core.py -k ordered_recovery` uses original cartridges and
+actual native calls to check HALT/STOP, independent controls and synchronous 64 KiB
+Work RAM/audio-fault preservation. Its real HALT fixture clears HALT after Force
+Resume, so it proves cancellation, not real-core persistent-HALT escalation. The
+exact eight-frame escalation is proven separately with controlled mock telemetry.
+Neither result establishes every game's recovery, audible sound or physical fidelity.
+
 # Session Checkpoint Development Checks
 
 `tests/test_session_checkpoint.py` runs fatal native ASan/UBSan publication,
@@ -1490,7 +1506,10 @@ Disabled-style follow-up: Chromium compact 6, display 7, logic 96 and actual-cor
 PR #60 final integration: all seven PR checks (40206196863) and all seven main checks (40206671753) passed. The extracted local bundle also passed all six actual-core cases. Main source is 5d0425a64acb0f883789c67e8c6ec41e5d2c0c02; release/tag/assets unchanged.
 
 
-# Bounded recovery and Title Case integration
+# Historical PR #61: Bounded Recovery and Title Case Integration
+
+This record describes the earlier default-Off policy, superseded by the current
+ordered recovery checks at the top of this guide.
 
 Development source adds one explicitly armed HALT-triggered CPU-only reset attempt.
 Focused browser coverage exercises default off, genuine STOP exclusion, two-frame

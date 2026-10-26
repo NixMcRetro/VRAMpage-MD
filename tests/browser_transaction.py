@@ -88,6 +88,9 @@ window.Module=opts=>originalFactory(opts).then(core=>{
             content_type="application/wasm", path=str(core_dir / "genplus.wasm")))
         self.page.goto(f"http://127.0.0.1:{self.server.server_port}/")
         self.page.wait_for_function("!!window.testCore")
+        # Handoff failures are checked without an automatic intervention changing the fixture.
+        self.page.locator('#logicResumeBtn').click()
+        self.page.locator('#armCpuRecoveryBtn').click()
         self.page.locator("#romFile").set_input_files({
             "name": "original-video-tone.bin",
             "mimeType": "application/octet-stream",
@@ -262,7 +265,7 @@ window.Module=opts=>originalFactory(opts).then(core=>{
         page.locator("#logicApplyBtn").click()
         page.evaluate("testCore._set_vram_fault_model(2,0,0,1)")
         page.evaluate("window.__rejectVramClear=true")
-        page.locator("#logicResumeBtn").click()
+        page.locator("#manualForceResumeBtn").click()
         page.evaluate("window.__rejectVramClear=false")
         expect(page.locator("#logicStatus")).to_contain_text("RAM fault is disconnected")
         expect(page.locator("#logicStatus")).to_contain_text("no CPU intervention was issued")

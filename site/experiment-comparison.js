@@ -125,6 +125,9 @@
     }
     for(const [label,keys,valid] of [
       ['RAM Active',['logic','active'],isBoolean],['RAM Affected Reads',['logic','readCount'],isInteger],['RAM Affected Writes',['logic','writeCount'],isInteger],
+      ['Force Resume Enabled',['automaticRecovery','forceResumeEnabled'],isBoolean],
+      ['CPU Recovery Enabled',['automaticRecovery','cpuRecoveryEnabled'],isBoolean],
+      ['Recovery Wait Frames',['automaticRecovery','waitFrames'],value=>isInteger(value,1,1024)],
       ['Current Frame',['currentFrame'],isInteger],['CPU Flags',['cpuFlags'],value=>isInteger(value,0,65535)],
       ['VRAM Transaction Counts',['vramTransaction','lastFrameCounts'],isRecord],
       ['PSG Recorded Writes',['psgInputFault','inputWrites'],isCount],['FM Recorded Writes',['fmInputFault','inputWrites'],isCount],
