@@ -1,4 +1,4 @@
-# VRAMpage MD
+# 🎛️ VRAMpage MD
 
 A browser workbench for circuit-bending a Sega Mega Drive / Genesis. Experiment
 with video memory, Work RAM and FM/PSG sound through a modified emulator.
@@ -7,35 +7,39 @@ with video memory, Work RAM and FM/PSG sound through a modified emulator.
 **[Download v0.5.0](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip)** ·
 [Checksums](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/SHA256SUMS.txt)
 
-## Try It
+## 🎮 Try It
 
 Open the live app, choose **Load ROM**, then **Enable Sound**. Cartridge files
 stay in your browser and are not uploaded. Use your own legally usable ROM, or
 start with the free original test program:
 
-**[Download the Colour-Test ROM](https://mcretro.net/assets/downloads/2026/10/vrampage-md/VRAMpage-MD-Colour-Test.bin)** ·
-[ROM and Python Source ZIP](https://mcretro.net/assets/downloads/2026/10/vrampage-md/VRAMpage-MD-Colour-Test.zip) ·
-[About the Project](https://mcretro.net/vrampage-md-bending-bits/)
+> [!TIP]
+> **[Download the Colour-Test ROM](https://mcretro.net/assets/downloads/2026/10/vrampage-md/VRAMpage-MD-Colour-Test.bin)** ·
+> [ROM and Python Source ZIP](https://mcretro.net/assets/downloads/2026/10/vrampage-md/VRAMpage-MD-Colour-Test.zip) ·
+> [About the Project](https://mcretro.net/vrampage-md-bending-bits/)
+>
+> The 64 KiB test ROM uses original code and graphics. It is silent, so use another
+> cartridge for FM/PSG experiments. Commercial games are not included in this
+> repository or the browser package.
 
-The 64 KiB test ROM uses original code and graphics. It is silent, so use another
-cartridge for FM/PSG experiments. Commercial games are not included in this
-repository or the browser package.
+## ⚡ What Can You Bend?
 
-## What Can You Bend?
+| Chip | Experiments |
+| --- | --- |
+| **VRAM** | Cut modelled video-memory address lines or bridge a pair. |
+| **SRAM (Work RAM)** | Alter address lines; hold A11–A15 write contacts or apply eight-frame pulses. |
+| **FM / PSG** | Alter each chip's input writes independently, or use its **Randomiser** button. |
 
-- **VRAM and SRAM (Work RAM):** cut modelled address lines or bridge pairs;
-  hold A11–A15 write contacts or apply eight-frame pulses.
-- **FM and PSG:** alter each chip's input writes independently, or use the
-  chip-local **Randomiser** buttons.
-- **Experiment and Recover:** save configurations, compare exported experiments,
-  use a session checkpoint, or try **Force Resume**, **CPU Reset** and **Clean Restart**.
+Save configurations, compare exported experiments, use a session checkpoint,
+or try **Force Resume**, **CPU Reset** and **Clean Restart**.
 
 These are experimental digital models, not electrically accurate motherboard
 simulations. A fault can stop a game or leave corrupted memory/sound state after
-it is removed. **CPU Reset** preserves RAM and sound-chip state, although restarted game code
-can overwrite RAM. **Clean Restart** fully reboots. See the [controls and recovery guide](docs/RUNNING-LOCALLY.md).
+it is removed. **CPU Reset** preserves RAM and sound-chip state, although
+restarted game code can overwrite RAM. **Clean Restart** fully reboots.
+See the [controls and recovery guide](docs/RUNNING-LOCALLY.md).
 
-## Run Locally
+## 💻 Run Locally
 
 Download and extract the complete **v0.5.0 browser ZIP** above. From its
 **VRAMpage-MD** folder, run:
@@ -51,7 +55,7 @@ browser; local use also needs Python 3. No emulator compilation is needed for
 the complete package. GitHub's **Code → Download ZIP** is source-only.
 [Launch help and troubleshooting](docs/RUNNING-LOCALLY.md).
 
-## Source and Credits
+## 🧩 Source and Credits
 
 - **VRAMpage MD:** Nix McRetro, with Codex assistance for the workbench, fault
   models, recovery and testing.
@@ -67,7 +71,7 @@ The emulator's upstream terms include **non-commercial distribution** and
 **complete corresponding-source requirements**. Runnable packages include the
 modified emulator source and notices. Those terms do not grant rights to games.
 
-## Further Reading
+## 📚 Further Reading
 
 [Build from Source](docs/DEPLOYMENT.md) · [Documentation](docs/README.md) ·
 [Testing](docs/TESTING.md) · [Roadmap](ROADMAP.md) · [Changelog](CHANGELOG.md)

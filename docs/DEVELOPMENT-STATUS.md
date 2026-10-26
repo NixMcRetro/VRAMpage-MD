@@ -1,5 +1,17 @@
 # Development status and continuation checkpoint
 
+## README Visual Polish — 27 October 2026 (Sydney)
+
+The requested presentation pass adds restrained section icons, a native GitHub
+Tip for the original test-ROM links and a compact chip/features table. Every
+existing link target, source credit and licence term is preserved. The A11–A15
+write contacts are shown only in the SRAM row. No app, version, release, asset,
+website or release-curation changes are included.
+
+GitHub's Markdown renderer confirmed the Tip/table markup. Focused existing
+documentation, versioning and curation checks passed. Independent presentation
+review and PR/main CI are the remaining integration gates.
+
 ## Repository Cleanup Verified — 27 October 2026 (Sydney)
 
 [PR #71](https://github.com/NixMcRetro/VRAMpage-MD/pull/71) merged as
