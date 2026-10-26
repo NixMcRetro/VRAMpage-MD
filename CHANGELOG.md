@@ -1,5 +1,11 @@
 # Changelog
 
+## Repository Presentation — 27 October 2026
+
+- Simplify the README around the hosted app, current browser download, original free colour-test ROM and upstream source credits; retain detailed guides and historical evidence.
+- Record the completed, separately approved hosted deployment and link its original test-ROM/source downloads without adding a ROM to the emulator repository or changing the app version.
+- Keep every release and archived download; correct obsolete latest-version routing through guarded metadata-only curation, preserving protected milestone notes and all binary/tag identities.
+
 ## v0.5.0 — Cross-Platform Browser Build
 
 - Package the complete browser app with neutral filenames, checksums and Windows/macOS/Linux launch instructions. Keep the Mac launcher as a convenience. Prepare releases as drafts; preserve immutable v0.4.1.

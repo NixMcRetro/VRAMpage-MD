@@ -1,5 +1,30 @@
 # Development work queue
 
+## Repository Front Page — 27 October 2026 (Sydney)
+
+The requested cleanup makes the live app, current v0.5.0 browser package, original
+colour-test ROM and source attribution the front-page entry points. Detailed
+controls and technical history remain in their existing guides. The test ROM is
+linked from its published website location; no ROM or generated core is added to
+this repository and no application/version change is made.
+
+Publication-docs [PR #70](https://github.com/NixMcRetro/VRAMpage-MD/pull/70) is already
+merged as `a7990a513c196a34761d9112baa16cd26c14dc31` with all seven
+[main checks passing](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40304989281).
+The separately approved [hosted v0.5.0 app](https://mcretro.net/homepages/vrampage-md/)
+was deployed and confirmed working by the user. The
+[project article](https://mcretro.net/vrampage-md-bending-bits/) provides original
+colour-test downloads. Those completed publication/deployment tasks need no repeat.
+
+Release audit: 18 public releases, nine runnable packages and nine source-only
+history entries. The user selected keeping all releases and correcting obsolete
+latest-version links. Older v0.2.6/v0.2.7 packages remain pinned by reproduction
+scripts. The curation update retains every tag, binary and checksum; protected
+v0.3.0/v0.4.0/v0.4.1/v0.5.0 descriptions also remain unchanged. Only fourteen older
+descriptions need corrected entry links. No new app release is needed.
+Next: require passing PR/main CI, then verify the metadata-only curation run and
+unchanged release identities. Continue from concrete compatibility reports.
+
 ## v0.5.0 Published — 26 October 2026 (Sydney)
 
 [VRAMpage MD v0.5.0](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.5.0)

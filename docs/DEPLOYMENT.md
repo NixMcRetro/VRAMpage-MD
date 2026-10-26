@@ -1,5 +1,21 @@
 # Releases and deployment
 
+## Live v0.5.0 App
+
+The live app is **https://mcretro.net/homepages/vrampage-md/**. The separately
+approved website deployment uses the released v0.5.0 site, matching source,
+fallback core and notices. [Deployment verification](https://github.com/NixMcRetro/mcretro.net/actions/runs/40320560810)
+checks that all 487 deployed files survive Jekyll unchanged. The user subsequently
+confirmed that the hosted app works; direct custom-domain access remains outside
+this execution environment's allowed network destinations.
+
+The [original colour-test ROM and source](https://mcretro.net/assets/downloads/2026/10/vrampage-md/VRAMpage-MD-Colour-Test.zip)
+are separate blog downloads, not part of the emulator release. They contain no
+commercial game assets and the program is silent.
+
+Future website updates still require separate approval. The historical staging
+script below targets `/homepages/vrampage/`; do not use it for the current URL.
+
 ## Cross-platform browser release
 
 [Download VRAMpage-MD-v0.5.0-browser.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip) · [SHA256SUMS.txt](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/SHA256SUMS.txt).
