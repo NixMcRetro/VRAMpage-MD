@@ -4,10 +4,15 @@ VRAMpage MD is a browser-based NTSC Mega Drive/Genesis experiment. It runs a loc
 
 ## Start here
 
-**[Download the complete v0.4.1 Mac app](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip)**,
-extract it and open START.command. See [Run locally](RUNNING-LOCALLY.md) for Python
-and macOS launch help. The work-RAM controls are implemented and experimental;
-older standalone-model descriptions are historical development records.
+VRAMpage MD runs in modern browsers on **Windows, macOS and Linux**. Start with
+[the browser package and launch guide](RUNNING-LOCALLY.md), or read the
+[v0.5.0 candidate release notes](RELEASE-NOTES-v0.5.0.md). The candidate is available
+through reviewed CI artifacts until publication; it is not yet a public release.
+
+The historical **[v0.4.1 complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip)**
+remains unchanged. Python 3 is needed only to run a local server; a hosted browser
+build has no Python or macOS requirement. The Work RAM controls are implemented
+and experimental; older standalone-model descriptions are historical records.
 
 
 | Document | Purpose |
@@ -15,8 +20,9 @@ older standalone-model descriptions are historical development records.
 | [Release history](RELEASE-HISTORY.md) | Canonical historical versions and current runnable downloads |
 | [Release presentation](RELEASE-CURATION.md) | Manage release titles and notes without changing tags or binaries |
 | [Changelog](../CHANGELOG.md) | Versioned changes and verification limits |
-| [Versioning](VERSIONING.md) | Canonical 0.2.x release labels and historical identifier mapping |
-| [Run locally](RUNNING-LOCALLY.md) | Start a ready-built review bundle without building WebAssembly |
+| [Versioning](VERSIONING.md) | Current source version and historical identifier mapping |
+| [Run locally](RUNNING-LOCALLY.md) | Windows, macOS and Linux browser-package launch instructions |
+| [v0.5.0 candidate notes](RELEASE-NOTES-v0.5.0.md) | Candidate changes, distribution and verification limits |
 | [Project overview](../README.md) | Current features, limitations, building and repository policy |
 | [Session checkpoints](SESSION-CHECKPOINT-API.md) | Explicit session-only checkpoint semantics, supported profiles and validation gates |
 | [Product roadmap](../ROADMAP.md) | Versions and video, logic and sound milestones |
@@ -35,7 +41,7 @@ older standalone-model descriptions are historical development records.
 | [Pulse survey](PULSE-EXPERIMENTS.md) | Repeated actual-core survey of all adjacent address write pairs |
 | [RAM pulses](RAM-PULSES.md) | Short contacts, quick address write pairs, frame timing and cancellation |
 | [Native Checkpoint Replay Proof](CHECKPOINT-REPLAY-PROOF.md) | Developer-only capacity, audio continuity and synthetic replay evidence |
-| [v0.5.0 recovery/checkpoint plan](RECOVERY-CHECKPOINT-PLAN.md) | Planned opt-in recovery, one-session checkpoint and acceptance gates |
+| [v0.5.0 recovery/checkpoint plan](RECOVERY-CHECKPOINT-PLAN.md) | Ordered recovery, one-session checkpoint and acceptance gates |
 | [CPU recovery](CPU-RECOVERY.md) | v0.2.1 force-resume/reset semantics, metadata and limits |
 | [Experiments](EXPERIMENTS.md) | Read-only saved-export comparison and repeatable zero-fault/RAM-fault procedure |
 | [Build and deployment](DEPLOYMENT.md) | Versioned local downloads and separately authorised website deployment |

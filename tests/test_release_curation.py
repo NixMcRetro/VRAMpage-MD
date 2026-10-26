@@ -61,9 +61,14 @@ class ReleaseCurationTests(unittest.TestCase):
                 self.assertIn("Original release URL:", original)
                 self.assertIn("Archive only.", original)
 
-    def test_homepage_has_clear_route_to_latest(self):
+    def test_homepage_has_clear_candidate_and_historical_download_routes(self):
         readme = (ROOT / "README.md").read_text()
-        self.assertIn(f"VRAMpage-MD-{DATA['current']}-macos.zip", readme)
+        version = (ROOT / "VERSION").read_text().strip()
+        self.assertIn(f"VRAMpage-MD-v{version}-browser.zip", readme)
+        self.assertIn("VRAMpage-MD-v0.4.1-macos.zip", readme)
+        self.assertIn("docs/RELEASE-HISTORY.md", readme)
+        self.assertIn(f"VRAMpage-MD-{DATA['current']}-macos.zip",
+                      (ROOT / "docs/RELEASE-HISTORY.md").read_text())
         self.assertIn("source-only", readme.lower())
         self.assertIn("START.command", readme)
 

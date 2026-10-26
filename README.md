@@ -2,26 +2,44 @@
 
 **Play Sega Mega Drive / Genesis games in your browser and experiment with simulated hardware faults.** VRAMpage MD is an experimental, hardware-informed circuit-bending workbench built from a modified Genesis Plus GX emulator. Supply your own legally usable game cartridge file. No game ROMs are included or uploaded.
 
-> **New here? Start with the Mac download below.** You do not need to know Git, install a developer application or compile an emulator.
+## Run in your browser
 
-## Download and play on your Mac
+VRAMpage MD is a **cross-platform HTML/CSS/JavaScript/WebAssembly app** for modern
+browsers on Windows, macOS and Linux. A hosted build needs only a browser; a local
+copy needs **Python 3** to serve its files. macOS is not an app requirement.
 
-**[Download VRAMpage MD v0.4.1 - complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip)**
+The **v0.5.0 browser release candidate** is being verified before publication.
+Its complete package is named **VRAMpage-MD-v0.5.0-browser.zip**. For review builds,
+open the matching successful [source-checks run](https://github.com/NixMcRetro/VRAMpage-MD/actions/workflows/source-checks.yml)
+and download **VRAMpage-MD-local-review** under Artifacts. GitHub may require sign-in
+and wrap the browser ZIP inside another ZIP; extract both. Check BUILD-INFO.json
+for the source commit. Artifacts expire and are not permanent release downloads.
+See the [candidate release notes](docs/RELEASE-NOTES-v0.5.0.md).
 
-1. Download the ZIP and double-click it in Finder to extract it.
-2. Open the **VRAMpage-MD** folder and double-click **START.command**.
-3. When the browser opens, choose **Load ROM** and select your own legally usable `.md`, `.bin` or `.gen` game.
-4. Click **Enable Sound** for audio. Keep the launcher Terminal window open while playing.
+1. Extract the complete package and open the **VRAMpage-MD** folder in a terminal.
+2. Start the included local server:
 
-**Needs:** macOS and **Python 3**. The included launcher runs a small server on your own computer. There is no account, cloud backend or Emscripten setup. It is a *local browser app*, not a native Mac `.app`.
+   | Operating System | Command |
+   | --- | --- |
+   | Windows | `py -3 scripts/serve.py` |
+   | macOS or Linux | `python3 scripts/serve.py` |
 
-If your Mac blocks `START.command`, right-click it and choose **Open**, or follow the short [Mac launch and troubleshooting guide](docs/RUNNING-LOCALLY.md). To use Firefox, make Firefox your default browser or open the local address printed by the launcher in Firefox.
+3. The server opens your default browser, or prints a local address you can open
+   in another browser. Choose **Load ROM** and select your own legally usable
+   `.md`, `.bin` or `.gen` game, then click **Enable Sound**.
+4. Keep the terminal open while playing; press **Ctrl+C** there to stop the server.
 
-**Important:** GitHub's green **Code → Download ZIP** gives you a *source-only* archive, not the ready-to-run application. Use the **complete Mac ZIP** above.
+On macOS, double-clicking **START.command** remains a convenient alternative.
+See [cross-platform launch instructions and troubleshooting](docs/RUNNING-LOCALLY.md).
+No Git, Emscripten or emulator compilation is needed for the complete package.
+GitHub's **Code → Download ZIP** is a source-only archive, not this runnable build.
+Open the app through HTTP rather than double-clicking site/index.html.
 
-[Previous v0.2.8 Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.8/VRAMpage-MD-v0.2.8-macos.zip) remains available for reproducing earlier experiments.
-
-[Latest release and checksum](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.4.1) · [Other runnable versions and historical source releases](docs/RELEASE-HISTORY.md)
+The existing public **[v0.4.1 complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip)**
+and its [release/checksum](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.4.1)
+remain unchanged. Its filename reflects the historical Mac launcher packaging;
+it does not include the v0.5.0 candidate controls. [Other runnable versions and historical source releases](docs/RELEASE-HISTORY.md)
+remain available for reproducing earlier experiments.
 
 **v0.3.0:** choose **Frame projection** or **Transaction** in the VRAM patchbay, then use the same legs and bridges. Transaction mode maps actual emulator VRAM accesses and exports separate model metadata and counters. Frame projection remains the default fallback. Both are digital approximations.
 
@@ -29,22 +47,22 @@ If your Mac blocks `START.command`, right-click it and choose **Open**, or follo
 
 **v0.4.1:** [four compact chip diagrams](docs/CHIP-WORKBENCH.md) keep VRAM, Work RAM, FM and PSG visible together. Click legs to disconnect supported lines or join a pair within that chip. Audio cuts use a new stuck-low input model. [Configuration files](docs/CIRCUIT-CONFIGURATIONS.md) save masks and bridges; loading previews settings before explicit Apply. Older configuration files remain importable.
 
-**Development source after v0.4.1:** coordinated fault removal clears every modeled domain while preserving play/pause after a confirmed complete clear. Failed or unverified clears pause for inspection. CPU recovery still clears RAM/VRAM faults and preserves audio faults. These unreleased controls are not in the public ZIP above; see [recovery semantics](docs/CPU-RECOVERY.md).
+**v0.5.0 candidate:** coordinated fault removal clears every modeled domain while preserving play/pause after a confirmed complete clear. Failed or unverified clears pause for inspection. CPU recovery still clears RAM/VRAM faults and preserves audio faults. These candidate controls are not in the historical v0.4.1 ZIP above; see [recovery semantics](docs/CPU-RECOVERY.md).
 
-Development source offers **Force Resume: On/Off** and **CPU Recovery: On/Off** beside Randomiser. Both start **On**, as requested. Two consecutive eligible HALT frames permit one Force Resume; if HALT persists for eight more completed frames (~0.13 s), CPU Recovery permits one CPU-only reset. A cleared HALT flag cancels escalation. Each fault experiment gets one sequence; a new fault action, toggle change or explicit Resume permits another. Switch both **Off** for unassisted experiments. Neither static pictures nor ordinary STOP trigger recovery. See [recovery semantics](docs/CPU-RECOVERY.md#development-source-ordered-recovery).
+The v0.5.0 candidate offers **Force Resume: On/Off** and **CPU Recovery: On/Off** beside Randomiser. Both start **On**, as requested. Two consecutive eligible HALT frames permit one Force Resume; if HALT persists for eight more completed frames (~0.13 s), CPU Recovery permits one CPU-only reset. A cleared HALT flag cancels escalation. Each fault experiment gets one sequence; a new fault action, toggle change or explicit Resume permits another. Switch both **Off** for unassisted experiments. Neither static pictures nor ordinary STOP trigger recovery. See [recovery semantics](docs/CPU-RECOVERY.md#development-source-ordered-recovery).
 
-Development source adds **Save Checkpoint** and **Restore Checkpoint** in the advanced **Logic / SRAM (Work RAM)** panel. Save with all faults off and controller inputs released. The single checkpoint stays in this tab's current cartridge session; it is never written to a file or included in experiment JSON. Restore clears all fault domains, returns to the saved machine state and image without advancing a frame, and stays paused until **Resume**. CPU Reset keeps the slot; Clean Restart, a new cartridge or reloading the page discards it. Supported scope is ordinary Mega Drive cartridges, three- or six-button pads and validated ordinary SRAM; other mapper/peripheral/audio profiles are refused. A checkpoint can itself contain a broken game.
+The v0.5.0 candidate adds **Save Checkpoint** and **Restore Checkpoint** in the advanced **Logic / SRAM (Work RAM)** panel. Save with all faults off and controller inputs released. The single checkpoint stays in this tab's current cartridge session; it is never written to a file or included in experiment JSON. Restore clears all fault domains, returns to the saved machine state and image without advancing a frame, and stays paused until **Resume**. CPU Reset keeps the slot; Clean Restart, a new cartridge or reloading the page discards it. Supported scope is ordinary Mega Drive cartridges, three- or six-button pads and validated ordinary SRAM; other mapper/peripheral/audio profiles are refused. A checkpoint can itself contain a broken game.
 
 
-Development source also adds a [read-only comparison of two saved experiment exports](docs/EXPERIMENTS.md#compare-saved-exports-development-source). Inspect identities, settings and recorded results locally; loading an export never applies its settings or replays a run. Missing metadata remains unknown.
+The v0.5.0 candidate also adds a [read-only comparison of two saved experiment exports](docs/EXPERIMENTS.md#compare-saved-exports-development-source). Inspect identities, settings and recorded results locally; loading an export never applies its settings or replays a run. Missing metadata remains unknown.
 
-The development-source [Randomiser](docs/CHIP-WORKBENCH.md#development-source-randomiser) has separate **PSG**, **FM** and **VRAM** buttons. Each selects cuts or a joined pair within that chip, leaving the other chips unchanged. Save the resulting configuration to keep a useful setup. The public v0.4.1 ZIP is preserved.
+The candidate [Randomiser](docs/CHIP-WORKBENCH.md#development-source-randomiser) has separate **PSG**, **FM** and **VRAM** buttons. Each selects cuts or a joined pair within that chip, leaving the other chips unchanged. Save the resulting configuration to keep a useful setup. The public v0.4.1 ZIP is preserved.
 
 The same area includes **CPU Reset**, a copy of **Clean Restart** immediately to its right, and ten **RAM WRITE** pair buttons covering every combination within A11–A15. The default **Hold while pressed** keeps a write-only pair active only while its mouse button or shortcut key is held down; releasing it disconnects the pair. Choose **8-frame pulse** for a contact that disconnects after eight emulated frames. Contact expiry itself issues no CPU recovery; the automatic HALT policy may act on later frames if enabled. Neither mode has an affected-write cap. Removing a fault does not repair earlier corruption.
 
-Development-source fault shortcuts **1–9** target the chip selected by **0**: **VRAM → WRAM → FM → PSG**. The text label identifies the keyboard target. An active fault gives its chip a pale green fill and outline; idle chips keep their normal theme colours. Shift holds a temporary contact until release. WRAM digits cover the first nine displayed A11–A15 pairs; the tenth remains available by button. Reconnect/disconnect buttons remain available; **0 now changes target**. Browser Control/Command/Alt shortcuts keep their normal behaviour.
+Candidate fault shortcuts **1–9** target the chip selected by **0**: **VRAM → WRAM → FM → PSG**. The text label identifies the keyboard target. An active fault gives its chip a pale green fill and outline; idle chips keep their normal theme colours. Shift holds a temporary contact until release. WRAM digits cover the first nine displayed A11–A15 pairs; the tenth remains available by button. Reconnect/disconnect buttons remain available; **0 now changes target**. Browser Control/Command/Alt shortcuts keep their normal behaviour.
 
-Development source also stages cartridge replacements: rejected files keep the
+The candidate also stages cartridge replacements: rejected files keep the
 current game and its identity intact, older asynchronous reads cannot replace a
 newer selection, and Clean Restart uses the last accepted cartridge. If core
 activation becomes uncertain, emulation stops explicitly; it does not pretend

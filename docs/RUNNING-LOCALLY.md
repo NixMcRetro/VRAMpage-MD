@@ -1,96 +1,112 @@
-# Run VRAMpage MD on your Mac
+# Run VRAMpage MD in Your Browser
 
-## Download once, then launch
+VRAMpage MD is a cross-platform HTML/CSS/JavaScript/WebAssembly app. Use a modern
+browser on Windows, macOS or Linux. The complete package includes the compiled
+emulator; no Git, Emscripten or build tools are needed. A hosted build needs only
+a browser. Running a local copy requires Python 3 for its small HTTP server.
 
-1. [Download VRAMpage-MD-v0.4.1-macos.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip).
-2. Double-click the ZIP in Finder to extract it. Open the **VRAMpage-MD** folder.
-3. Double-click **START.command**. It starts a local server and opens your default browser.
-4. Click **Load ROM** and select your own legally usable Mega Drive cartridge.
-5. Click **Enable Sound**. Use the on-screen keyboard guide to play.
+## Get the Complete Browser Package
 
-This is one complete ZIP, with the emulator already compiled. No cloning,
-GitHub login, Emscripten or manual compilation is needed. **Code → Download ZIP**
-on GitHub is a different, source-only download and cannot run without building.
+The **v0.5.0 browser release candidate** is being verified before publication.
+The package is named **VRAMpage-MD-v0.5.0-browser.zip**. For candidate review, open
+the matching successful [source-checks run](https://github.com/NixMcRetro/VRAMpage-MD/actions/workflows/source-checks.yml)
+and download **VRAMpage-MD-local-review** under Artifacts. GitHub may require
+sign-in and wrap the package in another ZIP. Extract the outer artifact and the
+browser ZIP, then open the **VRAMpage-MD** folder. BUILD-INFO.json identifies the
+source commit; artifacts expire. See the [candidate notes](RELEASE-NOTES-v0.5.0.md).
 
-Python 3 is the only local prerequisite. If the launcher reports that it is
-missing, install it using the [official macOS installer](https://www.python.org/downloads/macos/),
-then double-click **START.command** again. You do not need a desktop development app.
+The historical [VRAMpage-MD-v0.4.1-macos.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip)
+remains a public download with its original assets. It predates the candidate's
+new controls. **Code → Download ZIP** on GitHub is a different, source-only
+archive and cannot run without building the emulator first.
 
-To use Firefox, make it your default browser before launching, or copy the local
-address printed in the launcher's Terminal window into Firefox's address bar.
-Keep that window open while playing. Press **Control+C** there to stop the server.
-ROM files are read locally by your browser; they are not uploaded.
+## Start a Local Copy
 
-### Development-source cartridge loading safeguards
+Install [Python 3](https://www.python.org/downloads/) if it is not already present.
+Open a terminal in the extracted **VRAMpage-MD** folder and use the command for
+your operating system:
 
-Later review builds stage new cartridge files before replacing the current game.
-A rejected size/header, unreadable file or refused input buffer leaves the last
-accepted cartridge and restart data intact. While a game is active, rejection is
-reported in the event log without covering its screen or changing play/pause.
-Only the latest chosen file may activate; Clean restart cancels earlier pending
-reads. Experiment export cancels if cartridge identity changes during hashing,
-rather than saving a mismatched name and SHA-256.
+| Operating System | Command |
+| --- | --- |
+| Windows (PowerShell or Command Prompt) | `py -3 scripts/serve.py` |
+| macOS or Linux | `python3 scripts/serve.py` |
 
-If the emulator has begun activation and then fails, the app stops and reports
-uncertainty. Clean restart can explicitly retry the retained accepted cartridge;
-this is not automatic rollback or game recovery. These development changes do
-not replace the immutable public v0.4.1 ZIP.
+On Windows, `python scripts/serve.py` is an alternative if your Python 3 installer
+provides `python` rather than `py`. On macOS, you can also double-click
+**START.command** in Finder. That optional launcher uses the same local server.
 
+The server chooses an available port, listens only on **127.0.0.1**, and opens
+your default browser. If it does not open, copy the printed `http://127.0.0.1:…/`
+address into a browser. Keep the terminal open while playing; press **Ctrl+C**
+there to stop the server. No online account is needed to run an extracted copy.
 
-## If macOS blocks START.command
+Choose **Load ROM**, select your own legally usable Mega Drive cartridge, then
+click **Enable Sound**. ROM files are read locally by your browser and are not
+uploaded. Use the on-screen keyboard guide to play. To use another browser, open
+the same printed local address there.
 
-First try right-clicking **START.command**, choosing **Open**, and confirming
-**Open** if macOS offers it. If it still refuses to run:
+Serve the files over HTTP; opening site/index.html directly as a `file://` URL can
+prevent the WASM emulator from loading. To choose a port, append `--port 8000`.
+To serve without automatically opening a browser, append `--no-browser`.
 
-1. Open **Terminal** (Applications → Utilities → Terminal).
-2. Type `bash `, including the space.
-3. Drag **START.command** from Finder into the Terminal window.
-4. Press **Return**. No path or other command needs to be typed.
+## Static Hosting
 
-The script finds its own folder, even if its name contains spaces.
+The built **site/** directory can also be served by an ordinary static HTTP/HTTPS
+host. Keep its relative asset paths, compiled **core/** files, corresponding
+**source/** and notices together; serve `.wasm` as `application/wasm`. Visitors
+then need only a browser, with no Python installation or OS-specific launcher.
+See [build and deployment](DEPLOYMENT.md) for maintainer instructions and licence
+requirements. Preparing this package does not publish a website or authorise
+changes to McRetro.net.
 
-## Common problems
+## Common Problems
 
-- **Missing emulator files:** re-download the complete release ZIP and extract
-  the whole folder. Do not move START.command away from its accompanying files.
-- **Port already in use:** the launcher normally chooses a free port automatically.
-  Close a previous launcher window if you no longer need it; do not stop unrelated apps.
-- **Browser does not open:** copy the local address printed in the Terminal window
-  into Firefox. The server can still be running successfully.
-- **No sound:** click Enable Sound after loading a cartridge, check Firefox's
-  audio permissions, the tab's mute setting and your Mac's volume.
-- **Game stops after a fault:** reconnect lines first. CPU recovery preserves
-  corrupted RAM and may not restore play. **Clean restart** reboots the cartridge.
-- **Untrusted file warning:** this launcher is an unsigned shell script. Obtain
-  the archive from this repository's release page and read it before running.
+- **Missing emulator files:** extract the whole complete package. A source-only
+  checkout requires a core build. Keep scripts/serve.py and START.command with
+  their accompanying folders.
+- **Python command missing:** install Python 3, reopen the terminal, and use the
+  command for your operating system above.
+- **Port already in use:** the default chooses a free port. If you selected a
+  fixed port, try `--port 0`; do not stop unrelated applications.
+- **Browser does not open:** copy the printed local address into your browser.
+- **No sound:** click **Enable Sound** after loading a cartridge; check browser
+  audio permissions, the tab's mute setting and your computer's volume.
+- **Game stops after a fault:** disconnect faults first. **Force Resume** and
+  **CPU Reset** preserve corrupted memory and may not restore play. **Clean
+  Restart** reboots the cartridge. Automatic recovery handles reported HALT only,
+  not software loops or a browser blocked inside a frame.
+- **macOS blocks START.command:** right-click it and choose **Open**, or run
+  `bash START.command` in Terminal from the extracted folder. The launcher is an
+  unsigned shell script; obtain it from this repository and inspect it as needed.
 
-## Disconnect a VRAM leg
+## Controls and Cartridge Replacement
 
-Leave **Leg action** on **Disconnect / reconnect**. After loading a cartridge,
-click an AD0–AD7 leg: a **×** marks that address signal forced low. Click the
-same leg again to reconnect it, or choose **Reconnect all [0]**. Several legs
-may be crossed at once. Choose **Bridge two nets** to retain the earlier paired
-short interaction; presets and keyboard contacts still work.
+The compact chip headings read **VRAM (Video RAM)** and **SRAM (Work RAM)**.
+Choose **Cut / Reconnect** to toggle modeled legs, or **Bridge Pair** to join a
+pair within a chip. These are deterministic digital approximations, not removal
+of the entire chip or verified physical pinouts. Corruption can persist after
+fault removal. See [VRAM leg switches](VRAM-LEG-SWITCHES.md).
 
-This is a deterministic address-signal approximation, not removal of the entire
-VRAM chip. Written corruption can persist; **Clean restart** reboots the cartridge.
-See [VRAM leg switches](VRAM-LEG-SWITCHES.md) for details.
+**0** cycles keyboard chip targets and **1–9** selects that target's presets;
+reconnect using the named buttons. RAM Write defaults to **Hold While Pressed**;
+release the control to disconnect, or choose an eight-frame pulse. See
+[workbench shortcuts](CHIP-WORKBENCH.md#development-source-keyboard-chip-target).
 
-## What the complete ZIP contains
+Cartridge files are staged before replacing the current game. Rejected files
+leave the accepted cartridge and restart data intact, and stale asynchronous
+reads cannot replace a newer selection. If native activation becomes uncertain,
+emulation stops explicitly. **Clean Restart** can retry the retained accepted
+cartridge; it is not automatic rollback.
 
-HTML/CSS/JavaScript, the compiled JS/WASM emulator, its complete corresponding
-modified source and third-party notices, the Python local server and Mac launcher.
-The launcher listens only on `127.0.0.1`; it does not require an internet server.
-The package contains no commercial ROM. See [Testing](TESTING.md) for the short
-manual Firefox checklist and the limits of cloud validation.
+## Package Contents and Verification Limits
 
-Maintainers can still use GitHub Actions artifacts for temporary review. They
-expire, and GitHub may wrap the package in another ZIP; the versioned release
-asset above is the normal user download.
+The complete ZIP contains HTML/CSS/JavaScript, compiled JS/WASM, matching modified
+emulator source, third-party notices, the Python local server and optional Mac
+launcher. It contains no game ROMs. Follow the upstream non-commercial and
+corresponding-source terms in the included notices.
 
-v0.2.7 includes an optional, default-disabled metadata-only RAM write trace for
-developer experiments. Normal play needs no trace setup. See [trace documentation](RAM-WRITE-TRACE.md).
-
-Development builds after the public v0.4.1 ZIP use **0** to cycle keyboard chip
-targets and **1–9** for that target's presets; reconnect using the named buttons.
-See [workbench shortcuts](CHIP-WORKBENCH.md#development-source-keyboard-chip-target).
+Automated Chromium, Firefox and WebKit checks run on Linux. Reported Mac Safari
+checks cover the tested controls and recovery, not every cartridge or browser.
+Native Windows/Linux desktop launch, native macOS Firefox and physical-gamepad
+coverage must not be inferred from browser automation. See [Testing](TESTING.md)
+for exact evidence and remaining limits.

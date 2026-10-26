@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased workbench improvements
+## v0.5.0 Candidate — Cross-Platform Browser Build
+
+- Package the complete browser app with neutral filenames, checksums and Windows/macOS/Linux launch instructions. Keep the Mac launcher as a convenience. Prepare releases as drafts; preserve immutable v0.4.1.
 
 - Keep chip bodies abbreviated as SRAM and VRAM; expand the headings to SRAM (Work RAM) and VRAM (Video RAM).
 

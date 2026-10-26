@@ -126,16 +126,21 @@ jobs:
           # Avoid extraneous Python or local build junk inside public artifact.
           find release/vrampage -type d -name '__pycache__' -prune -exec rm -rf '{}' +
           tar -czf release/VRAMpage-MD-static-site.tar.gz -C release vrampage
-      - name: Package local review app with launcher
-        run: python3 scripts/package-review.py --output release/VRAMpage-MD-v0.4.1-macos.zip
-      - name: Upload ready-to-run local review app
+      - name: Package cross-platform browser app
+        run: |
+          python3 scripts/package-review.py --output release/VRAMpage-MD-v0.5.0-browser.zip
+          cd release
+          sha256sum VRAMpage-MD-v0.5.0-browser.zip > SHA256SUMS.txt
+      - name: Upload ready-to-run browser app
         uses: actions/upload-artifact@v4
         with:
           name: VRAMpage-MD-local-review
           retention-days: 30
-          path: release/VRAMpage-MD-v0.4.1-macos.zip
+          path: |
+            release/VRAMpage-MD-v0.5.0-browser.zip
+            release/SHA256SUMS.txt
           if-no-files-found: error
-      - name: Upload release bundle for manual McRetro staging
+      - name: Upload static hosting bundle
         uses: actions/upload-artifact@v4
         with:
           name: VRAMpage-MD-static-site
@@ -194,7 +199,7 @@ jobs:
 
           archive_dir = Path(sys.argv[1])
           extract_dir = Path(sys.argv[2])
-          archives = list(archive_dir.glob("VRAMpage-MD-*-macos.zip"))
+          archives = list(archive_dir.glob("VRAMpage-MD-*-browser.zip"))
           if len(archives) != 1:
               raise SystemExit(f"Expected one packaged review ZIP, found {len(archives)}")
           with zipfile.ZipFile(archives[0]) as package:

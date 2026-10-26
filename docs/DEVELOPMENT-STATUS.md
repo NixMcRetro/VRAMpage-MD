@@ -1,12 +1,37 @@
 # Development status and continuation checkpoint
 
-## Chip Label Follow-up — 26 October 2026 (Sydney)
+## v0.5.0 Cross-Platform Candidate — In Verification
 
-User accepts the preceding SRAM label build and requests abbreviated SRAM inside
-the chip, SRAM (Work RAM) above it, and VRAM (Video RAM) above the VRAM chip.
-This is a two-label HTML adjustment; chip internals, fault behavior, identifiers,
-exports and release inputs are unchanged. Verify responsive layout/source checks,
-independent review and all seven PR/main checks. Preserve v0.4.1/McRetro.net.
+User authorizes the browser-ready cross-platform candidate. Scope: neutral browser
+ZIP/checksum, Windows/macOS/Linux launch instructions, static hosting, aligned
+VERSION/UI/export/workflow/test labels and draft-only release preparation.
+Reuse scripts/serve.py and optional START.command; no framework or OS-specific
+emulator build. Preserve public v0.4.1 and all historical experiment identifiers.
+No publisher dispatch, new tag/publication or McRetro.net work in this slice.
+Acceptance: source/full browser and actual-core checks, real static-subdirectory
+WASM/video/audio/input load, extracted ZIP/provenance/checksum verification and
+all seven PR/main checks. Native Windows/macOS/Linux desktop launch and physical
+pads are not inferred from Linux browser automation. Independent review required.
+
+## PR #68 Verified Delivery — 26 October 2026 (Sydney)
+
+[PR #68](https://github.com/NixMcRetro/VRAMpage-MD/pull/68) merged as
+`32b7096beaef48cc3f155a0f3a8606ee211bbd79`; tree exactly matches reviewed/tested
+head `b514cc264f7ff96cc16cb2f9cad995edf0ab4b7c`. All seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40288935242)
+and all seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40289738383)
+passed. [Runnable build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40289738383/artifacts/12635426870).
+
+Chip bodies read SRAM and VRAM; headings read SRAM (Work RAM) and VRAM (Video RAM).
+Only two HTML labels changed. Identifiers, memory/recovery logic and release
+inputs are unchanged. Independent GPT-6 review found no blocker. Local source106
+passed (two unchanged SDK/vendor classes skipped), Chromium display7 passed.
+Canonical runnable checkout refreshed; local ZIP has 714 unique paths, exact main
+source/version/UI/core identity and SHA256
+`5efab7107728fd329b5b6c3b814b7bf9c97b27f06ff3fe61481d7ebb9815b69f`.
+Evidence: `/workspace/scratch/chip-memory-labels`. Preserve public v0.4.1 and
+McRetro.net. Next remains version-aligned v0.5.0 release-candidate preparation;
+no repeated emulator research or native manual coverage claims.
 
 ## PR #67 Verified Delivery — 26 October 2026 (Sydney)
 
