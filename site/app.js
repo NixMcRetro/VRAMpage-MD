@@ -1099,7 +1099,7 @@
 
   function checkpointObservation() {
     const read=name=>{try { const n=emulator?.[name]?.();return typeof n==='bigint'?String(n):
-      typeof n==='number' && Number.isFinite(n)?n:null; } catch (_) {return null;} };
+      typeof n==='number' && Number.isFinite(n)?(name==='_get_logic_frame'?n>>>0:n):null; } catch (_) {return null;} };
     const count=value=>/^\d+$/.test(String(value))?String(value):null;
     const audio=state=>state?{inputWrites:count(state.inputWrites),changedWrites:count(state.changedWrites)}:null;
     return {frame:read('_get_logic_frame'),ramReads:read('_get_logic_reads'),ramWrites:read('_get_logic_writes'),
@@ -1129,7 +1129,7 @@
       let savedFrame=event.before.frame;
       try {
         const frame=emulator._get_session_checkpoint_saved_frame();
-        if (Number.isInteger(frame) && frame>=0) savedFrame=frame;
+        if (Number.isInteger(frame) && frame>=-2147483648 && frame<=4294967295) savedFrame=frame>>>0;
         else event.telemetryError='Saved-frame telemetry unavailable';
       } catch (_) { event.telemetryError='Saved-frame telemetry unavailable'; }
       sessionCheckpoint={core:emulator,rom:romIdentity,savedFrame};

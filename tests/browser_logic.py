@@ -305,6 +305,12 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertEqual(payload["checkpointEvents"][-1]["outcome"],"unknown")
         self.assertEqual(payload["checkpointSegment"],0)
 
+    def test_checkpoint_saved_frame_preserves_unsigned_wasm_frame(self):
+        page=self.checkpoint_page()
+        page.evaluate("() => {mockCore.core._get_session_checkpoint_saved_frame=()=>-1;}")
+        page.locator("#saveCheckpointBtn").click()
+        self.assertEqual(self.export_payload_for(page)["checkpointEvents"][-1]["savedFrame"],4294967295)
+
     def test_checkpoint_saved_frame_telemetry_failure_keeps_successful_capture(self):
         page=self.checkpoint_page()
         page.evaluate("() => {mockCore.core._get_session_checkpoint_saved_frame=()=>{throw Error('frame telemetry')};}")
