@@ -1,9 +1,8 @@
 # Releases and deployment
 
-## Cross-platform browser candidate
+## Cross-platform browser release
 
-The v0.5.0 review download is `VRAMpage-MD-v0.5.0-browser.zip`, available with
-`SHA256SUMS.txt` in successful main CI's `VRAMpage-MD-local-review` artifact.
+[Download VRAMpage-MD-v0.5.0-browser.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip) · [SHA256SUMS.txt](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/SHA256SUMS.txt).
 It contains HTML/CSS/JavaScript, compiled WASM, matching modified core source,
 notices, Python server and the optional macOS START.command convenience launcher.
 See [launch instructions](RUNNING-LOCALLY.md) for Windows, macOS and Linux.
@@ -28,8 +27,9 @@ No Python is needed on the user's computer when using an already-hosted build.
 After main checks pass, **Prepare v0.5.0 browser release draft** can rebuild and
 verify source identity, tag and checksum and attach the package to a draft.
 It refuses to change an already-public release and does not publish automatically.
-Review the draft separately before publication. No workflow is dispatched merely
-by merging this candidate. Preserve immutable public v0.4.1 and older assets.
+The public v0.5.0 release is now immutable too; the fixed-version workflow refuses
+to replace it. Future publication requires a new version and separately reviewed
+release. Preserve public v0.4.1 and older assets.
 Do not include ROMs, credentials, caches or private captures. Keep a matching
 source commit/tag and read [third-party terms](../THIRD-PARTY-NOTICES.md).
 

@@ -6,8 +6,7 @@ VRAMpage MD is a browser-based NTSC Mega Drive/Genesis experiment. It runs a loc
 
 VRAMpage MD runs in modern browsers on **Windows, macOS and Linux**. Start with
 [the browser package and launch guide](RUNNING-LOCALLY.md), or read the
-[v0.5.0 candidate release notes](RELEASE-NOTES-v0.5.0.md). The candidate is available
-through reviewed CI artifacts until publication; it is not yet a public release.
+[v0.5.0 release notes](RELEASE-NOTES-v0.5.0.md). [Download VRAMpage-MD-v0.5.0-browser.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip) · [SHA256SUMS.txt](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/SHA256SUMS.txt).
 
 The historical **[v0.4.1 complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip)**
 remains unchanged. Python 3 is needed only to run a local server; a hosted browser
@@ -22,7 +21,7 @@ and experimental; older standalone-model descriptions are historical records.
 | [Changelog](../CHANGELOG.md) | Versioned changes and verification limits |
 | [Versioning](VERSIONING.md) | Current source version and historical identifier mapping |
 | [Run locally](RUNNING-LOCALLY.md) | Windows, macOS and Linux browser-package launch instructions |
-| [v0.5.0 candidate notes](RELEASE-NOTES-v0.5.0.md) | Candidate changes, distribution and verification limits |
+| [v0.5.0 release notes](RELEASE-NOTES-v0.5.0.md) | Release changes, distribution and verification limits |
 | [Project overview](../README.md) | Current features, limitations, building and repository policy |
 | [Session checkpoints](SESSION-CHECKPOINT-API.md) | Explicit session-only checkpoint semantics, supported profiles and validation gates |
 | [Product roadmap](../ROADMAP.md) | Versions and video, logic and sound milestones |

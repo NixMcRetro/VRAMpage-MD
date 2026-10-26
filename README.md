@@ -8,13 +8,10 @@ VRAMpage MD is a **cross-platform HTML/CSS/JavaScript/WebAssembly app** for mode
 browsers on Windows, macOS and Linux. A hosted build needs only a browser; a local
 copy needs **Python 3** to serve its files. macOS is not an app requirement.
 
-The **v0.5.0 browser release candidate** is being verified before publication.
-Its complete package is named **VRAMpage-MD-v0.5.0-browser.zip**. For review builds,
-open the matching successful [source-checks run](https://github.com/NixMcRetro/VRAMpage-MD/actions/workflows/source-checks.yml)
-and download **VRAMpage-MD-local-review** under Artifacts. GitHub may require sign-in
-and wrap the browser ZIP inside another ZIP; extract both. Check BUILD-INFO.json
-for the source commit. Artifacts expire and are not permanent release downloads.
-See the [candidate release notes](docs/RELEASE-NOTES-v0.5.0.md).
+[Download VRAMpage-MD-v0.5.0-browser.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip) · [SHA256SUMS.txt](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/SHA256SUMS.txt).
+
+The complete package includes the built emulator and matching source. See the
+[release notes](docs/RELEASE-NOTES-v0.5.0.md).
 
 1. Extract the complete package and open the **VRAMpage-MD** folder in a terminal.
 2. Start the included local server:
@@ -38,7 +35,7 @@ Open the app through HTTP rather than double-clicking site/index.html.
 The existing public **[v0.4.1 complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip)**
 and its [release/checksum](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.4.1)
 remain unchanged. Its filename reflects the historical Mac launcher packaging;
-it does not include the v0.5.0 candidate controls. [Other runnable versions and historical source releases](docs/RELEASE-HISTORY.md)
+it does not include the v0.5.0 controls. [Other runnable versions and historical source releases](docs/RELEASE-HISTORY.md)
 remain available for reproducing earlier experiments.
 
 **v0.3.0:** choose **Frame projection** or **Transaction** in the VRAM patchbay, then use the same legs and bridges. Transaction mode maps actual emulator VRAM accesses and exports separate model metadata and counters. Frame projection remains the default fallback. Both are digital approximations.
@@ -49,7 +46,7 @@ remain available for reproducing earlier experiments.
 
 **v0.5.0 candidate:** coordinated fault removal clears every modeled domain while preserving play/pause after a confirmed complete clear. Failed or unverified clears pause for inspection. CPU recovery still clears RAM/VRAM faults and preserves audio faults. These candidate controls are not in the historical v0.4.1 ZIP above; see [recovery semantics](docs/CPU-RECOVERY.md).
 
-The v0.5.0 candidate offers **Force Resume: On/Off** and **CPU Recovery: On/Off** beside Randomiser. Both start **On**, as requested. Two consecutive eligible HALT frames permit one Force Resume; if HALT persists for eight more completed frames (~0.13 s), CPU Recovery permits one CPU-only reset. A cleared HALT flag cancels escalation. Each fault experiment gets one sequence; a new fault action, toggle change or explicit Resume permits another. Switch both **Off** for unassisted experiments. Neither static pictures nor ordinary STOP trigger recovery. See [recovery semantics](docs/CPU-RECOVERY.md#development-source-ordered-recovery).
+v0.5.0 offers **Force Resume: On/Off** and **CPU Recovery: On/Off** beside Randomiser. Both start **On**, as requested. Two consecutive eligible HALT frames permit one Force Resume; if HALT persists for eight more completed frames (~0.13 s), CPU Recovery permits one CPU-only reset. A cleared HALT flag cancels escalation. Each fault experiment gets one sequence; a new fault action, toggle change or explicit Resume permits another. Switch both **Off** for unassisted experiments. Neither static pictures nor ordinary STOP trigger recovery. See [recovery semantics](docs/CPU-RECOVERY.md#development-source-ordered-recovery).
 
 The v0.5.0 candidate adds **Save Checkpoint** and **Restore Checkpoint** in the advanced **Logic / SRAM (Work RAM)** panel. Save with all faults off and controller inputs released. The single checkpoint stays in this tab's current cartridge session; it is never written to a file or included in experiment JSON. Restore clears all fault domains, returns to the saved machine state and image without advancing a frame, and stays paused until **Resume**. CPU Reset keeps the slot; Clean Restart, a new cartridge or reloading the page discards it. Supported scope is ordinary Mega Drive cartridges, three- or six-button pads and validated ordinary SRAM; other mapper/peripheral/audio profiles are refused. A checkpoint can itself contain a broken game.
 

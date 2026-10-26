@@ -1,13 +1,13 @@
 # VRAMpage MD roadmap
 
-## v0.5.0 Cross-Platform Candidate
+## v0.5.0 Cross-Platform Release
 
-Prepare the complete browser app for Windows, macOS and Linux with neutral ZIP
-naming, SHA-256 checksum, existing local server and optional Mac convenience
-launcher. Hosted HTTP(S) use needs no local Python. Align current version/export/
-workflow labels and verify static-subdirectory loading with the actual core.
-The publisher prepares drafts only; this candidate does not publish a release,
-change public v0.4.1 or touch McRetro.net. See [candidate notes](docs/RELEASE-NOTES-v0.5.0.md).
+The browser ZIP/checksum and release notes are published for Windows, macOS and
+Linux. Hosted HTTP(S) use needs no local Python; local use reuses the Python
+server and optional Mac convenience launcher. The source/tag/package remain
+aligned at the verified release commit. Preserve immutable v0.5.0/v0.4.1 and all
+older releases; McRetro.net remains separate. Continue concrete stability and
+compatibility reports without restarting completed feature/research work.
 
 ## Active strategy: complete usable major features
 

@@ -1,8 +1,6 @@
 # VRAMpage MD v0.5.0
 
-Candidate release notes. This version is being verified; these notes do not
-announce a published release. The immutable public v0.4.1 tag and assets remain
-unchanged.
+The cross-platform browser release. The immutable public v0.4.1 tag and assets remain unchanged.
 
 ## Cross-Platform Browser Package
 
@@ -12,11 +10,11 @@ Run it in a modern browser on Windows, macOS or Linux. Use the included Python 3
 local server, or serve the built site from static HTTP/HTTPS hosting. macOS users
 can keep using the optional START.command launcher. No ROMs are included.
 
-See [launch instructions](https://github.com/NixMcRetro/VRAMpage-MD/blob/main/docs/RUNNING-LOCALLY.md). Before publication, candidate
-packages are available as expiring GitHub Actions review artifacts. Verify the
-package's BUILD-INFO.json source commit against the reviewed run. A final release
-must provide the matching ZIP, SHA-256 checksum and tag; no v0.5.0 public download
-is claimed here.
+[Download the complete browser ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip) · [SHA256SUMS.txt](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/SHA256SUMS.txt).
+
+Extract the ZIP and open its VRAMpage-MD folder in a terminal. Windows: `py -3 scripts/serve.py`; macOS/Linux: `python3 scripts/serve.py`. Python 3.8 or later is required for local serving; hosted use needs only a browser. The optional Mac START.command launcher is also included. GitHub's automatic source archives do not contain the built emulator.
+
+See [launch instructions](https://github.com/NixMcRetro/VRAMpage-MD/blob/v0.5.0/docs/RUNNING-LOCALLY.md). BUILD-INFO.json identifies the exact source commit. The tagged package retains its candidate-stage documentation as provenance; use the direct downloads above for the published release.
 
 ## Changes Since v0.4.1
 
@@ -59,9 +57,12 @@ physical electrical validation.
 Chromium, Firefox and WebKit automation uses Linux and original synthetic
 cartridges. The user reports Mac Safari controls, audio and recovery working;
 this does not establish native Windows/Linux desktop launch, native macOS
-Firefox, physical-gamepad or universal cartridge coverage. Exact candidate CI,
-package identity and checksums belong in the final delivery record before
-publication. See [the testing guide](https://github.com/NixMcRetro/VRAMpage-MD/blob/main/docs/TESTING.md).
+Firefox, physical-gamepad or universal cartridge coverage. All seven candidate PR checks and all seven main checks passed; the release
+workflow also rebuilt and verified the packaged runtime before publication. See [the testing guide](https://github.com/NixMcRetro/VRAMpage-MD/blob/main/docs/TESTING.md).
 
 Upstream non-commercial and corresponding-source terms continue to apply.
-This candidate does not deploy or modify McRetro.net.
+This release does not deploy or modify McRetro.net.
+
+Source commit: `e9f366fb3985f11430d353c3b2589f076ff93128`.
+Candidate validation: https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40297233926
+Release validation: https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40302794303
