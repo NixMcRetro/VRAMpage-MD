@@ -1,5 +1,74 @@
 # Development work queue
 
+## Mac Acceptance and RAM Write Button Feedback — 26 October 2026 (Sydney)
+
+User confirms checkpoint steps1–3: baseline save, deliberate chip faults, restored
+picture/gameplay/sound and resume checks. Repeated restores work; saving with held contacts/controls or
+active faults correctly reports the release/disconnect requirement. CPU Reset
+retains the checkpoint and preserves sound-chip state. Clean Restart reboots and
+discards it. Held-input suppression after Restore was not separately described.
+These are user-reported Mac acceptance results, not new physical-hardware evidence.
+
+The supplied Safari PDF is page-length feedback only. It is not evidence for the
+separate reported VRAM Randomiser appearance during RAM Write. No PDF/game capture
+is committed. The page-length feedback is retained; no layout redesign is included.
+
+Reviewed fix: the VRAM Randomiser remains disabled during Work RAM contacts,
+as required by fault-domain exclusion. Whole-button45% opacity made it look pressed;
+keep its normal fill/border, mute only disabled text and remove native button paint
+for the Randomiser row. No emulator, randomisation or cross-domain logic changes.
+Regression checks in light/dark themes assert identical idle/disabled fills,
+non-pressed state, blocked clicks, unchanged VRAM calls and restored availability
+on release. Focused Chromium4.724s/WebKit9.616s (both themes) and source106 tests
+PASS13.794s, with unchanged SDK/vendor-dependent classes skipped2. Independent
+review approved796a796 with no blockers; native Mac Safari visual confirmation
+is still needed. All seven PR/main checks remain required. Preserve v0.4.1 and
+McRetro.net.
+
+
+## PR #63 Verified Delivery — 26 October 2026 (Sydney)
+
+[PR #63](https://github.com/NixMcRetro/VRAMpage-MD/pull/63) merged as
+`c5d4e1249c43441c48b36ce66db230eb1e0e29ea`; its tree exactly matches reviewed
+head `37e42bb67b693af455fe1c0bea59dec8ad5da69b`. All seven
+[final PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40254986283)
+and all seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40255469625)
+pass. [Download the complete main review app](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40255469625/artifacts/12622163573).
+The initial PR run's Firefox mock-image alpha failure was corrected without
+changing product code or weakening the exact pixel assertion; the final full
+Chromium/Firefox/WebKit suites each include117 logic cases. No blind rerun.
+
+Explicit Save Checkpoint / Restore Checkpoint are complete in the advanced
+Logic / Work RAM panel. One private session slot; capture never ticks, failed
+capture retains the slot, verified fault clearing precedes restore, the saved
+image displays immediately and emulation stays paused. Held controls wait for
+release. CPU Reset retains the slot; Clean Restart/new cartridge invalidates it.
+Metadata-only exports retain event/counter baselines and experiment segments.
+Ordinary MD, 3/6-button pads and validated ordinary SRAM/write protection are
+supported; unsupported mapper/peripheral/audio profiles are refused.
+
+Independent native/JS review approved3fa33ff and reran nine actual-WASM groups.
+Root local full SDK/source116 passes with fatal native sanitizers; production
+actual-core8, extracted core8/transaction3, display7 and WebKit checkpoint14 pass.
+Normal core binaries remain byte-identical and omit checkpoint APIs. Canonical
+site/core and corresponding site/source were refreshed to the verified build.
+The local main package has714 unique paths with exact c5d4e12/version/UI/core
+identity; SHA256 `b5c1704b6731274e5bc300668038c16e25716bcc5be9e7aa7683736f4909727f`.
+Logs/packages: `/workspace/scratch/session-checkpoint-ui`. The connector downloaded
+the main review artifact; its producer and extracted-package CI checks pass.
+
+Public v0.4.1 tag remains `e579c571f14b3549a5befa33d9e62ba3f3c9d45b`;
+ZIP/SHA256SUMS digests remain36133552…ec6fd /961ff2e5…b1bc, release timestamp
+unchanged. No v0.5.0 release was published. McRetro.net is untouched.
+
+Next bounded gate: manual Mac/cartridge checkpoint acceptance (save a clean
+running/paused point, apply chip faults, restore image/sound, release held inputs,
+repeat restore, verify CPU Reset retention and Clean Restart invalidation).
+Native Mac audible output, universal cartridge compatibility and physical fidelity
+are unverified. Keep features frozen for concrete reported defects; do not repeat
+completed native replay research or publish a release before its remaining gates.
+
+
 ## Session Checkpoint Integration Candidate — 26 October 2026 (Sydney)
 
 Resumed from verified main `0b8263c`; all seven existing main checks were rechecked.
