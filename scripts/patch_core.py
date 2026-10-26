@@ -1079,17 +1079,21 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
         raise SystemExit('VRAM reset declaration is ambiguous. No modifications made.')
     start_anchor = '    system_reset();\n}'
     old_start_hook = '    system_reset();\n    work_ram_logic_start();\n}'
+    previous_runtime_start_hook = '    system_reset();\n    work_ram_logic_start();\n    bend_reset();\n}'
     start_hook = '    system_reset();\n    work_ram_logic_start();\n#ifdef VRAM_TX_RUNTIME\n    z80_ram_bridge_start();\n#endif\n    bend_reset();\n}'
     if wasm.count(start_hook) == 0:
-        anchor = old_start_hook if old_start_hook in wasm else start_anchor
-        if wasm.count(anchor) != 1:
-            raise SystemExit('Expected start() reset anchor missing or ambiguous. No modifications made.')
-        wasm = wasm.replace(anchor, start_hook, 1)
+        if wasm.count(previous_runtime_start_hook) == 1:
+            wasm = wasm.replace(previous_runtime_start_hook, start_hook, 1)
+        else:
+            anchor = old_start_hook if old_start_hook in wasm else start_anchor
+            if wasm.count(anchor) != 1:
+                raise SystemExit('Expected start() reset anchor missing or ambiguous. No modifications made.')
+            wasm = wasm.replace(anchor, start_hook, 1)
     elif wasm.count(start_hook) != 1:
         raise SystemExit('Fault reset start hook is ambiguous. No modifications made.')
 
     tick_hook = '    system_frame_gen(0);\n    bend_after_frame();\n'
-    tick_replacement = '    system_frame_gen(0);\n    work_ram_logic_tick();\n#ifdef VRAM_TX_RUNTIME\n    z80_ram_bridge_tick();\n#endif\n    bend_after_frame();\n'
+    tick_replacement = '    system_frame_gen(0);\n    work_ram_logic_tick();\n    bend_after_frame();\n'
     if wasm.count(tick_replacement) == 0:
         if wasm.count(tick_hook) != 1:
             raise SystemExit('Expected tick() frame anchor missing or ambiguous. No modifications made.')

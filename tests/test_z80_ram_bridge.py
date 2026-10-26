@@ -1,6 +1,5 @@
 from pathlib import Path
 import shutil
-import os
 import subprocess
 import tempfile
 import unittest
@@ -17,9 +16,22 @@ class Z80RamBridgeNative(unittest.TestCase):
             subprocess.run([compiler, "-std=c11", "-Wall", "-Wextra", "-Werror",
                             "-fsanitize=address,undefined", "-I", str(ROOT / "scripts"),
                             str(ROOT / "tests/z80_ram_bridge_smoke.c"), "-o", str(binary)], check=True)
-            env = os.environ.copy()
-            env["ASAN_OPTIONS"] = "detect_leaks=0"
-            subprocess.run([str(binary)], check=True, env=env)
+            subprocess.run([str(binary)], check=True)
+
+    def test_runtime_state_owners_profile_reset_and_saturation_under_sanitizers(self):
+        compiler = shutil.which("clang") or shutil.which("cc")
+        if compiler is None:
+            self.skipTest("C compiler unavailable")
+        with tempfile.TemporaryDirectory(prefix="z80-ram-runtime-native-") as tmp:
+            binary = Path(tmp) / "runtime-smoke"
+            subprocess.run([compiler, "-std=c11", "-Wall", "-Wextra", "-Werror",
+                            "-fsanitize=address,undefined", "-DZ80_RAM_BRIDGE_TEST",
+                            "-I", str(ROOT / "tests/fixtures/z80_ram_bridge"),
+                            "-I", str(ROOT / "scripts"),
+                            str(ROOT / "scripts/z80_ram_bridge_runtime.c"),
+                            str(ROOT / "tests/z80_ram_bridge_runtime_smoke.c"),
+                            "-o", str(binary)], check=True)
+            subprocess.run([str(binary)], check=True)
 
     def test_runtime_hooks_are_runtime_guarded(self):
         patcher = (ROOT / "scripts/patch_core.py").read_text()

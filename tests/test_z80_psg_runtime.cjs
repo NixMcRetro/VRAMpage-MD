@@ -103,6 +103,7 @@ function nextAudio(core) {
 async function main() {
   const rom = z80ToneCartridge();
   const normal = await createCore(normalPath, rom);
+  assert.equal(typeof normal._set_z80_ram_bridge, 'undefined', 'normal core has no Z80 RAM bridge API');
   assert.equal(typeof normal._set_psg_data_bridge, 'undefined',
     'normal core has no PSG input API');
   const baseline = nextAudio(normal);

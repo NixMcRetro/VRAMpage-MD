@@ -147,6 +147,14 @@ function restore(c, image) {
     assert.equal(c._get_session_checkpoint_saved_frame(), savedFrame, 'failed replacement retains old slot');
     assert.equal(clear(), 0);
   }
+  assert.equal(c._set_z80_ram_bridge(1, 0, 1), 0);
+  const z80FaultRam = ram(c);
+  assert.equal(c._save_session_checkpoint(), 2, 'active Z80 RAM contact refuses checkpoint capture');
+  assert.equal(c._get_z80_ram_bridge_state().configured, true);
+  assert.equal(c._restore_session_checkpoint(), 0, 'restore removes Z80 RAM contact before loading checkpoint state');
+  assert.equal(c._get_z80_ram_bridge_state().configured, false);
+  assert.equal(c._get_z80_ram_bridge_state().ramWrites, '0');
+  assert.notEqual(ram(c), z80FaultRam, 'restore reloads saved RAM after disconnecting the contact');
   neutral(c, [11]); assert.equal(c._get_session_checkpoint_support(), 1); assert.equal(c._save_session_checkpoint(), 2);
   assert.equal(c._restore_session_checkpoint(), 2); neutral(c); restore(c, savedImage); groups++;
   assert.equal(c._recover_logic_cpu(2), 0); assert.equal(c._get_session_checkpoint_ready(), 1);
@@ -157,11 +165,13 @@ function restore(c, image) {
   assert.equal(c._set_vram_fault_model(1, 8, -1, -1), 0);
   assert.equal(c._set_psg_data_bridge(1, 0, 1), 0);
   assert.equal(c._set_fm_data_bridge(1, 0, 1), 0);
+  assert.equal(c._set_z80_ram_bridge(1, 0, 1), 0);
   c._start(); assert.equal(c._get_session_checkpoint_ready(), 0);
   assert.equal(c._get_logic_address_mask(), 0); assert.equal(c._get_logic_frame(), 0);
   assert.equal(c._get_vram_fault_model_state().effective, false);
   assert.equal(c._get_psg_data_bridge_state().configured, false);
   assert.equal(c._get_fm_data_bridge_state().configured, false);
+  assert.equal(c._get_z80_ram_bridge_state().configured, false);
   neutral(c); save(c); install(c, cartridge('pad3')); assert.equal(c._get_session_checkpoint_ready(), 0); groups++;
 
   const fm = await create('dynamic'); install(fm, fmCartridge());

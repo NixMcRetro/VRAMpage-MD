@@ -22,7 +22,7 @@
         bridgeA:Module["_get_z80_ram_bridge_a"](),bridgeB:Module["_get_z80_ram_bridge_b"](),
         ramWrites:count("_get_z80_ram_bridge_ram_writes"),changedAddresses:count("_get_z80_ram_bridge_changed_addresses"),
         z80Writes:count("_get_z80_ram_bridge_z80_writes"),m68kWrites:count("_get_z80_ram_bridge_m68k_writes"),
-        activationFrame:Module["_get_z80_ram_bridge_activation_frame"]()};
+        activationFrame:Module["_get_z80_ram_bridge_activation_frame"]() >>> 0};
     };
   }
   Module["postRun"] = [install].concat(callbacks);
