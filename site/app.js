@@ -23,6 +23,10 @@
   if (!frameAdapter) throw new Error("Missing framebuffer.js: display adapter could not load");
   let previousVideoStatus = "";
   const pressed = new Set();
+  const checkpointBlockedKeys = new Set();
+  let checkpointBlockGamepad=false;
+  let sessionCheckpoint=null, checkpointEvents=[], checkpointSegment=0;
+  let checkpointMessage="No Session Checkpoint";
   const pinButtons = [];
   const psgPinButtons = [], fmPinButtons = [];
   let ramSelectedPin=null, psgSelectedPin=null, fmSelectedPin=null;
@@ -1060,6 +1064,7 @@
     refreshLogicMetrics();
     refreshChipControls();
     refreshRandomiserControls();
+    updateCheckpointControls();
   }
 
   function updateCpuRecoveryControls(canUse=started && logicApiReady()) {
@@ -1070,6 +1075,111 @@
     $('armCpuRecoveryBtn').textContent=cpuRecoveryArmed?'Disarm CPU Recovery':'Arm CPU Recovery Once';
     $('cpuRecoveryStatus').textContent=cpuRecoveryArmed
       ? `ARMED${cpuRecoveryHaltFrames.length?` · HALT ${cpuRecoveryHaltFrames.length}/2`:''}` : 'OFF';
+  }
+
+  const CHECKPOINT_API=['_get_session_checkpoint_support','_get_session_checkpoint_ready',
+    '_get_session_checkpoint_saved_frame','_save_session_checkpoint',
+    '_restore_session_checkpoint','_discard_session_checkpoint'];
+
+  function checkpointAvailability() {
+    try {
+      const supported=started && CHECKPOINT_API.every(key=>typeof emulator?.[key]==='function') &&
+        emulator._get_session_checkpoint_support()===1;
+      return {supported,ready:!!(supported && sessionCheckpoint?.core===emulator &&
+        sessionCheckpoint?.rom===romIdentity && emulator._get_session_checkpoint_ready()===1)};
+    } catch (_) { return {supported:false,ready:false}; }
+  }
+
+  function updateCheckpointControls() {
+    const state=checkpointAvailability();
+    $('saveCheckpointBtn').disabled=!state.supported;
+    $('restoreCheckpointBtn').disabled=!state.ready;
+    $('checkpointStatus').textContent=state.supported?checkpointMessage:'Checkpoint Unavailable';
+  }
+
+  function checkpointObservation() {
+    const read=name=>{try { const n=emulator?.[name]?.();return typeof n==='bigint'?String(n):
+      typeof n==='number' && Number.isFinite(n)?(name==='_get_logic_frame'?n>>>0:n):null; } catch (_) {return null;} };
+    const count=value=>/^\d+$/.test(String(value))?String(value):null;
+    const audio=state=>state?{inputWrites:count(state.inputWrites),changedWrites:count(state.changedWrites)}:null;
+    return {frame:read('_get_logic_frame'),ramReads:read('_get_logic_reads'),ramWrites:read('_get_logic_writes'),
+      psg:audio(currentPsgDataState()),fm:audio(currentFmDataState())};
+  }
+
+  function saveCheckpoint() {
+    disarmCpuRecovery();
+    const event={action:'save',nativeAttempted:false,status:null,before:checkpointObservation(),
+      segmentBefore:checkpointSegment,savedFrame:sessionCheckpoint?.savedFrame??null};
+    try {
+      if (!checkpointAvailability().supported) throw new Error('Checkpoint unavailable for this core or cartridge.');
+      if (recoveryTransientActive() || pressed.size || logicActive || logicAddressMask)
+        throw new Error('Release held contacts and controls, and disconnect faults before saving.');
+      const vram=emulator._get_vram_fault_model_state();
+      const audio=[currentPsgDataState(),currentFmDataState()];
+      if (!vram || !Number.isInteger(vram.mask) || vram.mask!==0 ||
+          !Number.isInteger(vram.bridgeA) || !Number.isInteger(vram.bridgeB) ||
+          vram.bridgeA>=0 || vram.bridgeB>=0 || audio.some(state=>
+            !state || state.supported!==true || state.configured!==false || state.dataMask!==0))
+        throw new Error('All fault domains must report verified clear state before saving.');
+      ensureWasmViews();pollControls();
+      if (inputView.some(value=>value!==0)) throw new Error('Release controller inputs before saving.');
+      event.nativeAttempted=true;
+      event.status=emulator._save_session_checkpoint();
+      if (event.status!==0) throw new Error(`Checkpoint save refused (status ${event.status}); the previous slot is retained.`);
+      let savedFrame=event.before.frame;
+      try {
+        const frame=emulator._get_session_checkpoint_saved_frame();
+        if (Number.isInteger(frame) && frame>=-2147483648 && frame<=4294967295) savedFrame=frame>>>0;
+        else event.telemetryError='Saved-frame telemetry unavailable';
+      } catch (_) { event.telemetryError='Saved-frame telemetry unavailable'; }
+      sessionCheckpoint={core:emulator,rom:romIdentity,savedFrame};
+      event.savedFrame=savedFrame;event.outcome='saved';
+      checkpointMessage=`Saved Frame ${savedFrame??'Unknown'} · Session Only`;
+    } catch (error) {
+      event.outcome=event.nativeAttempted && event.status===null?'unknown':'refused';
+      if (event.outcome==='unknown') {
+        if (!paused) pauseToggle();
+        sessionCheckpoint=null;
+        try {emulator._discard_session_checkpoint();} catch (_) { /* Unknown native slot is inaccessible. */ }
+      }
+      checkpointMessage=error.message;
+    }
+    event.after=checkpointObservation();event.segmentAfter=checkpointSegment;
+    checkpointEvents.push(event);stamp(checkpointMessage);updateCheckpointControls();
+  }
+
+  function restoreCheckpoint() {
+    const event={action:'restore',nativeAttempted:false,status:null,before:checkpointObservation(),
+      segmentBefore:checkpointSegment,savedFrame:sessionCheckpoint?.savedFrame??null};
+    try {
+      if (!checkpointAvailability().ready) throw new Error('No compatible checkpoint in this cartridge session.');
+      if (!paused) pauseToggle();
+      disarmCpuRecovery();
+      for (const code of pressed) checkpointBlockedKeys.add(code);
+      if (keyboardHeld?.code) checkpointBlockedKeys.add(keyboardHeld.code);
+      pressed.clear();checkpointBlockGamepad=true;
+      if (!disconnectAllFaults()) throw new Error('Checkpoint restore stopped: fault clearing was incomplete.');
+      ensureWasmViews();pollControls();clearAudioQueue();
+      event.nativeAttempted=true;event.status=emulator._restore_session_checkpoint();
+      if (event.status!==0) throw new Error(`Checkpoint restore failed (status ${event.status}); emulation stays paused.`);
+      checkpointSegment++;event.outcome='restored';
+      logicStatsRetained=false;lastLogicExperiment=null;
+      try {ensureWasmViews();drawActiveVideo();}
+      catch (error) {event.displayError=error.message;}
+      accumulated=0;lastFrame=0;resetStats();
+      checkpointMessage=`Restored Frame ${event.savedFrame??'Unknown'} · Paused · Segment ${checkpointSegment}`;
+      updateFaultUI();refreshPsgDataControls();refreshFmDataControls();
+    } catch (error) {
+      const uncertain=event.nativeAttempted && ![1,2,3,6].includes(event.status);
+      event.outcome=uncertain?'uncertain':'refused';
+      if (uncertain) {
+        checkpointSegment=event.segmentBefore+1;sessionCheckpoint=null;
+        try {emulator._discard_session_checkpoint();} catch (_) { /* Slot remains inaccessible to the UI. */ }
+      }
+      checkpointMessage=error.message;
+    }
+    event.after=checkpointObservation();event.segmentAfter=checkpointSegment;
+    checkpointEvents.push(event);stamp(checkpointMessage);updateLogicControls();
   }
 
   function recoveryTransientActive() {
@@ -2239,6 +2349,8 @@
       corePin:CORE_PIN,
       addressLineChanges:addressLineChanges.map(entry=>({...entry})),
       faultPulses:faultPulses.map(entry=>({...entry})),
+      checkpointEvents:checkpointEvents.map(entry=>({...entry,before:{...entry.before},after:{...entry.after}})),
+      checkpointSegment,
       cpuInterventions:cpuInterventions.map(entry=>({...entry})),
       faultDisconnects:faultDisconnectActions.map(entry=>({...entry,results:entry.results.map(result=>({...result}))})),
       rom:{name:exportIdentity?.name || null,sha256:romSha256},
@@ -2532,7 +2644,10 @@
     if (pressed.has('KeyC')) inputView[10] = 1; // A
     if (pressed.has('Enter')) inputView[15] = 1; // Start
     const gamepad = navigator.getGamepads?.()[0];
-    if (gamepad) {
+    if (checkpointBlockGamepad && (!gamepad ||
+        !(Math.abs(gamepad.axes?.[0]||0)>0.4 || Math.abs(gamepad.axes?.[1]||0)>0.4 ||
+          [0,1,9].some(index=>gamepad.buttons?.[index]?.pressed)))) checkpointBlockGamepad=false;
+    if (gamepad && !checkpointBlockGamepad) {
       const x = gamepad.axes?.[0] || 0, y = gamepad.axes?.[1] || 0;
       if (Math.abs(x) > 0.4) inputView[6] = Math.sign(x);
       if (Math.abs(y) > 0.4) inputView[7] = Math.sign(y);
@@ -2686,7 +2801,11 @@
       const ptr=emulator._get_rom_buffer_ref(bytes.length);
       if (!ptr) throw new Error('Emulator refused ROM buffer allocation.');
       ensureWasmViews();
-      new Uint8Array(emulator.HEAPU8.buffer,ptr,bytes.length).set(bytes);
+      const target=new Uint8Array(emulator.HEAPU8.buffer,ptr,bytes.length);
+      if (typeof emulator._discard_session_checkpoint==='function') emulator._discard_session_checkpoint();
+      sessionCheckpoint=null;checkpointEvents=[];checkpointSegment=0;
+      checkpointBlockedKeys.clear();checkpointBlockGamepad=false;checkpointMessage='No Session Checkpoint';
+      target.set(bytes);
       // The accepted new image is about to replace core state; drain old audio
       // and cancel app-scheduled pulse work before native activation can throw.
       disarmCpuRecovery();
@@ -2804,6 +2923,7 @@
         return;
       }
       const code=event.code;
+      if (checkpointBlockedKeys.has(code)) {event.preventDefault();return;}
       // Let focused UI controls activate normally rather than swallowing their
       // Enter/Space as controller inputs (notably the keyboard patchbay).
       if (['Enter','Space'].includes(code) &&
@@ -2824,12 +2944,13 @@
     });
     document.addEventListener('keyup', event=> {
       pressed.delete(event.code);
+      checkpointBlockedKeys.delete(event.code);
       if (/^Digit[1-9]$/.test(event.code)) endKeyboardHold(event.code);
       else if (['Space','Enter'].includes(event.code) && keyboardHeld?.target==='WRAM') endKeyboardHold(event.code);
     });
     window.addEventListener('blur',()=>{
       disarmCpuRecovery();
-      pressed.clear();
+      pressed.clear();checkpointBlockedKeys.clear();
       endKeyboardHold();
       if (ownedAddressHold?.type==='pointer') endAddressFrameHold('pointer',ownedAddressHold.pointerId);
       focusReleased=true;
@@ -2957,6 +3078,8 @@
       recoverLogicCPU(2);
       $('randomiserStatus').textContent=$('logicStatus').textContent;
     });
+    $('saveCheckpointBtn').addEventListener('click',saveCheckpoint);
+    $('restoreCheckpointBtn').addEventListener('click',restoreCheckpoint);
     $('armCpuRecoveryBtn').addEventListener('click',()=>{
       if (cpuRecoveryArmed) disarmCpuRecovery();
       else if (started && !paused && typeof emulator?._recover_logic_cpu==='function' &&

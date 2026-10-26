@@ -54,7 +54,7 @@ class BrowserLogicTests(unittest.TestCase):
             context.close()
         self.assertEqual(self.errors, [], "Uncaught application errors")
 
-    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False, manual_frames=False):
+    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False, manual_frames=False, session_checkpoint=False):
         context = self.browser.new_context(
             viewport={"width": 1366, "height": 768},
             color_scheme="light",
@@ -62,6 +62,8 @@ class BrowserLogicTests(unittest.TestCase):
         )
         self.contexts.append(context)
         page = context.new_page()
+        if session_checkpoint:
+            page.add_init_script("window.__sessionCheckpointCore = true;")
         if manual_frames:
             page.add_init_script("""
                 window.testFrames=[];window.testTime=0;
@@ -149,6 +151,190 @@ class BrowserLogicTests(unittest.TestCase):
         expect(page.locator("#powerLabel")).to_have_text("CONSOLE ON")
         page.wait_for_function("window.mockCore.ticks > 0")
         return data
+
+    def checkpoint_page(self):
+        page=self.new_page(session_checkpoint=True, manual_frames=True, circuit_config=True)
+        page.locator("#romFile").set_input_files({"name":"synthetic.bin", "mimeType":"application/octet-stream", "buffer":self.synthetic_rom()})
+        expect(page.locator("#powerLabel")).to_have_text("CONSOLE ON")
+        page.evaluate("stepTestFrame();stepTestFrame()")
+        # The checkpoint controls live in the advanced panel.
+        page.locator("#saveCheckpointBtn").evaluate("el=>{for(let p=el.parentElement;p;p=p.parentElement)if(p.tagName==='DETAILS')p.open=true;}")
+        return page
+
+    def test_checkpoint_save_restore_no_ticks_and_immediate_saved_image(self):
+        page=self.checkpoint_page()
+        page.evaluate("""() => {
+            window.setCheckpointTestImage=value=>{
+                const pixels=mockCore.core.HEAPU8.subarray(0,640*480*4);
+                pixels.fill(value);
+                for(let i=3;i<pixels.length;i+=4)pixels[i]=255;
+            };
+            setCheckpointTestImage(80);
+        }""")
+        ticks=page.evaluate("mockCore.ticks")
+        page.locator("#saveCheckpointBtn").click()
+        expect(page.locator("#checkpointStatus")).to_contain_text("Saved Frame")
+        expect(page.locator("#pauseBtn")).to_have_text("Pause")
+        page.evaluate("setCheckpointTestImage(170)")
+        page.locator("#randomFmBtn").click()
+        page.locator("#restoreCheckpointBtn").click()
+        expect(page.locator("#pauseBtn")).to_have_text("Resume")
+        self.assertEqual(page.evaluate("mockCore.ticks"),ticks)
+        self.assertEqual(page.evaluate("mockCore.core.HEAPU8[0]"),80)
+        self.assertEqual(page.evaluate("document.querySelector('#screen').getContext('2d').getImageData(0,0,1,1).data[0]"),80)
+        self.assertFalse(page.evaluate("mockCore.fm.configured"))
+        payload=self.export_payload_for(page)
+        self.assertEqual([e["outcome"] for e in payload["checkpointEvents"]],["saved","restored"])
+        self.assertEqual(payload["checkpointSegment"],1)
+        self.assertNotIn('pixels',json.dumps(payload))
+        page.locator("#restoreCheckpointBtn").click()
+        self.assertEqual(self.export_payload_for(page)["checkpointSegment"],2)
+
+    def test_checkpoint_failed_save_keeps_slot_and_pause_state(self):
+        page=self.checkpoint_page()
+        page.locator("#saveCheckpointBtn").click()
+        page.locator("#pauseBtn").click()
+        page.evaluate("mockCore.checkpoint.saveStatus=4")
+        page.locator("#saveCheckpointBtn").click()
+        expect(page.locator("#restoreCheckpointBtn")).to_be_enabled()
+        expect(page.locator("#pauseBtn")).to_have_text("Resume")
+        page.locator("#restoreCheckpointBtn").click()
+        self.assertEqual(page.evaluate("mockCore.checkpoint.restores"),1)
+
+    def test_checkpoint_save_rejects_contacts_inputs_and_unknown_fault_state(self):
+        page=self.checkpoint_page()
+        page.keyboard.down("KeyZ")
+        page.locator("#saveCheckpointBtn").click()
+        self.assertEqual(page.evaluate("mockCore.checkpoint.saves"),0)
+        page.keyboard.up("KeyZ")
+        page.evaluate("mockCore.fm.configured=true")
+        page.locator("#saveCheckpointBtn").click()
+        self.assertEqual(page.evaluate("mockCore.checkpoint.saves"),0)
+        page.evaluate("() => {mockCore.fm.configured=false;mockCore.core._get_vram_fault_model_state=()=>{throw Error('unavailable')};}")
+        page.locator("#saveCheckpointBtn").click()
+        self.assertEqual(page.evaluate("mockCore.checkpoint.saves"),0)
+        expect(page.locator("#pauseBtn")).to_have_text("Pause")
+
+    def test_checkpoint_clear_failure_never_loads_and_stays_paused(self):
+        page=self.checkpoint_page()
+        page.locator("#saveCheckpointBtn").click()
+        page.evaluate("() => {mockCore.fm.configured=true;mockCore.core._set_fm_data_bridge=()=>5;}")
+        page.locator("#restoreCheckpointBtn").click()
+        self.assertEqual(page.evaluate("mockCore.checkpoint.restores"),0)
+        expect(page.locator("#pauseBtn")).to_have_text("Resume")
+        expect(page.locator("#restoreCheckpointBtn")).to_be_enabled()
+        self.assertEqual(self.export_payload_for(page)["checkpointSegment"],0)
+
+    def test_checkpoint_native_partial_failure_invalidates_uncertain_slot(self):
+        page=self.checkpoint_page()
+        page.locator("#saveCheckpointBtn").click()
+        page.evaluate("mockCore.checkpoint.restoreStatus=5")
+        page.locator("#restoreCheckpointBtn").click()
+        expect(page.locator("#restoreCheckpointBtn")).to_be_disabled()
+        expect(page.locator("#pauseBtn")).to_have_text("Resume")
+        payload=self.export_payload_for(page)
+        self.assertEqual(payload["checkpointSegment"],1)
+        self.assertEqual(payload["checkpointEvents"][-1]["outcome"],"uncertain")
+
+    def test_checkpoint_rejected_restore_retains_slot(self):
+        page=self.checkpoint_page()
+        page.locator("#saveCheckpointBtn").click()
+        page.evaluate("mockCore.checkpoint.restoreStatus=6")
+        page.locator("#restoreCheckpointBtn").click()
+        expect(page.locator("#restoreCheckpointBtn")).to_be_enabled()
+        self.assertEqual(self.export_payload_for(page)["checkpointSegment"],0)
+
+    def test_checkpoint_lifecycle_preserves_rejected_rom_and_cpu_reset(self):
+        page=self.checkpoint_page()
+        page.locator("#saveCheckpointBtn").click()
+        page.locator("#logicCpuResetBtn").click()
+        expect(page.locator("#restoreCheckpointBtn")).to_be_enabled()
+        page.evaluate("mockCore.rejectRomAllocation=true")
+        page.locator("#romFile").set_input_files({"name":"rejected.bin","mimeType":"application/octet-stream","buffer":self.synthetic_rom()})
+        expect(page.locator("#restoreCheckpointBtn")).to_be_enabled()
+        page.evaluate("mockCore.rejectRomAllocation=false")
+        page.locator("#resetBtn").click()
+        expect(page.locator("#restoreCheckpointBtn")).to_be_disabled()
+        self.assertEqual(self.export_payload_for(page)["checkpointEvents"],[])
+
+    def test_checkpoint_restore_suppresses_held_input_until_release(self):
+        page=self.checkpoint_page()
+        page.locator("#saveCheckpointBtn").click()
+        page.keyboard.down("KeyZ")
+        page.locator("#restoreCheckpointBtn").click()
+        page.keyboard.down("KeyZ")
+        page.locator("#pauseBtn").click()
+        page.evaluate("stepTestFrame();stepTestFrame()")
+        self.assertEqual(page.evaluate("mockCore.inputs[9]"),0)
+        page.keyboard.up("KeyZ")
+        page.keyboard.down("KeyZ")
+        page.evaluate("stepTestFrame();stepTestFrame()")
+        self.assertEqual(page.evaluate("mockCore.inputs[9]"),1)
+        page.keyboard.up("KeyZ")
+
+    def test_checkpoint_held_fault_restore_cancels_release_callback(self):
+        page=self.checkpoint_page()
+        page.locator("#saveCheckpointBtn").click()
+        page.keyboard.down("Shift")
+        page.keyboard.down("Digit1")
+        page.locator("#saveCheckpointBtn").click()
+        self.assertEqual(page.evaluate("mockCore.checkpoint.saves"),1)
+        page.locator("#restoreCheckpointBtn").click()
+        page.keyboard.up("Digit1")
+        page.keyboard.up("Shift")
+        self.assertEqual(page.evaluate("mockCore.short"),[-1,-1])
+        self.assertEqual(page.evaluate("mockCore.checkpoint.restores"),1)
+        expect(page.locator("#pauseBtn")).to_have_text("Resume")
+
+    def test_checkpoint_gamepad_release_and_save_preflight(self):
+        page=self.checkpoint_page()
+        page.evaluate("() => {window.testPad={axes:[0,0],buttons:Array.from({length:10},()=>({pressed:false}))};navigator.getGamepads=()=>[testPad];}")
+        page.locator("#saveCheckpointBtn").click()
+        page.evaluate("testPad.buttons[0].pressed=true")
+        page.locator("#saveCheckpointBtn").click()
+        self.assertEqual(page.evaluate("mockCore.checkpoint.saves"),1)
+        page.locator("#restoreCheckpointBtn").click()
+        self.assertEqual(page.evaluate("mockCore.inputs[9]"),0)
+        page.locator("#pauseBtn").click()
+        page.evaluate("stepTestFrame();stepTestFrame()")
+        self.assertEqual(page.evaluate("mockCore.inputs[9]"),0)
+        page.evaluate("testPad.buttons[0].pressed=false;stepTestFrame();testPad.buttons[0].pressed=true;stepTestFrame()")
+        self.assertEqual(page.evaluate("mockCore.inputs[9]"),1)
+
+    def test_checkpoint_uncertain_save_disables_slot_without_claiming_success(self):
+        page=self.checkpoint_page()
+        page.locator("#saveCheckpointBtn").click()
+        page.evaluate("mockCore.checkpoint.throwSave=true")
+        page.locator("#saveCheckpointBtn").click()
+        expect(page.locator("#restoreCheckpointBtn")).to_be_disabled()
+        expect(page.locator("#pauseBtn")).to_have_text("Resume")
+        payload=self.export_payload_for(page)
+        self.assertEqual(payload["checkpointEvents"][-1]["outcome"],"unknown")
+        self.assertEqual(payload["checkpointSegment"],0)
+
+    def test_checkpoint_saved_frame_preserves_unsigned_wasm_frame(self):
+        page=self.checkpoint_page()
+        page.evaluate("() => {mockCore.core._get_session_checkpoint_saved_frame=()=>-1;}")
+        page.locator("#saveCheckpointBtn").click()
+        self.assertEqual(self.export_payload_for(page)["checkpointEvents"][-1]["savedFrame"],4294967295)
+
+    def test_checkpoint_saved_frame_telemetry_failure_keeps_successful_capture(self):
+        page=self.checkpoint_page()
+        page.evaluate("() => {mockCore.core._get_session_checkpoint_saved_frame=()=>{throw Error('frame telemetry')};}")
+        page.locator("#saveCheckpointBtn").click()
+        expect(page.locator("#restoreCheckpointBtn")).to_be_enabled()
+        payload=self.export_payload_for(page)
+        self.assertEqual(payload["checkpointEvents"][-1]["outcome"],"saved")
+        self.assertIn("telemetryError",payload["checkpointEvents"][-1])
+
+    def test_checkpoint_legacy_core_and_throwing_getters_are_optional(self):
+        self.load_rom()
+        expect(self.page.locator("#saveCheckpointBtn")).to_be_disabled()
+        page=self.checkpoint_page()
+        page.evaluate("() => {mockCore.core._get_session_checkpoint_support=()=>{throw Error('optional getter')};}")
+        page.locator("#pauseBtn").click()
+        expect(page.locator("#saveCheckpointBtn")).to_be_disabled()
+        expect(page.locator("#restoreCheckpointBtn")).to_be_disabled()
 
     def test_rejected_roms_keep_the_accepted_cartridge_and_initial_errors_are_helpful(self):
         self.load_rom()

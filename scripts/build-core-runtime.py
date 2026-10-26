@@ -36,6 +36,8 @@ HELPER_FILES = (
     "work_ram_fault.h",
     "work_ram_runtime.c",
     "work_ram_runtime.h",
+    "session_checkpoint_runtime.c",
+    "session_checkpoint_patch.py",
 )
 PATCHED_FILES = (
     "src/main/c/wasm/wasm.c",
@@ -173,6 +175,21 @@ def stage_source(root: Path, work: Path, archive: bytes) -> Path:
     run([sys.executable, str(patcher), str(upstream)])
     if patched != {name: (upstream / name).read_bytes() for name in PATCHED_FILES}:
         raise RuntimeError("Pinned source patcher changed files on its second pass")
+    checkpoint_patcher = work / "scripts/session_checkpoint_patch.py"
+    checkpoint_files = ("src/main/c/core/sound/blip_buf.c", "src/main/c/core/sound/blip_buf.h",
+                        "src/main/c/core/sound/psg.c", "src/main/c/core/sound/sound.c",
+                        "src/main/c/core/sound/ym2612.c", "src/main/c/core/vdp_ctrl.c",
+                        "src/main/c/core/cart_hw/md_cart.c",
+                        "src/main/c/core/system.c", "src/main/c/core/input_hw/gamepad.c",
+                        "src/main/c/wasm/wasm.c")
+    run([sys.executable, str(checkpoint_patcher), str(upstream)])
+    checkpointed = {name: (upstream / name).read_bytes() for name in checkpoint_files}
+    run([sys.executable, str(checkpoint_patcher), str(upstream)])
+    if checkpointed != {name: (upstream / name).read_bytes() for name in checkpoint_files}:
+        raise RuntimeError("Checkpoint source patcher changed files on its second pass")
+    run([sys.executable, str(patcher), str(upstream)])
+    if checkpointed != {name: (upstream / name).read_bytes() for name in checkpoint_files}:
+        raise RuntimeError("Pinned source patcher changed the checkpointed source")
     patch_cmake(upstream / "CMakeLists.txt")
     return upstream
 

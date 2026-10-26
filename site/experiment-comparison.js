@@ -128,7 +128,7 @@
       ['Current Frame',['currentFrame'],isInteger],['CPU Flags',['cpuFlags'],value=>isInteger(value,0,65535)],
       ['VRAM Transaction Counts',['vramTransaction','lastFrameCounts'],isRecord],
       ['PSG Recorded Writes',['psgInputFault','inputWrites'],isCount],['FM Recorded Writes',['fmInputFault','inputWrites'],isCount],
-      ['Fault Disconnect Outcomes',['faultDisconnects'],isObject],['CPU Interventions',['cpuInterventions'],isObject],['Reset State',['resetState'],isString]
+      ['Fault Disconnect Outcomes',['faultDisconnects'],isObject],['Checkpoint Events',['checkpointEvents'],isObject],['Checkpoint Segment',['checkpointSegment'],isInteger],['CPU Interventions',['cpuInterventions'],isObject],['Reset State',['resetState'],isString]
     ]) {
       const legacyKeys={
         'logic.active':'faultActive','logic.readCount':'readCount','logic.writeCount':'writeCount'

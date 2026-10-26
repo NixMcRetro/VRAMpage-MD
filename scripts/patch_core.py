@@ -517,7 +517,8 @@ void EMSCRIPTEN_KEEPALIVE clear_vram_tx_test_cache(void)
         if 'VRAM TX HANDLER TEST BRIDGE' in source:
             raise SystemExit('VRAM diagnostic handler bridge has a partial marker.')
         source += bridge
-    elif source.count(bridge_marker) != 1 or not source.endswith(bridge):
+    elif (source.count(bridge_marker) != 1 or
+          not source.rstrip().endswith(bridge.strip())):
         raise SystemExit('VRAM diagnostic handler bridge is ambiguous.')
     return source
 

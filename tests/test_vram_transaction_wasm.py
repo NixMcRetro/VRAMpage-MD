@@ -355,6 +355,8 @@ class VramTransactionWasm(unittest.TestCase):
         self.assertTrue((bundle / "scripts/fm_data_fault_core.c").is_file())
         self.assertTrue((bundle / "scripts/fm_data_fault_runtime.c").is_file())
         self.assertTrue((bundle / "scripts/build-core-runtime.py").is_file())
+        self.assertTrue((bundle / "scripts/session_checkpoint_runtime.c").is_file())
+        self.assertTrue((bundle / "scripts/session_checkpoint_patch.py").is_file())
         self.assertTrue((bundle / "THIRD-PARTY-NOTICES.md").is_file())
         self.assertTrue((runtime_output / "THIRD-PARTY-NOTICES.md").is_file())
         instructions = (runtime_output / "BUILDING.txt").read_text()
@@ -368,6 +370,8 @@ class VramTransactionWasm(unittest.TestCase):
         self.assertIn("--pre-js=${CMAKE_SOURCE_DIR}/../scripts/fm_data_fault_api.js", cmake)
         command(["node", str(fixture / "tests/test_runtime_build_profile.cjs"),
                  str(runtime_paths[0])], cwd=fixture)
+        command(["node", str(fixture / "tests/test_session_checkpoint_runtime.cjs"),
+                 str(runtime_paths[0]), str(normal_paths[0])], cwd=fixture)
         command(["node", str(fixture / "tests/test_psg_data_runtime.cjs"),
                  str(runtime_paths[0]), str(normal_paths[0])], cwd=fixture)
         command(["node", str(fixture / "tests/test_z80_psg_runtime.cjs"),

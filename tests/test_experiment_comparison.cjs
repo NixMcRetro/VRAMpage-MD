@@ -52,4 +52,10 @@ for(const label of ['ROM SHA-256','Core Revision','RAM Active','RAM Affected Rea
 assert.throws(()=>parse('{"rom":"not an object"}'),/experiment export/);
 const outcomes=compare({faultDisconnects:[{action:'disconnect',results:[]}],cpuInterventions:[]},{faultDisconnects:[],cpuInterventions:[]});
 assert.equal(outcomes.find(row=>row.label==='Fault Disconnect Outcomes').a,'[{"action":"disconnect","results":[]}]');
+const checkpoints=compare({checkpointEvents:[{action:'restore',outcome:'restored'}],checkpointSegment:1},
+  {checkpointEvents:[],checkpointSegment:0});
+for(const label of ['Checkpoint Events','Checkpoint Segment'])
+  assert.equal(checkpoints.find(row=>row.label===label).status,'mismatch');
+assert.equal(compare(A,B).find(row=>row.label==='Checkpoint Segment').status,'unknown');
+assert.equal(compare({checkpointSegment:-1},{checkpointSegment:-1}).find(row=>row.label==='Checkpoint Segment').status,'unknown');
 console.log('Experiment comparison parser and row tests passed.');

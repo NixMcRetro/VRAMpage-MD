@@ -83,6 +83,7 @@ window.Module = async () => {
     _get_web_audio_l_ref: () => input + 1024,
     _get_web_audio_r_ref: () => input + 16384,
     _start() {
+      if (core._discard_session_checkpoint) core._discard_session_checkpoint();
       window.mockCore.starts++;
       resetLogic();window.mockCore.short=[-1,-1];window.mockCore.vramAddressMask=0;
       Object.assign(vramModel,{modelId:1,mask:0,bridgeA:-1,bridgeB:-1});
@@ -249,6 +250,27 @@ window.Module = async () => {
   }
   if (window.__legacyChipCore) {delete core._set_logic_address_mask;delete core._get_logic_address_mask;}
   if(window.__legacyVramChipCore) {delete core._set_vram_address_mask;delete core._get_vram_address_mask;}
+  if (window.__sessionCheckpointCore) {
+    let slot=null;
+    const api=window.mockCore.checkpoint={saves:0,restores:0,saveStatus:0,restoreStatus:0,supported:true};
+    core._get_session_checkpoint_support=()=>api.supported?1:0;
+    core._get_session_checkpoint_ready=()=>slot?1:0;
+    core._get_session_checkpoint_saved_frame=()=>slot?.frame??0;
+    core._discard_session_checkpoint=()=>{slot=null;};
+    core._save_session_checkpoint=()=>{
+      api.saves++;
+      if (api.throwSave) throw new Error('synthetic save trap');
+      if (api.saveStatus) return api.saveStatus;
+      slot={frame:logic.frame,pixels:bytes.slice(0,640*480*4)};return 0;
+    };
+    core._restore_session_checkpoint=()=>{
+      api.restores++;
+      if (api.throwRestore) throw new Error('synthetic restore trap');
+      if (api.restoreStatus) return api.restoreStatus;
+      if (!slot) return 3;
+      bytes.set(slot.pixels);return 0;
+    };
+  }
   window.mockCore.core=core;
   return core;
 };

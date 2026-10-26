@@ -2,6 +2,8 @@
 
 ## Unreleased workbench improvements
 
+- Add explicit session-only Save Checkpoint / Restore Checkpoint controls with verified fault clearing, paused immediate-image restore, held-input release and metadata-only history segments. Bound support to ordinary Mega Drive/3–6-button/SRAM profiles; preserve CPU Reset retention and Clean Restart invalidation. Keep normal-core binaries and public v0.4.1 unchanged.
+
 - Add a developer-only checkpoint replay proof with guarded same-instance audio snapshots. Replace undefined signed shifts in the existing Blip high-pass filter with equivalent defined arithmetic; verify unchanged synthetic PCM/pixels and native sanitizer checks. Checkpoint controls remain unavailable.
 
 - Use Title Case consistently for buttons and labels, preserving acronyms and Work RAM naming.

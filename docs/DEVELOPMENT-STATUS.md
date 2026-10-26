@@ -1,5 +1,92 @@
 # Development status and continuation checkpoint
 
+## Session Checkpoint Integration Candidate — 26 October 2026 (Sydney)
+
+Resumed from verified main `0b8263c`; all seven existing main checks were rechecked.
+Explicit **Save Checkpoint / Restore Checkpoint** now use one privately owned,
+same-cartridge/module slot. Save verifies clear faults and neutral controls without
+ticking; failed captures retain the prior slot. Restore pauses, cancels transients,
+releases held inputs, verifies all-domain clearing, restores the saved image without
+ticking and stays paused. CPU Reset retains the slot; Clean Restart/new cartridge
+invalidates it. JSON records metadata-only events/counter baselines/segments.
+Ordinary MD, 3/6-button pads and validated ordinary SRAM/maps are supported;
+other profiles are refused. [API/scope](SESSION-CHECKPOINT-API.md).
+
+Native author checkpoint163d2ff is integrated as3fa33ff. Independent specialist
+review approved native/JS source at3fa33ff and reran all nine actual-WASM groups.
+The requested Luna High was unavailable; both specialist workers reported actual
+GPT-6-based Codex. Root review caught normal-profile exposure and displaced Start
+reset hooks before PR; corrections restore unchanged normal binary hashes and
+explicit active-fault Start regression coverage. No assertion was weakened.
+
+Local evidence: full SDK/source116 PASS209.065s with normal fatal sanitizers and
+fresh builds; native checkpoint9 actual-WASM groups and existing logic25 pass.
+Chromium mock logic116 PASS258.309s plus new unsigned-frame boundary/telemetry
+cases2 PASS4.513s; display7 PASS17.384s. WebKit checkpoint14 PASS112.188s.
+Production actual-core browser8 PASS99.739s, including immediate raw/canvas image,
+no extra tick, paused restore and restart invalidation. Extracted package core8
+PASS44.051s and transaction3 PASS10.227s on code-identical bf547d6; 714 unique
+paths and source/version/UI/core identity verified. Required PR/main CI remain.
+Evidence logs stay under
+`/workspace/scratch/session-checkpoint-ui`; candidate source, runtime and normal
+builds are retained in the isolated worktrees. No integrated release is claimed.
+
+Initial [PR #63 CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40254368579)
+passed six of seven checks. Firefox's sole failure was the new mock-image oracle:
+the fixture filled alpha with80 as well as RGB80, so Firefox composited translucent
+pixels to26. Production pixels are opaque. The fixture now sets alpha255 while
+keeping the exact RGB80 assertion; isolated Chromium/WebKit rechecks pass. Product
+source/core and thresholds are unchanged. A new complete CI run is required.
+
+Public v0.4.1 tag/assets remain unchanged; no version bump or McRetro.net action.
+Next: finish PR #63 CI, require all seven PR
+checks before merge, verify all seven main checks, and record exact delivery links.
+Native Mac audible/physical and universal mapper compatibility remain unverified.
+
+## PR #62 verified delivery — 26 October 2026 (Sydney)
+
+[PR #62](https://github.com/NixMcRetro/VRAMpage-MD/pull/62) merged as
+`0b8263c1eb3f731f808c2cc6555ecde79b8a396a` after all seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40224455470)
+passed on `ebce69a94389694dceafe5e12bfaeaf2721f4907`; merged source tree matches.
+All seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40224889344)
+pass on the latest main, attempt2. Initial build attempt had one real-time browser
+scheduling start20.317ms late against the unchanged5ms limit. The other six core
+cases passed. Logs were inspected/retained, isolated local recheck passed3.742s,
+then only failed/dependent jobs were retried once without any source/threshold change.
+[Ready-to-run main review build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40224889344/artifacts/12610843393).
+
+Private replay proof and defined Blip arithmetic are complete. No product checkpoint
+API/controls exist. Native fatal ASan/UBSan and five actual-WASM replay cases pass;
+all prior recorded PCM/pixel hashes remain unchanged. Full SDK/source115 passes
+(145.167s); fresh production core7/handoff3 and extracted core7/handoff3 pass.
+Twelve focused staging/source checks pass. Both production profiles have no proof
+exports. Package704 unique files matches exact source/version/UI/core; SHA256
+`85535807920bbdbfb044975299d285b286f5dd64544705a5cab5817bed622d22`.
+Independent specialist review approved the corrections through158715e. Cached
+canonical `site/core`/`site/source` now use the verified production builds; canonical
+vendor was upgraded by the supported idempotent patcher. No private hooks installed.
+
+Public v0.4.1 title/tag/assets are unchanged; original tag
+`e579c571f14b3549a5befa33d9e62ba3f3c9d45b`, ZIP digest
+`36133552de9c7dafb9502dea957b6a4934fe4b503d19e311fb898834162ec6fd`,
+SHA256SUMS digest `961ff2e54e34e511355e736f0106fcd8cda71777977f1e29663683e08ed7b1bc`.
+McRetro.net untouched. No new native Mac audible/physical claim.
+
+User authorizes continued work. Next bounded gate is default six-button controller
+state and warmed mid-session SRAM replay in scratch (worker `v050_state_audit`).
+Initial3-button input-consuming and plain64KiB SRAM experiments pass with a bounded
+SRAM copyback. Stock state omits SRAM; bytes/hashes after stock load prove the gap.
+Root reran full input/SRAM build with normal default leak/address/UB sanitizers
+(`env -u ASAN_OPTIONS -u LSAN_OPTIONS`, tool additional network permission); all
+pass. Earlier worker disabled leak detection after sandbox ptrace failure; that
+limitation is superseded by the root default-sanitizer rerun, not hidden.
+Evidence: `/workspace/scratch/checkpoint-input-sram/root-default-sanitizers.log`.
+No tracked input/SRAM implementation or production checkpoint wrapper yet. Keep
+EEPROM/SVP/custom mappings/peripherals gated; capture/restore remains explicit,
+one in-memory same-session slot, default unassisted faults, Title Case controls.
+
+
 ## Private checkpoint proof and defined Blip arithmetic integration
 
 Developer-only code in `scripts/checkpoint-proof` archives the exact upstream pin,
