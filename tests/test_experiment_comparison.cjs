@@ -58,4 +58,10 @@ for(const label of ['Checkpoint Events','Checkpoint Segment'])
   assert.equal(checkpoints.find(row=>row.label===label).status,'mismatch');
 assert.equal(compare(A,B).find(row=>row.label==='Checkpoint Segment').status,'unknown');
 assert.equal(compare({checkpointSegment:-1},{checkpointSegment:-1}).find(row=>row.label==='Checkpoint Segment').status,'unknown');
+const policies=compare({automaticRecovery:{forceResumeEnabled:true,cpuRecoveryEnabled:true,waitFrames:8}},
+  {automaticRecovery:{forceResumeEnabled:false,cpuRecoveryEnabled:true,waitFrames:2}});
+assert.equal(policies.find(row=>row.label==='Force Resume Enabled').status,'mismatch');
+assert.equal(policies.find(row=>row.label==='CPU Recovery Enabled').status,'match');
+assert.equal(policies.find(row=>row.label==='Recovery Wait Frames').status,'mismatch');
+assert.equal(compare(A,B).find(row=>row.label==='Force Resume Enabled').status,'unknown');
 console.log('Experiment comparison parser and row tests passed.');

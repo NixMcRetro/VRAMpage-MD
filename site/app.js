@@ -1470,6 +1470,16 @@
   }
 
   function recoverLogicCPU(mode) {
+    const wasBusy=cpuRecoveryBusy;
+    cpuRecoveryBusy=true;
+    try {return performLogicCPURecovery(mode);}
+    finally {
+      cpuRecoveryBusy=wasBusy;
+      if (!wasBusy) cancelAutomaticRecovery();
+    }
+  }
+
+  function performLogicCPURecovery(mode) {
     lastCpuRecoveryAttempt={nativeCalled:false,status:null};
     cancelAutomaticRecovery();
     if (!started || typeof emulator?._recover_logic_cpu !== 'function') return false;
@@ -1680,6 +1690,7 @@
     try { if (logicApiReady()) { const value=Number(emulator._get_logic_frame()); if(Number.isFinite(value)&&value>=0)frame=value; } }
     catch (_) { /* Disconnect results must still be retained if telemetry is unavailable. */ }
     faultDisconnectActions.push({action:'all-domain-disconnect',frame,results:results.map(item=>({...item}))});
+    cancelAutomaticRecovery();
     updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls();
     return allClear;
   }
@@ -2979,6 +2990,7 @@
       pressed.clear();checkpointBlockedKeys.clear();
       endKeyboardHold();
       if (ownedAddressHold?.type==='pointer') endAddressFrameHold('pointer',ownedAddressHold.pointerId);
+      cancelAutomaticRecovery();
       focusReleased=true;
     });
     window.addEventListener('focus',()=>{if(focusReleased){lastFrame=0;focusReleased=false;}});
