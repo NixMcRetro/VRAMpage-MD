@@ -121,14 +121,14 @@
         </div>
         <p id="randomiserStatus" class="randomiser-status" role="status" aria-live="polite">Load a ROM to randomise a chip.</p>
         <p id="cpuRecoveryStatus" class="randomiser-status" role="status" aria-live="polite">Automatic Recovery Ready After ROM Load</p>
-        <div class="ram-frame-pairs z80-ram-controls" role="group" aria-label="Z80 Sound RAM Write Bridge">
+        <div class="ram-frame-pairs z80-ram-controls" role="group" aria-label="Z80 Sound RAM Write Bridge" aria-describedby="z80RamBridgeStatus" title="Changes future sound-RAM writes. Removing a bridge leaves earlier stored corruption.">
           <strong>Z80 RAM Write</strong>
           <label>Address A <select id="z80RamBridgeA" disabled></select></label>
           <label>Address B <select id="z80RamBridgeB" disabled></select></label>
           <button id="z80RamBridgeApply" type="button" disabled>Apply Bridge</button>
           <button id="z80RamBridgeRemove" type="button" disabled>Remove Bridge</button>
         </div>
-        <p id="z80RamBridgeStatus" class="randomiser-status" role="status" aria-live="polite">Z80 RAM Write Off</p>
+        <p class="randomiser-status"><span id="z80RamBridgeStatus" role="status" aria-live="polite">Z80 RAM Write Off</span> <span id="z80RamBridgeCounts"></span></p>
         <p id="disconnectAllFaultsStatus" class="logic-status" role="status" aria-live="polite">Load a ROM to disconnect all fault domains.</p>
         <details class="chip-settings" id="vramSettings">
           <summary>VRAM Presets, Counters and Model Notes</summary>
@@ -177,7 +177,7 @@
       <div class="logic-actions">
         <button id="manualForceResumeBtn" type="button" disabled>Disconnect and Force Resume</button>
       </div>
-        <p class="logic-note">CPU recovery disconnects RAM and VRAM faults, leaves PSG/FM faults unchanged, preserves corrupted RAM and may immediately stop again. CPU-only reset leaves other chips running. The Randomiser-row Force Resume and CPU Recovery switches start On. Two eligible HALT frames trigger one Force Resume; eight further HALT frames permit one CPU-only reset. Turning Force Resume Off skips directly to one CPU reset after two HALT frames. STOP alone does not trigger recovery. A new fault action, toggle change or explicit Resume permits another sequence. This does not detect software loops or a browser locked inside a frame. Disconnect All Faults pauses only when clearing a domain is unavailable, partial or unverified; Clean Restart fully reboots.</p>
+        <p class="logic-note">CPU recovery disconnects Work RAM, VRAM and Z80 RAM faults, leaves PSG/FM faults unchanged, preserves corrupted RAM and may immediately stop again. CPU-only reset leaves other chips running. The Randomiser-row Force Resume and CPU Recovery switches start On. Two eligible HALT frames trigger one Force Resume; eight further HALT frames permit one CPU-only reset. Turning Force Resume Off skips directly to one CPU reset after two HALT frames. STOP alone does not trigger recovery. A new fault action, toggle change or explicit Resume permits another sequence. This does not detect software loops or a browser locked inside a frame. Disconnect All Faults pauses only when clearing a domain is unavailable, partial or unverified; Clean Restart fully reboots.</p>
       <div class="logic-actions">
         <button id="saveCheckpointBtn" type="button" disabled>Save Checkpoint</button>
         <button id="restoreCheckpointBtn" type="button" disabled>Restore Checkpoint</button>
@@ -206,7 +206,7 @@
         <div><span>Activation Frame</span><strong id="logicActivationFrame">—</strong></div>
         <div class="cpu-state"><span>CPU Status Flags</span><strong id="logicCpuStatus">—</strong></div>
       </div>
-      <p class="logic-note"><strong>Model limits.</strong> This is an experimental transaction model, not an exact physical pin or cycle-level simulation. Read faults affect returned values; write faults alter stored RAM and those changes persist after disconnecting. CPU STOP/HALT indicators report flags only; automatic HALT recovery follows the switches above. Turn both Off for unassisted experiments. Data pairs must stay within D0–D7 or D8–D15. Only one fault domain (VRAM or logic/Work RAM) is active at a time.</p>
+      <p class="logic-note"><strong>Model limits.</strong> This is an experimental transaction model, not an exact physical pin or cycle-level simulation. Read faults affect returned values; write faults alter stored RAM and those changes persist after disconnecting. CPU STOP/HALT indicators report flags only; automatic HALT recovery follows the switches above. Turn both Off for unassisted experiments. Data pairs must stay within D0–D7 or D8–D15. VRAM and logic/Work RAM faults remain mutually exclusive; the Z80 RAM write bridge is independent.</p>
     </details>
 
     <section class="bottom-grid">

@@ -1,5 +1,10 @@
 # Changelog
 
+## Development Source — Z80 RAM Write Bridge
+
+- Add an optional, off-by-default A0–A12 write-address pair within Z80 sound RAM, preserving native bus ownership and read/fetch behavior.
+- Add compact controls, exact per-owner counters, experiment comparison and configuration v3 with v1/v2 imports. Include the independent memory domain in verified disconnect, CPU recovery and checkpoint handling; preserve published versions and sound-chip reset semantics.
+
 ## Hardware Research — 27 October 2026
 
 - Map pinned Z80 RAM, fetch, bus ownership and reset paths; specify a separate write-only RAM alias candidate and meaningful original-cartridge tests before implementation.

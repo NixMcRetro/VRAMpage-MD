@@ -127,7 +127,7 @@
     updateLogicControls();
     refreshVramControls();
     refreshPsgDataControls();
-    refreshFmDataControls(); refreshZ80RamControls();
+    refreshFmDataControls();
     refreshRandomiserControls();
     refreshCircuitConfigControls();
   }
@@ -174,6 +174,7 @@
       const state=emulator._get_z80_ram_bridge_state();
       if (!state || state.modelVersion!=='z80-ram-write-address-pair-v1' ||
           typeof state.supported!=='boolean' || typeof state.configured!=='boolean' ||
+          !Number.isInteger(state.activationFrame) || state.activationFrame<0 || state.activationFrame>0xffffffff ||
           state.effective!==(state.supported&&state.configured) ||
           !Number.isInteger(state.bridgeA) || !Number.isInteger(state.bridgeB) ||
           (state.configured ? state.bridgeA<0 || state.bridgeA>12 || state.bridgeB<0 ||
@@ -193,7 +194,9 @@
       !z80RamApiPresent()?'Z80 RAM Write Unavailable in This Core':
       !state?'Z80 RAM Write State Unavailable':!state.supported?'Z80 RAM Write Unsupported in This Profile':
       !state.configured?'Z80 RAM Write Off':
-      `Z80 RAM Write A${state.bridgeA} ↔ A${state.bridgeB} · ${state.ramWrites} Writes · ${state.changedAddresses} Addresses Changed`;
+      `Z80 RAM Write A${state.bridgeA} ↔ A${state.bridgeB}`;
+    $('z80RamBridgeCounts').textContent=state?.configured
+      ? `· ${state.ramWrites} Writes · ${state.changedAddresses} Addresses Changed`:'';
   }
 
   function setZ80RamBridge(enabled,pairOverride,silent=false) {
@@ -384,14 +387,14 @@
         ? 'FM bridge request rejected: unsupported system profile.'
         : 'FM bridge request rejected: invalid settings.';
       stamp(`FM bridge request rejected (status ${status})`);
-      refreshFmDataControls(); refreshZ80RamControls();
+      refreshFmDataControls();
       return false;
     }
     abandonKeyboardHold('FM');
     if (enabled && pairOverride!==undefined) {
       $('fmBridgeA').value=String(a); $('fmBridgeB').value=String(b);
     }
-    refreshFmDataControls(); refreshZ80RamControls();
+    refreshFmDataControls();
     stamp(enabled
       ? `FM data bridge applied: D${a} ↔ D${b}; existing chip state was not repaired.`
       : 'FM data bridge removed; existing chip state was not repaired.');
@@ -406,10 +409,10 @@
     const status=emulator._set_fm_data_mask(mask);
     if (status!==0) {
       $('fmBridgeStatus').textContent=status===2?'FM mask request rejected: unsupported system profile.':'FM mask request rejected: invalid settings.';
-      refreshFmDataControls(); refreshZ80RamControls(); return false;
+      refreshFmDataControls(); return false;
     }
     abandonKeyboardHold('FM');
-    refreshFmDataControls(); refreshZ80RamControls();
+    refreshFmDataControls();
     stamp(mask?`FM data inputs ${maskLineNames(mask)} forced low before register decode.`:'FM data fault removed; existing chip state was not repaired.');
     return true;
   }
@@ -509,7 +512,7 @@
       if (!observed || (Array.isArray(result) ? !observed.configured || !samePair(canonical([observed.bridgeA,observed.bridgeB]),result)
           : Number(observed.dataMask)!==result)) {
         if (setterAttempted && !paused) pauseToggle();
-        isPsg?refreshPsgDataControls():refreshFmDataControls(); refreshZ80RamControls();
+        isPsg?refreshPsgDataControls():refreshFmDataControls();
         status.textContent=`${kind.toUpperCase()} randomisation could not be confirmed; runtime state is unavailable or differs from the requested setting.`;
         $('randomiserStatus').textContent=`${kind.toUpperCase()} randomisation could not be confirmed${setterAttempted?'; emulation paused for inspection':''}; runtime state is unavailable or differs from the requested setting.`;
         return false;
@@ -520,7 +523,7 @@
       return true;
     } catch (_) {
       if (setterAttempted && !paused) pauseToggle();
-      try { isPsg?refreshPsgDataControls():refreshFmDataControls(); refreshZ80RamControls(); } catch (_) { /* Keep the failure report available. */ }
+      try { isPsg?refreshPsgDataControls():refreshFmDataControls(); } catch (_) { /* Keep the failure report available. */ }
       status.textContent=setterAttempted
         ? `${kind.toUpperCase()} randomisation failed during the setter; emulation paused. Observed state refreshed where available.`
         : `${kind.toUpperCase()} randomisation refused because runtime state could not be read.`;
@@ -636,7 +639,7 @@
     const buttons=isPsg?psgPinButtons:fmPinButtons;
     const state=()=>isPsg?currentPsgDataState():currentFmDataState();
     const mode=()=>$(isPsg?'psgLegMode':'fmLegMode').value;
-    const refresh=()=>isPsg?refreshPsgDataControls():refreshFmDataControls(); refreshZ80RamControls();
+    const refresh=()=>isPsg?refreshPsgDataControls():refreshFmDataControls();
     const selectPair=pair=>isPsg?setPsgDataBridge(true,pair):setFmDataBridge(true,pair);
     const setMask=mask=>isPsg?setPsgDataMask(mask):setFmDataMask(mask);
     for (let bit=0;bit<8;bit++) {
@@ -1144,6 +1147,7 @@
     refreshLogicMetrics();
     refreshChipControls();
     refreshRandomiserControls();
+    refreshZ80RamControls();
     updateCheckpointControls();
   }
 
@@ -1255,7 +1259,7 @@
       catch (error) {event.displayError=error.message;}
       accumulated=0;lastFrame=0;resetStats();
       checkpointMessage=`Restored Frame ${event.savedFrame??'Unknown'} · Paused · Segment ${checkpointSegment}`;
-      updateFaultUI();refreshPsgDataControls();refreshFmDataControls(); refreshZ80RamControls();
+      updateFaultUI();refreshPsgDataControls();refreshFmDataControls();
     } catch (error) {
       const uncertain=event.nativeAttempted && ![1,2,3,6].includes(event.status);
       event.outcome=uncertain?'uncertain':'refused';
@@ -1788,7 +1792,7 @@
     catch (_) { /* Disconnect results must still be retained if telemetry is unavailable. */ }
     faultDisconnectActions.push({action:'all-domain-disconnect',frame,results:results.map(item=>({...item}))});
     cancelAutomaticRecovery();
-    updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls(); refreshZ80RamControls();
+    updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls();
     return allClear;
   }
 
@@ -2277,7 +2281,7 @@
     if (c.z80Ram.pair) {
       $('z80RamBridgeA').value=String(c.z80Ram.pair[0]);$('z80RamBridgeB').value=String(c.z80Ram.pair[1]);
     }
-    updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls(); refreshZ80RamControls();
+    updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls();
   }
 
   function pauseAfterCircuitApplyFailure(domain) {
@@ -2301,7 +2305,7 @@
     const actual=`Observed state: ${vramDescription}; tracked RAM ${ram}; ${bridgeDescription(psg,'PSG')}; ${bridgeDescription(fm,'FM')}; ${z80Description}.`;
     const message=`Apply stopped at ${domain}; earlier settings may have changed. ${actual} The staged file is retained and emulation is paused.`;
     $('circuitConfigStatus').textContent=message; stamp(message);
-    updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls(); refreshZ80RamControls();
+    updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls();
   }
 
   function applyStagedCircuitConfiguration() {
@@ -2899,7 +2903,8 @@
     refreshVramTelemetry();
     refreshLogicMetrics();
     refreshPsgDataControls();
-    refreshFmDataControls(); refreshZ80RamControls();
+    refreshFmDataControls();
+    refreshZ80RamControls();
   }
 
   function animationFrame(time) {
@@ -2947,7 +2952,7 @@
     $('soundBtn').textContent=audioOn?'Mute Sound':'Enable Sound';
     $('soundBtn').setAttribute('aria-pressed',String(audioOn));
     refreshPsgDataControls();
-    refreshFmDataControls(); refreshZ80RamControls();
+    refreshFmDataControls();
     stamp(audioOn?'Audio enabled (FM + PSG output)':'Audio muted');
   }
 
@@ -3011,7 +3016,7 @@
       $('disconnectAllFaultsStatus').textContent='No all-domain disconnect has been attempted for this cartridge.';
       accumulated=0;lastFrame=0;resetStats();
       refreshPsgDataControls();
-      refreshFmDataControls(); refreshZ80RamControls();
+      refreshFmDataControls();
       const hashPromise=cleanRestart && romIdentity?.bytes===bytes
         ? romIdentity.hashPromise
         : sha256Hex(bytes).catch(error=>{

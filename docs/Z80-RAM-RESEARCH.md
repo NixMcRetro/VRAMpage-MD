@@ -1,5 +1,9 @@
 # Z80 Sound RAM and Bus Fault Research
 
+The research record below predates the separately authorized
+[development-source write bridge](Z80-RAM-WRITE-BRIDGE.md). Its physical limits
+and deferred arbitration decision still apply; published releases are unchanged.
+
 **Status: research/design, not implemented.** Follow-up to
 [#75](https://github.com/NixMcRetro/VRAMpage-MD/issues/75), inspected
 27 October 2026 (Sydney). The first useful candidate is a write-only address

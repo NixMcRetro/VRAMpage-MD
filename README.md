@@ -39,6 +39,10 @@ it is removed. **CPU Reset** preserves RAM and sound-chip state, although
 restarted game code can overwrite RAM. **Clean Restart** fully reboots.
 See the [controls and recovery guide](docs/RUNNING-LOCALLY.md).
 
+Development source also includes an optional
+[Z80 RAM Write Bridge](docs/Z80-RAM-WRITE-BRIDGE.md) for sound-driver memory.
+It is off by default and is not included in the published v0.5.0 download.
+
 ## 💻 Run Locally
 
 Download and extract the complete **v0.5.0 browser ZIP** above. From its

@@ -700,6 +700,9 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertTrue(payload["available"] and payload["configured"])
         self.assertEqual(payload["ramWrites"], '9007199254740993')
         self.assertEqual(payload["bridgeB"],12)
+        expect(self.page.locator("#z80RamBridgeCounts")).to_contain_text('9007199254740993')
+        self.assertNotIn('9007199254740993',self.page.locator("#z80RamBridgeStatus").inner_text(),
+                         'per-frame counters must not flood the live status announcement')
         self.page.locator("#z80RamBridgeRemove").click()
         self.assertFalse(self.page.evaluate("mockCore.z80Ram.configured"))
         self.assertEqual(self.page.evaluate("mockCore.logic.recoveries"), [])

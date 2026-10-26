@@ -1,5 +1,16 @@
 # VRAMpage MD roadmap
 
+## Authorized Z80 RAM Write Bridge — Development Source
+
+The user approved one bounded extension after the research: an off-by-default,
+write-only address pair in the Z80's 8 KiB RAM, reusing native ownership and
+existing UI/configuration/export/recovery paths. See the [implementation guide](docs/Z80-RAM-WRITE-BRIDGE.md).
+This is a scoped exception to the feature freeze; bus-arbitration faults and
+physical VRAM timing remain deferred. VERSION/public v0.5.0 and all older
+artifacts remain unchanged. Accept only with meaningful native/sanitizer and
+actual-WASM memory/PCM/lifecycle evidence, independent specialist review,
+three-browser/package CI and verified main CI.
+
 ## Hardware Follow-Up Research — 27 October 2026
 
 The user authorized independent research, starting with the bounded Z80 task.

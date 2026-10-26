@@ -143,7 +143,8 @@ The advanced **Disconnect and Force Resume** action remains a manual interventio
    Off, CPU Recovery can instead issue its one reset after the initial two frames.
 
 Neither intervention directly clears RAM or resets VDP/Z80/FM/PSG. Both disconnect
-RAM/VRAM faults; audio faults remain. ROM startup code after CPU Reset may itself
+RAM/VRAM faults; development source also removes the independent Z80 RAM write
+bridge before intervention. Audio faults remain. ROM startup code after CPU Reset may itself
 initialize RAM or reprogram sound. STOP alone, static pictures, silence, unchanged
 RAM access counters and software loops are not triggers. No observer can rescue a
 browser blocked inside a native tick. An eight-frame wait prolongs frozen output;
