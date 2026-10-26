@@ -1,5 +1,30 @@
 # Development status and continuation checkpoint
 
+## Milestone Issue Housekeeping Completed — 27 October 2026 (Sydney)
+
+After the user approved the audit recommendation, the remaining work was split
+into three focused GitHub follow-ups before the old trackers were closed:
+
+| Delivered Milestone | Remaining Work |
+| --- | --- |
+| [#1 Work RAM](https://github.com/NixMcRetro/VRAMpage-MD/issues/1), closed | [#73 Verify Model 1 VA6 Work RAM Devices and Pin Mapping](https://github.com/NixMcRetro/VRAMpage-MD/issues/73) |
+| [#2 Transaction VRAM](https://github.com/NixMcRetro/VRAMpage-MD/issues/2), closed | [#74 Research VRAM Serial Access and Scanline Timing](https://github.com/NixMcRetro/VRAMpage-MD/issues/74) |
+| [#3 FM/PSG Audio](https://github.com/NixMcRetro/VRAMpage-MD/issues/3), closed | [#75 Research Z80 Sound RAM and Bus Arbitration Faults](https://github.com/NixMcRetro/VRAMpage-MD/issues/75) |
+
+Each original title/body is preserved, with an appended resolution linking the
+delivered implementation, test/evidence records and its follow-up. Closures mark
+the delivered software milestones; physical mapping, precise timing and the
+separate Z80 RAM/arbitration fault models are not represented as completed.
+The new issues have explicit scope, sources and acceptance criteria, with no
+implementation, release-version or priority commitment beyond the current plan.
+
+GitHub readback verified all six bodies/titles/states and the three new open
+issues. No comments were posted, source behavior/releases were changed or physical
+experiments rerun. The prior source/main CI evidence remains valid. Drafts and
+before/after metadata are retained in `/workspace/scratch/issue-housekeeping/`.
+Next: use #73–#75 for the remaining optional research; do not repeat the delivered
+RAM/VRAM/FM/PSG milestones or displace stabilization without a new scoped decision.
+
 ## README Polish and Issue Audit Verified — 27 October 2026 (Sydney)
 
 [PR #72](https://github.com/NixMcRetro/VRAMpage-MD/pull/72) merged as
