@@ -1,5 +1,28 @@
 # Development work queue
 
+## Mac Acceptance and RAM Write Button Feedback — 26 October 2026 (Sydney)
+
+User confirms checkpoint steps1–3: baseline save, deliberate chip faults, restore
+and resume checks. Repeated restores work; saving with held contacts/controls or
+active faults correctly reports the release/disconnect requirement. CPU Reset
+retains the checkpoint and preserves sound-chip state. Clean Restart reboots and
+discards it. Held-input suppression after Restore was not separately described.
+These are user-reported Mac acceptance results, not new physical-hardware evidence.
+
+The supplied Safari PDF is page-length feedback only. It is not evidence for the
+separate reported VRAM Randomiser appearance during RAM Write. No PDF/game capture
+is committed. The page-length feedback is retained; no layout redesign is included.
+
+Fix in progress: the VRAM Randomiser remains disabled during Work RAM contacts,
+as required by fault-domain exclusion. Whole-button45% opacity made it look pressed;
+keep its normal fill/border, mute only disabled text and remove native button paint
+for the Randomiser row. No emulator, randomisation or cross-domain logic changes.
+Regression checks in light/dark themes assert identical idle/disabled fills,
+non-pressed state, blocked clicks, unchanged VRAM calls and restored availability
+on release. Focused Chromium/WebKit and source checks pass; independent review and
+all seven PR/main checks remain required. Preserve v0.4.1 and McRetro.net.
+
+
 ## PR #63 Verified Delivery — 26 October 2026 (Sydney)
 
 [PR #63](https://github.com/NixMcRetro/VRAMpage-MD/pull/63) merged as
