@@ -2752,6 +2752,7 @@ class BrowserLogicTests(unittest.TestCase):
         page.evaluate('mockCore.core._set_psg_data_bridge(1,0,1);mockCore.core._set_fm_data_bridge(1,2,3)')
         self.persistent_halt();self.recovery_frames(2)
         self.assertEqual(page.evaluate('mockCore.logic.recoveries'),[1])
+        self.assertTrue(self.export_payload()['automaticRecovery']['waitingAfterForceResume'])
         for _ in range(7):
             self.recovery_frames(1)
             self.assertEqual(page.evaluate('mockCore.logic.recoveries'),[1])
@@ -2760,7 +2761,9 @@ class BrowserLogicTests(unittest.TestCase):
         self.recovery_frames(30)
         self.assertEqual(page.evaluate('mockCore.logic.recoveries'),[1,2])
         self.assertTrue(page.evaluate('mockCore.psg.configured && mockCore.fm.configured'))
-        events=self.export_payload()['cpuInterventions']
+        payload=self.export_payload()
+        self.assertFalse(payload['automaticRecovery']['waitingAfterForceResume'])
+        events=payload['cpuInterventions']
         self.assertEqual([e['action'] for e in events],['force-resume','cpu-only-reset'])
         self.assertEqual(events[-1]['frame']-events[0]['frame'],8)
         self.assertEqual(events[-1]['waitFrames'],8)

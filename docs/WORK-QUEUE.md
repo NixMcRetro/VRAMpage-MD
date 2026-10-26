@@ -31,7 +31,10 @@ audio-fault preservation; exact eight-frame persistent-HALT escalation is proven
 with controlled browser telemetry, not claimed from the real-cartridge fixture.
 An initial layout overflow was corrected without weakening viewport assertions.
 
-Remaining gates: extracted-package checks and all seven PR/main CI checks.
+Extracted e5da8c8 package: core8 PASS49.854s and transaction3 PASS11.362s,
+714 unique paths with source/version/UI/core identity verified. Current phase
+metadata uses `waitingAfterForceResume` to avoid confusing a pending window with
+historical actions. Remaining gates: all seven PR/main CI checks.
 Evidence: `/workspace/scratch/ordered-recovery`. VERSION/public v0.4.1 unchanged;
 no McRetro.net or release work. No automatic rescue of STOP, software loops or a
 browser blocked inside a frame; no universal recovery/gameplay/physical claim.

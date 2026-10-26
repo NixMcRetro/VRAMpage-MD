@@ -2387,7 +2387,7 @@
       checkpointEvents:checkpointEvents.map(entry=>({...entry,before:{...entry.before},after:{...entry.after}})),
       checkpointSegment,
       automaticRecovery:{forceResumeEnabled,cpuRecoveryEnabled,waitFrames:CPU_RECOVERY_WAIT_FRAMES,
-        forceResumeIssued:cpuRecoveryForceIssued,sequenceUsedOrCancelled:cpuRecoverySpent},
+        waitingAfterForceResume:cpuRecoveryForceIssued,sequenceUsedOrCancelled:cpuRecoverySpent},
       cpuInterventions:cpuInterventions.map(entry=>({...entry})),
       faultDisconnects:faultDisconnectActions.map(entry=>({...entry,results:entry.results.map(result=>({...result}))})),
       rom:{name:exportIdentity?.name || null,sha256:romSha256},
