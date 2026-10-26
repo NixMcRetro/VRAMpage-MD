@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Add bounded audio/pad omission snapshots to the pinned runtime profile."""
 from pathlib import Path
+import shutil
 import sys
 
 ROOT = Path(sys.argv[1]) / "src/main/c"
@@ -218,14 +219,23 @@ int checkpoint_pad_load(const unsigned char *in, unsigned len) {
   return (int)p;
 }''')
 
+shutil.copyfile(Path(__file__).with_name("session_checkpoint_runtime.c"), ROOT / "wasm/session_checkpoint_runtime.c")
 wasm = ROOT / "wasm/wasm.c"
 source = wasm.read_text()
 marker = '#include "session_checkpoint_runtime.c" /* VRAMpage native session checkpoint */'
 if marker not in source:
-    anchor = '#include "fm_data_fault_runtime.c"'
+    anchor = '#if defined(VRAM_TX_RUNTIME)\n#include "fm_data_fault_core.c"\n#include "fm_data_fault_runtime.c"\n#endif'
     if source.count(anchor) != 1:
         raise SystemExit("Pinned runtime include anchor missing or ambiguous")
-    source = source.replace(anchor, anchor + "\n#include \"session_checkpoint_runtime.c\" /* VRAMpage native session checkpoint */", 1)
+    source = source.replace(anchor, anchor + "\n" + marker, 1)
 if source.count(marker) != 1:
     raise SystemExit("Session checkpoint runtime include is ambiguous")
+start_hook = "    session_checkpoint_runtime_start();\n    error_init();"
+if start_hook not in source:
+    anchor = "    error_init();"
+    if source.count(anchor) != 1:
+        raise SystemExit("Pinned start lifecycle anchor missing or ambiguous")
+    source = source.replace(anchor, start_hook, 1)
+elif source.count(start_hook) != 1:
+    raise SystemExit("Session checkpoint lifecycle hook is ambiguous")
 wasm.write_text(source)

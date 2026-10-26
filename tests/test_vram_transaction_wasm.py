@@ -355,6 +355,8 @@ class VramTransactionWasm(unittest.TestCase):
         self.assertTrue((bundle / "scripts/fm_data_fault_core.c").is_file())
         self.assertTrue((bundle / "scripts/fm_data_fault_runtime.c").is_file())
         self.assertTrue((bundle / "scripts/build-core-runtime.py").is_file())
+        self.assertTrue((bundle / "scripts/session_checkpoint_runtime.c").is_file())
+        self.assertTrue((bundle / "scripts/session_checkpoint_patch.py").is_file())
         self.assertTrue((bundle / "THIRD-PARTY-NOTICES.md").is_file())
         self.assertTrue((runtime_output / "THIRD-PARTY-NOTICES.md").is_file())
         instructions = (runtime_output / "BUILDING.txt").read_text()

@@ -56,6 +56,24 @@ function cartridge(kind = 'dynamic') {
   [0x4e72, 0x2700, 0x60fe].forEach((x, i) => v.setUint16(0x300 + 2 * i, x));
   return rom;
 }
+function fmCartridge() {
+  const rom = cartridge(), v = new DataView(rom.buffer), z = [], w = [];
+  v.setUint32(4, 0x800);
+  const fm = (a, x) => z.push(0x3e, a, 0x32, 0, 0x40, 0x3e, x, 0x32, 1, 0x40);
+  fm(0x22, 0); fm(0x27, 0);
+  for (const o of [0, 4, 8, 12]) {
+    fm(0x30 + o, 1); fm(0x50 + o, 0x1f); fm(0x60 + o, 0); fm(0x70 + o, 0);
+    fm(0x80 + o, 0x0f); fm(0x40 + o, o === 12 ? 0 : 0x7f);
+  }
+  fm(0xb0, 7); fm(0xb4, 0xc0); fm(0xa0, 0x98); fm(0xa4, 0x22); fm(0x28, 0xf0);
+  z.push(0x18, 0xfe);
+  const word = (a, x) => w.push(0x33fc, x, a >>> 16, a & 0xffff);
+  const byte = (a, x) => w.push(0x13fc, x, a >>> 16, a & 0xffff);
+  word(0xa11100, 0x100); word(0xa11200, 0x100);
+  z.forEach((x, i) => byte(0xa00000 + i, x)); word(0xa11100, 0); w.push(0x60fe);
+  w.forEach((x, i) => v.setUint16(0x800 + 2 * i, x));
+  return rom;
+}
 function neutral(c, buttons = []) {
   const input = new Float32Array(c.HEAPF32.buffer, c._get_input_buffer_ref(), 32);
   input.fill(0); for (const b of buttons) input[b] = 1;
@@ -134,8 +152,25 @@ function restore(c, image) {
   assert.equal(c._recover_logic_cpu(2), 0); assert.equal(c._get_session_checkpoint_ready(), 1);
   restore(c, savedImage); assert.deepEqual(Array.from({length: 6}, () => frame(c)), first, 'CPU-only reset retains replay slot'); groups++;
   c._discard_session_checkpoint(); assert.equal(c._get_session_checkpoint_ready(), 0); assert.equal(c._restore_session_checkpoint(), 3);
-  save(c); c._start(); assert.equal(c._get_session_checkpoint_ready(), 0);
+  save(c);
+  assert.equal(c._set_logic_address_mask(1, 2), 0);
+  assert.equal(c._set_vram_fault_model(1, 8, -1, -1), 0);
+  assert.equal(c._set_psg_data_bridge(1, 0, 1), 0);
+  assert.equal(c._set_fm_data_bridge(1, 0, 1), 0);
+  c._start(); assert.equal(c._get_session_checkpoint_ready(), 0);
+  assert.equal(c._get_logic_address_mask(), 0); assert.equal(c._get_logic_frame(), 0);
+  assert.equal(c._get_vram_fault_model_state().effective, false);
+  assert.equal(c._get_psg_data_bridge_state().configured, false);
+  assert.equal(c._get_fm_data_bridge_state().configured, false);
   neutral(c); save(c); install(c, cartridge('pad3')); assert.equal(c._get_session_checkpoint_ready(), 0); groups++;
+
+  const fm = await create('dynamic'); install(fm, fmCartridge());
+  for (let i = 0; i < 8; i++) frame(fm);
+  save(fm); const fmImage = pixels(fm);
+  const fmFirst = Array.from({length: 6}, () => frame(fm));
+  assert.ok(fmFirst.some(x => x.nonzero), 'FM-only cartridge produces nonzero PCM');
+  restore(fm, fmImage);
+  assert.deepEqual(Array.from({length: 6}, () => frame(fm)), fmFirst, 'FM continuation replays exact PCM'); groups++;
 
   for (const kind of ['pad3', 'pad6', 'sram', 'protected-sram']) {
     const p = await create(kind);

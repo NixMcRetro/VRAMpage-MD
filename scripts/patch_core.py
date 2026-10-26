@@ -1047,32 +1047,21 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     elif wasm.count(fm_include) != 1:
         raise SystemExit('FM runtime helper include is ambiguous.')
 
-    checkpoint_include = '#include "session_checkpoint_runtime.c" /* VRAMpage native session checkpoint */'
-    if checkpoint_include not in wasm:
-        if wasm.count(fm_include) != 1:
-            raise SystemExit('Expected FM helper include anchor missing or ambiguous.')
-        wasm = wasm.replace(fm_include, fm_include + '\n' + checkpoint_include, 1)
-    elif wasm.count(checkpoint_include) != 1:
-        raise SystemExit('Session checkpoint runtime include is ambiguous.')
-
     # start() precedes the embedded VRAM block, requiring a forward declaration.
-    declaration = 'static void bend_reset(void);\nvoid session_checkpoint_runtime_start(void);\n'
+    declaration = 'static void bend_reset(void);\n'
     header_anchor = '#define SOUND_FREQUENCY 44100'
     if declaration not in wasm:
         wasm = wasm.replace(header_anchor, declaration + '\n' + header_anchor, 1)
     elif wasm.count(declaration) != 1:
         raise SystemExit('VRAM reset declaration is ambiguous. No modifications made.')
     start_anchor = '    system_reset();\n}'
-    old_start_hook = '    error_init();\n    set_config_defaults();'
-    start_hook = '    session_checkpoint_runtime_start();\n    error_init();\n    set_config_defaults();'
+    old_start_hook = '    system_reset();\n    work_ram_logic_start();\n}'
+    start_hook = '    system_reset();\n    work_ram_logic_start();\n    bend_reset();\n}'
     if wasm.count(start_hook) == 0:
         anchor = old_start_hook if old_start_hook in wasm else start_anchor
         if wasm.count(anchor) != 1:
             raise SystemExit('Expected start() reset anchor missing or ambiguous. No modifications made.')
-        if anchor == old_start_hook:
-            wasm = wasm.replace(anchor, start_hook, 1)
-        else:
-            raise SystemExit('Expected start() lifecycle anchor missing or ambiguous.')
+        wasm = wasm.replace(anchor, start_hook, 1)
     elif wasm.count(start_hook) != 1:
         raise SystemExit('Fault reset start hook is ambiguous. No modifications made.')
 
@@ -1136,7 +1125,7 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
                 (destination / 'vram_transaction_core.h').write_text((scripts / 'vram_transaction_core.h').read_text())
                 (destination / 'vram_transaction_render.h').write_text((scripts / 'vram_transaction_render.h').read_text())
         wasm_dir = root / 'src/main/c/wasm'
-        for filename in ('work_ram_fault.c', 'work_ram_runtime.c', 'session_checkpoint_runtime.c'):
+        for filename in ('work_ram_fault.c', 'work_ram_runtime.c'):
             (wasm_dir / filename).write_text((scripts / filename).read_text())
         (wasm_dir / 'vram_transaction.c').write_text((scripts / 'vram_transaction.c').read_text())
         (wasm_dir / 'psg_data_fault_core.c').write_text((scripts / 'psg_data_fault_core.c').read_text())
@@ -1171,7 +1160,7 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
                 target = destination / 'vram_transaction_render.h'
                 if not target.exists() or target.read_text() != (scripts / 'vram_transaction_render.h').read_text():
                     target.write_text((scripts / 'vram_transaction_render.h').read_text())
-        for filename in ('work_ram_fault.c', 'work_ram_runtime.c', 'session_checkpoint_runtime.c'):
+        for filename in ('work_ram_fault.c', 'work_ram_runtime.c'):
             target = root / 'src/main/c/wasm' / filename
             if not target.exists() or target.read_text() != (scripts / filename).read_text():
                 target.write_text((scripts / filename).read_text())
