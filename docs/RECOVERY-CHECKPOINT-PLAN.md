@@ -144,8 +144,12 @@ upstream `core/state.c`, `core/state.h`, `core/vdp_ctrl.c:vdp_context_*`,
 
 The design checkpoint requires source audit, independent review and Markdown/link
 checks. It does not justify rerunning unchanged emulator builds or claiming new
-recovery/checkpoint execution. The bounded recovery implementation follows step 1; step 2's exact
-state coverage and capacity proof remain release blockers, not completed work.
+recovery/checkpoint execution. That was the initial design checkpoint. PR #63 subsequently completed the bounded
+checkpoint state/capacity proof and implementation for supported profiles; PR #66
+completed the ordered recovery policy. Their verified delivery records are in
+[the work queue](WORK-QUEUE.md). Unsupported profiles remain rejected. Remaining
+release preparation is version-aligned packaging/publishing and honest recording
+of manual compatibility limits, not repeating those completed proofs.
 
 Independent Luna High source/design review found no blocking issue. The audit was
 read-only; no recovery/checkpoint implementation or new execution is claimed.
