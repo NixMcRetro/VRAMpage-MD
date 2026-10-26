@@ -152,6 +152,22 @@ async function main() {
   if (!runtimePath || !normalPath) throw new Error('Pass runtime and normal genplus.js paths.');
   const core = await require(runtimePath)({locateFile:n=>path.join(path.dirname(runtimePath),n)});
   core._init(); const rom=cartridge(); core.HEAPU8.set(rom,core._get_rom_buffer_ref(rom.length)); core._start();
+  const nativeCount=core._get_z80_ram_bridge_ram_writes;
+  const nativeFrame=core._get_z80_ram_bridge_activation_frame;
+  assert.equal(typeof nativeCount(),'bigint','actual uint64 getter uses the WASM BigInt ABI');
+  try {
+    core._get_z80_ram_bridge_ram_writes=()=>9007199254740993n;
+    assert.equal(core._get_z80_ram_bridge_state().ramWrites,'9007199254740993',
+      'the public shim preserves counter precision above 2^53');
+    core._get_z80_ram_bridge_ram_writes=()=>-1n;
+    assert.equal(core._get_z80_ram_bridge_state().ramWrites,'18446744073709551615',
+      'signed i64 boundary values format as unsigned decimal');
+    core._get_z80_ram_bridge_activation_frame=()=>-2147483648;
+    assert.equal(core._get_z80_ram_bridge_state().activationFrame,2147483648);
+  } finally {
+    core._get_z80_ram_bridge_ram_writes=nativeCount;
+    core._get_z80_ram_bridge_activation_frame=nativeFrame;
+  }
   assert.equal(core._set_z80_ram_bridge(1,11,12),0);
   core._wasm_input_update(); core._tick(); core._sound();
   core._wasm_input_update(); core._tick(); core._sound();
