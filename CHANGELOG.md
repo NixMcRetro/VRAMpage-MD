@@ -2,6 +2,8 @@
 
 ## Unreleased workbench improvements
 
+- Add default-On Force Resume and CPU Recovery switches beside Randomiser. Confirm HALT for two frames, attempt Force Resume once, and permit one CPU-only reset after eight further HALT frames. Preserve user preferences, bound retries per explicit fault experiment and export policy/stage metadata; both Off selects unassisted operation.
+
 - Keep all three Randomiser buttons visually unchanged during held or eight-frame RAM Write contacts, including VRAM text colour. Retain native blocking of conflicting VRAM actions and ordinary unavailable styling before ROM load or unsupported profiles.
 
 - Add explicit session-only Save Checkpoint / Restore Checkpoint controls with verified fault clearing, paused immediate-image restore, held-input release and metadata-only history segments. Bound support to ordinary Mega Drive/3–6-button/SRAM profiles; preserve CPU Reset retention and Clean Restart invalidation. Keep normal-core binaries and public v0.4.1 unchanged.
@@ -10,7 +12,7 @@
 
 - Use Title Case consistently for buttons and labels, preserving acronyms and Work RAM naming.
 
-- Add an opt-in, single armed CPU-only reset attempt after two eligible HALT frames. Keep STOP and deliberate contacts unassisted; disarm across lifecycle actions and pause on telemetry/recovery failures.
+- Initially add an opt-in, single armed CPU-only reset attempt after two HALT frames; the ordered default-On switches above supersede that interface and preference.
 
 - Design the v0.5.0 opt-in single-attempt CPU recovery and explicit one-slot session checkpoint, with native state/capacity verification gates. No runtime behavior or version change in the design checkpoint.
 

@@ -125,25 +125,43 @@ node scripts/run-cpu-recovery.cjs /private/path/cartridge.md > /tmp/recovery.jso
 This is one trial per action, not a repeated recovery success rate. Actual
 post-recovery visuals, sound and native macOS behavior remain unverified.
 
-## Development source: arm CPU recovery once
+<a id="development-source-arm-cpu-recovery-once"></a>
+## Development Source: Ordered Recovery
 
-**Arm CPU Recovery Once** is off by default. After explicit arming, two consecutive
-eligible completed frames with the 68000 HALT bit set cause one CPU-only reset
-attempt, then disarm. A legitimate STOP instruction, static picture, silence or
-software loop is not a trigger. It cannot rescue a browser blocked inside a core
-tick. The action clears RAM/VRAM faults and preserves FM/PSG exactly like manual
-CPU Reset; it does not guarantee continued gameplay.
+The compact **Force Resume** and **CPU Recovery** On/Off switches sit beside
+Randomiser. Both initially **On**, following the user's updated instruction;
+this supersedes the earlier default-Off one-shot arming design. Their preferences
+survive pause, blur and cartridge changes. Turn both **Off** for unassisted outcomes.
+The advanced **Disconnect and Force Resume** action remains a manual intervention.
 
-Held/momentary faults and pending RAM pulses defer observation and reset the HALT
-streak. Arming is unavailable during those contacts. Ordinary fault edits restart
-the streak but retain arming. Pause, blur/hidden tab, manual recovery, imported
-configuration application, Disconnect All Faults, new ROM activation and Clean
-restart disarm. Failed telemetry, rejected clears or rejected recovery disarm and
-pause; no repeated attempts, escalation or rewind follows. Re-arm explicitly to
-allow another attempt. Additive intervention metadata distinguishes the armed
-trigger from a manual action and records attempts/aborts, not gameplay success.
+1. Observe HALT bit2 on two consecutive eligible completed frames.
+2. If Force Resume is On, attempt it once while preserving CPU registers/PC and
+   RAM. If CPU Recovery is On, wait eight further eligible completed HALT frames
+   (~0.13 s). A frame without HALT cancels escalation.
+3. If HALT persists for that window, issue one CPU-only reset. If Force Resume is
+   Off, CPU Recovery can instead issue its one reset after the initial two frames.
 
-The [v0.5.0 design](RECOVERY-CHECKPOINT-PLAN.md) also covers one-slot in-memory
-checkpoints. Those remain planned until serializer bounds and complete state
-replay are verified. This recovery slice does not expose checkpoint controls or
-advance the public v0.4.1 release.
+Neither intervention directly clears RAM or resets VDP/Z80/FM/PSG. Both disconnect
+RAM/VRAM faults; audio faults remain. ROM startup code after CPU Reset may itself
+initialize RAM or reprogram sound. STOP alone, static pictures, silence, unchanged
+RAM access counters and software loops are not triggers. No observer can rescue a
+browser blocked inside a native tick. An eight-frame wait prolongs frozen output;
+it does not guarantee additional glitches or successful gameplay.
+
+One sequence is allowed per explicit fault experiment. Automatic helper clears
+cannot replenish its budget. A new fault action, toggle change, cartridge/Restart
+or explicit Resume permits another sequence. Pause, blur/hidden, checkpoints,
+Disconnect All Faults and manual CPU interventions cancel pending escalation;
+they preserve the On/Off preferences. Held/momentary contacts and pending RAM
+pulses defer observation, including their ending frame. Native/clear/telemetry
+failures consume the opportunity and pause for inspection without blind retry.
+The status distinguishes watching, waiting, paused, unavailable and used/cancelled.
+
+Experiment exports include `automaticRecovery` preferences and the eight-frame
+threshold, plus per-action trigger, stage, observed frames and issued/rejected/
+aborted outcomes. A reset accepted before a post-action telemetry failure remains
+recorded as issued. Export comparison treats absent older policy fields as unknown.
+
+Manual [session checkpoints](SESSION-CHECKPOINT-API.md) are implemented separately;
+there is no automatic capture, rewind or Clean Restart escalation. VERSION and
+public v0.4.1 assets remain unchanged.

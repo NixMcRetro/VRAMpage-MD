@@ -1170,7 +1170,7 @@ class BrowserLogicTests(unittest.TestCase):
         self.page=self.new_page(circuit_config=True)
         self.load_rom()
         self.assertEqual(self.page.locator('.randomiser-row button').all_text_contents(),
-                         ['PSG','FM','VRAM','CPU Reset','Clean Restart'])
+                         ['PSG','FM','VRAM','Force Resume: Off','CPU Recovery: Off','CPU Reset','Clean Restart'])
         expect(self.page.locator('#randomiserStatus')).to_have_text('Choose PSG, FM, or VRAM to randomise a chip.')
         before=self.page.evaluate('({starts:mockCore.starts,ramCalls:mockCore.logic.setterCalls.length,fm:mockCore.fm.calls.length,vram:mockCore.vramModel.calls.length})')
         def randomise(selector, value):
@@ -2711,6 +2711,9 @@ class BrowserLogicTests(unittest.TestCase):
             expect(page.locator(selector)).to_have_text(label)
             expect(page.locator(selector)).to_have_attribute('aria-pressed','true')
             self.assertTrue(page.locator(selector).evaluate("button=>!!button.closest('.randomiser-row')"))
+        page.evaluate('window.scrollTo(0,0)')
+        bounds=page.locator('[data-ram-frame-pair="13,14"]').evaluate('button=>button.getBoundingClientRect().bottom')
+        self.assertLessEqual(bounds,768,'Default-On recovery switches must retain the compact RAM button budget')
         page.locator('#logicResumeBtn').click()
         page.locator('#resetBtn').click()
         expect(page.locator('#logicResumeBtn')).to_have_text('Force Resume: Off')
@@ -2862,9 +2865,25 @@ class BrowserLogicTests(unittest.TestCase):
                 page.evaluate('mockCore.throwCpuFlags=false;mockCore.throwLogicFrame=false;delete mockCore.invalidCpuFlags')
                 event=self.export_payload()['cpuInterventions'][-1]
                 self.assertEqual(event['trigger'],'halt-recovery-sequence')
+                self.assertEqual(event['stage'],'force-resume')
+                self.assertEqual(event['waitFrames'],2)
                 self.assertFalse(event['attempted'])
                 self.assertEqual(event['outcome'],'aborted')
                 expect(page.locator('#logicResumeBtn')).to_have_attribute('aria-pressed','true')
+
+    def test_ordered_recovery_waiting_telemetry_failure_records_cpu_stage(self):
+        page=self.ordered_page()
+        self.persistent_halt();self.recovery_frames(5)
+        self.assertEqual(page.evaluate('mockCore.logic.recoveries'),[1])
+        page.evaluate('mockCore.throwCpuFlags=true');self.recovery_frames(1)
+        expect(page.locator('#pauseBtn')).to_have_text('Resume')
+        page.evaluate('mockCore.throwCpuFlags=false')
+        event=self.export_payload()['cpuInterventions'][-1]
+        self.assertEqual(event['stage'],'cpu-reset')
+        self.assertEqual(event['waitFrames'],8)
+        self.assertEqual(len(event['observedFrames']),3)
+        self.assertFalse(event['attempted'])
+        self.assertEqual(page.evaluate('mockCore.logic.recoveries'),[1])
 
     def test_ordered_recovery_native_rejection_and_trap_do_not_retry(self):
         for trap in [False,True]:

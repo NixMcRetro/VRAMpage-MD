@@ -1,3 +1,19 @@
+# Ordered Recovery Development Checks
+
+`python tests/browser_logic.py -k ordered_recovery` covers default-On preferences,
+independent Off controls, two-frame confirmation, exact eight-frame escalation,
+HALT clearing, bounded repeated HALT, transient/lifecycle cancellation, legacy
+fallback and native/clear/telemetry failures. Most unrelated mock tests explicitly
+select both preferences Off; dedicated default tests and actual-core tests verify
+the real initial On state. No production test-only setting bypasses the controls.
+
+`python tests/browser_core.py -k ordered_recovery` uses original cartridges and
+actual native calls to check HALT/STOP, independent controls and synchronous 64 KiB
+Work RAM/audio-fault preservation. Its real HALT fixture clears HALT after Force
+Resume, so it proves cancellation, not real-core persistent-HALT escalation. The
+exact eight-frame escalation is proven separately with controlled mock telemetry.
+Neither result establishes every game's recovery, audible sound or physical fidelity.
+
 # Session Checkpoint Development Checks
 
 `tests/test_session_checkpoint.py` runs fatal native ASan/UBSan publication,

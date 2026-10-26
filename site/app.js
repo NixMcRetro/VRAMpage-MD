@@ -1214,8 +1214,10 @@
   }
 
   function abortAutomaticCpuRecovery(reason, frame=null, flags=null, observedFrames=[]) {
+    const stage=cpuRecoveryForceIssued?'cpu-reset':forceResumeEnabled?'force-resume':'cpu-reset';
+    const waitFrames=cpuRecoveryForceIssued?CPU_RECOVERY_WAIT_FRAMES:2;
     cancelAutomaticRecovery();
-    cpuInterventions.push({action:'automatic-recovery-aborted',trigger:'halt-recovery-sequence',
+    cpuInterventions.push({action:'automatic-recovery-aborted',trigger:'halt-recovery-sequence',stage,waitFrames,
       frame,observedFlags:flags,observedFrames:[...observedFrames],attempted:false,
       outcome:'aborted',reason});
     if (!paused) pauseToggle();

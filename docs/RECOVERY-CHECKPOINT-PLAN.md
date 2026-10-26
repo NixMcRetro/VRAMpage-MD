@@ -1,6 +1,6 @@
 # v0.5.0 recovery and checkpoints — reviewed design
 
-Status: **Step 1 merged; explicit session checkpoint implementation is under integration review and CI validation.** Based on main
+Status: **Manual checkpoints are merged; default-On ordered recovery switches are under integration verification.** Based on main
 `5d0425a64acb0f883789c67e8c6ec41e5d2c0c02` and upstream core
 `6090aff9e9b2f578cd28882bd4571d2e35b1d674`. The public release and `VERSION`
 remain v0.4.1. Existing manual CPU Reset and Clean Restart retain their semantics.
@@ -9,43 +9,33 @@ The goal is to offer two independent ways to continue experimenting: a bounded
 CPU intervention and returning to a deliberately saved machine state. Neither
 can guarantee that a game continues. Default operation remains unassisted.
 
-## 1. One armed CPU recovery attempt
+## 1. Default-On Ordered Recovery Switches
 
-Add an **Arm CPU Recovery Once** control near existing recovery controls, with
-an explicit armed/off status. It starts off and is never enabled by loading a
-configuration, restoring a checkpoint or starting a cartridge.
+The user's updated request supersedes the original default-Off single-attempt
+arming design. Put persistent **Force Resume: On/Off** and **CPU Recovery: On/Off**
+preferences beside Randomiser, both initially On. Keep manual CPU Reset/Clean
+Restart and advanced Disconnect and Force Resume as explicit actions.
 
-- Observe the existing `_get_logic_cpu_flags()` only after completed emulated
-  frames. Two consecutive eligible frames with HALT bit 2 set trigger one
-  CPU-only reset through the existing app recovery function, then disarm.
-- STOP bit 1 alone is not failure: games can legitimately STOP while waiting for
-  interrupts. Static output, repeated PC values, silence and elapsed wall time
-  are not triggers. Running software loops and Z80-only hangs are undetected.
-- Held/momentary contacts and pending RAM pulses make a frame ineligible; reset
-  the observation count rather than interrupt a deliberate contact. Arming with
-  a transient contact in progress is disabled. Persistent faults may be present;
-  recovery clears RAM/VRAM faults using the existing checked operations.
-- Pause, visibility loss/window blur, manual recovery, imported configuration
-  application, Disconnect All Faults, checkpoint operations, Clean Restart and
-  new ROM disarm and reset observation. Ordinary fault edits reset the observation
-  count but retain arming, so a user can arm before applying a randomiser.
-  Automatic pulse expiry alone does not arm anything. No hidden-tab catch-up.
-- Consume the single attempt **before** invoking recovery. A rejected/throwing
-  getter, rejected clear or recovery failure disarms and pauses for inspection.
-  Never retry, escalate to full reboot, restore a checkpoint or fake a bus status.
-- On successful intervention preserve play/pause semantics and FM/PSG faults and
-  chip state, exactly as manual CPU Reset does. Game code may later reprogram
-  sound. A cleared HALT flag is an attempted intervention, not gameplay success.
+Two consecutive eligible completed HALT frames confirm an incident. With Force
+Resume On, issue one register/PC-preserving force resume. CPU Recovery may issue
+one CPU-only reset only after eight further completed HALT frames. A frame without
+HALT ends that escalation. Force Resume Off skips directly to one CPU reset after
+the initial two HALT frames; CPU Recovery Off permits force resume only. Both Off
+preserves unassisted outcomes. Static data/pictures, STOP and software loops are
+not recovery triggers; the browser must return from each native tick.
 
-This is opt-in automatic intervention after arming, not a lockup detector for all
-software. One attempt per explicit arm bounds resets even if HALT returns on the
-next tick. A game that locks the browser inside `_tick()` cannot be rescued by a
-post-frame JS observer; keep that limitation visible in the feature documentation.
+Bound one sequence per explicit fault experiment. New fault/toggle actions,
+cartridge start or explicit Resume replenish the budget; automatic fault clears
+never do. Pause/blur/hidden, checkpoints and manual interventions cancel pending
+work without switching the preferences Off. Held contacts/pulses defer observation.
+Native/telemetry/clear failures pause with truthful action history and no retry.
+RAM and non-CPU chip state retain the existing intervention semantics. The longer
+wait leaves corrupted/frozen output visible briefly; it does not invent bus health.
 
-Reuse `recoverLogicCPU(2)`, the current fault clear/failure paths and
-`cpuInterventions`. Add trigger source, observed flags/frames and attempted
-outcome without breaking old experiment exports. Record an abort even when no
-CPU action is issued. Do not claim a monotonic counter is the restored game time.
+Implementation gates: independent review, deterministic two/eight-frame and
+failure/lifecycle checks, real-core HALT/STOP and RAM/audio preservation, legacy
+fallback, compact desktop/mobile layout, policy/stage metadata and all seven PR/
+main CI checks. No automatic reboot, checkpoint capture or rewind is added.
 
 ## 2. One explicit session checkpoint
 
