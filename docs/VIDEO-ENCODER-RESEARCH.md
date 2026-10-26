@@ -92,7 +92,7 @@ The pinned core remains
 - [`CMakeLists.txt`](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/CMakeLists.txt#L80)
   selects 32-bit rendering. [`config.c`](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/wasm/config.c#L37)
   disables the NTSC filter; the optional filter branch in
-  [`remap_line`](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/vdp_render.c#L4238)
+  [`remap_line`](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/vdp_render.c#L4194)
   is compiled only for 15/16-bit output. Its presence is not an existing CXA model.
 - The project's [source patch](https://github.com/NixMcRetro/VRAMpage-MD/blob/1b464a90daa1b8ba8d9ff321475ccb4dc8ff865c/scripts/patch_core.py)
   produces RGBA pixels; [`drawActiveVideo`](https://github.com/NixMcRetro/VRAMpage-MD/blob/1b464a90daa1b8ba8d9ff321475ccb4dc8ff865c/site/app.js#L2871)
