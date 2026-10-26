@@ -161,6 +161,29 @@ async function main() {
   assert.equal(state.m68kWrites,'13','the granted 68000 counts twelve uploaded byte stores and one word high byte');
   assert.ok(BigInt(state.changedAddresses)>=1n,'partial A11/A12 combinations are remapped');
   const base=core._get_z80_ram_ref();
+  const assertRejectedAtomically = (label, invoke) => {
+    const beforeState=core._get_z80_ram_bridge_state();
+    const beforeRam=core.HEAPU8.slice(base,base+0x2000);
+    let result;
+    try { result=invoke(); } catch (_) { result=1; }
+    assert.notEqual(result,0,`${label} is rejected`);
+    assert.deepEqual(core._get_z80_ram_bridge_state(),beforeState,`${label} leaves bridge state unchanged`);
+    assert.deepEqual(core.HEAPU8.slice(base,base+0x2000),beforeRam,`${label} leaves all 8192 RAM bytes unchanged`);
+  };
+  const badCalls=[
+    ['missing argument',()=>core._set_z80_ram_bridge(1,11)],
+    ['extra argument',()=>core._set_z80_ram_bridge(1,11,12,13)],
+    ['boolean',()=>core._set_z80_ram_bridge(true,11,12)],
+    ['string',()=>core._set_z80_ram_bridge(1,'11',12)],
+    ['BigInt',()=>core._set_z80_ram_bridge(1,11,12n)],
+    ['NaN',()=>core._set_z80_ram_bridge(1,NaN,12)],
+    ['Infinity',()=>core._set_z80_ram_bridge(1,11,Infinity)],
+    ['fraction',()=>core._set_z80_ram_bridge(1,11.5,12)],
+    ['duplicate lines',()=>core._set_z80_ram_bridge(1,11,11)],
+    ['out-of-range line',()=>core._set_z80_ram_bridge(1,11,13)],
+    ['invalid disabled pair',()=>core._set_z80_ram_bridge(0,11,-1)]
+  ];
+  for(const [label,invoke] of badCalls)assertRejectedAtomically(label,invoke);
   assert.equal(core.HEAPU8[base+0x1fff],0x55,'$1FFF and mirrored $3FFF reach the same last byte, with the later Z80 byte winning');
   assert.equal(core._set_z80_ram_bridge(0,-1,-1),0);
   assert.equal(core._get_z80_ram_bridge_state().ramWrites,'0','disconnect clears counters and leaves RAM inspectable');
