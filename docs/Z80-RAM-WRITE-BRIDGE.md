@@ -58,7 +58,7 @@ requests preserve prior native settings and RAM. The state getter is
 | `z80Writes`, `m68kWrites` | Eligible stores attributed to each owner. |
 
 The four write counters saturate at uint64 maximum and export as decimal
-strings, preserving values above 2^53. A new applied pair or removal resets
+strings, preserving values above 2^53. Applying a pair or removing it resets
 these counters. No counters count denied or non-RAM stores. Experiment exports
 record `z80RamFault` separately; old exports show unknown Z80 information in
 comparison instead of invented zero measurements.

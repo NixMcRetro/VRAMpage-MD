@@ -1,31 +1,41 @@
 # Development status and continuation checkpoint
 
-## Z80 RAM Write Implementation — In Progress
+## Z80 RAM Write Implementation — Ready for PR Checks
 
-The user approved the bounded implementation after PR #76 research: optional,
-off-by-default A0–A12 write aliasing in local 8 KiB Z80 RAM. No bus-arbitration,
-release-version or McRetro.net change is authorized by this slice.
+The user approved one bounded, off-by-default A0–A12 write bridge in the Z80's
+8 KiB sound RAM. Integrated source/tests are committed through `4da7f90` on
+`experiment/z80-ram-write-bridge` in `/workspace/vrampage-z80-ram`, based on main
+`44627eba37b410c05437731335ce5e38b43a2417`. Native ownership, reads/fetches and
+normal-core binaries remain unchanged. No arbitration, version, release or
+McRetro.net change is included.
 
-Frontend work is committed on `feature/z80-ram-write-bridge` in
-`/workspace/vrampage-z80-ram` (latest `19b23ef`): compact controls, strict runtime
-state checks, domain removal/recovery/checkpoints, configuration v3 with v1/v2
-imports and experiment comparison. Nine focused Chromium cases pass; seven
-layout cases and local source111 passed at preceding frontend checkpoints.
-The preliminary full browser run found two migration-test expectations; both
-were corrected and their focused cases pass. Final integrated CI is pending.
+Compact controls, exact owner counters, configuration v3 (v1/v2 imports),
+experiment comparison, verified disconnect/recovery and checkpoint handling
+are integrated. Independent GPT-6 Luna High native/integration review found no
+remaining blocker; its BigInt boundary-coverage request is now tested and passed.
 
-Native work is isolated on `feature/z80-ram-native` in
-`/workspace/vrampage-z80-native` with a committed initial checkpoint and ongoing
-fixture/guard refinements. Coordinator review required unsupported-profile
-store bypass, normal leak checks, distinct status codes and matching normal/
-runtime execution phases in the PCM fixture. Do not cherry-pick the initial
-checkpoint alone: wait for the final native commits and verify those fixes.
+- Source checks: 122 tests passed, one build-dependent WASM class skipped in
+  that run. The separate SDK-enabled WASM suite passed both top-level tests,
+  including seven compiled variants and unchanged normal-core hashes.
+- Production normal/runtime build passed. Actual-core Chromium cases exercised
+  new controls/configuration; seven passed together, and the corrected fifth-
+  domain expectation passed its focused rerun. Nine focused logic cases and
+  seven layout cases passed. Two old full-logic migration expectations were
+  corrected and passed focused reruns; final three-browser CI remains pending.
+- Native ASan/UBSan/LSan checks passed without disabling leak detection. Actual
+  WASM tests cover literal stores, ownership, sound-driver input/PCM, damaged
+  instruction fetch, lifecycle, checkpoint refusal and invalid API atomicity.
+- [Inactive-store measurement](experiments/z80-ram-inactive-performance-v1-summary.json)
+  passed the fixed five-pair gate: median frame ratio 1.00618 and p95 ratio
+  1.03573 (limit 1.05). Raw samples and the exact one-off script are retained.
+  This is one synthetic workload, not a universal performance claim.
 
-Next: integrate final backend, build the production runtime/normal fallback,
-verify actual browser controls, measure the affected inactive store path and
-obtain independent specialist review. Run final applicable source/browser/WASM
-and sanitizer gates, require all PR checks before merge, then verify main CI.
-Keep existing published artifacts immutable. Logs: `/workspace/scratch/z80-ram-write/`.
+Next: open the focused PR, require all seven source/browser/build/package checks
+before merge, then verify exact merged source and all seven main checks. Preserve
+all 18 releases and provide the resulting development browser build. No physical
+board, commercial gameplay or audible listening claim. Logs:
+`/workspace/scratch/z80-ram-write/`. After delivery, return to stability reports;
+#73 still requires matching NTSC VA6 board evidence.
 
 ## Hardware Research Verified — 27 October 2026 (Sydney)
 
