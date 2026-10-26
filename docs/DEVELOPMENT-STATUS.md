@@ -1,17 +1,38 @@
 # Development status and continuation checkpoint
 
-## v0.5.0 Cross-Platform Candidate — In Verification
+## v0.5.0 Published — 26 October 2026 (Sydney)
 
-User authorizes the browser-ready cross-platform candidate. Scope: neutral browser
-ZIP/checksum, Windows/macOS/Linux launch instructions, static hosting, aligned
-VERSION/UI/export/workflow/test labels and draft-only release preparation.
-Reuse scripts/serve.py and optional START.command; no framework or OS-specific
-emulator build. Preserve public v0.4.1 and all historical experiment identifiers.
-No publisher dispatch, new tag/publication or McRetro.net work in this slice.
-Acceptance: source/full browser and actual-core checks, real static-subdirectory
-WASM/video/audio/input load, extracted ZIP/provenance/checksum verification and
-all seven PR/main checks. Native Windows/macOS/Linux desktop launch and physical
-pads are not inferred from Linux browser automation. Independent review required.
+[VRAMpage MD v0.5.0](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.5.0)
+is public with exact title, immutable tag/source commit
+`e9f366fb3985f11430d353c3b2589f076ff93128` and two assets:
+[Browser ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip)
+and [SHA256SUMS.txt](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/SHA256SUMS.txt).
+All four [release workflow checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40302794303)
+passed after all seven candidate PR/main checks. Downloaded release ZIP has 716
+unique paths, exact tagged source/version/UI, runtime/fallback/source/notices and
+no ROMs. Manifest and public asset digests match: ZIP
+`6024ad1701d1cb58dc5da16ce4ae51db4fd03de7e9e1a6e26b3e6aff27ef0aad`;
+checksum asset `5d632ba923c05a94182975bd3bd06cfe6ebd491f7a11b7e0aa115651f2bd856d`.
+
+Public notes replace candidate wording while preserving the exact tagged package;
+the package's candidate-stage docs remain provenance. Post-publication docs now
+link permanent downloads, label historical releases correctly and retain all
+native-platform coverage limits. Independent GPT-6 review found no publication
+blocker; its wording/table cleanup requests were applied. Source106 passed
+12.431s (two unchanged SDK/vendor classes skipped); publication-docs PR/main CI
+remain the final repository integration gate.
+
+The draft-tag API endpoint returned404 during a redundant final metadata lookup;
+the shell continued to publication. Tag/source/downloaded manifest had already
+passed; public metadata and both remote digests were immediately checked against
+the downloaded files and match. Future dependent shell actions must stop on error.
+No release asset was replaced or retagged. Public v0.4.1 name, target, timestamp
+and both digests remain unchanged; McRetro.net was not modified or deployed.
+Evidence: `/workspace/scratch/v050-release`.
+
+Next: finish publication-docs integration; then respond to concrete compatibility
+reports without repeating completed proof work or publishing minor intermediates.
+Native Windows/macOS launch, physical pads and universal gameplay are not claimed.
 
 ## PR #68 Verified Delivery — 26 October 2026 (Sydney)
 

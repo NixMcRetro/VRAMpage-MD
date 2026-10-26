@@ -7,16 +7,13 @@ a browser. Running a local copy requires Python 3 for its small HTTP server.
 
 ## Get the Complete Browser Package
 
-The **v0.5.0 browser release candidate** is being verified before publication.
-The package is named **VRAMpage-MD-v0.5.0-browser.zip**. For candidate review, open
-the matching successful [source-checks run](https://github.com/NixMcRetro/VRAMpage-MD/actions/workflows/source-checks.yml)
-and download **VRAMpage-MD-local-review** under Artifacts. GitHub may require
-sign-in and wrap the package in another ZIP. Extract the outer artifact and the
-browser ZIP, then open the **VRAMpage-MD** folder. BUILD-INFO.json identifies the
-source commit; artifacts expire. See the [candidate notes](RELEASE-NOTES-v0.5.0.md).
+[Download VRAMpage-MD-v0.5.0-browser.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip) · [SHA256SUMS.txt](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/SHA256SUMS.txt).
+
+Extract the complete ZIP and open its **VRAMpage-MD** folder. BUILD-INFO.json
+identifies the exact released source commit. See [release notes](RELEASE-NOTES-v0.5.0.md).
 
 The historical [VRAMpage-MD-v0.4.1-macos.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip)
-remains a public download with its original assets. It predates the candidate's
+remains a public download with its original assets. It predates v0.5.0's
 new controls. **Code → Download ZIP** on GitHub is a different, source-only
 archive and cannot run without building the emulator first.
 

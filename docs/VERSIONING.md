@@ -1,13 +1,11 @@
 # Versioning policy
 
-Current candidate: **v0.5.0** (`VERSION` stores `0.5.0`), packaged as
-`VRAMpage-MD-v0.5.0-browser.zip` for Windows, macOS and Linux browsers. This is
-a review candidate, not a published release. Current public milestone: **v0.4.1**.
-It delivers the compact chip workbench, runtime audio line masks and saved
-configurations. Later source-only workbench changes are identified by build
-commit metadata and an Unreleased changelog section. Bump versioned labels and
-release inputs together at the next meaningful milestone; never replace the
-existing v0.4.1 ZIP. Publish only after required CI and complete package checks pass.
+Current public milestone: **v0.5.0** (`VERSION` stores `0.5.0`), packaged as
+`VRAMpage-MD-v0.5.0-browser.zip` for Windows, macOS and Linux browsers. It adds
+ordered recovery, explicit session checkpoints and cross-platform distribution.
+Public v0.4.1 and older tags/assets remain immutable. Later source work uses build
+commit metadata; never silently rebuild a public asset. Publish new milestones
+only after required CI and complete package checks pass.
 The original v0.4.0 audio and v0.3.0 VRAM release artifacts remain unchanged.
 
 VRAMpage MD is experimental, **not version 2.x**. Use semantic-looking
