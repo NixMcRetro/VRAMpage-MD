@@ -19,8 +19,14 @@ the package's candidate-stage docs remain provenance. Post-publication docs now
 link permanent downloads, label historical releases correctly and retain all
 native-platform coverage limits. Independent GPT-6 review found no publication
 blocker; its wording/table cleanup requests were applied. Source106 passed
-12.431s (two unchanged SDK/vendor classes skipped); publication-docs PR/main CI
-remain the final repository integration gate.
+12.431s (two unchanged SDK/vendor classes skipped); [publication-docs PR #70](https://github.com/NixMcRetro/VRAMpage-MD/pull/70)
+merged as `a7990a513c196a34761d9112baa16cd26c14dc31`, exactly matching tested
+head `6fa3dec13555806f3058f2bde030542b8377e83b`. All seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40304145128)
+and all seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40304989281)
+passed. Canonical checkout refreshed; no app/scripts/workflow differences from
+the release source. The immutable release tag remains at e9f366f, not the later
+documentation merge. Latest-public release and both asset digests rechecked.
 
 The draft-tag API endpoint returned404 during a redundant final metadata lookup;
 the shell continued to publication. Tag/source/downloaded manifest had already
@@ -30,8 +36,9 @@ No release asset was replaced or retagged. Public v0.4.1 name, target, timestamp
 and both digests remain unchanged; McRetro.net was not modified or deployed.
 Evidence: `/workspace/scratch/v050-release`.
 
-Next: finish publication-docs integration; then respond to concrete compatibility
-reports without repeating completed proof work or publishing minor intermediates.
+Publication and documentation integration are complete. Next: respond to concrete
+compatibility reports without repeating completed proof work or publishing minor
+intermediates.
 Native Windows/macOS launch, physical pads and universal gameplay are not claimed.
 
 ## PR #68 Verified Delivery — 26 October 2026 (Sydney)
