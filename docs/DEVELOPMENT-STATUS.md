@@ -22,6 +22,13 @@ latest-version links. Older v0.2.6/v0.2.7 packages remain pinned by reproduction
 scripts. The curation update retains every tag, binary and checksum; protected
 v0.3.0/v0.4.0/v0.4.1/v0.5.0 descriptions also remain unchanged. Only fourteen older
 descriptions need corrected entry links. No new app release is needed.
+Local validation: all111 Python tests passed (two unchanged SDK/vendor-dependent
+classes skipped), followed by the existing JavaScript/native suites and sanitizer
+checks. A read-only live preflight matched all18 release tags and asset lists;
+Latest remains v0.5.0. Independent README/credit review and coordinator review of
+the guarded curator/test diff found no blockers. Initial execution under the
+restricted sandbox could not bind loopback or run LeakSanitizer; rerunning with
+the normal network-enabled test permissions passed without disabling checks.
 Next: require passing PR/main CI, then verify the metadata-only curation run and
 unchanged release identities. Continue from concrete compatibility reports.
 
