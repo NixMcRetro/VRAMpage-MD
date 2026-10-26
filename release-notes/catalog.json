@@ -1,7 +1,47 @@
 {
-  "current": "v0.2.8",
+  "current": "v0.5.0",
   "repository": "NixMcRetro/VRAMpage-MD",
   "releases": [
+    {
+      "tag": "v0.5.0",
+      "title": "VRAMpage MD v0.5.0",
+      "source_commit": "e9f366fb3985f11430d353c3b2589f076ff93128",
+      "assets": [
+        "VRAMpage-MD-v0.5.0-browser.zip",
+        "SHA256SUMS.txt"
+      ],
+      "update_notes": false
+    },
+    {
+      "tag": "v0.4.1",
+      "title": "VRAMpage MD v0.4.1",
+      "source_commit": "e579c571f14b3549a5befa33d9e62ba3f3c9d45b",
+      "assets": [
+        "VRAMpage-MD-v0.4.1-macos.zip",
+        "SHA256SUMS.txt"
+      ],
+      "update_notes": false
+    },
+    {
+      "tag": "v0.4.0",
+      "title": "VRAMpage MD v0.4.0",
+      "source_commit": "8c1d5329477d8702e1fb0d294abfbc233d50d80d",
+      "assets": [
+        "VRAMpage-MD-v0.4.0-macos.zip",
+        "SHA256SUMS.txt"
+      ],
+      "update_notes": false
+    },
+    {
+      "tag": "v0.3.0",
+      "title": "VRAMpage MD v0.3.0",
+      "source_commit": "4cfb983f3003449c0632375576f6a674e660d778",
+      "assets": [
+        "VRAMpage-MD-v0.3.0-macos.zip",
+        "SHA256SUMS.txt"
+      ],
+      "update_notes": false
+    },
     {
       "tag": "v0.2.8",
       "title": "VRAMpage MD v0.2.8",

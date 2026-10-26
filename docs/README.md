@@ -4,6 +4,11 @@ VRAMpage MD is a browser-based NTSC Mega Drive/Genesis experiment. It runs a loc
 
 ## Start here
 
+**[Open the live app](https://mcretro.net/homepages/vrampage-md/)** ·
+[Free Original Colour-Test ROM](https://mcretro.net/assets/downloads/2026/10/vrampage-md/VRAMpage-MD-Colour-Test.bin) ·
+[ROM and Source ZIP](https://mcretro.net/assets/downloads/2026/10/vrampage-md/VRAMpage-MD-Colour-Test.zip).
+The test program is silent; FM/PSG experiments need another cartridge.
+
 VRAMpage MD runs in modern browsers on **Windows, macOS and Linux**. Start with
 [the browser package and launch guide](RUNNING-LOCALLY.md), or read the
 [v0.5.0 release notes](RELEASE-NOTES-v0.5.0.md). [Download VRAMpage-MD-v0.5.0-browser.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip) · [SHA256SUMS.txt](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/SHA256SUMS.txt).
@@ -22,7 +27,7 @@ and experimental; older standalone-model descriptions are historical records.
 | [Versioning](VERSIONING.md) | Current source version and historical identifier mapping |
 | [Run locally](RUNNING-LOCALLY.md) | Windows, macOS and Linux browser-package launch instructions |
 | [v0.5.0 release notes](RELEASE-NOTES-v0.5.0.md) | Release changes, distribution and verification limits |
-| [Project overview](../README.md) | Current features, limitations, building and repository policy |
+| [Project overview](../README.md) | Live app, test ROM, current download and source credits |
 | [Session checkpoints](SESSION-CHECKPOINT-API.md) | Explicit session-only checkpoint semantics, supported profiles and validation gates |
 | [Product roadmap](../ROADMAP.md) | Versions and video, logic and sound milestones |
 | [Documentation roadmap](DOCUMENTATION-ROADMAP.md) | Which Markdown documents to write, in what order, and acceptance criteria |
@@ -69,7 +74,7 @@ The v0.4.1 workbench extends optional, independent
 
 ## Maintainer release rule
 
-VRAMpage-MD development does not automatically publish to `mcretro.net`. Deploy only a reviewed, approved static build to `/homepages/vrampage/` through a **separate branch** of the website repository. That merge triggers a full Jekyll/Pagefind rebuild.
+VRAMpage-MD development does not automatically publish to `mcretro.net`. Deploy only a reviewed, approved static build to `/homepages/vrampage-md/` through a **separate branch** of the website repository. That merge triggers a full Jekyll/Pagefind rebuild.
 
 ## Development coordination
 
