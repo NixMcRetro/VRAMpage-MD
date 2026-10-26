@@ -1025,7 +1025,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     cleared=json.loads(Path(download.value.path()).read_text())
                     self.assertEqual(cleared['cpuInterventions'],payload['cpuInterventions'])
                     self.assertEqual(len(cleared['faultDisconnects']),2)
-                    self.assertEqual([row['domain'] for row in cleared['faultDisconnects'][-1]['results']],['VRAM','RAM','PSG','FM'])
+                    self.assertEqual([row['domain'] for row in cleared['faultDisconnects'][-1]['results']],['VRAM','RAM','PSG','FM','Z80 RAM'])
                     self.assertEqual(cleared['faultDisconnects'][-1]['action'],'all-domain-disconnect')
                     burst=cleared['faultPulses'][-1]
                     self.assertEqual((burst['a'],burst['b']),(10,11))

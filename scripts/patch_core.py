@@ -1008,7 +1008,7 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     render_c = render_c_path.read_text() if transaction_adapter else None
     m68k = m68k_h.read_text()
     z80 = z80_c.read_text()
-    mem68k = mem68k_c.read_text()
+    mem68k = mem68k_c.read_text() if transaction_adapter else None
     dma = dma_c.read_text()
     psg = psg_c.read_text() if transaction_adapter else None
     fm = fm_c.read_text() if transaction_adapter else None
@@ -1113,9 +1113,9 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     render = patch_native_blitter(render)
     m68k = patch_m68k_cpu(m68k)
     z80 = patch_z80(z80)
-    z80, mem68k = patch_z80_ram_bridge(z80, mem68k)
     dma = patch_dma(dma)
     if transaction_adapter:
+        z80, mem68k = patch_z80_ram_bridge(z80, mem68k)
         dma = patch_vram_transactions(dma)
         render_c = patch_mode5_render_reads(render_c)
         psg = patch_psg_input_fault(psg)
@@ -1123,8 +1123,9 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     changed = (blip != blip_c.read_text() or
                wasm != wasm_c.read_text() or config != config_c.read_text() or
                render != render_h.read_text() or m68k != m68k_h.read_text() or
-               z80 != z80_c.read_text() or mem68k != mem68k_c.read_text() or dma != dma_c.read_text() or
-               (transaction_adapter and (render_c != render_c_path.read_text() or
+               z80 != z80_c.read_text() or dma != dma_c.read_text() or
+               (transaction_adapter and (mem68k != mem68k_c.read_text() or
+                                          render_c != render_c_path.read_text() or
                                           psg != psg_c.read_text() or
                                           fm != fm_c.read_text())))
     if changed:
@@ -1137,7 +1138,8 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
             psg_c.write_text(psg)
         m68k_h.write_text(m68k)
         z80_c.write_text(z80)
-        mem68k_c.write_text(mem68k)
+        if transaction_adapter:
+            mem68k_c.write_text(mem68k)
         dma_c.write_text(dma)
         # The wasm translation unit compiles the shared model and runtime once;
         # headers are copied to both core include roots for pinned core TUs.

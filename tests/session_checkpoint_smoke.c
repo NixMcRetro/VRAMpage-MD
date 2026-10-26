@@ -35,6 +35,7 @@ uint32_t *frame_buffer;
 uint32_t rom_size=0x10000;
 static uint32_t frame_number;
 static int faults,held_pulse,plain_cart=1,bound_extra,save_failure,load_failure,audio_failure,pad_failure,save_calls,load_calls;
+static int z80_faults;
 static int work_ram_logic_applies(int operation) { (void)operation; return faults; }
 uint32_t get_logic_frame(void) { return frame_number; }
 uint32_t get_logic_pulse_state(void) { return held_pulse; }
@@ -43,6 +44,7 @@ int get_psg_data_bridge_enabled(void) { return faults; }
 int get_psg_data_mask(void) { return faults; }
 int get_fm_data_bridge_enabled(void) { return faults; }
 int get_fm_data_mask(void) { return faults; }
+int get_z80_ram_bridge_enabled(void) { return z80_faults; }
 int get_vram_fault_model_effective(void) { return faults; }
 unsigned get_vram_address_mask(void) { return faults; }
 int get_vram_short_a(void) { return -1; }
@@ -77,6 +79,14 @@ int main(void) {
  frame_number=UINT32_MAX; work_ram[0]=17; frame_buffer[0]=23; sram.sram[0]=29;
  m68k.memory_map[0].base=cart.rom+42; zbank_memory_map[0].base=cart.rom+43;
  assert(save_session_checkpoint()==0 && get_session_checkpoint_saved_frame()==UINT32_MAX);
+ {
+  int saved=save_calls,loaded=load_calls;
+  z80_faults=1;
+  assert(save_session_checkpoint()==SESSION_CHECKPOINT_UNSAFE && save_calls==saved);
+  assert(restore_session_checkpoint()==SESSION_CHECKPOINT_UNSAFE && load_calls==loaded);
+  assert(z80_faults && get_session_checkpoint_ready() && work_ram[0]==17);
+  z80_faults=0;
+ }
  assert(frame_number==UINT32_MAX && get_session_checkpoint_ready());
  /* Refused or incomplete replacement never publishes the spare slot. */
  faults=1; assert(get_session_checkpoint_support()==1 && get_session_checkpoint_ready());
