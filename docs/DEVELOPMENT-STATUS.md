@@ -1,17 +1,45 @@
 # Development status and continuation checkpoint
 
-## v0.5.0 Cross-Platform Candidate — In Verification
+## PR #69 Verified v0.5.0 Browser Candidate — 26 October 2026 (Sydney)
 
-User authorizes the browser-ready cross-platform candidate. Scope: neutral browser
-ZIP/checksum, Windows/macOS/Linux launch instructions, static hosting, aligned
-VERSION/UI/export/workflow/test labels and draft-only release preparation.
-Reuse scripts/serve.py and optional START.command; no framework or OS-specific
-emulator build. Preserve public v0.4.1 and all historical experiment identifiers.
-No publisher dispatch, new tag/publication or McRetro.net work in this slice.
-Acceptance: source/full browser and actual-core checks, real static-subdirectory
-WASM/video/audio/input load, extracted ZIP/provenance/checksum verification and
-all seven PR/main checks. Native Windows/macOS/Linux desktop launch and physical
-pads are not inferred from Linux browser automation. Independent review required.
+[PR #69](https://github.com/NixMcRetro/VRAMpage-MD/pull/69) merged as
+`e9f366fb3985f11430d353c3b2589f076ff93128`; tree exactly matches reviewed/tested
+head `a53217a897dae726a83e120171b55068282e462b`. All seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40296420147)
+and all seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40297233926)
+passed. [Browser ZIP/checksum](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40297233926/artifacts/12639027968).
+[Static hosting bundle](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40297233926/artifacts/12639377107).
+Artifacts expire; the ZIP is nested inside the GitHub artifact download.
+
+VERSION/UI/exports/fixtures/workflows align at 0.5.0. Complete package is
+VRAMpage-MD-v0.5.0-browser.zip plus SHA256SUMS.txt, with HTML/JS/WASM, source,
+notices, existing Python server and optional START.command. Windows/macOS/Linux
+instructions distinguish local Python use from hosted browser-only use. Existing
+v0.4.1 public download and historical experiment compatibility remain intact.
+The publisher prepares drafts only with source/version/tag/public-release guards.
+No release workflow dispatched, tag created, public release or McRetro.net change.
+
+Independent GPT-6 review found no blockers through4056445; final release-note
+link cleanup does not affect runtime. Local source106 PASS27.786s (two unchanged
+SDK/vendor classes skipped), interface125 PASS345.339s, actual-core8 PASS73.032s,
+transaction3 PASS18.603s and display7 PASS19.954s. Extracted4056445 package core8
+PASS90.633s and transaction3 PASS18.419s. Static-subdirectory real WASM/video/audio/
+input and application/wasm responses pass; extracted local server starts from a
+different working directory with correct HTML/WASM HTTP responses. An outdated
+catalog-current homepage test was corrected to independently retain candidate,
+publicv0.4.1 and historicalv0.2.8 routes; immutable catalog records are unchanged.
+
+Canonical runnable checkout refreshed. Local main ZIP has 715 unique paths,
+matching main source/version/UI/core identity; local checksum
+`bf409c5b16e95ae71eb20a33cca0317c42aca83488151f63cfc4531549d24b18`.
+CI's independently built ZIP includes its own SHA256SUMS.txt. Public v0.4.1 name,
+target, timestamp and both asset digests rechecked unchanged. Evidence:
+`/workspace/scratch/cross-platform-v050`. Native Windows/macOS launch was not
+repeated; Linux browser automation does not establish every OS/gamepad/cartridge.
+
+Next: review candidate for a separately published v0.5.0 release. Do not replace
+v0.4.1 or deploy McRetro.net. Reuse completed checks; respond to concrete failures
+rather than repeat emulator research or request redundant manual acceptance.
 
 ## PR #68 Verified Delivery — 26 October 2026 (Sydney)
 
