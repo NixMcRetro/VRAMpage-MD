@@ -374,6 +374,7 @@
     $('randomPsgBtn').disabled=!started || !psgReady;
     $('randomFmBtn').disabled=!started || !fmReady;
     $('randomVramBtn').disabled=!started || !vramReady || !ramSafe;
+    $('randomVramBtn').classList.toggle('ram-contact-blocked',started && vramReady && (logicActive || !!pendingPulse));
     const vramReason=!started?'Load a ROM first.':!vramReady?'The selected VRAM model or runtime API is unavailable.'
       :logicActive?'Disconnect the active Work RAM fault first.':pendingPulse?'Wait for or clear the active RAM pulse first.'
       :momentary?'Release the held VRAM bridge first.':!pulseReadable?'RAM pulse state is unavailable.'

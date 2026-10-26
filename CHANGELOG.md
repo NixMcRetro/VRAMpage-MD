@@ -2,7 +2,7 @@
 
 ## Unreleased workbench improvements
 
-- Keep unavailable Randomiser actions flat with muted labels, so disabling VRAM during RAM Write does not resemble a pressed button. Preserve fault-domain exclusion and button actions.
+- Keep all three Randomiser buttons visually unchanged during held or eight-frame RAM Write contacts, including VRAM text colour. Retain native blocking of conflicting VRAM actions and ordinary unavailable styling before ROM load or unsupported profiles.
 
 - Add explicit session-only Save Checkpoint / Restore Checkpoint controls with verified fault clearing, paused immediate-image restore, held-input release and metadata-only history segments. Bound support to ordinary Mega Drive/3–6-button/SRAM profiles; preserve CPU Reset retention and Clean Restart invalidation. Keep normal-core binaries and public v0.4.1 unchanged.
 
