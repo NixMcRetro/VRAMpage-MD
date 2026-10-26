@@ -1,36 +1,35 @@
 # Development status and continuation checkpoint
 
-## Repository Front Page — 27 October 2026 (Sydney)
+## Repository Cleanup Verified — 27 October 2026 (Sydney)
 
-The requested cleanup makes the live app, current v0.5.0 browser package, original
-colour-test ROM and source attribution the front-page entry points. Detailed
-controls and technical history remain in their existing guides. The test ROM is
-linked from its published website location; no ROM or generated core is added to
-this repository and no application/version change is made.
+[PR #71](https://github.com/NixMcRetro/VRAMpage-MD/pull/71) merged as
+`1cba1f7e1fd56ea06290e3785d1b0bb5da8ea9e7`; its tree exactly matches reviewed
+head `65405e89a39795da5643b691fdd46ce49f94a9cc`. All seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40376224647)
+and all seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40377355038)
+passed. The [metadata-only curation](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40377354871)
+also passed after complete remote preflight.
 
-Publication-docs [PR #70](https://github.com/NixMcRetro/VRAMpage-MD/pull/70) is already
-merged as `a7990a513c196a34761d9112baa16cd26c14dc31` with all seven
-[main checks passing](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40304989281).
-The separately approved [hosted v0.5.0 app](https://mcretro.net/homepages/vrampage-md/)
-was deployed and confirmed working by the user. The
-[project article](https://mcretro.net/vrampage-md-bending-bits/) provides original
-colour-test downloads. Those completed publication/deployment tasks need no repeat.
+The README is reduced from 1,444 to 464 words and leads with the live app,
+current v0.5.0 download, free original colour-test ROM/source and upstream credits.
+Detailed instructions remain linked. No ROM, generated core, application change
+or new release was introduced; McRetro.net was not modified by this cleanup.
 
-Release audit: 18 public releases, nine runnable packages and nine source-only
-history entries. The user selected keeping all releases and correcting obsolete
-latest-version links. Older v0.2.6/v0.2.7 packages remain pinned by reproduction
-scripts. The curation update retains every tag, binary and checksum; protected
-v0.3.0/v0.4.0/v0.4.1/v0.5.0 descriptions also remain unchanged. Only fourteen older
-descriptions need corrected entry links. No new app release is needed.
-Local validation: all111 Python tests passed (two unchanged SDK/vendor-dependent
-classes skipped), followed by the existing JavaScript/native suites and sanitizer
-checks. A read-only live preflight matched all18 release tags and asset lists;
-Latest remains v0.5.0. Independent README/credit review and coordinator review of
-the guarded curator/test diff found no blockers. Initial execution under the
-restricted sandbox could not bind loopback or run LeakSanitizer; rerunning with
-the normal network-enabled test permissions passed without disabling checks.
-Next: require passing PR/main CI, then verify the metadata-only curation run and
-unchanged release identities. Continue from concrete compatibility reports.
+The user chose to keep all 18 releases and correct historical latest links.
+Post-curation comparison confirms every release/tag, asset ID/hash/size/timestamp
+and original publication date is unchanged. Fourteen historical bodies match the
+approved notes. Protected v0.3.0/v0.4.0/v0.4.1/v0.5.0 titles, bodies and metadata
+update timestamps are unchanged; v0.5.0 remains Latest without an extra write.
+Original note archives and experiment-pinned v0.2.6/v0.2.7 packages are preserved.
+
+Local checks passed all 111 Python tests (two unchanged SDK/vendor classes
+skipped), existing JavaScript/native/sanitizer checks and relative-link validation.
+Independent README/credit review and coordinator curator review found no blocker.
+Snapshots and logs: `/workspace/scratch/repository-cleanup/`.
+GitHub's integration rejected the optional repository About-sidebar edit with 403;
+its description/homepage settings remain unchanged. No extra permission is needed
+for the completed README, PR or release-note work. Next: handle concrete
+compatibility reports, preserving public artifacts and avoiding minor doc releases.
 
 ## v0.5.0 Published — 26 October 2026 (Sydney)
 
