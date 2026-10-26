@@ -910,7 +910,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     page.locator('#chipRestoreBtn').click()
                     page.wait_for_function('testCore._get_logic_address_mask()===0')
                     page.locator('#logicApplyBtn').click()
-                    page.locator('#logicResumeBtn').click()
+                    page.locator('#manualForceResumeBtn').click()
                     page.locator('#logicCpuResetBtn').click()
                     with page.expect_download() as download:
                         page.locator('#logicExperimentBtn').click()
@@ -1091,7 +1091,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     finally:browser.close()
             finally:server.shutdown()
 
-    def test_one_shot_recovery_observes_real_halt_and_ignores_real_stop(self):
+    def test_ordered_recovery_defaults_on_and_observes_real_halt_and_stop(self):
         handler=partial(SimpleHTTPRequestHandler,directory=OPTIONS.site_root)
         with ThreadingHTTPServer(('127.0.0.1',0),handler) as server:
             threading.Thread(target=server.serve_forever,daemon=True).start()
@@ -1100,12 +1100,19 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     kwargs={'executable_path':OPTIONS.executable} if OPTIONS.executable else {}
                     browser=getattr(p,OPTIONS.browser).launch(**kwargs)
                     try:
-                        for kind,words in [('halt',[0x2e7c,0,1,0x3039,0x00ff,1,0x4e72,0x2700]),
-                                           ('stop',[0x4e72,0x2700,0x60fe])]:
+                        halt_words=[0x2e7c,0,1,0x3039,0x00ff,1,0x4e72,0x2700]
+                        for kind,words,force_on,cpu_on in [
+                            ('halt',halt_words,True,True),
+                            ('stop',[0x4e72,0x2700,0x60fe],True,True),
+                            ('halt-force-off',halt_words,False,True),
+                            ('halt-cpu-off',halt_words,True,False)]:
                             with self.subTest(cpu=kind):
                                 page=browser.new_page(accept_downloads=True)
                                 errors=[]
                                 page.on('pageerror',lambda error:errors.append(str(error)))
+                                page.add_init_script("""window.testFrames=[];window.testTime=0;
+                                    window.requestAnimationFrame=cb=>testFrames.push(cb);
+                                    window.stepTestFrame=()=>{const q=testFrames.splice(0);testTime+=17;q.forEach(cb=>cb(testTime));};""")
                                 core_js=(OPTIONS.site_root/'core/genplus.js').read_text()
                                 core_js+='''\nconst originalFactory=window.Module;
                                 window.Module=opts=>originalFactory(opts).then(c=>{
@@ -1113,42 +1120,75 @@ class ActualCoreBrowserTests(unittest.TestCase):
                                     const recover=c._recover_logic_cpu;
                                     c._recover_logic_cpu=mode=>{
                                         const before=[c._get_psg_data_bridge_state?.(),c._get_fm_data_bridge_state?.()];
+                                        const ramStart=c._get_logic_ram_ref()>>>0;
+                                        const ramBefore=Array.from(c.HEAPU8.subarray(ramStart,ramStart+65536));
                                         const status=recover(mode);
-                                        recoveryCalls.push({mode,status,before,after:[c._get_psg_data_bridge_state?.(),c._get_fm_data_bridge_state?.()]});
+                                        const ramAfter=c.HEAPU8.subarray(ramStart,ramStart+65536);
+                                        recoveryCalls.push({mode,status,frame:c._get_logic_frame(),flagsAfter:c._get_logic_cpu_flags(),
+                                            before,after:[c._get_psg_data_bridge_state?.(),c._get_fm_data_bridge_state?.()],
+                                            ramPreserved:ramBefore.every((value,index)=>value===ramAfter[index])});
                                         return status;
                                     };return c;
                                 });\n'''
                                 page.route('**/core/genplus.js',lambda route:route.fulfill(content_type='text/javascript',body=core_js))
                                 page.goto(f'http://127.0.0.1:{server.server_port}/')
+                                expect(page.locator('#logicResumeBtn')).to_have_text('Force Resume: On')
+                                expect(page.locator('#armCpuRecoveryBtn')).to_have_text('CPU Recovery: On')
+                                expect(page.locator('#logicResumeBtn')).to_have_attribute('aria-pressed','true')
+                                expect(page.locator('#armCpuRecoveryBtn')).to_have_attribute('aria-pressed','true')
+                                if not force_on:page.locator('#logicResumeBtn').click()
+                                if not cpu_on:page.locator('#armCpuRecoveryBtn').click()
+                                expect(page.locator('#logicResumeBtn')).to_have_attribute('aria-pressed',str(force_on).lower())
+                                expect(page.locator('#armCpuRecoveryBtn')).to_have_attribute('aria-pressed',str(cpu_on).lower())
                                 rom=bytearray(original_cartridge())
                                 for i,value in enumerate(words):struct.pack_into('>H',rom,0x200+2*i,value)
                                 page.locator('#romFile').set_input_files({'name':f'original-{kind}.bin','mimeType':'application/octet-stream','buffer':bytes(rom)})
                                 expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
-                                flag=2 if kind=='halt' else 1
-                                page.wait_for_function(f'(testCore._get_logic_cpu_flags() & {flag})!==0 && testCore._get_logic_frame()>4')
-                                self.assertEqual(page.evaluate('recoveryCalls'),[],'Default policy must leave genuine halted/stopped CPU alone')
+                                page.evaluate('stepTestFrame()') # Prime the app clock before the first emulated frame.
                                 page.locator('#logicExperiment > summary').click()
-                                if kind=='halt':
+                                if kind!='stop':
                                     page.locator('#psgBridgeApply').click()
                                     page.locator('#fmBridgeApply').click()
-                                page.locator('#armCpuRecoveryBtn').click()
-                                if kind=='halt':
-                                    page.wait_for_function('recoveryCalls.length===1')
-                                    expect(page.locator('#cpuRecoveryStatus')).to_have_text('OFF')
-                                    call=page.evaluate('recoveryCalls[0]')
-                                    self.assertEqual((call['mode'],call['status']),(2,0))
-                                    self.assertEqual(call['before'],call['after'],'CPU-only reset preserves synchronous audio fault snapshots')
-                                    self.assertTrue(all(state['configured'] for state in call['before']))
+                                if kind!='stop':
+                                    expected_calls=1
+                                    page.evaluate(f'for(let i=0;i<35 && recoveryCalls.length<{expected_calls};i++)stepTestFrame()')
+                                    calls=page.evaluate('recoveryCalls')
+                                    expected_modes=[1] if force_on else [2]
+                                    self.assertEqual([call['mode'] for call in calls],expected_modes,
+                                        'Enabled recovery stages run in order and disabled stages are skipped')
+                                    self.assertTrue(all(call['status']==0 for call in calls))
+                                    self.assertTrue(all(call['ramPreserved'] for call in calls),
+                                        'Synchronous CPU interventions preserve all 64 KiB of Work RAM')
+                                    self.assertTrue(all(call['before']==call['after'] for call in calls),
+                                        'CPU interventions preserve synchronous PSG/FM fault snapshots')
+                                    self.assertFalse(calls[0]['flagsAfter'] & 2,
+                                        'The issued CPU action clears HALT synchronously')
+                                    self.assertTrue(all(state['configured'] for state in calls[0]['before']))
+                                    if kind=='halt':
+                                        # This real CPU continues after Force Resume; do not escalate to reset.
+                                        page.evaluate('for(let i=0;i<20;i++)stepTestFrame()')
+                                        self.assertEqual(page.evaluate('recoveryCalls.length'),1)
+                                        self.assertFalse(page.evaluate('(testCore._get_logic_cpu_flags() & 2)!==0'))
+                                        expect(page.locator('#cpuRecoveryStatus')).to_contain_text('Recovery Used / Cancelled')
                                     with page.expect_download() as downloaded:page.locator('#logicExperimentBtn').click()
                                     payload=json.loads(Path(downloaded.value.path()).read_text())
-                                    entry=payload['cpuInterventions'][-1]
-                                    self.assertEqual(entry['trigger'],'armed-halt-streak')
-                                    self.assertEqual(entry['observedFrames'][1]-entry['observedFrames'][0],1)
-                                else:expect(page.locator('#cpuRecoveryStatus')).to_have_text('ARMED')
-                                frame=page.evaluate('testCore._get_logic_frame()')
-                                page.wait_for_function(f'testCore._get_logic_frame()>={frame+5}')
-                                self.assertEqual(page.evaluate('recoveryCalls.length'),1 if kind=='halt' else 0)
-                                self.assertTrue(page.evaluate(f'(testCore._get_logic_cpu_flags() & {flag})!==0'))
+                                    entries=[entry for entry in payload['cpuInterventions'] if entry.get('trigger')=='halt-recovery-sequence']
+                                    self.assertEqual(len(entries),expected_calls)
+                                    self.assertEqual([entry['action'] for entry in entries],
+                                        ['force-resume'] if expected_modes==[1] else ['cpu-only-reset'])
+                                    if expected_modes==[1]:
+                                        self.assertEqual(entries[0]['stage'],'force-resume')
+                                        self.assertEqual(entries[0]['waitFrames'],2)
+                                        self.assertEqual(len(entries[0]['observedFrames']),2)
+                                        self.assertEqual(entries[0]['observedFrames'][1]-entries[0]['observedFrames'][0],1)
+                                    else:
+                                        self.assertEqual(entries[0]['stage'],'cpu-reset')
+                                        self.assertEqual(entries[0]['waitFrames'],2)
+                                else:
+                                    # A genuine STOP is ignored even with both automatic controls On.
+                                    page.evaluate('for(let i=0;i<20;i++)stepTestFrame()')
+                                    self.assertEqual(page.evaluate('recoveryCalls'),[])
+                                    self.assertTrue(page.evaluate('(testCore._get_logic_cpu_flags() & 1)!==0'))
                                 self.assertEqual(errors,[])
                                 page.close()
                     finally:browser.close()
