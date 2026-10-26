@@ -148,13 +148,16 @@ function restore(c, image) {
     assert.equal(clear(), 0);
   }
   assert.equal(c._set_z80_ram_bridge(1, 0, 1), 0);
-  const z80FaultRam = ram(c);
+  const z80FaultRam = ram(c), z80FaultState = c._get_z80_ram_bridge_state();
   assert.equal(c._save_session_checkpoint(), 2, 'active Z80 RAM contact refuses checkpoint capture');
   assert.equal(c._get_z80_ram_bridge_state().configured, true);
-  assert.equal(c._restore_session_checkpoint(), 0, 'restore removes Z80 RAM contact before loading checkpoint state');
+  assert.equal(c._restore_session_checkpoint(), 2, 'restore refuses while the contact remains configured');
+  assert.equal(c._get_z80_ram_bridge_state().configured, true, 'refusal preserves contact configuration');
+  assert.equal(c._get_z80_ram_bridge_state().ramWrites, z80FaultState.ramWrites, 'refusal preserves contact counters');
+  assert.equal(ram(c), z80FaultRam, 'refusal does not load state or mutate RAM');
+  assert.equal(c._set_z80_ram_bridge(0, -1, -1), 0);
+  assert.equal(c._restore_session_checkpoint(), 0, 'restore succeeds after frontend-style explicit disconnect');
   assert.equal(c._get_z80_ram_bridge_state().configured, false);
-  assert.equal(c._get_z80_ram_bridge_state().ramWrites, '0');
-  assert.notEqual(ram(c), z80FaultRam, 'restore reloads saved RAM after disconnecting the contact');
   neutral(c, [11]); assert.equal(c._get_session_checkpoint_support(), 1); assert.equal(c._save_session_checkpoint(), 2);
   assert.equal(c._restore_session_checkpoint(), 2); neutral(c); restore(c, savedImage); groups++;
   assert.equal(c._recover_logic_cpu(2), 0); assert.equal(c._get_session_checkpoint_ready(), 1);
