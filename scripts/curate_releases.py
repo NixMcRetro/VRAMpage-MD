@@ -10,6 +10,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "release-notes/catalog.json"
+PRESERVED_RELEASES = {"v0.3.0", "v0.4.0", "v0.4.1", "v0.5.0"}
 
 
 class CurationError(Exception):
@@ -28,7 +29,8 @@ def load_catalog():
         raise CurationError("Published release version is newer than source VERSION.")
     entries = data["releases"]
     tags = [entry["tag"] for entry in entries]
-    required_history = {f"v0.1.{n}" for n in range(5)} | {f"v0.2.{n}" for n in range(7)}
+    required_history = ({f"v0.1.{n}" for n in range(5)} |
+                        {f"v0.2.{n}" for n in range(9)} | PRESERVED_RELEASES)
     if (not required_history.issubset(tags) or len(set(tags)) != len(tags) or
             not tags or tags[0] != data["current"]):
         raise CurationError("Incorrect, duplicate or unordered release entries.")
@@ -40,16 +42,23 @@ def load_catalog():
             raise CurationError(f"Invalid original commit for {tag}")
         if entry["title"] != f"VRAMpage MD {tag}":
             raise CurationError(f"Release title must be exactly VRAMpage MD {tag}")
+        update_notes = entry.get("update_notes", True)
+        if type(update_notes) is not bool or (tag in PRESERVED_RELEASES and update_notes):
+            raise CurationError(f"Invalid note-update policy for {tag}")
         version = tuple(map(int, tag[1:].split(".")))
-        expected = ([f"VRAMpage-MD-{tag}-macos.zip", "SHA256SUMS.txt"]
+        expected = ([f"VRAMpage-MD-{tag}-browser.zip", "SHA256SUMS.txt"]
+                    if version >= (0, 5, 0) else
+                    [f"VRAMpage-MD-{tag}-macos.zip", "SHA256SUMS.txt"]
                     if version >= (0, 2, 4) else [])
         if sorted(entry["assets"]) != sorted(expected):
             raise CurationError(f"Unexpected asset policy for {tag}")
+        if not update_notes:
+            continue
         note = (ROOT / "release-notes" / f"{tag}.md").read_text(encoding="utf-8")
         if entry["source_commit"] not in note or data["current"] not in note:
             raise CurationError(f"Missing provenance/latest-version link for {tag}")
         if expected and expected[0] not in note:
-            raise CurationError(f"No direct Mac ZIP link for {tag}")
+            raise CurationError(f"No direct package ZIP link for {tag}")
         if not expected and "SOURCE HISTORY ONLY" not in note:
             raise CurationError(f"Historical {tag} must state source-only status.")
     if tags != sorted(tags, key=lambda tag: tuple(map(int, tag[1:].split("."))), reverse=True):
@@ -93,8 +102,12 @@ def preflight(data):
 
 def sync(data, remote):
     repo = data["repository"]
+    latest = gh_get(repo, "releases/latest")["tag_name"]
     for item in data["releases"]:
         tag = item["tag"]
+        if not item.get("update_notes", True):
+            print(f"Preserved title and notes: {tag}")
+            continue
         path = ROOT / "release-notes" / f"{tag}.md"
         note = path.read_text(encoding="utf-8")
         existing = remote[tag]
@@ -104,8 +117,9 @@ def sync(data, remote):
         subprocess.run(["gh", "release", "edit", tag, "--repo", repo,
                         "--title", item["title"], "--notes-file", str(path)], check=True)
         print(f"Updated title and notes: {tag}")
-    subprocess.run(["gh", "release", "edit", data["current"],
-                    "--repo", repo, "--latest"], check=True)
+    if latest != data["current"]:
+        subprocess.run(["gh", "release", "edit", data["current"],
+                        "--repo", repo, "--latest"], check=True)
     print(f"Latest release: {data['current']}")
 
 
@@ -123,7 +137,8 @@ def main(argv=None):
                 raise CurationError("Wrong GitHub repository for release edits.")
             sync(data, preflight(data))
         else:
-            print(f"Validated {len(data['releases'])} release notes; current: {data['current']}.")
+            updates = sum(item.get("update_notes", True) for item in data["releases"])
+            print(f"Validated {len(data['releases'])} releases; {updates} note updates; current: {data['current']}.")
     except (CurationError, ValueError, KeyError, FileNotFoundError,
             subprocess.CalledProcessError) as error:
         print(f"Release curation failed: {error}", file=sys.stderr)
