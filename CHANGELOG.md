@@ -2,6 +2,8 @@
 
 ## Unreleased workbench improvements
 
+- Stage explicit session-only Save Checkpoint / Restore Checkpoint controls, paused restore with verified fault clearing, held-input release and experiment history segments. Backend eligibility/replay and integration checks remain in progress; no release change.
+
 - Add a developer-only checkpoint replay proof with guarded same-instance audio snapshots. Replace undefined signed shifts in the existing Blip high-pass filter with equivalent defined arithmetic; verify unchanged synthetic PCM/pixels and native sanitizer checks. Checkpoint controls remain unavailable.
 
 - Use Title Case consistently for buttons and labels, preserving acronyms and Work RAM naming.

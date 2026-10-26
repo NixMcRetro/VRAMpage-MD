@@ -1,5 +1,24 @@
 # Development work queue
 
+## Session Checkpoint Implementation In Progress — 26 October 2026 (Sydney)
+
+Resumed from verified main `0b8263c` (all seven main CI jobs still pass).
+Scope and acceptance gates: [Session Checkpoint API](SESSION-CHECKPOINT-API.md).
+Native backend branch `experiment/session-checkpoint-core` has committed bounded
+same-instance storage; actual-WASM eligibility/replay validation is still in progress.
+Frontend branch `experiment/session-checkpoint` adds advanced Save Checkpoint /
+Restore Checkpoint, verified fault clearing before restore, paused immediate image,
+held-input suppression, session lifecycle invalidation and metadata-only export
+segments. Twelve focused Chromium cases pass; comparison tests and JS syntax pass.
+A further held-contact cancellation case is being checked. No integrated checkpoint
+build, independent final review, PR or merge is claimed yet.
+
+Next: finish native ordinary-cart/SRAM eligibility and omitted map state, integrate
+native commits, test actual-core UI round trips, obtain independent native/JS review,
+run full applicable checks and package validation, then require all seven PR/main CI
+jobs. Keep public v0.4.1 unchanged; McRetro.net remains untouched.
+
+
 ## PR #62 verified delivery — 26 October 2026 (Sydney)
 
 [PR #62](https://github.com/NixMcRetro/VRAMpage-MD/pull/62) merged as
