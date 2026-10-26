@@ -1030,6 +1030,67 @@ class ActualCoreBrowserTests(unittest.TestCase):
                 server.shutdown()
 
 
+    def test_session_checkpoint_restores_actual_image_without_ticking(self):
+        handler=partial(SimpleHTTPRequestHandler,directory=OPTIONS.site_root)
+        with ThreadingHTTPServer(('127.0.0.1',0),handler) as server:
+            threading.Thread(target=server.serve_forever,daemon=True).start()
+            try:
+                with sync_playwright() as p:
+                    kwargs={'executable_path':OPTIONS.executable} if OPTIONS.executable else {}
+                    browser=getattr(p,OPTIONS.browser).launch(**kwargs)
+                    try:
+                        page=browser.new_page(accept_downloads=True)
+                        errors=[]
+                        page.on('pageerror',lambda error:errors.append(str(error)))
+                        page.add_init_script("""window.testFrames=[];window.testTime=0;
+                            window.requestAnimationFrame=cb=>testFrames.push(cb);
+                            window.stepTestFrame=()=>{const q=testFrames.splice(0);testTime+=17;q.forEach(cb=>cb(testTime));};""")
+                        core_js=(OPTIONS.site_root/'core/genplus.js').read_text()
+                        core_js+='''\nconst originalFactory=window.Module;
+                            window.Module=opts=>originalFactory(opts).then(c=>{
+                                window.testCore=c;window.checkpointTicks=0;
+                                const tick=c._tick;c._tick=()=>{checkpointTicks++;return tick();};return c;
+                            });\n'''
+                        page.route('**/core/genplus.js',lambda route:route.fulfill(content_type='text/javascript',body=core_js))
+                        page.goto(f'http://127.0.0.1:{server.server_port}/')
+                        page.locator('#romFile').set_input_files({'name':'original-checkpoint.bin','mimeType':'application/octet-stream','buffer':original_cartridge()})
+                        expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+                        page.evaluate('for(let i=0;i<32;i++)stepTestFrame()')
+                        page.locator('#pauseBtn').click()
+                        page.locator('#logicExperiment > summary').click()
+                        expect(page.locator('#saveCheckpointBtn')).to_be_enabled()
+                        page.evaluate("""window.checkpointImage=Array.from(testCore.HEAPU8.subarray(testCore._get_frame_buffer_ref(),testCore._get_frame_buffer_ref()+640*480*4));
+                            window.checkpointCanvas=document.querySelector('#screen').toDataURL();""")
+                        ticks=page.evaluate('checkpointTicks')
+                        page.locator('#saveCheckpointBtn').click()
+                        expect(page.locator('#checkpointStatus')).to_contain_text('Saved Frame')
+                        self.assertEqual(page.evaluate('checkpointTicks'),ticks)
+                        page.locator('#pauseBtn').click()
+                        page.evaluate('for(let i=0;i<10;i++)stepTestFrame()')
+                        page.locator('#pauseBtn').click()
+                        page.evaluate('testCore.HEAPU8.fill(0,testCore._get_frame_buffer_ref(),testCore._get_frame_buffer_ref()+640*480*4)')
+                        page.locator('#rawVideoToggle').check()
+                        self.assertFalse(page.evaluate("document.querySelector('#screen').toDataURL()===checkpointCanvas"))
+                        ticks=page.evaluate('checkpointTicks')
+                        page.locator('#randomPsgBtn').click()
+                        page.locator('#restoreCheckpointBtn').click()
+                        expect(page.locator('#checkpointStatus')).to_contain_text('Restored Frame')
+                        expect(page.locator('#pauseBtn')).to_have_text('Resume')
+                        self.assertEqual(page.evaluate('checkpointTicks'),ticks)
+                        self.assertTrue(page.evaluate('checkpointImage.every((v,i)=>v===testCore.HEAPU8[testCore._get_frame_buffer_ref()+i])'))
+                        self.assertFalse(page.evaluate('testCore._get_psg_data_bridge_state().configured'))
+                        page.locator('#rawVideoToggle').uncheck()
+                        self.assertTrue(page.evaluate("document.querySelector('#screen').toDataURL()===checkpointCanvas"))
+                        with page.expect_download() as info:page.locator('#logicExperimentBtn').click()
+                        payload=json.loads(Path(info.value.path()).read_text())
+                        self.assertEqual(payload['checkpointSegment'],1)
+                        self.assertEqual([event['outcome'] for event in payload['checkpointEvents']],['saved','restored'])
+                        page.locator('#resetBtn').click()
+                        expect(page.locator('#restoreCheckpointBtn')).to_be_disabled()
+                        self.assertEqual(errors,[])
+                    finally:browser.close()
+            finally:server.shutdown()
+
     def test_one_shot_recovery_observes_real_halt_and_ignores_real_stop(self):
         handler=partial(SimpleHTTPRequestHandler,directory=OPTIONS.site_root)
         with ThreadingHTTPServer(('127.0.0.1',0),handler) as server:

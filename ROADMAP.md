@@ -75,7 +75,8 @@ PR checks pass; integration evidence is in the latest checkpoint.
 
 The [reviewed v0.5.0 design](docs/RECOVERY-CHECKPOINT-PLAN.md) defines the first
 bounded implementation and acceptance gates. The first development-source implementation adds the opt-in one-attempt HALT
-recovery control; manual checkpoints remain gated by native state/bounds proof.
+recovery control. The private replay proof is merged; explicit session checkpoint
+controls and a bounded native backend are now under implementation and verification.
 
 The user approved a target combining independent, optional bounded CPU halt
 recovery and explicit save/restore checkpoints. Defaults must preserve unassisted

@@ -1100,7 +1100,8 @@
   function checkpointObservation() {
     const read=name=>{try { const n=emulator?.[name]?.();return typeof n==='bigint'?String(n):
       typeof n==='number' && Number.isFinite(n)?n:null; } catch (_) {return null;} };
-    const audio=state=>state?{inputWrites:String(state.inputWrites),changedWrites:String(state.changedWrites)}:null;
+    const count=value=>/^\d+$/.test(String(value))?String(value):null;
+    const audio=state=>state?{inputWrites:count(state.inputWrites),changedWrites:count(state.changedWrites)}:null;
     return {frame:read('_get_logic_frame'),ramReads:read('_get_logic_reads'),ramWrites:read('_get_logic_writes'),
       psg:audio(currentPsgDataState()),fm:audio(currentFmDataState())};
   }
