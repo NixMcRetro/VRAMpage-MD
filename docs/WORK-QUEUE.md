@@ -1,5 +1,32 @@
 # Development work queue
 
+## Z80 RAM Write Implementation — In Progress
+
+The user approved the bounded implementation after PR #76 research: optional,
+off-by-default A0–A12 write aliasing in local 8 KiB Z80 RAM. No bus-arbitration,
+release-version or McRetro.net change is authorized by this slice.
+
+Frontend work is committed on `feature/z80-ram-write-bridge` in
+`/workspace/vrampage-z80-ram` (latest `19b23ef`): compact controls, strict runtime
+state checks, domain removal/recovery/checkpoints, configuration v3 with v1/v2
+imports and experiment comparison. Nine focused Chromium cases pass; seven
+layout cases and local source111 passed at preceding frontend checkpoints.
+The preliminary full browser run found two migration-test expectations; both
+were corrected and their focused cases pass. Final integrated CI is pending.
+
+Native work is isolated on `feature/z80-ram-native` in
+`/workspace/vrampage-z80-native` with a committed initial checkpoint and ongoing
+fixture/guard refinements. Coordinator review required unsupported-profile
+store bypass, normal leak checks, distinct status codes and matching normal/
+runtime execution phases in the PCM fixture. Do not cherry-pick the initial
+checkpoint alone: wait for the final native commits and verify those fixes.
+
+Next: integrate final backend, build the production runtime/normal fallback,
+verify actual browser controls, measure the affected inactive store path and
+obtain independent specialist review. Run final applicable source/browser/WASM
+and sanitizer gates, require all PR checks before merge, then verify main CI.
+Keep existing published artifacts immutable. Logs: `/workspace/scratch/z80-ram-write/`.
+
 ## Hardware Research Verified — 27 October 2026 (Sydney)
 
 [PR #76](https://github.com/NixMcRetro/VRAMpage-MD/pull/76) merged as
