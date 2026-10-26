@@ -1,5 +1,35 @@
 # Development work queue
 
+## PR #64 Verified Delivery — 26 October 2026 (Sydney)
+
+[PR #64](https://github.com/NixMcRetro/VRAMpage-MD/pull/64) merged as
+`ecf4592b7dff3a4d2b8d675d426270c615b0beb5`; tree matches tested head
+`2851804a3bc2726cc4e75886090ff553bb1d7ad0`. All seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40259049136)
+and all seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40259602894)
+pass. [Complete updated review build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40259602894/artifacts/12624246220).
+
+RAM Write still disables VRAM randomisation for domain safety. Randomiser-row
+buttons now keep their neutral fill/border while unavailable, mute only the label
+and suppress native button paint. No app/emulator behavior changed; app JS and
+both core binaries are byte-identical to PR #63. Light/dark regression verifies
+no pressed state, blocked clicks, unchanged VRAM calls and availability on release.
+Independent review approved the implementation; local Chromium/WebKit focused,
+seven layout cases and source checks pass. Local source checks skipped the two
+unchanged SDK/vendor-dependent classes; CI rebuilt/tested the complete package.
+
+Canonical runnable checkout refreshed. Local main ZIP has 714 unique paths and
+verified source/version/style/core identity; SHA256
+`d356b42b347cd821a1a3ddea8bfbe67f0cb34b425965fb88144c9b7a49773398`.
+Logs/packages: `/workspace/scratch/ram-write-button-state`.
+Public v0.4.1 tag, timestamp and both asset digests rechecked unchanged.
+McRetro.net untouched. User checkpoint/reset acceptance is recorded below.
+
+Next: user confirms the new disabled-button appearance in native Mac Safari.
+The PDF is ONLY page-length feedback, not button-bug evidence. Page-length feedback
+is retained separately; no layout changes were made in this fix. No new release.
+
+
 ## Mac Acceptance and RAM Write Button Feedback — 26 October 2026 (Sydney)
 
 User confirms checkpoint steps1–3: baseline save, deliberate chip faults, restored
