@@ -1,3 +1,13 @@
+# v0.5.0 Cross-Platform Candidate Checks
+
+The actual-core video/audio/input case now serves the built site from a hosting
+subdirectory and verifies that WASM loads successfully with application/wasm.
+Other actual-core cases retain root hosting. Existing local-server tests cover
+loopback startup, port/refusal behavior and bundle completeness; the same Python
+server is documented for Windows, macOS and Linux. CI packages a browser-named
+ZIP plus SHA256SUMS.txt and runs extracted-package Firefox/WebKit checks. These
+Linux checks do not claim native desktop launch coverage on every OS.
+
 # Ordered Recovery Development Checks
 
 `python tests/browser_logic.py -k ordered_recovery` covers default-On preferences,

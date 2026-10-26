@@ -1,42 +1,37 @@
 # Releases and deployment
 
-## Complete local application release
+## Cross-platform browser candidate
 
-The normal user download is the single versioned ZIP attached to the
-[VRAMpage-MD v0.4.1 release](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.4.1),
-not GitHub's source archive. It includes START.command, the site, compiled
-JS/WASM, complete modified core source, licence notices and launch instructions.
-It requires Python 3 on the user's Mac but no build tools or Git authentication.
+The v0.5.0 review download is `VRAMpage-MD-v0.5.0-browser.zip`, available with
+`SHA256SUMS.txt` in successful main CI's `VRAMpage-MD-local-review` artifact.
+It contains HTML/CSS/JavaScript, compiled WASM, matching modified core source,
+notices, Python server and the optional macOS START.command convenience launcher.
+See [launch instructions](RUNNING-LOCALLY.md) for Windows, macOS and Linux.
+Hosted use needs a compatible browser; local use also needs Python 3.8 or later.
 
-Maintainers build from the exact tested release commit, run the source/browser
-regressions and actual-WASM tests, then package from a clean tracked checkout:
+Build from the exact tested commit, preserving source and notices:
 
 ```sh
 bash scripts/test.sh
 bash scripts/build-core.sh normal
 bash scripts/build-core.sh site-runtime
-node tests/test_wasm_logic.cjs site/core/genplus.js
-python3 scripts/package-review.py --output /tmp/VRAMpage-MD-v0.4.1-macos.zip
+python3 scripts/package-review.py --output /tmp/VRAMpage-MD-v0.5.0-browser.zip
 ```
 
-Extract and launch the package before attaching it to a GitHub release. Preserve
-Mac executable permissions, corresponding source and all upstream notices.
-Do not include ROMs, credentials, caches or private game captures. Review the
-non-commercial restrictions in [third-party notices](../THIRD-PARTY-NOTICES.md).
-The release tag must name the merged main commit that was tested; a feature-tip
-artifact is not evidence for a different commit. Keep a SHA-256 checksum beside
-the downloadable ZIP. GitHub Actions artifacts remain useful for CI/review, but
-release assets provide a persistent direct download without nested archives.
+The build workflow runs actual-core checks and tests extracted packages in Firefox
+and WebKit, then supplies the browser ZIP/checksum and a separate static-site tar.
+For hosting, serve the contents of `site/` (or the static artifact's `vrampage/`)
+over HTTP(S), including `core/` and `source/`; serve `.wasm` as `application/wasm`.
+Keep relative paths intact for subdirectory hosting. ROM files stay in the browser.
+No Python is needed on the user's computer when using an already-hosted build.
 
-To publish without a local upload, run **Publish complete v0.4.1 local download**
-in GitHub Actions on `main` after its checks pass. It rebuilds and tests the core,
-verifies BUILD-INFO against the run commit, attaches the ZIP/checksum and publishes
-the release using the repository-scoped Actions token. It never accesses
-McRetro.net. This explicit workflow is the supported cloud release path.
-
-The consolidation integrates PRs #4–#14 without cherry-picking or replacing
-features. Close redundant draft PRs only after checking their tips are ancestors
-of main and link the integration merge. Retain branches and original attribution.
+After main checks pass, **Prepare v0.5.0 browser release draft** can rebuild and
+verify source identity, tag and checksum and attach the package to a draft.
+It refuses to change an already-public release and does not publish automatically.
+Review the draft separately before publication. No workflow is dispatched merely
+by merging this candidate. Preserve immutable public v0.4.1 and older assets.
+Do not include ROMs, credentials, caches or private captures. Keep a matching
+source commit/tag and read [third-party terms](../THIRD-PARTY-NOTICES.md).
 
 ## Website deployment is separate
 

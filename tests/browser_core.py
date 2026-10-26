@@ -464,7 +464,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     core_js += '\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\n'
                     page.route('**/core/genplus.js', lambda route: route.fulfill(
                         content_type='text/javascript', body=core_js))
-                    build_info={'application':'VRAMpage MD','application_version':'0.4.1',
+                    build_info={'application':'VRAMpage MD','application_version':'0.5.0',
                                 'source_commit':'b'*40,'package_format':1}
                     page.route('**/build-info.json',lambda route:route.fulfill(
                         content_type='application/json',body=json.dumps(build_info)))
@@ -751,8 +751,8 @@ class ActualCoreBrowserTests(unittest.TestCase):
             finally:
                 server.shutdown()
 
-    def test_original_video_audio_and_controls(self):
-        handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
+    def test_original_video_audio_and_controls_from_static_subdirectory(self):
+        handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root.parent)
         with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:
             thread = threading.Thread(target=server.serve_forever, daemon=True)
             thread.start()
@@ -782,12 +782,18 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     core_js += '\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\n'
                     page.route('**/core/genplus.js', lambda route: route.fulfill(content_type='text/javascript', body=core_js))
                     # A fixture manifest exercises provenance without mocking the real core.
-                    build_info={'application':'VRAMpage MD','application_version':'0.4.1',
+                    build_info={'application':'VRAMpage MD','application_version':'0.5.0',
                                 'source_commit':'b'*40,'package_format':1}
                     page.route('**/build-info.json',lambda route:route.fulfill(
                         content_type='application/json',body=json.dumps(build_info)))
-                    page.goto(f'http://127.0.0.1:{server.server_port}/')
+                    wasm_responses = []
+                    page.on('response', lambda response: wasm_responses.append(response)
+                            if response.url.endswith('/core/genplus.wasm') else None)
+                    page.goto(f'http://127.0.0.1:{server.server_port}/{OPTIONS.site_root.name}/')
                     page.wait_for_function('!!window.testCore')
+                    self.assertTrue(wasm_responses, 'Core WASM must load from the hosting subdirectory')
+                    self.assertTrue(all(response.ok and response.headers.get('content-type') == 'application/wasm'
+                                        for response in wasm_responses))
                     page.locator('#romFile').set_input_files({'name':'original-video-tone.bin', 'mimeType':'application/octet-stream', 'buffer':original_cartridge()})
                     expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
                     page.wait_for_function('window.testCore._get_logic_frame()>10')
@@ -915,9 +921,9 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     with page.expect_download() as download:
                         page.locator('#logicExperimentBtn').click()
                     payload=json.loads(Path(download.value.path()).read_text())
-                    self.assertEqual(payload['modelVersion'],'0.4.1-experimental')
+                    self.assertEqual(payload['modelVersion'],'0.5.0-experimental')
                     self.assertEqual(payload['schemaVersion'],1)
-                    self.assertEqual(payload['build'],{'status':'available','applicationVersion':'0.4.1','sourceCommit':'b'*40})
+                    self.assertEqual(payload['build'],{'status':'available','applicationVersion':'0.5.0','sourceCommit':'b'*40})
                     self.assertEqual(payload['vramFault']['addressMask'],0)
                     self.assertEqual([e['mask'] for e in payload['vramAddressLineChanges']],[1,129,0])
                     self.assertEqual(payload['rom']['name'],'original-video-tone.bin')

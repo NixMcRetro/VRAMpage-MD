@@ -6,12 +6,12 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = (ROOT / "VERSION").read_text(encoding="utf8").strip()
 TAG = f"v{VERSION}"
-ZIP = f"VRAMpage-MD-{TAG}-macos.zip"
+ZIP = f"VRAMpage-MD-{TAG}-browser.zip"
 
 
 class VersioningTests(unittest.TestCase):
     def test_single_canonical_version(self):
-        self.assertEqual(VERSION, "0.4.1")
+        self.assertEqual(VERSION, "0.5.0")
         self.assertTrue((ROOT / "docs/VERSIONING.md").exists())
         self.assertIn(TAG, (ROOT / "docs/VERSIONING.md").read_text())
 
@@ -44,6 +44,9 @@ class VersioningTests(unittest.TestCase):
         self.assertIn(f"info['application_version'] == '{VERSION}'", workflow)
         self.assertNotIn("gh release edit v0.2.4", workflow)
         self.assertNotIn("gh release edit v2.4.0", workflow)
+        self.assertNotIn("--draft=false", workflow)
+        self.assertIn("--notes-file docs/RELEASE-NOTES-v0.5.0.md", workflow)
+        self.assertIn("SHA256SUMS.txt", build)
 
     def test_current_download_documentation(self):
         for path in ["README.md", "docs/README.md", "docs/RUNNING-LOCALLY.md",
@@ -54,8 +57,9 @@ class VersioningTests(unittest.TestCase):
 
     def test_current_release_history(self):
         history = (ROOT / "docs/RELEASE-HISTORY.md").read_text()
-        self.assertIn(f"**Current version:** {TAG}", history)
-        self.assertIn(f"/releases/download/{TAG}/{ZIP}", history)
+        self.assertIn(f"**Current candidate:** {TAG}", history)
+        self.assertIn(ZIP, history)
+        self.assertIn("/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip", history)
 
     def test_historical_identifiers_remain_unchanged(self):
         # Never rewrite recorded evidence in docs/experiments/*.json.

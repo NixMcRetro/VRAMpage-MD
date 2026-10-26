@@ -63,7 +63,7 @@
   let romLoadGeneration = 0;
   let romIdentity = null;
   const CORE_PIN = '6090aff9e9b2f578cd28882bd4571d2e35b1d674';
-  const APPLICATION_VERSION = '0.4.1';
+  const APPLICATION_VERSION = '0.5.0';
   let buildInfo = {status:'unavailable',applicationVersion:APPLICATION_VERSION,sourceCommit:null};
   loadBuildInfo().then(info=>{buildInfo=info;});
 
@@ -2377,7 +2377,7 @@
     const data={
       schemaVersion:1,
       build:{...buildInfo},
-      modelVersion:'0.4.1-experimental',
+      modelVersion:'0.5.0-experimental',
       vramFault:{kind:vramAddressMask?'address-stuck-low':actualPair()?'address-bridge':'none',
         addressMask:vramAddressMask,lines:vramLines(vramAddressMask),bridge:actualPair()?[...actualPair()]:null},
       vramAddressLineChanges:vramAddressLineChanges.map(entry=>({...entry})),

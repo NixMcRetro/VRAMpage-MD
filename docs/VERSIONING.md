@@ -1,6 +1,8 @@
 # Versioning policy
 
-Current public milestone: **v0.4.1** (`VERSION` stores `0.4.1`).
+Current candidate: **v0.5.0** (`VERSION` stores `0.5.0`), packaged as
+`VRAMpage-MD-v0.5.0-browser.zip` for Windows, macOS and Linux browsers. This is
+a review candidate, not a published release. Current public milestone: **v0.4.1**.
 It delivers the compact chip workbench, runtime audio line masks and saved
 configurations. Later source-only workbench changes are identified by build
 commit metadata and an Unreleased changelog section. Bump versioned labels and

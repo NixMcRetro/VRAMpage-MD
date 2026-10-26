@@ -1,5 +1,18 @@
 # Development status and continuation checkpoint
 
+## v0.5.0 Cross-Platform Candidate — In Verification
+
+User authorizes the browser-ready cross-platform candidate. Scope: neutral browser
+ZIP/checksum, Windows/macOS/Linux launch instructions, static hosting, aligned
+VERSION/UI/export/workflow/test labels and draft-only release preparation.
+Reuse scripts/serve.py and optional START.command; no framework or OS-specific
+emulator build. Preserve public v0.4.1 and all historical experiment identifiers.
+No publisher dispatch, new tag/publication or McRetro.net work in this slice.
+Acceptance: source/full browser and actual-core checks, real static-subdirectory
+WASM/video/audio/input load, extracted ZIP/provenance/checksum verification and
+all seven PR/main checks. Native Windows/macOS/Linux desktop launch and physical
+pads are not inferred from Linux browser automation. Independent review required.
+
 ## PR #68 Verified Delivery — 26 October 2026 (Sydney)
 
 [PR #68](https://github.com/NixMcRetro/VRAMpage-MD/pull/68) merged as
