@@ -1,57 +1,52 @@
 # Development status and continuation checkpoint
 
-## Z80 RAM Write Implementation — Ready for PR Checks
+## Z80 RAM Write Verified — 27 October 2026 (Sydney)
 
-The user approved one bounded, off-by-default A0–A12 write bridge in the Z80's
-8 KiB sound RAM. Integrated source/tests are committed through `4da7f90` on
-`experiment/z80-ram-write-bridge` in `/workspace/vrampage-z80-ram`, based on main
-`44627eba37b410c05437731335ce5e38b43a2417`. Native ownership, reads/fetches and
-normal-core binaries remain unchanged. No arbitration, version, release or
-McRetro.net change is included.
+[PR #77](https://github.com/NixMcRetro/VRAMpage-MD/pull/77) merged as
+`1b464a90daa1b8ba8d9ff321475ccb4dc8ff865c`; its tree exactly matches reviewed
+head `a94e87c80d3a40873318f47960ccc624d7ceeb63`. All seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40418074759)
+and all seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40418745966)
+passed, including Chromium/Firefox/WebKit logic/layout, compiled-WASM variants,
+normal-core hash checks and packaged Firefox/WebKit audio/control/fallback tests.
 
-Compact controls, exact owner counters, configuration v3 (v1/v2 imports),
-experiment comparison, verified disconnect/recovery and checkpoint handling
-are integrated. Independent GPT-6 Luna High native/integration review found no
-remaining blocker; its BigInt boundary-coverage request is now tested and passed.
+The [off-by-default Z80 RAM write bridge](Z80-RAM-WRITE-BRIDGE.md) is integrated
+with compact controls, exact owner counters, configuration v3 (v1/v2 imports),
+comparison, verified disconnect/recovery and checkpoints. Native ownership,
+read/fetch paths and sound-chip reset wiring are unchanged. Independent GPT-6
+Luna High specialist review found no remaining blocker; actual BigInt ABI and
+unsigned-boundary coverage closed its test request. Native ASan/UBSan/LSan passed
+without disabling leak detection. Original generated cartridges verify stores,
+ownership, sound-driver input/finite PCM, instruction corruption and lifecycle.
 
-- Source checks: 122 tests passed, one build-dependent WASM class skipped in
-  that run. The separate SDK-enabled WASM suite passed both top-level tests,
-  including seven compiled variants and unchanged normal-core hashes.
-- Production normal/runtime build passed. Actual-core Chromium cases exercised
-  new controls/configuration; seven passed together, and the corrected fifth-
-  domain expectation passed its focused rerun. Nine focused logic cases and
-  seven layout cases passed. Two old full-logic migration expectations were
-  corrected and passed focused reruns; final three-browser CI remains pending.
-- Native ASan/UBSan/LSan checks passed without disabling leak detection. Actual
-  WASM tests cover literal stores, ownership, sound-driver input/PCM, damaged
-  instruction fetch, lifecycle, checkpoint refusal and invalid API atomicity.
-- [Inactive-store measurement](experiments/z80-ram-inactive-performance-v1-summary.json)
-  passed the fixed five-pair gate: median frame ratio 1.00618 and p95 ratio
-  1.03573 (limit 1.05). Raw samples are linked from their immutable Git commit;
-  the exact one-off script is retained. The compressed record is excluded from
-  the source tree to preserve the package archive guard.
-  This is one synthetic workload, not a universal performance claim.
+[Inactive-store evidence](experiments/z80-ram-inactive-performance-v1-summary.json)
+passed the fixed five-pair gate: median ratio 1.00618 and p95 ratio 1.03573,
+limit 1.05. The main package's runtime hashes match those measured binaries.
+The normal fallback hashes remain unchanged. This is one synthetic workload.
 
-[PR #77](https://github.com/NixMcRetro/VRAMpage-MD/pull/77) is open. Its first
-complete [CI run](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40416747217)
-passed six jobs, including all three full browser logic/layout suites, actual
-WASM/build and packaged WebKit. Packaged Firefox found a pre-existing test race:
-the audio-source baseline was taken before asynchronous suspension completed.
-The test-only fix moves the baseline after suspension, asserts suspended state
-at both endpoints and retains the same buffer bound. Focused actual Chromium
-passed; a delayed native-suspend probe reproduced the old-order failure and
-passed with the fix on follow-up. An earlier after-probe stopped at the unchanged
-startup audio-lead assertion before suspension; its failure log is retained.
-Independent specialist review approved the test-only fix. The
-compressed performance record is linked from immutable Git history rather than
-nested inside the app package; local package creation and ROM-free checks pass.
+The [development browser download](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40418745966/artifacts/12697036290)
+contains built runtime/fallback cores and corresponding source. Its embedded
+commit is the merge above; all 252 tracked files match that source. ZIP SHA256:
+`628181bbca355fe89a5d164bcad4582a4a47ef4865169588c2f53fead561f63d`.
+The package is ROM-free. All 18 release records/assets match the starting snapshot,
+including protected v0.4.1/v0.5.0. VERSION, published artifacts and McRetro.net
+were not changed or redeployed; this feature is development source only.
 
-Next: require all seven final PR checks before merge, then verify exact merged
-source and all
-seven main checks. Preserve all 18 releases and provide the development build. No physical
-board, commercial gameplay or audible listening claim. Logs:
-`/workspace/scratch/z80-ram-write/`. After delivery, return to stability reports;
-#73 still requires matching NTSC VA6 board evidence.
+CI caught an existing Firefox test race: counting sources before asynchronous
+suspension completed. The reviewed test-only fix starts counting after suspension,
+asserts suspended state at both endpoints and retains the original buffer bound.
+A delayed-suspension probe reproduced the old failure and passed with the fix on
+follow-up. Its earlier unrelated startup-lead failure, failed CI and original
+performance samples remain retained; no assertion or sanitizer was weakened.
+Evidence and package verification: `/workspace/scratch/z80-ram-write/`.
+
+Next: return to concrete stability/compatibility reports under the feature freeze.
+Do not repeat completed research or add arbitration/physical VRAM timing without
+a separately scoped oracle and decision. #73 still needs matching NTSC VA6 board
+evidence. No implementation blocker remains. Physical-board, commercial-gameplay,
+audible listening and native macOS/Windows checks were not performed.
+This final record is committed on `experiment/z80-ram-delivery` to preserve the
+verified main commit and avoid an unrelated documentation-only integration cycle.
 
 ## Hardware Research Verified — 27 October 2026 (Sydney)
 
