@@ -59,6 +59,7 @@ The v0.4.1 workbench extends optional, independent
 - [Audio bending](AUDIO-BENDING.md): signal paths, bus ownership, controls, recovery, browser scheduling and evidence limits.
 
 - [Z80 Sound RAM Research](Z80-RAM-RESEARCH.md): verified access/ownership map, proposed write-only alias model and future test gates; no new runtime feature.
+- [Z80 RAM Write Bridge](Z80-RAM-WRITE-BRIDGE.md): development-source controls, native scope, counters, configuration and recovery for the optional write-only address pair.
 - [VRAM Timing Research](VRAM-TIMING-RESEARCH.md): primary memory-device evidence, pinned MiSTer/core comparison and limits before physical serial/raster modelling.
 - [VA6 Work RAM Validation](VA6-RAM-VALIDATION.md): candidate manufacturer pin map and PAL VA6.5 reference; requested NTSC VA6 mapping remains unverified.
 

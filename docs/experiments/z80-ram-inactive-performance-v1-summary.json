@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Inactive Z80 RAM store-path comparison; original cartridge only",
+  "protocol": {
+    "pairedBlocks": 5,
+    "framesPerRun": 600,
+    "warmupFrames": 100,
+    "alternatingOrder": true,
+    "limit": 1.05
+  },
+  "host": {
+    "node": "v24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8573C"
+  },
+  "romSha256": "0c52b20df26da8457c546a68b9dfed1e8d623dc17aaf0393efa62c838edea92c",
+  "fixtureSha256": "88b69ca4c8b8fa78db708f01f9ef3bead3f81e0619e2dfdb8d82c0cfd88d1aad",
+  "measurementScriptSha256": "8a5dd2373d438e6a196127aa73f647ea49bd8f1dc64e33b0cfcf94bc60ba35d7",
+  "baseline": {
+    "js": "a60ff61cf689d08699b074dd20f555bd883a9e17a681834366992dd908a601ed",
+    "wasm": "d17ed2d3a95e2674a6a5e49004dc7069ee3853ce643e1122a25b96b4f33e9a74"
+  },
+  "current": {
+    "js": "8822eb252d2350bce8d206e07895b8c1ede44080e5385650099cc49dfa2c4008",
+    "wasm": "30d2f117ed452f51e5978f4dba65c9aa6d4c441ee927fa3902d4982b309bffe3"
+  },
+  "paired": [
+    {
+      "block": 0,
+      "order": [
+        "baseline",
+        "current"
+      ],
+      "medianRatio": 1.018865504725995,
+      "p95Ratio": 1.049190834562737
+    },
+    {
+      "block": 1,
+      "order": [
+        "current",
+        "baseline"
+      ],
+      "medianRatio": 1.0558856560673917,
+      "p95Ratio": 1.0236519737626537
+    },
+    {
+      "block": 2,
+      "order": [
+        "baseline",
+        "current"
+      ],
+      "medianRatio": 1.0031993699238502,
+      "p95Ratio": 1.01046260607673
+    },
+    {
+      "block": 3,
+      "order": [
+        "current",
+        "baseline"
+      ],
+      "medianRatio": 1.0061795497797066,
+      "p95Ratio": 1.0358015697019658
+    },
+    {
+      "block": 4,
+      "order": [
+        "baseline",
+        "current"
+      ],
+      "medianRatio": 0.9584649478967306,
+      "p95Ratio": 1.035728535106591
+    }
+  ],
+  "medianOfMedianRatios": 1.0061795497797066,
+  "medianOfP95Ratios": 1.035728535106591,
+  "passed": true,
+  "source": {
+    "baselineCommit": "44627eba37b410c05437731335ce5e38b43a2417",
+    "implementationCommit": "d73f1c8",
+    "note": "Later commits change tests/docs and a False-adapter fixture guard only; production C/JS helper source is unchanged."
+  },
+  "records": [
+    {
+      "label": "baseline",
+      "block": 0,
+      "medianMs": 1.013649,
+      "p95Ms": 1.338725,
+      "pcmSamples": 441569
+    },
+    {
+      "label": "current",
+      "block": 0,
+      "medianMs": 1.032772,
+      "p95Ms": 1.404578,
+      "pcmSamples": 441569
+    },
+    {
+      "label": "current",
+      "block": 1,
+      "medianMs": 1.07369,
+      "p95Ms": 1.382226,
+      "pcmSamples": 441569
+    },
+    {
+      "label": "baseline",
+      "block": 1,
+      "medianMs": 1.016862,
+      "p95Ms": 1.350289,
+      "pcmSamples": 441569
+    },
+    {
+      "label": "baseline",
+      "block": 2,
+      "medianMs": 1.061459,
+      "p95Ms": 1.349377,
+      "pcmSamples": 441569
+    },
+    {
+      "label": "current",
+      "block": 2,
+      "medianMs": 1.064855,
+      "p95Ms": 1.363495,
+      "pcmSamples": 441569
+    },
+    {
+      "label": "current",
+      "block": 3,
+      "medianMs": 1.065358,
+      "p95Ms": 1.427434,
+      "pcmSamples": 441569
+    },
+    {
+      "label": "baseline",
+      "block": 3,
+      "medianMs": 1.058815,
+      "p95Ms": 1.378096,
+      "pcmSamples": 441569
+    },
+    {
+      "label": "baseline",
+      "block": 4,
+      "medianMs": 1.118164,
+      "p95Ms": 1.406075,
+      "pcmSamples": 441569
+    },
+    {
+      "label": "current",
+      "block": 4,
+      "medianMs": 1.071721,
+      "p95Ms": 1.456312,
+      "pcmSamples": 441569
+    }
+  ],
+  "fullRecord": {
+    "archiveName": "z80-ram-inactive-performance-v1.json.gz",
+    "archiveSha256": "5ca30793cb65a33564f3462a5ae8d42c3cd80e3ed67da94564846b4e315afea3",
+    "rawSha256": "bb8faf41499b738504c7bcafa7b1dc6a7ea722cf5b12ac3d2cd314e1b94ebc19",
+    "rawBytes": 111013,
+    "gitCommit": "14313e96028ac2dc3aaaa4d9c9e5068d7ddf5dbe",
+    "url": "https://github.com/NixMcRetro/VRAMpage-MD/blob/14313e96028ac2dc3aaaa4d9c9e5068d7ddf5dbe/docs/experiments/z80-ram-inactive-performance-v1.json.gz"
+  },
+  "limits": "One original recurring-Z80-store workload on this Linux/Node host, with the new bridge off. A fixed five-pair median-ratio gate is not a guarantee for every game or browser. All samples are retained, including the individual median ratio above 1.05."
+}

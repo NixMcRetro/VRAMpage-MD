@@ -54,7 +54,7 @@ class BrowserLogicTests(unittest.TestCase):
             context.close()
         self.assertEqual(self.errors, [], "Uncaught application errors")
 
-    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False, manual_frames=False, session_checkpoint=False, automatic_recovery=False):
+    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False, manual_frames=False, session_checkpoint=False, automatic_recovery=False, legacy_z80_ram=False):
         context = self.browser.new_context(
             viewport={"width": 1366, "height": 768},
             color_scheme="light",
@@ -62,6 +62,8 @@ class BrowserLogicTests(unittest.TestCase):
         )
         self.contexts.append(context)
         page = context.new_page()
+        if legacy_z80_ram:
+            page.add_init_script("window.__legacyZ80RamCore = true;")
         if session_checkpoint:
             page.add_init_script("window.__sessionCheckpointCore = true;")
         if manual_frames:
@@ -675,9 +677,167 @@ class BrowserLogicTests(unittest.TestCase):
             "clean restart must reset the synthetic frame counter",
         )
 
+    def apply_z80_bridge(self, page=None, a="0", b="1"):
+        page = page or self.page
+        page.locator("#z80RamBridgeA").select_option(a)
+        page.locator("#z80RamBridgeB").select_option(b)
+        page.locator("#z80RamBridgeApply").click()
+
+    def test_z80_ram_defaults_validation_drafts_and_domain_isolation(self):
+        expect(self.page.locator("#z80RamBridgeApply")).to_be_disabled()
+        self.load_rom()
+        self.assertFalse(self.page.evaluate("mockCore.z80Ram.configured"))
+        self.apply_z80_bridge(a="12", b="12")
+        self.assertEqual(self.page.evaluate("mockCore.z80Ram.calls"), [])
+        self.apply_z80_bridge(a="0", b="12")
+        self.assertEqual(self.page.evaluate("mockCore.z80Ram.calls"), [[1,0,12]])
+        self.assertFalse(self.page.evaluate("mockCore.logic.active || mockCore.psg.configured || mockCore.fm.configured"))
+        self.assertEqual(self.page.evaluate("mockCore.short"), [-1,-1])
+        self.page.locator("#z80RamBridgeA").select_option("4")
+        self.assertEqual(self.page.evaluate("[mockCore.z80Ram.bridgeA,mockCore.z80Ram.bridgeB]"), [0,12])
+        self.page.evaluate("Object.assign(mockCore.z80Ram,{ramWrites:'9007199254740993',changedAddresses:'2',z80Writes:'1',m68kWrites:'9007199254740992'})")
+        payload=self.export_payload()["z80RamFault"]
+        self.assertTrue(payload["available"] and payload["configured"])
+        self.assertEqual(payload["ramWrites"], '9007199254740993')
+        self.assertEqual(payload["bridgeB"],12)
+        expect(self.page.locator("#z80RamBridgeCounts")).to_contain_text('9007199254740993')
+        self.assertNotIn('9007199254740993',self.page.locator("#z80RamBridgeStatus").inner_text(),
+                         'per-frame counters must not flood the live status announcement')
+        self.page.locator("#z80RamBridgeRemove").click()
+        self.assertFalse(self.page.evaluate("mockCore.z80Ram.configured"))
+        self.assertEqual(self.page.evaluate("mockCore.logic.recoveries"), [])
+
+    def test_z80_ram_keeps_randomiser_appearance_and_ram_contacts_independent(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        styles="""() => ['randomPsgBtn','randomFmBtn','randomVramBtn'].map(id=>{
+          const s=getComputedStyle(document.getElementById(id));
+          return [s.color,s.opacity,s.backgroundColor,s.borderColor];
+        })"""
+        before=self.page.evaluate(styles)
+        self.apply_z80_bridge(a="0",b="12")
+        self.assertEqual(self.page.evaluate(styles),before)
+        button=self.page.locator("[data-ram-frame-pair='10,11']")
+        button.dispatch_event('pointerdown',{'pointerId':5,'button':0,'isPrimary':True})
+        self.assertTrue(self.page.evaluate('mockCore.z80Ram.configured'))
+        self.assertEqual(self.page.evaluate('[mockCore.z80Ram.bridgeA,mockCore.z80Ram.bridgeB]'),[0,12])
+        button.dispatch_event('pointerup',{'pointerId':5,'button':0,'isPrimary':True})
+        self.assertTrue(self.page.evaluate('mockCore.z80Ram.configured'))
+
+    def test_z80_ram_config_round_trip_legacy_clear_and_noop_counters(self):
+        self.load_rom()
+        self.apply_z80_bridge(a="2",b="11")
+        with self.page.expect_download() as download:
+            self.page.locator("#circuitConfigDownload").click()
+        saved=json.loads(Path(download.value.path()).read_text())
+        self.assertEqual(saved["schemaVersion"],3)
+        self.assertEqual(saved["configuration"]["z80Ram"],{"pair":[2,11]})
+        self.stage_circuit_file(saved)
+        calls=self.page.evaluate("mockCore.z80Ram.calls.length")
+        self.page.locator("#circuitConfigApply").click()
+        expect(self.page.locator("#circuitConfigStatus")).to_contain_text("already matches")
+        self.assertEqual(self.page.evaluate("mockCore.z80Ram.calls.length"),calls)
+        self.stage_circuit_file(self.circuit_configuration())
+        self.page.locator("#circuitConfigApply").click()
+        self.assertFalse(self.page.evaluate("mockCore.z80Ram.configured"))
+        self.stage_circuit_file(saved)
+        self.page.locator("#circuitConfigApply").click()
+        self.assertEqual(self.page.evaluate("[mockCore.z80Ram.bridgeA,mockCore.z80Ram.bridgeB]"),[2,11])
+        self.assertEqual(self.page.evaluate("mockCore.logic.recoveries"),[])
+
+    def test_z80_ram_legacy_and_unsupported_profile_fail_before_mutation(self):
+        page=self.new_page(legacy_z80_ram=True)
+        self.load_rom(page)
+        expect(page.locator("#z80RamBridgeApply")).to_be_disabled()
+        config=self.circuit_configuration()
+        config["schemaVersion"]=3;config["configuration"]["z80Ram"]={"pair":[0,1]}
+        self.stage_circuit_file(config,page=page)
+        page.locator("#circuitConfigApply").click()
+        expect(page.locator("#circuitConfigStatus")).to_contain_text("refused before mutation")
+        self.assertEqual(page.evaluate("mockCore.logic.setterCalls"),[])
+        self.load_rom()
+        self.page.evaluate("mockCore.z80Ram.supported=false")
+        expect(self.page.locator("#z80RamBridgeApply")).to_be_disabled()
+        self.stage_circuit_file(config)
+        self.page.locator("#circuitConfigApply").click()
+        self.assertEqual(self.page.evaluate("mockCore.z80Ram.calls"),[])
+
+    def test_z80_ram_unverified_clear_pauses_and_blocks_cpu_recovery(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        self.apply_z80_bridge()
+        self.page.evaluate("() => {mockCore.rejectZ80Ram=true;mockCore.fm.configured=true;mockCore.fm.bridgeA=0;mockCore.fm.bridgeB=1;}")
+        self.page.locator("#disconnectAllFaultsBtn").click()
+        expect(self.page.locator("#pauseBtn")).to_have_text("Resume")
+        self.assertTrue(self.page.evaluate("mockCore.z80Ram.configured"))
+        self.assertFalse(self.page.evaluate("mockCore.fm.configured"))
+        expect(self.page.locator("#disconnectAllFaultsStatus")).to_contain_text("Z80 RAM: clear failed or unverified")
+        self.page.locator("#logicCpuResetBtn").click()
+        self.assertEqual(self.page.evaluate("mockCore.logic.recoveries"),[])
+        self.page.evaluate("mockCore.rejectZ80Ram=false;mockCore.throwZ80RamState=true")
+        self.page.locator("#disconnectAllFaultsBtn").click()
+        self.assertFalse(self.export_payload()["z80RamFault"]["available"])
+        expect(self.page.locator("#disconnectAllFaultsStatus")).to_contain_text("runtime state unknown")
+
+    def test_z80_ram_setter_partial_failure_reports_actual_state_and_pauses(self):
+        self.load_rom()
+        self.page.evaluate("mockCore.throwZ80RamAfter=true")
+        self.apply_z80_bridge()
+        expect(self.page.locator("#pauseBtn")).to_have_text("Resume")
+        self.assertTrue(self.page.evaluate("mockCore.z80Ram.configured"))
+        expect(self.page.locator("#z80RamBridgeStatus")).to_contain_text("paused for inspection")
+        self.assertTrue(self.export_payload()["z80RamFault"]["configured"])
+
+    def test_z80_ram_incomplete_api_blocks_recovery_and_configuration(self):
+        self.load_rom()
+        self.apply_z80_bridge()
+        self.page.evaluate('delete mockCore.core._set_z80_ram_bridge')
+        self.page.locator('#logicCpuResetBtn').click()
+        expect(self.page.locator('#pauseBtn')).to_have_text('Resume')
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries'),[])
+        self.stage_circuit_file(self.circuit_configuration())
+        self.page.locator('#circuitConfigApply').click()
+        expect(self.page.locator('#circuitConfigStatus')).to_contain_text('refused before mutation')
+        self.assertTrue(self.page.evaluate('mockCore.z80Ram.configured'))
+
+    def test_z80_ram_success_status_without_clear_is_unverified(self):
+        self.page.close()
+        self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        self.apply_z80_bridge()
+        self.page.evaluate('mockCore.leaveZ80RamConfigured=true')
+        self.page.locator('#disconnectAllFaultsBtn').click()
+        expect(self.page.locator('#pauseBtn')).to_have_text('Resume')
+        expect(self.page.locator('#disconnectAllFaultsStatus')).to_contain_text('Z80 RAM: clear failed or unverified')
+        self.assertTrue(self.page.evaluate('mockCore.z80Ram.configured'))
+
+    def test_z80_ram_checkpoint_and_reset_lifecycle(self):
+        page=self.checkpoint_page()
+        self.apply_z80_bridge(page)
+        page.locator("#saveCheckpointBtn").click()
+        self.assertEqual(page.evaluate("mockCore.checkpoint.saves"),0)
+        page.locator("#z80RamBridgeRemove").click()
+        page.locator("#saveCheckpointBtn").click()
+        self.apply_z80_bridge(page)
+        page.locator("#restoreCheckpointBtn").click()
+        self.assertFalse(page.evaluate("mockCore.z80Ram.configured"))
+        expect(page.locator("#pauseBtn")).to_have_text("Resume")
+        self.apply_z80_bridge(page)
+        page.evaluate("() => {mockCore.fm.configured=true;mockCore.fm.bridgeA=1;mockCore.fm.bridgeB=2;}")
+        page.locator("#logicCpuResetBtn").click()
+        self.assertFalse(page.evaluate("mockCore.z80Ram.configured"))
+        self.assertTrue(page.evaluate("mockCore.fm.configured"))
+        expect(page.locator("#restoreCheckpointBtn")).to_be_enabled()
+        page.locator("#resetBtn").click()
+        expect(page.locator("#restoreCheckpointBtn")).to_be_disabled()
+        self.assertFalse(page.evaluate("mockCore.z80Ram.configured || mockCore.fm.configured"))
+
     def test_all_domain_disconnect_clears_configured_domains_and_preserves_running_state(self):
         page = self.new_page(circuit_config=True)
         self.load_rom(page)
+        self.apply_z80_bridge(page)
         page.locator("#ramLegAction").select_option("cut")
         page.locator("[data-chip-line]").nth(0).click()
         self.assertTrue(page.evaluate("window.mockCore.logic.active"))
@@ -715,6 +875,8 @@ class BrowserLogicTests(unittest.TestCase):
         expect(page.locator("#disconnectAllFaultsStatus")).to_contain_text("RAM: cleared")
         expect(page.locator("#disconnectAllFaultsStatus")).to_contain_text("PSG: cleared")
         expect(page.locator("#disconnectAllFaultsStatus")).to_contain_text("FM: cleared")
+        expect(page.locator("#disconnectAllFaultsStatus")).to_contain_text("Z80 RAM: cleared")
+        self.assertFalse(page.evaluate("mockCore.z80Ram.configured"))
         with page.expect_download() as info:
             page.locator("#logicExperimentBtn").click()
         payload = json.loads(Path(info.value.path()).read_text())
@@ -1127,7 +1289,8 @@ class BrowserLogicTests(unittest.TestCase):
         with self.page.expect_download() as info:
             self.page.locator("#circuitConfigDownload").click()
         saved = json.loads(Path(info.value.path()).read_text())
-        self.assertEqual(saved, payload)
+        self.assertEqual(saved, {**payload,"schemaVersion":3,
+            "configuration":{**payload["configuration"],"z80Ram":{"pair":None}}})
         self.assertEqual(set(saved), {"format", "schemaVersion", "configuration"})
         self.assertNotIn("rom", saved)
         self.assertNotIn("inputWrites", json.dumps(saved))
@@ -1325,7 +1488,7 @@ class BrowserLogicTests(unittest.TestCase):
         with self.page.expect_download() as info:
             self.page.locator('#circuitConfigDownload').click()
         saved=json.loads(Path(info.value.path()).read_text())
-        self.assertEqual(saved['schemaVersion'],2)
+        self.assertEqual(saved['schemaVersion'],3)
         self.assertEqual(saved['configuration']['psg'],{'pair':None,'dataMask':129})
         self.assertEqual(saved['configuration']['fm'],{'pair':None,'dataMask':8})
         experiment=self.export_payload()
@@ -1697,7 +1860,7 @@ class BrowserLogicTests(unittest.TestCase):
         pairs=self.page.locator("[data-ram-frame-pair]")
         self.assertEqual(pairs.count(),10)
         self.assertEqual(self.page.locator("#randomRamPulseBtn").count(),0)
-        self.assertEqual(self.page.locator(".ram-frame-pairs > strong").inner_text(),"RAM Write")
+        self.assertEqual(self.page.locator("[aria-label=\"RAM write pairs\"] > strong").inner_text(),"RAM Write")
         expect(self.page.locator('#ramWriteMode')).to_have_value('pulse')
         rows=self.page.evaluate("""() => [...document.querySelectorAll('[data-ram-frame-pair]')].map(button=>{
           const rect=button.getBoundingClientRect();return {text:button.textContent,x:rect.x,right:rect.right,y:rect.y};

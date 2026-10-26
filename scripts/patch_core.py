@@ -8,6 +8,7 @@ import sys
 FAULT_MARKER = 'VRAM Circuit Bender: initial frame-scoped'
 NATIVE_BLITTER_MARKER = 'VRAMpage MD: native RGBA output blitter'
 WORK_RAM_MARKER = 'VRAMpage MD: runtime work-RAM fault hooks'
+Z80_RAM_MARKER = 'VRAMpage MD: runtime Z80 RAM write bridge'
 
 UPSTREAM_BLITTER = r'''#ifdef WASM_GENPLUS
 #define CUSTOM_BLITTER(line, width, pixel, src)  \
@@ -164,6 +165,20 @@ def patch_z80(source: str) -> str:
         '      }\n'
         '      if (zbank_memory_map[address >> 16].write)',
         'Z80 bank write')
+
+
+def patch_z80_ram_bridge(memz80: str, mem68k: str) -> tuple[str, str]:
+    include = '#include "z80_ram_bridge_runtime.h" /* ' + Z80_RAM_MARKER + ' */'
+    memz80 = replace_pinned(memz80, '#include "work_ram_runtime.h" /* ' + WORK_RAM_MARKER + ' */',
+                            '#include "work_ram_runtime.h" /* ' + WORK_RAM_MARKER + ' */\n' + include,
+                            'Z80 RAM bridge include')
+    memz80 = replace_pinned(memz80, '      zram[address & 0x1FFF] = data;\n      return;',
+        '#ifdef VRAM_TX_RUNTIME\n      z80_ram_bridge_store_z80(address, data);\n#else\n      zram[address & 0x1FFF] = data;\n#endif\n      return;', 'Z80 local RAM write')
+    mem68k = replace_pinned(mem68k, '#include "shared.h"', '#include "shared.h"\n' + include,
+                            '68000 Z80 RAM bridge include')
+    mem68k = replace_pinned(mem68k, '      zram[address & 0x1FFF] = data;\n      m68k.cycles += 2 * 7;',
+        '#ifdef VRAM_TX_RUNTIME\n      z80_ram_bridge_store_m68k(address, data);\n#else\n      zram[address & 0x1FFF] = data;\n#endif\n      m68k.cycles += 2 * 7;', 'granted 68000 Z80 RAM write')
+    return memz80, mem68k
 
 
 def patch_dma(source: str) -> str:
@@ -978,6 +993,7 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     render_c_path = root / 'src/main/c/core/vdp_render.c'
     m68k_h = root / 'src/main/c/core/m68k/m68kcpu.h'
     z80_c = root / 'src/main/c/core/memz80.c'
+    mem68k_c = root / 'src/main/c/core/mem68k.c'
     dma_c = root / 'src/main/c/core/vdp_ctrl.c'
     psg_c = root / 'src/main/c/core/sound/psg.c'
     fm_c = root / 'src/main/c/core/sound/sound.c'
@@ -992,6 +1008,7 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     render_c = render_c_path.read_text() if transaction_adapter else None
     m68k = m68k_h.read_text()
     z80 = z80_c.read_text()
+    mem68k = mem68k_c.read_text() if transaction_adapter else None
     dma = dma_c.read_text()
     psg = psg_c.read_text() if transaction_adapter else None
     fm = fm_c.read_text() if transaction_adapter else None
@@ -1047,6 +1064,12 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     elif wasm.count(fm_include) != 1:
         raise SystemExit('FM runtime helper include is ambiguous.')
 
+    zram_include = '#if defined(VRAM_TX_RUNTIME)\n#include "z80_ram_bridge_runtime.c"\n#endif'
+    if zram_include not in wasm:
+        wasm = wasm.replace(fm_include, fm_include + '\n' + zram_include, 1)
+    elif wasm.count(zram_include) != 1:
+        raise SystemExit('Z80 RAM bridge runtime include is ambiguous.')
+
     # start() precedes the embedded VRAM block, requiring a forward declaration.
     declaration = 'static void bend_reset(void);\n'
     header_anchor = '#define SOUND_FREQUENCY 44100'
@@ -1056,12 +1079,16 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
         raise SystemExit('VRAM reset declaration is ambiguous. No modifications made.')
     start_anchor = '    system_reset();\n}'
     old_start_hook = '    system_reset();\n    work_ram_logic_start();\n}'
-    start_hook = '    system_reset();\n    work_ram_logic_start();\n    bend_reset();\n}'
+    previous_runtime_start_hook = '    system_reset();\n    work_ram_logic_start();\n    bend_reset();\n}'
+    start_hook = '    system_reset();\n    work_ram_logic_start();\n#ifdef VRAM_TX_RUNTIME\n    z80_ram_bridge_start();\n#endif\n    bend_reset();\n}'
     if wasm.count(start_hook) == 0:
-        anchor = old_start_hook if old_start_hook in wasm else start_anchor
-        if wasm.count(anchor) != 1:
-            raise SystemExit('Expected start() reset anchor missing or ambiguous. No modifications made.')
-        wasm = wasm.replace(anchor, start_hook, 1)
+        if wasm.count(previous_runtime_start_hook) == 1:
+            wasm = wasm.replace(previous_runtime_start_hook, start_hook, 1)
+        else:
+            anchor = old_start_hook if old_start_hook in wasm else start_anchor
+            if wasm.count(anchor) != 1:
+                raise SystemExit('Expected start() reset anchor missing or ambiguous. No modifications made.')
+            wasm = wasm.replace(anchor, start_hook, 1)
     elif wasm.count(start_hook) != 1:
         raise SystemExit('Fault reset start hook is ambiguous. No modifications made.')
 
@@ -1088,6 +1115,7 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     z80 = patch_z80(z80)
     dma = patch_dma(dma)
     if transaction_adapter:
+        z80, mem68k = patch_z80_ram_bridge(z80, mem68k)
         dma = patch_vram_transactions(dma)
         render_c = patch_mode5_render_reads(render_c)
         psg = patch_psg_input_fault(psg)
@@ -1096,7 +1124,8 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
                wasm != wasm_c.read_text() or config != config_c.read_text() or
                render != render_h.read_text() or m68k != m68k_h.read_text() or
                z80 != z80_c.read_text() or dma != dma_c.read_text() or
-               (transaction_adapter and (render_c != render_c_path.read_text() or
+               (transaction_adapter and (mem68k != mem68k_c.read_text() or
+                                          render_c != render_c_path.read_text() or
                                           psg != psg_c.read_text() or
                                           fm != fm_c.read_text())))
     if changed:
@@ -1109,13 +1138,15 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
             psg_c.write_text(psg)
         m68k_h.write_text(m68k)
         z80_c.write_text(z80)
+        if transaction_adapter:
+            mem68k_c.write_text(mem68k)
         dma_c.write_text(dma)
         # The wasm translation unit compiles the shared model and runtime once;
         # headers are copied to both core include roots for pinned core TUs.
         scripts = Path(__file__).parent
         for destination in (root / 'src/main/c/core', root / 'src/main/c/wasm'):
             destination.mkdir(parents=True, exist_ok=True)
-            for filename in ('work_ram_fault.h', 'work_ram_runtime.h'):
+            for filename in ('work_ram_fault.h', 'work_ram_runtime.h', 'z80_ram_bridge_runtime.h', 'z80_ram_bridge_core.h'):
                 (destination / filename).write_text((scripts / filename).read_text())
             (destination / 'psg_data_fault.h').write_text((scripts / 'psg_data_fault.h').read_text())
             (destination / 'fm_data_fault.h').write_text((scripts / 'fm_data_fault.h').read_text())
@@ -1125,7 +1156,7 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
                 (destination / 'vram_transaction_core.h').write_text((scripts / 'vram_transaction_core.h').read_text())
                 (destination / 'vram_transaction_render.h').write_text((scripts / 'vram_transaction_render.h').read_text())
         wasm_dir = root / 'src/main/c/wasm'
-        for filename in ('work_ram_fault.c', 'work_ram_runtime.c'):
+        for filename in ('work_ram_fault.c', 'work_ram_runtime.c', 'z80_ram_bridge_runtime.c'):
             (wasm_dir / filename).write_text((scripts / filename).read_text())
         (wasm_dir / 'vram_transaction.c').write_text((scripts / 'vram_transaction.c').read_text())
         (wasm_dir / 'psg_data_fault_core.c').write_text((scripts / 'psg_data_fault_core.c').read_text())
@@ -1139,7 +1170,7 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
         # repository files. Updating only these generated copies is safe.
         scripts = Path(__file__).parent
         for destination in (root / 'src/main/c/core', root / 'src/main/c/wasm'):
-            for filename in ('work_ram_fault.h', 'work_ram_runtime.h'):
+            for filename in ('work_ram_fault.h', 'work_ram_runtime.h', 'z80_ram_bridge_runtime.h', 'z80_ram_bridge_core.h'):
                 target = destination / filename
                 if not target.exists() or target.read_text() != (scripts / filename).read_text():
                     target.write_text((scripts / filename).read_text())
@@ -1160,7 +1191,7 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
                 target = destination / 'vram_transaction_render.h'
                 if not target.exists() or target.read_text() != (scripts / 'vram_transaction_render.h').read_text():
                     target.write_text((scripts / 'vram_transaction_render.h').read_text())
-        for filename in ('work_ram_fault.c', 'work_ram_runtime.c'):
+        for filename in ('work_ram_fault.c', 'work_ram_runtime.c', 'z80_ram_bridge_runtime.c'):
             target = root / 'src/main/c/wasm' / filename
             if not target.exists() or target.read_text() != (scripts / filename).read_text():
                 target.write_text((scripts / filename).read_text())

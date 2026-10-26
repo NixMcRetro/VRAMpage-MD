@@ -318,11 +318,16 @@ WORK_RAM_KEEPALIVE uint32_t get_logic_address_mask(void)
     return logic_address_mask;
 }
 
+extern int set_z80_ram_bridge_c(double, double, double);
+
 WORK_RAM_KEEPALIVE int recover_logic_cpu(int mode)
 {
     if (mode != 1 && mode != 2)
         return WORK_RAM_FAULT_INVALID_CONFIG;
     set_logic_fault(WORK_RAM_FAULT_NONE, 0, 0, 0);
+#ifdef VRAM_TX_RUNTIME
+    set_z80_ram_bridge_c(0, -1, -1);
+#endif
 #ifndef WORK_RAM_RUNTIME_TEST
     extern m68ki_cpu_core m68k;
     if (mode == 1)

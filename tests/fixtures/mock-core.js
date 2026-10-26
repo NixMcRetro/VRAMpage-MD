@@ -11,9 +11,15 @@ window.Module = async () => {
   };
   const psg = {configured:false,bridgeA:-1,bridgeB:-1,dataMask:0,supported:true,inputWrites:'0',changedWrites:'0',calls:[],maskCalls:[]};
   const fm = {configured:false,bridgeA:-1,bridgeB:-1,dataMask:0,supported:true,inputWrites:'0',changedWrites:'0',calls:[],maskCalls:[]};
+  const z80Ram={configured:false,bridgeA:-1,bridgeB:-1,supported:true,activationFrame:0,
+    ramWrites:'0',changedAddresses:'0',z80Writes:'0',m68kWrites:'0',calls:[]};
+  function resetZ80Ram() {
+    Object.assign(z80Ram,{configured:false,bridgeA:-1,bridgeB:-1,activationFrame:0,
+      ramWrites:'0',changedAddresses:'0',z80Writes:'0',m68kWrites:'0'});
+  }
   const vramModel = {modelId:1,mask:0,bridgeA:-1,bridgeB:-1,supportedModelsMask:7,calls:[]};
   window.mockCore = {starts: 0, ticks: 0, lastStartTick: 0, short: [-1, -1], vramAddressMask:0,
-    vramMaskCalls:[], inputs: [], logic, psg, fm, vramModel};
+    vramMaskCalls:[], inputs: [], logic, psg, fm, z80Ram, vramModel};
 
   function setLogicFault(kind, access, a, b) {
     logic.setterCalls.push([kind, access, a, b]);
@@ -86,6 +92,7 @@ window.Module = async () => {
       if (core._discard_session_checkpoint) core._discard_session_checkpoint();
       window.mockCore.starts++;
       resetLogic();window.mockCore.short=[-1,-1];window.mockCore.vramAddressMask=0;
+      resetZ80Ram();
       Object.assign(vramModel,{modelId:1,mask:0,bridgeA:-1,bridgeB:-1});
       for (const state of [psg,fm]) Object.assign(state,{configured:false,bridgeA:-1,bridgeB:-1,dataMask:0,inputWrites:'0',changedWrites:'0'});
       window.mockCore.lastStartTick = window.mockCore.ticks;
@@ -209,6 +216,7 @@ window.Module = async () => {
         if (![1,2].includes(mode)) return 5;
         logic.recoveries.push(mode);
         logic.active = false; logic.cpuFlags = 0;
+        resetZ80Ram();
         return 0;
       },
       _set_logic_address_mask(mask,access) {
@@ -269,6 +277,22 @@ window.Module = async () => {
       if (api.restoreStatus) return api.restoreStatus;
       if (!slot) return 3;
       bytes.set(slot.pixels);return 0;
+    };
+  }
+  if (!window.__legacyZ80RamCore) {
+    core._set_z80_ram_bridge=(enabled,a,b)=>{
+      z80Ram.calls.push([enabled,a,b]);
+      if (window.mockCore.rejectZ80Ram) return 1;
+      if (enabled&&!z80Ram.supported) return 2;
+      if (window.mockCore.leaveZ80RamConfigured) return 0;
+      resetZ80Ram();
+      Object.assign(z80Ram,{configured:!!enabled,bridgeA:enabled?a:-1,bridgeB:enabled?b:-1,activationFrame:logic.frame});
+      if (window.mockCore.throwZ80RamAfter) throw Error('synthetic Z80 RAM setter trap');
+      return 0;
+    };
+    core._get_z80_ram_bridge_state=()=>{
+      if (window.mockCore.throwZ80RamState) throw Error('synthetic Z80 RAM state trap');
+      return {...z80Ram,effective:z80Ram.supported&&z80Ram.configured,reason:z80Ram.configured?'active':'disabled',modelVersion:'z80-ram-write-address-pair-v1'};
     };
   }
   window.mockCore.core=core;
