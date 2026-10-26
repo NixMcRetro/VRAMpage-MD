@@ -1,5 +1,41 @@
 # Development status and continuation checkpoint
 
+## Live McRetro.net v0.5.0 Deployment — 26 October 2026 (Sydney)
+
+User explicitly authorizes the live app at
+https://mcretro.net/homepages/vrampage-md/ (superseding the prior no-website-change
+scope for this deployment). Website main is
+`835aef7b32c7b6df13c31a347b66b40d13888f19`.
+[Preview](https://github.com/NixMcRetro/mcretro.net/actions/runs/40320159840)
+and [production build/deploy](https://github.com/NixMcRetro/mcretro.net/actions/runs/40320560810)
+passed. Pages deployment7331498880 reports success on that exact commit and
+custom domain https://mcretro.net/. No PR could be created: connector and CLI
+both returned integration403, while git writes/workflow dispatch were permitted.
+Main branch had no protection rule or rulesets. After independent review and a
+green preview, a normal fast-forward push published the tested branch; no force
+push, history rewrite or branch-protection bypass occurred.
+
+All 485sitefiles and third-party notices match the immutable released browser ZIP
+SHA2566024ad1701d1cb58dc5da16ce4ae51db4fd03de7e9e1a6e26b3e6aff27ef0aad.
+Extra DEPLOYMENT.txt records provenance. All 487files survive Jekyll byte-for-byte,
+including production/fallback WASM, source dotfiles and licences. Scoped includes
+fix Jekyll's initial omission; the first failed preview is retained as40319797913.
+Actual-core browser8 passed47.094s against the staged site; independent GPT-6
+archive/config/workflow review found no blocker. Existing website pages unchanged;
+only new appdir and three Jekyll/test integration files changed. PR builds skip
+deployment and have separate concurrency from production. No emulator changes,
+ROMs, release replacement or automatic cross-repository synchronisation.
+
+Direct live HTTP/browser verification remains blocked by this environment's
+network policy: mcretro.net is not allowed and HTTPS CONNECT returns403. User was
+asked to allow the domain; no answer/permission is inferred. GitHub confirms
+build/deployment success; do not claim a live custom-domain MIME/game test.
+Next, if domain access is enabled, verify live HTML/JS/WASM/source identity and
+synthetic browser operation. Do not bypass the proxy or repeat core research.
+Public v0.4.1/v0.5.0 releases remain unchanged. Evidence:
+`/workspace/scratch/vrampage-live`; website checkout:
+`/workspace/mcretro-vrampage-live`.
+
 ## v0.5.0 Published — 26 October 2026 (Sydney)
 
 [VRAMpage MD v0.5.0](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.5.0)

@@ -1,5 +1,19 @@
 # Releases and deployment
 
+## Live v0.5.0 App
+
+The explicitly authorized live copy is **https://mcretro.net/homepages/vrampage-md/**.
+Website commit `835aef7b32c7b6df13c31a347b66b40d13888f19` copies the released
+v0.5.0 site, corresponding source, fallback core and notices without changes.
+[Production build/deployment passed](https://github.com/NixMcRetro/mcretro.net/actions/runs/40320560810).
+The build asserts all 487files survive Jekyll unchanged; source dotfiles are
+explicitly included. This is a separate, deliberate website deployment, not an
+automatic consequence of VRAMpage source/release changes. Future updates must
+select and verify their release explicitly. The historical staging script below
+still targets the old /homepages/vrampage path; do not use it for the new URL.
+Direct custom-domain HTTP verification was blocked by the execution environment's
+network policy; GitHub Pages reports deployment success.
+
 ## Cross-platform browser release
 
 [Download VRAMpage-MD-v0.5.0-browser.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip) · [SHA256SUMS.txt](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/SHA256SUMS.txt).
