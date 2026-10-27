@@ -731,7 +731,7 @@ class BrowserLogicTests(unittest.TestCase):
         with self.page.expect_download() as download:
             self.page.locator("#circuitConfigDownload").click()
         saved=json.loads(Path(download.value.path()).read_text())
-        self.assertEqual(saved["schemaVersion"],3)
+        self.assertEqual(saved["schemaVersion"],4)
         self.assertEqual(saved["configuration"]["z80Ram"],{"pair":[2,11]})
         self.stage_circuit_file(saved)
         calls=self.page.evaluate("mockCore.z80Ram.calls.length")
@@ -752,6 +752,7 @@ class BrowserLogicTests(unittest.TestCase):
         expect(page.locator("#z80RamBridgeApply")).to_be_disabled()
         config=self.circuit_configuration()
         config["schemaVersion"]=3;config["configuration"]["z80Ram"]={"pair":[0,1]}
+        config["configuration"].pop("rgbEncoder",None)
         self.stage_circuit_file(config,page=page)
         page.locator("#circuitConfigApply").click()
         expect(page.locator("#circuitConfigStatus")).to_contain_text("refused before mutation")
@@ -780,6 +781,97 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.locator("#disconnectAllFaultsBtn").click()
         self.assertFalse(self.export_payload()["z80RamFault"]["available"])
         expect(self.page.locator("#disconnectAllFaultsStatus")).to_contain_text("runtime state unknown")
+
+    def test_rgb_encoder_controls_export_raw_bypass_and_lifecycle(self):
+        page=self.new_page(circuit_config=True)
+        self.load_rom(page)
+        native_before=page.evaluate("""() => ({
+          logic:mockCore.logic.setterCalls.length,vram:mockCore.vramModel.calls.length,
+          psg:mockCore.psg.calls.length,fm:mockCore.fm.calls.length,z80:mockCore.z80Ram.calls.length,
+          starts:mockCore.starts,recoveries:mockCore.logic.recoveries.length
+        })""")
+        recovery_before=self.export_payload_for(page)['automaticRecovery']
+        page.locator('[data-rgb-cut="0"]').click()
+        page.locator('[data-rgb-pair="0,1"]').click()
+        self.assertEqual(page.evaluate("""() => ({
+          logic:mockCore.logic.setterCalls.length,vram:mockCore.vramModel.calls.length,
+          psg:mockCore.psg.calls.length,fm:mockCore.fm.calls.length,z80:mockCore.z80Ram.calls.length,
+          starts:mockCore.starts,recoveries:mockCore.logic.recoveries.length
+        })"""),native_before,"RGB output contacts must not call native fault setters or recovery")
+        self.assertEqual(self.export_payload_for(page)['automaticRecovery'],recovery_before,
+                         'direct RGB changes must preserve recovery policy and pending state')
+        state=self.export_payload_for(page)['rgbEncoderFault']
+        self.assertTrue(state['configured'] and state['effective'])
+        self.assertEqual(state['cutMask'],1)
+        self.assertEqual(state['pair'],[0,1])
+        page.wait_for_function("""() => {
+          const p=document.querySelector('#screen').getContext('2d').getImageData(0,0,1,1).data;
+          return p[0]===32 && p[1]===32 && p[2]===192;
+        }""")
+        page.locator('#rawVideoToggle').check()
+        expect(page.locator('#rgbEncoderStatus')).to_contain_text('Bypassed by Raw Output')
+        page.wait_for_function("""() => {
+          const p=document.querySelector('#screen').getContext('2d').getImageData(0,0,1,1).data;
+          return p[0]===64 && p[1]===64 && p[2]===192;
+        }""")
+        page.locator('#rawVideoToggle').uncheck()
+        page.locator('#logicCpuResetBtn').click()
+        self.assertTrue(self.export_payload_for(page)['rgbEncoderFault']['configured'],
+                        'CPU Reset retains output-only RGB contacts')
+        page.locator('#resetBtn').click()
+        self.assertFalse(self.export_payload_for(page)['rgbEncoderFault']['configured'],
+                         'Clean Restart clears RGB contacts with the cartridge lifecycle')
+
+    def test_rgb_encoder_only_circuit_apply_does_not_mutate_native_faults_or_recovery(self):
+        page=self.new_page(circuit_config=True)
+        self.load_rom(page)
+        config=self.circuit_configuration()
+        config['schemaVersion']=4
+        config['configuration']['z80Ram']={'pair':None}
+        config['configuration']['rgbEncoder']={'cutMask':2,'pair':[1,2]}
+        self.stage_circuit_file(config,page)
+        before=page.evaluate("""() => ({
+          logic:mockCore.logic.setterCalls.length,vram:mockCore.vramModel.calls.length,
+          psg:mockCore.psg.calls.length,fm:mockCore.fm.calls.length,z80:mockCore.z80Ram.calls.length,
+          starts:mockCore.starts,recoveries:mockCore.logic.recoveries.length
+        })""")
+        recovery_before=self.export_payload_for(page)['automaticRecovery']
+        page.locator('#circuitConfigApply').click()
+        self.assertEqual(page.evaluate("""() => ({
+          logic:mockCore.logic.setterCalls.length,vram:mockCore.vramModel.calls.length,
+          psg:mockCore.psg.calls.length,fm:mockCore.fm.calls.length,z80:mockCore.z80Ram.calls.length,
+          starts:mockCore.starts,recoveries:mockCore.logic.recoveries.length
+        })"""),before,"RGB-only configuration must stay in the display path")
+        self.assertEqual(self.export_payload_for(page)['automaticRecovery'],recovery_before,
+                         'RGB-only configuration must preserve recovery policy and pending state')
+        self.assertEqual(self.export_payload_for(page)['rgbEncoderFault']['cutMask'],2)
+        with page.expect_download() as download:
+            page.locator('#circuitConfigDownload').click()
+        saved=json.loads(Path(download.value.path()).read_text())
+        self.assertEqual(saved['schemaVersion'],4)
+        self.assertEqual(saved['configuration']['rgbEncoder'],{'cutMask':2,'pair':[1,2]})
+        legacy_v3=json.loads(json.dumps(saved))
+        legacy_v3['schemaVersion']=3
+        legacy_v3['configuration'].pop('rgbEncoder')
+        self.stage_circuit_file(legacy_v3,page)
+        page.locator('#circuitConfigApply').click()
+        self.assertFalse(self.export_payload_for(page)['rgbEncoderFault']['configured'],
+                         'v3 imports default RGB contacts to off')
+
+    def test_rgb_encoder_blocks_checkpoint_save_and_restore_clears_it_paused(self):
+        page=self.checkpoint_page()
+        page.locator('[data-rgb-cut="1"]').click()
+        page.locator('#saveCheckpointBtn').click()
+        self.assertEqual(page.evaluate('mockCore.checkpoint.saves'),0,
+                         'checkpoint save refuses configured RGB contacts')
+        expect(page.locator('#pauseBtn')).to_have_text('Pause')
+        page.locator('#rgbEncoderClear').click()
+        page.locator('#saveCheckpointBtn').click()
+        self.assertEqual(page.evaluate('mockCore.checkpoint.saves'),1)
+        page.locator('[data-rgb-pair="1,2"]').click()
+        page.locator('#restoreCheckpointBtn').click()
+        expect(page.locator('#pauseBtn')).to_have_text('Resume')
+        self.assertFalse(self.export_payload_for(page)['rgbEncoderFault']['configured'])
 
     def test_z80_ram_setter_partial_failure_reports_actual_state_and_pauses(self):
         self.load_rom()
@@ -837,6 +929,7 @@ class BrowserLogicTests(unittest.TestCase):
     def test_all_domain_disconnect_clears_configured_domains_and_preserves_running_state(self):
         page = self.new_page(circuit_config=True)
         self.load_rom(page)
+        page.locator('[data-rgb-cut="2"]').click()
         self.apply_z80_bridge(page)
         page.locator("#ramLegAction").select_option("cut")
         page.locator("[data-chip-line]").nth(0).click()
@@ -876,13 +969,16 @@ class BrowserLogicTests(unittest.TestCase):
         expect(page.locator("#disconnectAllFaultsStatus")).to_contain_text("PSG: cleared")
         expect(page.locator("#disconnectAllFaultsStatus")).to_contain_text("FM: cleared")
         expect(page.locator("#disconnectAllFaultsStatus")).to_contain_text("Z80 RAM: cleared")
+        expect(page.locator("#disconnectAllFaultsStatus")).to_contain_text("RGB Encoder: cleared")
         self.assertFalse(page.evaluate("mockCore.z80Ram.configured"))
+        self.assertFalse(self.export_payload_for(page)["rgbEncoderFault"]["configured"])
         with page.expect_download() as info:
             page.locator("#logicExperimentBtn").click()
         payload = json.loads(Path(info.value.path()).read_text())
         self.assertEqual(payload["cpuInterventions"], [])
         self.assertEqual(len(payload["faultDisconnects"]), 1)
         self.assertEqual(payload["faultDisconnects"][0]["action"], "all-domain-disconnect")
+        self.assertEqual(len(payload["faultDisconnects"][0]["results"]), 6)
 
     def test_all_domain_disconnect_continues_after_audio_rejection_or_throw(self):
         for failure in ("reject", "throw"):
@@ -1289,8 +1385,9 @@ class BrowserLogicTests(unittest.TestCase):
         with self.page.expect_download() as info:
             self.page.locator("#circuitConfigDownload").click()
         saved = json.loads(Path(info.value.path()).read_text())
-        self.assertEqual(saved, {**payload,"schemaVersion":3,
-            "configuration":{**payload["configuration"],"z80Ram":{"pair":None}}})
+        self.assertEqual(saved, {**payload,"schemaVersion":4,
+            "configuration":{**payload["configuration"],"z80Ram":{"pair":None},
+                "rgbEncoder":{"cutMask":0,"pair":None}}})
         self.assertEqual(set(saved), {"format", "schemaVersion", "configuration"})
         self.assertNotIn("rom", saved)
         self.assertNotIn("inputWrites", json.dumps(saved))
@@ -1488,7 +1585,7 @@ class BrowserLogicTests(unittest.TestCase):
         with self.page.expect_download() as info:
             self.page.locator('#circuitConfigDownload').click()
         saved=json.loads(Path(info.value.path()).read_text())
-        self.assertEqual(saved['schemaVersion'],3)
+        self.assertEqual(saved['schemaVersion'],4)
         self.assertEqual(saved['configuration']['psg'],{'pair':None,'dataMask':129})
         self.assertEqual(saved['configuration']['fm'],{'pair':None,'dataMask':8})
         experiment=self.export_payload()
