@@ -1388,7 +1388,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         report=page.evaluate('''async () => {
   const c=testCore, audio=soakAudio;
   const $=s=>document.querySelector(s), click=s=>$(s).click();
-  let cycle=-1, warmHeap, driven=0, boundaries=0;
+  let cycle=-1, warmHeap, driven=0, boundaries=0, warmups=0, measured=0;
   const check=(ok,label)=>{if(!ok)throw Error(`cycle ${cycle}: ${label}`)};
   const bytes=(ref,n)=>c.HEAPU8.slice(ref>>>0,(ref>>>0)+n);
   const equal=(a,b)=>a.length===b.length&&a.every((v,i)=>v===b[i]);
@@ -1517,10 +1517,11 @@ class ActualCoreBrowserTests(unittest.TestCase):
     }
     if(cycle===1)warmHeap=c.HEAPU8.buffer.byteLength;
     if(cycle>=2)check(c.HEAPU8.buffer.byteLength===warmHeap,'WASM heap grew after warm-up');
+    if(cycle<2)warmups++;else measured++;
   }
   click('#pauseBtn');check(audio.active.size===0,'final pause retained audio sources');
   check(soakCalls.recovery.length===130&&soakCalls.recovery.every(mode=>mode===2),'unexpected CPU intervention sequence');
-  return {warmupCycles:2,measuredCycles:128,warmupBoundaries:2,measuredBoundaries:boundaries-2,
+  return {warmupCycles:warmups,measuredCycles:measured,warmupBoundaries:2,measuredBoundaries:boundaries-2,
     totalDrivenFrames:driven,heap:c.HEAPU8.buffer.byteLength,warmHeap,modules:testModuleCount,
     contexts:audio.contexts,createdSources:audio.created,peakConnected:audio.maxActive,
     finalConnected:audio.active.size,finitePcm:audio.finite,lastSamples:soakCalls.samples};
@@ -1537,7 +1538,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         self.assertLessEqual(report['peakConnected'],16)
                         self.assertTrue(report['finitePcm'])
                         self.assertGreater(report['createdSources'],1000)
-                        self.assertGreaterEqual(report['totalDrivenFrames'],1040)
+                        self.assertEqual(report['totalDrivenFrames'],1159)
                         self.assertGreater(report['lastSamples'],0)
                         self.assertEqual(errors,[])
                         print('Mixed-fault endurance metrics: '+json.dumps(report,sort_keys=True))
