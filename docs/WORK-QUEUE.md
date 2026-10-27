@@ -15,6 +15,14 @@ pins, VERSION, releases, archived evidence or McRetro.net from this repository.
 The separately authorised website maintenance branch is tracked outside this
 repository. Preserve the verified mixed-fault evidence below.
 
+Configuration schema and manifest-path checks passed. Independent GPT-6 Luna
+High review found no configuration/workflow blocker; the website wording was
+clarified to avoid claiming unverified security enablement. Local
+`bash scripts/test.sh` passed: 114 Python tests reported, two unchanged
+build-dependent classes skipped, plus native sanitizer/Node/C suites. Runtime
+source, pins, VERSION and release assets remain unchanged. GitHub PR checks,
+exact-tree merge and all seven main checks are the remaining integration gates.
+
 ## Mixed-Fault Stability Pass Verified — 27 October 2026
 
 [PR #81](https://github.com/NixMcRetro/VRAMpage-MD/pull/81) merged as
