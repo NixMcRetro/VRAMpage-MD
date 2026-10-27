@@ -121,7 +121,8 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     self.assertEqual(saved['schemaVersion'], 4)
                     self.assertEqual(saved['configuration'], {
                         'vram': {'modelId': 1, 'mask': 0, 'pair': None},
-                        'ram': None, 'psg': {'pair':None,'dataMask':0}, 'fm': {'pair':None,'dataMask':0}, 'z80Ram':{'pair':None}
+                        'ram': None, 'psg': {'pair':None,'dataMask':0}, 'fm': {'pair':None,'dataMask':0}, 'z80Ram':{'pair':None},
+                        'rgbEncoder':{'cutMask':0,'pair':None}
                     })
                     self.assertNotIn('rom', saved)
                     self.assertNotIn('inputWrites', json.dumps(saved))
@@ -1031,7 +1032,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     cleared=json.loads(Path(download.value.path()).read_text())
                     self.assertEqual(cleared['cpuInterventions'],payload['cpuInterventions'])
                     self.assertEqual(len(cleared['faultDisconnects']),2)
-                    self.assertEqual([row['domain'] for row in cleared['faultDisconnects'][-1]['results']],['VRAM','RAM','PSG','FM','Z80 RAM'])
+                    self.assertEqual([row['domain'] for row in cleared['faultDisconnects'][-1]['results']],['VRAM','RAM','PSG','FM','Z80 RAM','RGB Encoder'])
                     self.assertEqual(cleared['faultDisconnects'][-1]['action'],'all-domain-disconnect')
                     burst=cleared['faultPulses'][-1]
                     self.assertEqual((burst['a'],burst['b']),(10,11))

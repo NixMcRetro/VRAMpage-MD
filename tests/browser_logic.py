@@ -3032,6 +3032,32 @@ class BrowserLogicTests(unittest.TestCase):
         expect(page.locator('#logicResumeBtn')).to_have_attribute('aria-pressed','true')
         expect(page.locator('#armCpuRecoveryBtn')).to_have_attribute('aria-pressed','true')
 
+    def test_rgb_encoder_edits_preserve_pending_recovery_without_rearming_it(self):
+        page=self.ordered_page()
+        self.persistent_halt();self.recovery_frames(2)
+        self.assertEqual(page.evaluate('mockCore.logic.recoveries'),[1])
+        before=self.export_payload()['automaticRecovery']
+        self.assertTrue(before['waitingAfterForceResume'])
+        page.locator('[data-rgb-cut="0"]').click()
+        self.assertEqual(self.export_payload()['automaticRecovery'],before)
+        with page.expect_download() as downloaded:page.locator('#circuitConfigDownload').click()
+        config=json.loads(Path(downloaded.value.path()).read_text())
+        config['configuration']['rgbEncoder']={'cutMask':2,'pair':[0,1]}
+        self.stage_circuit_file(config)
+        expect(page.locator('#circuitConfigApply')).to_be_enabled()
+        page.locator('#circuitConfigApply').click()
+        self.assertEqual(self.export_payload()['automaticRecovery'],before,
+                         'RGB-only imports must preserve a genuinely pending eight-frame escalation')
+        self.recovery_frames(7)
+        self.assertEqual(page.evaluate('mockCore.logic.recoveries'),[1])
+        self.recovery_frames(1)
+        self.assertEqual(page.evaluate('mockCore.logic.recoveries'),[1,2])
+        self.assertEqual(self.export_payload()['rgbEncoderFault']['cutMask'],2)
+        page.locator('[data-rgb-cut="2"]').click()
+        self.recovery_frames(30)
+        self.assertEqual(page.evaluate('mockCore.logic.recoveries'),[1,2],
+                         'RGB edits must not start a second automatic CPU recovery sequence')
+
     def test_ordered_recovery_toggles_work_independently(self):
         for off_selector,expected in [('#armCpuRecoveryBtn',[1]),('#logicResumeBtn',[2])]:
             with self.subTest(off=off_selector):
