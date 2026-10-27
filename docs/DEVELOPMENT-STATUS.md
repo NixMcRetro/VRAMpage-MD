@@ -7,7 +7,7 @@ The user approved the bounded autonomous stability pass. On verified main
 2 full warm-ups + 128 measured cycles, eight measured lifecycle boundaries and
 1,159 exact native frames/ticks. WASM heap stayed at 33,554,432 bytes, one module
 and AudioContext remained, 1,160 genuine sources were created, peak connected
-was 12 (limit16), final connected0, and generated PCM stayed finite.
+was 12 (limit 16), final connected 0, and generated PCM stayed finite.
 
 [Initial evidence](experiments/mixed-fault-endurance-2026-10-27.json) is retained;
 [v2 evidence](experiments/mixed-fault-endurance-v2-2026-10-27.json) adds exact
@@ -25,7 +25,7 @@ the focused run/metrics. Local source/native sanitizer/Node/C suite passed
 (114 Python tests reported; two unchanged build-dependent classes skipped), all
 10 actual-core cases passed, then the strengthened case passed again. Seven
 layout cases and eight focused new-control keyboard/theme/viewport cases passed;
-active RGB text contrast was9.55:1. Remove the obsolete Reconnect All [0] label;
+active RGB text contrast was 9.55:1. Remove the obsolete Reconnect All [0] label;
 0 still cycles targets. No application-runtime/C/model change was needed.
 
 [Draft candidate notes](DEVELOPMENT-CANDIDATE.md) consolidate development changes
