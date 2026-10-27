@@ -118,7 +118,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     with page.expect_download() as download_info:
                         page.locator('#circuitConfigDownload').click()
                     saved = json.loads(Path(download_info.value.path()).read_text())
-                    self.assertEqual(saved['schemaVersion'], 3)
+                    self.assertEqual(saved['schemaVersion'], 4)
                     self.assertEqual(saved['configuration'], {
                         'vram': {'modelId': 1, 'mask': 0, 'pair': None},
                         'ram': None, 'psg': {'pair':None,'dataMask':0}, 'fm': {'pair':None,'dataMask':0}, 'z80Ram':{'pair':None}
@@ -258,7 +258,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     with page.expect_download() as download_info:
                         page.locator('#circuitConfigDownload').click()
                     saved = json.loads(Path(download_info.value.path()).read_text())
-                    self.assertEqual(saved['schemaVersion'], 3)
+                    self.assertEqual(saved['schemaVersion'], 4)
                     self.assertEqual(saved['configuration']['fm'], {'pair':None,'dataMask':4})
                     self.assertEqual(saved['configuration']['psg'], {'pair':None,'dataMask':129})
                     self.assertNotIn('rom', saved)
@@ -293,7 +293,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     with page.expect_download() as download_info:
                         page.locator('#circuitConfigDownload').click()
                     ram_saved=json.loads(Path(download_info.value.path()).read_text())
-                    self.assertEqual(ram_saved['schemaVersion'], 3)
+                    self.assertEqual(ram_saved['schemaVersion'], 4)
                     self.assertEqual(ram_saved['configuration']['psg'], {'pair':[1,6],'dataMask':0})
                     self.assertEqual(ram_saved['configuration']['fm'], {'pair':[0,7],'dataMask':0})
                     if not page.locator('#logicExperiment').evaluate('element => element.open'):
@@ -1056,6 +1056,94 @@ class ActualCoreBrowserTests(unittest.TestCase):
             finally:
                 server.shutdown()
 
+
+    def test_rgb_encoder_changes_canvas_without_mutating_actual_core(self):
+        handler=partial(SimpleHTTPRequestHandler,directory=OPTIONS.site_root)
+        with ThreadingHTTPServer(('127.0.0.1',0),handler) as server:
+            threading.Thread(target=server.serve_forever,daemon=True).start()
+            try:
+                with sync_playwright() as p:
+                    kwargs={'executable_path':OPTIONS.executable} if OPTIONS.executable else {}
+                    browser=getattr(p,OPTIONS.browser).launch(**kwargs)
+                    try:
+                        for profile in ['runtime','normal']:
+                            with self.subTest(profile=profile):
+                                page=browser.new_page(accept_downloads=True)
+                                errors=[]
+                                page.on('pageerror',lambda error:errors.append(str(error)))
+                                page.add_init_script("""window.testFrames=[];window.testTime=0;
+                                    window.requestAnimationFrame=cb=>testFrames.push(cb);
+                                    window.stepTestFrame=()=>{const q=testFrames.splice(0);testTime+=17;q.forEach(cb=>cb(testTime));};""")
+                                core_dir=OPTIONS.site_root/('core' if profile=='runtime' else 'source/src/main/js')
+                                core_js=(core_dir/'genplus.js').read_text()
+                                core_js+='''\nconst originalFactory=window.Module;
+                                    window.Module=opts=>originalFactory(opts).then(c=>{
+                                        window.testCore=c;window.rgbNativeCalls=[];
+                                        for(const key of ['_tick','_sound','_recover_logic_cpu','_start']) {
+                                            const original=c[key];
+                                            c[key]=(...args)=>{rgbNativeCalls.push(key);return original(...args);};
+                                        }return c;
+                                    });\n'''
+                                page.route('**/core/genplus.js',lambda route:route.fulfill(content_type='text/javascript',body=core_js))
+                                if profile=='normal':
+                                    page.route('**/core/genplus.wasm',lambda route:route.fulfill(
+                                        content_type='application/wasm',body=(core_dir/'genplus.wasm').read_bytes()))
+                                page.goto(f'http://127.0.0.1:{server.server_port}/')
+                                expect(page.locator('[data-rgb-cut="0"]')).to_be_disabled()
+                                page.locator('#romFile').set_input_files({'name':'original-rgb.bin','mimeType':'application/octet-stream','buffer':original_cartridge()})
+                                expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+                                page.evaluate('for(let i=0;i<32;i++)stepTestFrame()')
+                                page.locator('#pauseBtn').click()
+                                page.locator('#logicExperiment > summary').click()
+                                page.evaluate("""window.rgbRegions=[
+                                    [testCore._get_frame_buffer_ref(),640*480*4],
+                                    [testCore._get_logic_ram_ref(),65536],
+                                    [testCore._get_web_audio_l_ref(),700*4],
+                                    [testCore._get_web_audio_r_ref(),700*4]];
+                                    if(testCore._get_z80_ram_ref)rgbRegions.push([testCore._get_z80_ram_ref(),8192]);
+                                    window.rgbBefore=rgbRegions.map(([start,n])=>testCore.HEAPU8.slice(start,start+n));
+                                    window.rgbCanvasIs=expected=>{
+                                        const pixels=document.querySelector('#screen').getContext('2d').getImageData(0,0,320,224).data;
+                                        return pixels.every((v,i)=>v===expected[i%4]);
+                                    };
+                                    rgbNativeCalls.length=0;""")
+                                self.assertTrue(page.evaluate('rgbCanvasIs([238,0,0,255])'),'literal Mode 5 red palette output')
+                                page.locator('[data-rgb-pair="0,1"]').click()
+                                self.assertTrue(page.evaluate('rgbCanvasIs([119,119,0,255])'),'equal source impedances join red and green')
+                                page.locator('#rawVideoToggle').check()
+                                self.assertTrue(page.evaluate('rgbCanvasIs([238,0,0,255])'),'Raw Output bypasses configured contacts')
+                                with page.expect_download() as downloaded:page.locator('#logicExperimentBtn').click()
+                                payload=json.loads(Path(downloaded.value.path()).read_text())
+                                self.assertEqual(payload['rgbEncoderFault'],{
+                                    'schemaVersion':1,'available':True,'modelVersion':'rgb-input-code-voltage-v1',
+                                    'cutMask':0,'pair':[0,1],'configured':True,'effective':False,'reason':'raw-output-bypass'})
+                                page.locator('#rawVideoToggle').uncheck()
+                                page.locator('[data-rgb-cut="0"]').click()
+                                self.assertTrue(page.evaluate('rgbCanvasIs([0,0,0,255])'),'cuts apply before the joined pair')
+                                page.locator('#rgbEncoderClear').click()
+                                self.assertTrue(page.evaluate('rgbCanvasIs([238,0,0,255])'))
+                                self.assertEqual(page.evaluate('rgbNativeCalls'),[],'paused output edits must not tick, synthesize sound or intervene in the CPU')
+                                self.assertTrue(page.evaluate('rgbRegions.every(([start,n],i)=>rgbBefore[i].every((v,j)=>v===testCore.HEAPU8[start+j]))'),
+                                    'native frame, full Work RAM, Z80 RAM and generated stereo PCM stay byte-identical')
+                                if profile=='runtime':
+                                    page.locator('#saveCheckpointBtn').click()
+                                    expect(page.locator('#checkpointStatus')).to_contain_text('Saved Frame')
+                                page.locator('[data-rgb-pair="0,2"]').click()
+                                page.locator('#logicCpuResetBtn').click()
+                                expect(page.locator('[data-rgb-pair="0,2"]')).to_have_attribute('aria-pressed','true')
+                                if profile=='runtime':
+                                    page.locator('#restoreCheckpointBtn').click()
+                                    expect(page.locator('#checkpointStatus')).to_contain_text('Restored Frame')
+                                    expect(page.locator('#pauseBtn')).to_have_text('Resume')
+                                    expect(page.locator('[data-rgb-pair="0,2"]')).to_have_attribute('aria-pressed','false')
+                                page.locator('[data-rgb-cut="2"]').click()
+                                page.locator('#compactResetBtn').click()
+                                expect(page.locator('[data-rgb-cut="2"]')).to_have_attribute('aria-pressed','false')
+                                expect(page.locator('#rgbEncoderClear')).to_be_disabled()
+                                self.assertEqual(errors,[])
+                                page.close()
+                    finally:browser.close()
+            finally:server.shutdown()
 
     def test_session_checkpoint_restores_actual_image_without_ticking(self):
         handler=partial(SimpleHTTPRequestHandler,directory=OPTIONS.site_root)

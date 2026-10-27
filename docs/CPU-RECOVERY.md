@@ -1,5 +1,7 @@
 # v0.2.1 experimental CPU recovery
 
+Development-source CPU Reset/Force Resume also retain [RGB encoder contacts](RGB-ENCODER-INPUTS.md). Direct RGB edits do not arm/cancel recovery. Disconnect All clears the additional Z80 RAM and RGB domains; Clean Restart clears every domain.
+
 The workbench offers two explicit interventions after a fault. They are
 emulator debugging actions, not additional simulated hardware shorts. Neither
 repairs corrupted RAM or guarantees that gameplay continues.

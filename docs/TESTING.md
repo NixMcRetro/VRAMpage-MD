@@ -1,3 +1,13 @@
+# RGB Encoder Development Checks
+
+See [the explicit RGB model](RGB-ENCODER-INPUTS.md). Run
+`node tests/test_rgb_encoder.cjs` for literal/exhaustive channel oracles,
+`python tests/browser_logic.py -k rgb_encoder` for controlled UI/lifecycle cases,
+and `python tests/browser_core.py -k rgb_encoder` for runtime/fallback canvas,
+full memory and generated PCM noninterference using an original cartridge.
+These remain in the full source/browser/package CI paths. Physical analogue
+behaviour, audible output and native desktop acceptance remain unverified.
+
 # v0.5.0 Cross-Platform Candidate Checks
 
 The actual-core video/audio/input case now serves the built site from a hosting

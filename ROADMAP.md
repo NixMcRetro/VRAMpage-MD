@@ -1,13 +1,25 @@
 # VRAMpage MD roadmap
 
+## Authorized RGB Encoder Inputs — Development Source
+
+The user's instruction to continue independently authorizes one bounded RGB
+input approximation following the research below. Off by default, it changes
+only copied canvas pixels using explicit black-termination/equal-impedance
+assumptions. See [RGB Encoder Input Contacts](docs/RGB-ENCODER-INPUTS.md).
+Configuration, exports, comparison and lifecycle are included; native cores,
+composite/sync/mono audio, VERSION, existing releases and McRetro.net are outside
+this slice. Require literal/exhaustive model tests, actual-core noninterference,
+independent specialist review, the declared display-performance gate, all seven
+PR checks and verified main CI. This is a bounded feature-freeze exception.
+
 ## Video Encoder Research — 27 October 2026
 
 The user requested research while reviewing the Z80 RAM build. The
 [CXA1145 report](docs/VIDEO-ENCODER-RESEARCH.md) separates analogue RGB/composite
 signal faults from memory corruption, compares related encoders and proposes
 bounded acceptance evidence. RGB input contacts are the smallest candidate;
-composite sync/subcarrier behaviour needs a receiver/timing model. No encoder
-implementation, feature-freeze exception, release or deployment is authorized.
+composite sync/subcarrier behaviour needs a receiver/timing model. The research checkpoint itself authorized no implementation; the later bounded
+RGB decision above supersedes that restriction without authorizing a release or deployment.
 
 ## Authorized Z80 RAM Write Bridge — Development Source
 

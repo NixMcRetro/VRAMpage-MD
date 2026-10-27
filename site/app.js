@@ -2386,6 +2386,7 @@
       currentPsg=psgDataApiReady()?currentPsgDataState():null;
       currentFm=fmDataApiReady()?currentFmDataState():null;
     } catch (_) {
+      cancelAutomaticRecovery();
       $('circuitConfigStatus').textContent='Apply refused before mutation: runtime state could not be read.';
       return false;
     }

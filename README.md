@@ -42,6 +42,8 @@ See the [controls and recovery guide](docs/RUNNING-LOCALLY.md).
 Development source also includes an optional
 [Z80 RAM Write Bridge](docs/Z80-RAM-WRITE-BRIDGE.md) for sound-driver memory.
 It is off by default and is not included in the published v0.5.0 download.
+The same development source adds optional [RGB Encoder Input Contacts](docs/RGB-ENCODER-INPUTS.md),
+an output-only approximation separate from memory and sound faults.
 
 ## 💻 Run Locally
 

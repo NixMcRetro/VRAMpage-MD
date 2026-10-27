@@ -1,5 +1,7 @@
 # Session Checkpoint Implementation Contract
 
+Development-source [RGB encoder contacts](RGB-ENCODER-INPUTS.md) must be off before Save, including while Raw Output bypasses them. Restore clears this sixth fault domain through Disconnect All and stays paused; CPU Reset retains contacts and the checkpoint.
+
 Implementation scope: one explicit in-memory slot in the current runtime core,
 with no file import/export or automatic restore. Based on the reviewed v0.5.0
 plan and merged main `0b8263c`. Normal/older cores may omit these methods and

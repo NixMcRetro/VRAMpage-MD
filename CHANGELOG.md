@@ -1,5 +1,10 @@
 # Changelog
 
+## Development Source — RGB Encoder Input Contacts
+
+- Add off-by-default RGB cuts and one equal-impedance joined pair as an explicit output approximation, separate from native memory/audio faults. Raw output bypasses it; CPU Reset retains contacts and Clean Restart clears them.
+- Include RGB in verified disconnect/checkpoint handling, configuration v4 with v1/v2/v3 imports, and experiment export/comparison. Preserve native cores, published versions and website deployment.
+
 ## Video Encoder Research — 27 October 2026
 
 - Research CXA1145 RGB/composite/sync and mono-buffer paths, related encoder differences and the current RGBA browser boundary. Record a bounded RGB-input candidate and future acceptance gates; no runtime feature, version, release or deployment change.
