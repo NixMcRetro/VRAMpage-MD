@@ -1,3 +1,12 @@
+# Dependency Maintenance
+
+[Dependabot](../.github/dependabot.yml) checks GitHub Actions and the browser-test
+requirements weekly. Compatible Action updates are grouped; major updates remain
+separate. The existing full PR checks apply before merge. This configuration does
+not enable repository security features or grant the GitHub connection access to
+alerts. It does not update the pinned emulator source or Emscripten build-script
+version; those still require reviewed, reproducible builds.
+
 # Mixed-Fault Endurance Checks
 
 `python tests/browser_core.py -k mixed_fault` runs an original cartridge on the
