@@ -1,34 +1,36 @@
 # Development status and continuation checkpoint
 
-## RGB Encoder Inputs In Progress — 27 October 2026 (Sydney)
+## RGB Encoder Inputs Ready for CI — 27 October 2026 (Sydney)
 
-The user's instruction to continue independently authorizes one bounded RGB
-input approximation following the verified encoder research. Start from main
-`fbfe46a1007abd77141226c34421329a74f46592`; do not repeat completed Z80 work.
+Implementation/tests are committed through `18d0586`; independent GPT-6 Luna
+High review of that head found no concrete blockers and separately passed the
+model/schema/comparison Node suites. The [guide](RGB-ENCODER-INPUTS.md) defines
+the code-domain proxy, cuts-before-join rules, raw bypass and lifecycle limits.
+The user authorized this bounded extension by asking to continue independently;
+composite/sync/mono faults remain deferred.
 
-Scope: off-by-default R/G/B cuts and one joined pair, applied only to the copied
-canvas output. Source byte codes divided by 255 proxy normalized input voltage.
-Cuts terminate to black at equal source impedance; an ideal pair join averages
-the two inputs after cuts, rounded half up. This is not calibrated CXA1145,
-composite, sync or audio simulation. Native CPU, RAM, PCM and core APIs stay
-unchanged. Raw Emulator Output bypasses contacts. CPU Reset retains them; Clean
-Restart/new cartridge clear them. Reuse configuration, comparison, checkpoint
-and Disconnect All paths; Title Case controls and complete static packages.
+Local checks passed: `bash scripts/test.sh` (114 Python tests reported, two
+unchanged build-dependent classes skipped locally; strict native sanitizers,
+Node and C smoke suites passed), seven Chromium layout cases, nine actual-core
+Chromium cases and four focused RGB logic cases. Full Chromium logic is running.
+The first actual-core full run exposed two stale expected configuration/domain
+lists; both were updated to assert the complete v4/six-domain contract, and the
+full nine-case repeat passed. No assertion was removed or weakened.
 
-Acceptance before merge: literal/exhaustive model oracles; strict configuration
-v4 and v1/v2/v3 migration; browser lifecycle/independence/export checks; actual
-WASM raw-frame/RAM/PCM noninterference and literal canvas pixels; independent
-Luna High review; full applicable source/sanitizer/browser suite; all seven PR
-checks, exact reviewed merge and all seven main checks. Measure five fixed paired
-display-copy runs: inactive median and p95 ratios <=1.05, active transform p95
-<=1 ms per 320×224 frame; retain every result, including failures. No native
-core performance rerun is needed because C/WASM is unchanged.
+The first fixed five-pair [display benchmark](experiments/rgb-encoder-display-performance-v1.json)
+passes: inactive median/p95 ratios 1.0/1.0 (limit 1.05), active transform p95
+0.318 ms per 320×224 frame (limit 1 ms). Its three input hashes match current
+source; the recorded source commit is `00cc00b`. Runtime and normal-core hashes
+match the preceding verified build; native source is unchanged. Synthetic tests
+prove literal canvas pixels and byte-identical native framebuffer, full Work
+RAM, available Z80 RAM and generated PCM under paused edits. No physical or
+audible result is inferred. All 311 relative Markdown links resolve. Logs and
+synthetic UI inspection: `/workspace/scratch/rgb-encoder/`.
 
-Pure model checkpoints are integrated; UI/configuration/export integration is
-in progress and is not yet accepted. Next: complete tests/docs, inspect the UI,
-measure the declared display gate, obtain independent review, then open one
-focused PR. VERSION, existing releases and McRetro.net remain unchanged. No
-physical, audible or native desktop validation is claimed.
+Next: require all seven PR checks before merge, verify the exact merged tree,
+all seven main checks and the resulting ROM-free development package/source
+identity. Record final links on a delivery checkpoint without another trivial
+CI cycle. VERSION, existing release records/assets and McRetro.net stay unchanged.
 
 ## Video Encoder Research Verified — 27 October 2026 (Sydney)
 
