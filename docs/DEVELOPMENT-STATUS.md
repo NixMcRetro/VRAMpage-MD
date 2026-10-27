@@ -1,35 +1,42 @@
 # Development status and continuation checkpoint
 
-## Mixed-Fault Endurance Pass In Progress — 27 October 2026
+## Mixed-Fault Endurance Ready for CI — 27 October 2026
 
-The user approved the autonomous stability work, starting with a mixed-fault
-endurance pass. Baseline is verified main `528cc2778e33499fe4b2d35cbae39606ca9ba949`;
-reuse its unchanged core builds and earlier single-feature/performance evidence.
+The user approved the bounded autonomous stability pass. On verified main
+`528cc2778e33499fe4b2d35cbae39606ca9ba949`, the new actual-core workload passed
+2 full warm-ups + 128 measured cycles, eight measured lifecycle boundaries and
+1,159 exact native frames/ticks. WASM heap stayed at 33,554,432 bytes, one module
+and AudioContext remained, 1,160 genuine sources were created, peak connected
+was 12 (limit16), final connected0, and generated PCM stayed finite.
 
-Scope before implementation: extend the existing actual-core browser tests with
-one bounded 128-cycle workload, not a new framework or hardware model. Reuse
-original synthetic cartridges and real production UI/core/audio. Alternate VRAM
-and Work RAM (never both); combine independent FM/PSG, Z80 RAM and RGB contacts;
-exercise eight-frame/held release, CPU Reset, checkpoint restore, restart and
-accepted/rejected cartridge replacement. Use explicit unassisted recovery during
-the test so intentional corruption is not silently rescued.
+[Initial evidence](experiments/mixed-fault-endurance-2026-10-27.json) is retained;
+[v2 evidence](experiments/mixed-fault-endurance-v2-2026-10-27.json) adds exact
+native-frame and completed-cycle checks. Sources/limits are hashed in each
+record. Native WRAM/Z80/PSG/FM writes and nonzero baseline pixels/PCM prevent an
+empty workload. The test alternates VRAM and eight-frame Work RAM contacts;
+checks every paused CPU Reset's full Work RAM/Z80 RAM/generated PCM preservation;
+then exercises held controls, changed raw/canvas images, exact checkpoint replay,
+rejected-file retention, restart/replacement and mute/visibility cleanup.
+Automatic recovery is explicitly Off; corruption is not silently rescued.
+Events are synthetic; a WASM heap plateau is not proof of no JS/allocator leaks.
 
-Acceptance: all 128 cycles complete with native fault configuration and exact
-pause/frame/input invariants checked, synchronous CPU-only RAM/audio preservation,
-verified six-domain clearing and paused no-extra-tick checkpoint replay. Repeated
-restart/replacement invalidates checkpoints and contacts; rejected files retain
-the accepted session. After two defined warm-up cycles, WASM heap size must stay
-at its warmed size; one module/context and bounded genuine audio sources must
-remain, draining at pause/mute/visibility boundaries. Test events are synthetic,
-not OS backgrounding. Intentional experiment history growth is not a leak.
-No page errors, non-finite PCM or failed clears may be ignored. Do not demand
-healthy gameplay after faults or weaken assertions to make a workload pass.
+Independent GPT-6 Luna High review of `30d5dcf` found no blockers and reproduced
+the focused run/metrics. Local source/native sanitizer/Node/C suite passed
+(114 Python tests reported; two unchanged build-dependent classes skipped), all
+10 actual-core cases passed, then the strengthened case passed again. Seven
+layout cases and eight focused new-control keyboard/theme/viewport cases passed;
+active RGB text contrast was9.55:1. Remove the obsolete Reconnect All [0] label;
+0 still cycles targets. No application-runtime/C/model change was needed.
 
-Commit bounded test/source checkpoints before long runs. Obtain independent
-specialist review; fix only reproduced defects, then full applicable regression
-and seven PR/main checks before delivery. VERSION, public releases, historical
-evidence and McRetro.net remain unchanged. Physical/native desktop/audible
-acceptance is outside this synthetic pass. Logs: `/workspace/scratch/mixed-soak/`.
+[Draft candidate notes](DEVELOPMENT-CANDIDATE.md) consolidate development changes
+and a native-browser checklist without choosing/publishing a version. A bounded
+GitHub search found a PAL board recreation, not matching NTSC VA6 evidence; #73
+stays open. Do not treat that search as exhaustive hardware validation. Logs:
+`/workspace/scratch/mixed-soak/`. Existing source/performance/release evidence is
+preserved; VERSION, public release records/assets and McRetro.net are unchanged.
+Next: all seven PR checks, reviewed merge, all seven main checks and package
+source/checksum verification. No speculative production fix is authorized by a
+test-fixture failure. Native desktop/listening/physical acceptance is separate.
 
 ## VRAM Export Availability Verified — 27 October 2026
 

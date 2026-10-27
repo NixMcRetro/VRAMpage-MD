@@ -12,7 +12,8 @@ The test requires a stable warmed WASM heap, one module/audio context, at most
 16 connected genuine audio sources and zero after pause/mute/visibility cleanup.
 All asynchronous loads use completion predicates. Keyboard/visibility events
 are synthetic, and heap size is not proof of no allocator-internal/JS leaks.
-See [the first result](experiments/mixed-fault-endurance-2026-10-27.json). The full
+See [the retained first result](experiments/mixed-fault-endurance-2026-10-27.json)
+and [the strengthened frame/count result](experiments/mixed-fault-endurance-v2-2026-10-27.json). The full
 actual-core test remains in build-site Chromium and packaged Firefox/WebKit CI.
 
 # RGB Encoder Development Checks

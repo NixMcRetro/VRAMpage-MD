@@ -35,8 +35,9 @@ Automated acceptance uses original generated cartridges and separate source,
 native sanitizer, compiled-WASM and three-browser/package checks. The current
 [checkpoint](WORK-QUEUE.md) records completed evidence and remaining blockers.
 The [128-cycle mixed-fault workload](TESTING.md#mixed-fault-endurance-checks)
-passed its first local run; fresh three-browser package CI remains its integration
-gate. Final checkpoint links distinguish local evidence from merged acceptance.
+and three-browser package CI are candidate acceptance gates. Retained local
+results identify their exact test source; the checkpoint records final merged
+acceptance separately.
 Browser-software checks do not establish physical electrical accuracy, listening
 quality, every cartridge's recovery or native desktop acceptance on every OS.
 
