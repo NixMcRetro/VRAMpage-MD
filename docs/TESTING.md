@@ -1,3 +1,21 @@
+# Mixed-Fault Endurance Checks
+
+`python tests/browser_core.py -k mixed_fault` runs an original cartridge on the
+actual runtime core: two full warm-up cycles, then 128 measured cycles and eight
+measured lifecycle boundaries. Each cycle uses RGB, Z80 RAM and FM/PSG contacts
+with alternating VRAM/Work RAM; generated driver writes and nonzero baseline
+PCM/video prevent empty-workload acceptance. CPU Reset checks complete Work RAM,
+Z80 RAM and generated PCM preservation. Checkpoint replay must restore changed
+raw/canvas pixels and RAM without ticking, while releasing held controls.
+
+The test requires a stable warmed WASM heap, one module/audio context, at most
+16 connected genuine audio sources and zero after pause/mute/visibility cleanup.
+All asynchronous loads use completion predicates. Keyboard/visibility events
+are synthetic, and heap size is not proof of no allocator-internal/JS leaks.
+See [the retained first result](experiments/mixed-fault-endurance-2026-10-27.json)
+and [the strengthened frame/count result](experiments/mixed-fault-endurance-v2-2026-10-27.json). The full
+actual-core test remains in build-site Chromium and packaged Firefox/WebKit CI.
+
 # RGB Encoder Development Checks
 
 See [the explicit RGB model](RGB-ENCODER-INPUTS.md). Run

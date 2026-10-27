@@ -65,7 +65,9 @@ comparison instead of invented zero measurements.
 
 Circuit configuration **v3** adds `z80Ram: {"pair": [0, 12]}` or
 `z80Ram: {"pair": null}`. Existing v1/v2 files remain importable with the new
-bridge off. Preview remains inert, unchanged pairs preserve counters, and
+bridge off. Current development downloads use v4, which also includes RGB
+contacts; v3 files still import with RGB off. Preview remains inert, unchanged
+pairs preserve counters, and
 unsupported requests fail before any domain mutation. After a partial setter
 failure, emulation pauses and the actual/unknown domain state is reported.
 

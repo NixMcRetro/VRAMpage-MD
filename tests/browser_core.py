@@ -50,6 +50,29 @@ def original_cartridge():
     return bytes(rom)
 
 
+def original_z80_store_cartridge():
+    """Original video/PSG cartridge with a Z80 program storing $44/$55."""
+    rom = bytearray(original_cartridge())
+    words = []
+    def word(address, value):
+        words.extend([0x33fc, value, address >> 16, address & 0xffff])
+    def byte(address, value):
+        words.extend([0x13fc, value, address >> 16, address & 0xffff])
+    z80 = [0x3e,0x44,0x32,0x00,0x01, 0x3e,0x55,0x32,0x00,0x11,
+           0x3a,0x00,0x01,0x32,0x11,0x7f, 0x3e,0x22,0x32,0x00,0x40,
+           0x3e,0x00,0x32,0x01,0x40, 0xc3,0x00,0x00]
+    word(0xa11100,0x0100);word(0xa11200,0x0100)
+    for i, value in enumerate(z80):
+        byte(0xa00000+i,value)
+    word(0xa11100,0)
+    words.extend([0x5279,0x00ff,0x0800,0x60f8])
+    # Preserve the original VDP/tone setup; replace only its final RAM loop.
+    offset=rom.index(bytes.fromhex('527900ff100060f8'),0x200)
+    for i, value in enumerate(words):
+        struct.pack_into('>H',rom,offset+2*i,value)
+    return bytes(rom)
+
+
 class ActualCoreBrowserTests(unittest.TestCase):
     def test_normal_core_rejects_optional_configuration_before_mutation(self):
         normal_source = OPTIONS.site_root / 'source/src/main/js'
@@ -1307,6 +1330,219 @@ class ActualCoreBrowserTests(unittest.TestCase):
                                     self.assertTrue(page.evaluate('(testCore._get_logic_cpu_flags() & 1)!==0'))
                                 self.assertEqual(errors,[])
                                 page.close()
+                    finally:browser.close()
+            finally:server.shutdown()
+
+    def test_mixed_fault_endurance_128_actual_core_cycles(self):
+        handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
+        with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            try:
+                with sync_playwright() as p:
+                    kwargs = {'executable_path': OPTIONS.executable} if OPTIONS.executable else {}
+                    browser = getattr(p, OPTIONS.browser).launch(**kwargs)
+                    try:
+                        page = browser.new_page(viewport={'width':1366,'height':768})
+                        errors=[]
+                        page.on('pageerror',lambda error:errors.append(str(error)))
+                        page.add_init_script("""
+                          window.testFrames=[];window.testTime=0;
+                          window.requestAnimationFrame=cb=>testFrames.push(cb);
+                          window.stepTestFrame=()=>{const q=testFrames.splice(0);testTime+=17;q.forEach(cb=>cb(testTime));};
+                          const Native=window.AudioContext||window.webkitAudioContext;
+                          window.soakAudio={contexts:0,created:0,active:new Set(),maxActive:0,finite:true};
+                          if(Native){
+                            const create=Native.prototype.createBufferSource;
+                            Native.prototype.createBufferSource=function(...args){
+                              const source=Reflect.apply(create,this,args),p=window.soakAudio;
+                              p.created++;const connect=source.connect,disconnect=source.disconnect,start=source.start;
+                              source.connect=function(...a){const r=Reflect.apply(connect,this,a);p.active.add(source);p.maxActive=Math.max(p.maxActive,p.active.size);return r;};
+                              source.disconnect=function(...a){p.active.delete(source);return Reflect.apply(disconnect,this,a);};
+                              source.addEventListener('ended',()=>p.active.delete(source),{once:true});
+                              source.start=function(...a){const b=source.buffer;if(!b)p.finite=false;else for(let c=0;c<b.numberOfChannels;c++)for(const v of b.getChannelData(c))if(!Number.isFinite(v))p.finite=false;return Reflect.apply(start,this,a);};
+                              return source;
+                            };
+                            window.AudioContext=new Proxy(Native,{construct(t,a){window.soakAudio.contexts++;window.testAudioContext=Reflect.construct(t,a);return window.testAudioContext;}});
+                            if(window.webkitAudioContext)window.webkitAudioContext=window.AudioContext;
+                          }
+                        """)
+                        core_js=(OPTIONS.site_root/'core/genplus.js').read_text()
+                        core_js+='''\nconst originalFactory=window.Module;window.testModuleCount=0;window.Module=opts=>{window.testModuleCount++;return originalFactory(opts).then(c=>{window.testCore=c;window.soakCalls={ticks:0,starts:0,samples:0,recovery:[]};for(const key of ['_tick','_start','_sound','_recover_logic_cpu']){const native=c[key];c[key]=(...args)=>{if(key===\"_tick\")soakCalls.ticks++;if(key===\"_start\")soakCalls.starts++;if(key===\"_recover_logic_cpu\")soakCalls.recovery.push(args[0]);const result=Reflect.apply(native,c,args);if(key===\"_sound\")soakCalls.samples=result;return result;};}return c;});};\n'''
+                        page.route('**/core/genplus.js',lambda route:route.fulfill(content_type='text/javascript',body=core_js))
+                        page.goto(f'http://127.0.0.1:{server.server_port}/')
+                        # RAF is controlled by this test; readiness must use timer polling.
+                        page.wait_for_function('!!window.testCore',polling=10)
+                        page.locator('#romFile').set_input_files({'name':'original-mixed-z80.bin','mimeType':'application/octet-stream','buffer':original_z80_store_cartridge()})
+                        expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+                        page.locator('#soundBtn').click()
+                        expect(page.locator('#soundBtn')).to_have_text('Mute Sound')
+                        page.wait_for_function('testAudioContext.currentTime>0',polling=10)
+                        page.locator('#logicExperiment > summary').evaluate('(b)=>b.click()')
+                        page.locator('#logicResumeBtn').evaluate('(b)=>{if(b.getAttribute("aria-pressed")==="true")b.click()}')
+                        page.locator('#armCpuRecoveryBtn').evaluate('(b)=>{if(b.getAttribute("aria-pressed")==="true")b.click()}')
+                        page.evaluate('for(let i=0;i<2;i++)stepTestFrame()')
+                        self.assertEqual(page.evaluate('''() => ({force:document.querySelector('#logicResumeBtn').getAttribute('aria-pressed'),cpu:document.querySelector('#armCpuRecoveryBtn').getAttribute('aria-pressed'),heap:testCore.HEAPU8.buffer.byteLength})''')['force'],'false')
+                        page.evaluate('(rom)=>{window.enduranceRom=Uint8Array.from(rom)}',list(original_z80_store_cartridge()))
+                        page.locator('#z80RamBridgeA').select_option('11')
+                        page.locator('#z80RamBridgeB').select_option('12')
+                        page.locator('#ramWriteMode').select_option('pulse')
+                        report=page.evaluate('''async () => {
+  const c=testCore, audio=soakAudio;
+  const $=s=>document.querySelector(s), click=s=>$(s).click();
+  let cycle=-1, warmHeap, driven=0, boundaries=0, warmups=0, measured=0;
+  const check=(ok,label)=>{if(!ok)throw Error(`cycle ${cycle}: ${label}`)};
+  const bytes=(ref,n)=>c.HEAPU8.slice(ref>>>0,(ref>>>0)+n);
+  const equal=(a,b)=>a.length===b.length&&a.every((v,i)=>v===b[i]);
+  const inputs=()=>Array.from(new Float32Array(c.HEAPF32.buffer,c._get_input_buffer_ref(),32));
+  const image=()=>bytes(c._get_frame_buffer_ref(),640*480*4);
+  const canvas=()=>$('#screen').toDataURL();
+  const paused=()=>$('#pauseBtn').textContent==='Resume';
+  const vram=()=>c._get_vram_fault_model_state();
+  const sound=()=>[c._get_fm_data_bridge_state(),c._get_psg_data_bridge_state()];
+  const pcm=()=>[bytes(c._get_web_audio_l_ref(),soakCalls.samples*4),bytes(c._get_web_audio_r_ref(),soakCalls.samples*4)];
+  const off=()=>{
+    const v=vram();
+    return !v.mask&&v.bridgeA===-1&&v.bridgeB===-1&&!v.effective&&
+      !c._get_logic_address_mask()&&!c._get_z80_ram_bridge_state().configured&&
+      sound().every(s=>!s.configured)&&$('#rgbEncoderClear').disabled&&
+      !document.querySelector('[data-ram-frame-pair][aria-pressed="true"]');
+  };
+  const clear=()=>{
+    const prior=paused(),tick=soakCalls.ticks;click('#disconnectAllFaultsBtn');
+    check(paused()===prior&&soakCalls.ticks===tick,'disconnect changed pause/tick state');
+    check($('#disconnectAllFaultsStatus').textContent.includes('completed')&&off(),'six-domain clear incomplete');
+  };
+  const step=n=>{
+    const start=soakCalls.ticks,nativeFrame=c._get_logic_frame()>>>0;
+    for(let i=0;i<n+5&&soakCalls.ticks-start<n;i++)stepTestFrame();
+    check(soakCalls.ticks-start===n,`expected ${n} completed ticks, got ${soakCalls.ticks-start}`);
+    check(((c._get_logic_frame()-nativeFrame)>>>0)===n,'native completed-frame counter delta differed');
+    driven+=n;
+  };
+  const random=(selector,value)=>{
+    const old=Math.random;Math.random=()=>value;
+    try{click(selector)}finally{Math.random=old}
+  };
+  const wait=async(predicate,label)=>{
+    for(let i=0;i<100&&!predicate();i++)await new Promise(resolve=>setTimeout(resolve,5));
+    check(predicate(),label);
+  };
+  const load=bytes=>{
+    const dt=new DataTransfer();dt.items.add(new File([bytes],`accepted-${cycle}.bin`));
+    $('#romFile').files=dt.files;$('#romFile').dispatchEvent(new Event('change',{bubbles:true}));
+  };
+  step(4);
+  check(image().some((v,i)=>i%4!==3&&v!==0),'generated video must contain coloured RGB pixels');
+  const base=new Float32Array(c.HEAPF32.buffer,c._get_web_audio_l_ref(),soakCalls.samples);
+  check(base.some(v=>Math.abs(v)>0.0001)&&base.every(Number.isFinite),'generated baseline tone must be nonzero and finite');
+  for(cycle=0;cycle<130;cycle++){
+    check(!paused(),'cycle did not begin running');clear();
+    check($('#logicResumeBtn').getAttribute('aria-pressed')==='false'&&$('#armCpuRecoveryBtn').getAttribute('aria-pressed')==='false','automatic recovery was enabled');
+    $('#vramModel').value=cycle%2?'1':'2';$('#vramModel').dispatchEvent(new Event('change',{bubbles:true}));
+    random('#randomFmBtn',cycle%3===0?0:0.999999);
+    random('#randomPsgBtn',cycle%3===1?0:0.999999);
+    click('#z80RamBridgeApply');click('[data-rgb-pair="0,1"]');
+    if(cycle%2){
+      click('[data-ram-frame-pair="10,11"]');step(7);
+      check(c._get_logic_writes()>0,'Work RAM pulse did not affect eligible writes');
+      check($('#randomiserStatus').textContent.includes('active'),'pulse ended before eight frames');
+      step(1);
+      check($('#randomiserStatus').textContent.includes('ended after 8 emulated frames'),'pulse did not end at eight frames');
+      const count=c._get_logic_writes();step(1);
+      check(c._get_logic_writes()===count,'Work RAM pulse kept affecting writes after release');
+    }else{
+      random('#randomVramBtn',0.999999);
+      check(vram().effective,'transaction VRAM fault did not activate');step(8);
+      check(vram().lastFrameCounts.logicalByteReads>0,'transaction VRAM saw no reads');
+    }
+    const activeSound=sound(),z=c._get_z80_ram_bridge_state();
+    check(z.configured&&z.effective&&BigInt(z.z80Writes)>0n,'active Z80 bridge saw no driver stores');
+    check(activeSound.every(s=>s.configured&&BigInt(s.inputWrites)>0n),'FM/PSG contacts saw no driver writes');
+    check($('#rgbEncoderClear').disabled===false,'RGB pair did not activate');
+    click('#pauseBtn');
+    check(audio.active.size===0,'pause left connected audio sources');
+    const ticks=soakCalls.ticks,nativeFrame=c._get_logic_frame()>>>0,ram=bytes(c._get_logic_ram_ref(),65536),zram=bytes(c._get_z80_ram_ref(),8192),samples=pcm();
+    click('#logicCpuResetBtn');
+    check(soakCalls.ticks===ticks&&(c._get_logic_frame()>>>0)===nativeFrame&&paused(),'CPU Reset ticked or resumed');
+    check(equal(ram,bytes(c._get_logic_ram_ref(),65536))&&equal(zram,bytes(c._get_z80_ram_ref(),8192)),'CPU Reset changed RAM');
+    const afterPcm=pcm();
+    check(equal(samples[0],afterPcm[0])&&equal(samples[1],afterPcm[1])&&JSON.stringify(sound())===JSON.stringify(activeSound),'CPU Reset changed PCM/audio fault state');
+    check(!c._get_z80_ram_bridge_state().configured&&!vram().effective&&!vram().mask&&vram().bridgeA===-1&&vram().bridgeB===-1,'CPU Reset retained memory contacts');
+    check($('#rgbEncoderClear').disabled===false,'CPU Reset removed RGB contacts');
+    click('#pauseBtn');
+    if(cycle<2||(cycle-2)%16===15){
+      clear();click('#pauseBtn');
+      const savedImage=image(),savedCanvas=canvas(),savedRam=bytes(c._get_logic_ram_ref(),65536),savedZram=bytes(c._get_z80_ram_ref(),8192);
+      const savedFrame=c._get_logic_frame()>>>0;
+      click('#saveCheckpointBtn');check($('#checkpointStatus').textContent.includes('Saved Frame'),'checkpoint save refused');
+      check((c._get_session_checkpoint_saved_frame()>>>0)===savedFrame,'saved-frame telemetry differed');
+      check(!$('#restoreCheckpointBtn').disabled,'saved checkpoint unavailable');
+      // A held Work RAM contact excludes VRAM; exercise both sequentially.
+      random('#randomVramBtn',0.999999);clear();
+      $('#ramWriteMode').value='hold';$('#ramWriteMode').dispatchEvent(new Event('change',{bubbles:true}));
+      const hold=$('[data-ram-frame-pair="10,11"]');hold.focus();
+      hold.dispatchEvent(new KeyboardEvent('keydown',{key:' ',code:'Space',bubbles:true}));
+      check(hold.getAttribute('aria-pressed')==='true','RAM hold did not activate');
+      random('#randomFmBtn',0);random('#randomPsgBtn',0);click('#z80RamBridgeApply');click('[data-rgb-pair="0,1"]');
+      document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',code:'ArrowRight',bubbles:true}));
+      click('#pauseBtn');step(1);check(inputs()[6]===1,'held controller input missing');click('#pauseBtn');
+      c.HEAPU8.fill(0,c._get_frame_buffer_ref(),c._get_frame_buffer_ref()+640*480*4);
+      click('#rawVideoToggle');click('#rawVideoToggle');
+      check(!equal(savedImage,image())&&savedCanvas!==canvas(),'checkpoint image-change probe was vacuous');
+      const beforeRestore=soakCalls.ticks,beforeRestoreFrame=c._get_logic_frame()>>>0;click('#restoreCheckpointBtn');
+      check($('#checkpointStatus').textContent.includes('Restored Frame'),'checkpoint restore refused');
+      check(paused()&&soakCalls.ticks===beforeRestore&&(c._get_logic_frame()>>>0)===beforeRestoreFrame&&off(),'restore did not clear contacts and stay paused without ticks');
+      check((c._get_session_checkpoint_saved_frame()>>>0)===savedFrame,'restore changed saved-frame telemetry');
+      check(equal(savedImage,image())&&canvas()===savedCanvas,'checkpoint did not restore raw/canvas image');
+      check(equal(savedRam,bytes(c._get_logic_ram_ref(),65536))&&equal(savedZram,bytes(c._get_z80_ram_ref(),8192)),'checkpoint RAM replay differed');
+      check(inputs().every(v=>v===0),'restore retained held controller input');
+      document.body.dispatchEvent(new KeyboardEvent('keyup',{key:'ArrowRight',code:'ArrowRight',bubbles:true}));
+      hold.dispatchEvent(new KeyboardEvent('keyup',{key:' ',code:'Space',bubbles:true}));
+      check(off(),'late key release reinstalled contacts');
+      $('#ramWriteMode').value='pulse';$('#ramWriteMode').dispatchEvent(new Event('change',{bubbles:true}));
+      click('#pauseBtn');step(1);check(audio.active.size>0,'boundary audio drain probe had no connected source');
+      click('#soundBtn');check(audio.active.size===0,'mute did not drain sources');click('#soundBtn');
+      step(1);check(audio.active.size>0,'visibility drain probe had no connected source');
+      document.dispatchEvent(new Event('visibilitychange'));check(audio.active.size===0,'synthetic visibility did not drain');
+      click('#pauseBtn');click('[data-rgb-cut="0"]');
+      const acceptedName=$('#romName').textContent,startCount=soakCalls.starts;
+      load(new Uint8Array(256));
+      await wait(()=>$('#experimentLog').firstElementChild.textContent.includes('Expected a 512-byte'),'rejected load did not finish');
+      check($('#romName').textContent===acceptedName&&soakCalls.starts===startCount&&!$('#restoreCheckpointBtn').disabled&&!$('#rgbEncoderClear').disabled&&paused(),'rejected cartridge changed accepted session');
+      click('#resetBtn');
+      check(soakCalls.starts===startCount+1&&off()&&$('#restoreCheckpointBtn').disabled&&!paused(),'Clean Restart did not reset contacts/checkpoint');
+      load(window.enduranceRom);
+      await wait(()=>$('#romName').textContent===`ACCEPTED-${cycle}.BIN`,'accepted replacement did not finish');
+      check(soakCalls.starts===startCount+2&&off()&&$('#restoreCheckpointBtn').disabled&&!paused(),'accepted cartridge lifecycle differed');
+      step(2);boundaries++;
+    }
+    if(cycle===1)warmHeap=c.HEAPU8.buffer.byteLength;
+    if(cycle>=2)check(c.HEAPU8.buffer.byteLength===warmHeap,'WASM heap grew after warm-up');
+    if(cycle<2)warmups++;else measured++;
+  }
+  click('#pauseBtn');check(audio.active.size===0,'final pause retained audio sources');
+  check(soakCalls.recovery.length===130&&soakCalls.recovery.every(mode=>mode===2),'unexpected CPU intervention sequence');
+  return {warmupCycles:warmups,measuredCycles:measured,warmupBoundaries:2,measuredBoundaries:boundaries-2,
+    totalDrivenFrames:driven,heap:c.HEAPU8.buffer.byteLength,warmHeap,modules:testModuleCount,
+    contexts:audio.contexts,createdSources:audio.created,peakConnected:audio.maxActive,
+    finalConnected:audio.active.size,finitePcm:audio.finite,lastSamples:soakCalls.samples};
+}
+''')
+                        self.assertEqual(report['measuredCycles'],128)
+                        self.assertEqual(report['warmupCycles'],2)
+                        self.assertEqual(report['measuredBoundaries'],8)
+                        self.assertEqual(report['warmupBoundaries'],2)
+                        self.assertEqual(report['modules'],1)
+                        self.assertEqual(report['contexts'],1)
+                        self.assertEqual(report['heap'],report['warmHeap'])
+                        self.assertEqual(report['finalConnected'],0)
+                        self.assertLessEqual(report['peakConnected'],16)
+                        self.assertTrue(report['finitePcm'])
+                        self.assertGreater(report['createdSources'],1000)
+                        self.assertEqual(report['totalDrivenFrames'],1159)
+                        self.assertGreater(report['lastSamples'],0)
+                        self.assertEqual(errors,[])
+                        print('Mixed-fault endurance metrics: '+json.dumps(report,sort_keys=True))
                     finally:browser.close()
             finally:server.shutdown()
 

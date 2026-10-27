@@ -1,0 +1,46 @@
+{
+  "protocol": "mixed-fault-lifecycle-v1",
+  "date": "2026-10-27",
+  "sourceCommit": "cbeb220a2e51e267e65e6af8c17b096ede825c8a",
+  "testSourceSha256": "6fe8500b99bc5a3818a5893d48db5747544ab002bde1cf25b1e64a335a3ee7f8",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "browser": "Chromium 154.0.8037.57",
+  "command": "python3 tests/browser_core.py --browser chromium --executable /usr/bin/chromium -k mixed_fault",
+  "metrics": {
+    "contexts": 1,
+    "createdSources": 1160,
+    "finalConnected": 0,
+    "finitePcm": true,
+    "heap": 33554432,
+    "lastSamples": 736,
+    "measuredBoundaries": 8,
+    "measuredCycles": 128,
+    "modules": 1,
+    "peakConnected": 12,
+    "totalDrivenFrames": 1159,
+    "warmHeap": 33554432,
+    "warmupBoundaries": 2,
+    "warmupCycles": 2
+  },
+  "passed": true,
+  "coreHashes": {
+    "site/core/genplus.js": "8822eb252d2350bce8d206e07895b8c1ede44080e5385650099cc49dfa2c4008",
+    "site/core/genplus.wasm": "30d2f117ed452f51e5978f4dba65c9aa6d4c441ee927fa3902d4982b309bffe3"
+  },
+  "limits": {
+    "warmupCycles": 2,
+    "measuredCycles": 128,
+    "warmupBoundaries": 2,
+    "measuredBoundaries": 8,
+    "modules": 1,
+    "contexts": 1,
+    "peakConnectedMax": 16,
+    "finalConnected": 0,
+    "heapEqualsWarm": true
+  },
+  "limitations": [
+    "Original generated cartridge, synthetic keyboard/visibility events, unassisted recovery settings.",
+    "WASM heap plateau is not a proof of no JavaScript or allocator-internal leaks.",
+    "No physical electrical, audible, real-game or native desktop acceptance."
+  ]
+}

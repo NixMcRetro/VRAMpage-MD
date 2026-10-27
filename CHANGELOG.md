@@ -1,5 +1,10 @@
 # Changelog
 
+## Development Source — Mixed-Fault Stability
+
+- Exercise combined memory, sound-input and RGB contacts with repeated recovery/checkpoint/restart lifecycles using original cartridges and actual browser cores.
+- Remove the obsolete 0 shortcut from the VRAM Reconnect All label; retain 0 chip-target cycling. Add consolidated draft candidate notes without publishing a release or website update.
+
 ## Development Source — Export Availability
 
 - Mark VRAM runtime metadata unavailable when its optional getter returns null or throws. Preserve the legacy display fallback and tracked contacts while experiment comparisons show Unknown instead of a false frame-model match.
