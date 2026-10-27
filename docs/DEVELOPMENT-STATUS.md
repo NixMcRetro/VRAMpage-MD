@@ -1,5 +1,20 @@
 # Development status and continuation checkpoint
 
+## Dependency Maintenance Scope — 28 October 2026 (Sydney)
+
+The user authorised useful fixes while GitHub security-alert access is being
+resolved. This slice adds scheduled Dependabot updates for the declared Python
+browser-test requirement and GitHub Actions only. Weekly checks group compatible
+Action updates; major updates remain separate. Repository security toggles and
+GitHub App permissions remain administrator settings, outside this file.
+
+Acceptance: validate the configuration against the published schema and actual
+manifest paths, obtain independent review, pass local source checks and all seven
+PR/main jobs, then verify the merged tree. Do not change emulator code, dependency
+pins, VERSION, releases, archived evidence or McRetro.net from this repository.
+The separately authorised website maintenance branch is tracked outside this
+repository. Preserve the verified mixed-fault evidence below.
+
 ## Mixed-Fault Stability Pass Verified — 27 October 2026
 
 [PR #81](https://github.com/NixMcRetro/VRAMpage-MD/pull/81) merged as
