@@ -1412,9 +1412,10 @@ class ActualCoreBrowserTests(unittest.TestCase):
     check($('#disconnectAllFaultsStatus').textContent.includes('completed')&&off(),'six-domain clear incomplete');
   };
   const step=n=>{
-    const start=soakCalls.ticks;
+    const start=soakCalls.ticks,nativeFrame=c._get_logic_frame()>>>0;
     for(let i=0;i<n+5&&soakCalls.ticks-start<n;i++)stepTestFrame();
     check(soakCalls.ticks-start===n,`expected ${n} completed ticks, got ${soakCalls.ticks-start}`);
+    check(((c._get_logic_frame()-nativeFrame)>>>0)===n,'native completed-frame counter delta differed');
     driven+=n;
   };
   const random=(selector,value)=>{
@@ -1459,9 +1460,9 @@ class ActualCoreBrowserTests(unittest.TestCase):
     check($('#rgbEncoderClear').disabled===false,'RGB pair did not activate');
     click('#pauseBtn');
     check(audio.active.size===0,'pause left connected audio sources');
-    const ticks=soakCalls.ticks,ram=bytes(c._get_logic_ram_ref(),65536),zram=bytes(c._get_z80_ram_ref(),8192),samples=pcm();
+    const ticks=soakCalls.ticks,nativeFrame=c._get_logic_frame()>>>0,ram=bytes(c._get_logic_ram_ref(),65536),zram=bytes(c._get_z80_ram_ref(),8192),samples=pcm();
     click('#logicCpuResetBtn');
-    check(soakCalls.ticks===ticks&&paused(),'CPU Reset ticked or resumed');
+    check(soakCalls.ticks===ticks&&(c._get_logic_frame()>>>0)===nativeFrame&&paused(),'CPU Reset ticked or resumed');
     check(equal(ram,bytes(c._get_logic_ram_ref(),65536))&&equal(zram,bytes(c._get_z80_ram_ref(),8192)),'CPU Reset changed RAM');
     const afterPcm=pcm();
     check(equal(samples[0],afterPcm[0])&&equal(samples[1],afterPcm[1])&&JSON.stringify(sound())===JSON.stringify(activeSound),'CPU Reset changed PCM/audio fault state');
@@ -1471,7 +1472,9 @@ class ActualCoreBrowserTests(unittest.TestCase):
     if(cycle<2||(cycle-2)%16===15){
       clear();click('#pauseBtn');
       const savedImage=image(),savedCanvas=canvas(),savedRam=bytes(c._get_logic_ram_ref(),65536),savedZram=bytes(c._get_z80_ram_ref(),8192);
+      const savedFrame=c._get_logic_frame()>>>0;
       click('#saveCheckpointBtn');check($('#checkpointStatus').textContent.includes('Saved Frame'),'checkpoint save refused');
+      check((c._get_session_checkpoint_saved_frame()>>>0)===savedFrame,'saved-frame telemetry differed');
       check(!$('#restoreCheckpointBtn').disabled,'saved checkpoint unavailable');
       // A held Work RAM contact excludes VRAM; exercise both sequentially.
       random('#randomVramBtn',0.999999);clear();
@@ -1485,9 +1488,10 @@ class ActualCoreBrowserTests(unittest.TestCase):
       c.HEAPU8.fill(0,c._get_frame_buffer_ref(),c._get_frame_buffer_ref()+640*480*4);
       click('#rawVideoToggle');click('#rawVideoToggle');
       check(!equal(savedImage,image())&&savedCanvas!==canvas(),'checkpoint image-change probe was vacuous');
-      const beforeRestore=soakCalls.ticks;click('#restoreCheckpointBtn');
+      const beforeRestore=soakCalls.ticks,beforeRestoreFrame=c._get_logic_frame()>>>0;click('#restoreCheckpointBtn');
       check($('#checkpointStatus').textContent.includes('Restored Frame'),'checkpoint restore refused');
-      check(paused()&&soakCalls.ticks===beforeRestore&&off(),'restore did not clear contacts and stay paused without ticks');
+      check(paused()&&soakCalls.ticks===beforeRestore&&(c._get_logic_frame()>>>0)===beforeRestoreFrame&&off(),'restore did not clear contacts and stay paused without ticks');
+      check((c._get_session_checkpoint_saved_frame()>>>0)===savedFrame,'restore changed saved-frame telemetry');
       check(equal(savedImage,image())&&canvas()===savedCanvas,'checkpoint did not restore raw/canvas image');
       check(equal(savedRam,bytes(c._get_logic_ram_ref(),65536))&&equal(savedZram,bytes(c._get_z80_ram_ref(),8192)),'checkpoint RAM replay differed');
       check(inputs().every(v=>v===0),'restore retained held controller input');

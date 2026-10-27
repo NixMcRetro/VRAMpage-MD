@@ -34,8 +34,9 @@ clears all six domains, restores the saved machine/image and stays paused.
 Automated acceptance uses original generated cartridges and separate source,
 native sanitizer, compiled-WASM and three-browser/package checks. The current
 [checkpoint](WORK-QUEUE.md) records completed evidence and remaining blockers.
-The mixed-fault endurance workload is an additional acceptance gate in progress;
-its results must be recorded before presenting this draft as a tested candidate.
+The [128-cycle mixed-fault workload](TESTING.md#mixed-fault-endurance-checks)
+passed its first local run; fresh three-browser package CI remains its integration
+gate. Final checkpoint links distinguish local evidence from merged acceptance.
 Browser-software checks do not establish physical electrical accuracy, listening
 quality, every cartridge's recovery or native desktop acceptance on every OS.
 
