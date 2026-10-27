@@ -64,6 +64,14 @@ assert.equal(policies.find(row=>row.label==='Force Resume Enabled').status,'mism
 assert.equal(policies.find(row=>row.label==='CPU Recovery Enabled').status,'match');
 assert.equal(policies.find(row=>row.label==='Recovery Wait Frames').status,'mismatch');
 assert.equal(compare(A,B).find(row=>row.label==='Force Resume Enabled').status,'unknown');
+const rgbA={rgbEncoderFault:{available:true,configured:true,effective:true,cutMask:5,pair:[0,2],modelVersion:'rgb-input-code-voltage-v1'}};
+const rgbB=structuredClone(rgbA);rgbB.rgbEncoderFault.cutMask=1;
+assert.equal(compare(rgbA,rgbA).find(row=>row.label==='RGB Encoder Effective').status,'match');
+assert.equal(compare(rgbA,rgbB).find(row=>row.label==='RGB Encoder Cut Mask').status,'mismatch');
+assert.equal(compare(rgbA,B).find(row=>row.label==='RGB Encoder Pair').status,'unknown');
+rgbB.rgbEncoderFault.pair=[0,0];
+assert.equal(compare(rgbA,rgbB).find(row=>row.label==='RGB Encoder Pair').status,'unknown',
+  'equal pair endpoints are malformed and cannot compare as configured evidence');
 console.log('Experiment comparison parser and row tests passed.');
 
 const z80A={z80RamFault:{available:true,configured:true,effective:true,bridgeA:0,bridgeB:12,modelVersion:'z80-ram-write-address-pair-v1',activationFrame:8,ramWrites:'9007199254740993',changedAddresses:'4',z80Writes:'3',m68kWrites:'9007199254740990'}};

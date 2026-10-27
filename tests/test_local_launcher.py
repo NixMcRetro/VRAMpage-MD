@@ -15,7 +15,7 @@ LAUNCHER = ROOT / "scripts" / "serve.py"
 
 
 def make_bundle(root, *, core=True):
-    for relative in ("site/index.html", "site/style.css", "site/app.js", "site/framebuffer.js",
+    for relative in ("site/index.html", "site/style.css", "site/app.js", "site/framebuffer.js", "site/rgb-encoder.js",
                      "site/source/README.txt", "site/source/patch_core.py",
                      "site/source/vram_fault_patch.c",
                      "site/source/vram_transaction_render.h"):

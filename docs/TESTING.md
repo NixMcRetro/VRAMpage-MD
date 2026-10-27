@@ -1,3 +1,16 @@
+# RGB Encoder Development Checks
+
+See [the explicit RGB model](RGB-ENCODER-INPUTS.md). Run
+`node tests/test_rgb_encoder.cjs` for literal/exhaustive channel oracles,
+`python tests/browser_logic.py -k rgb_encoder` for controlled UI/lifecycle cases,
+and `python tests/browser_core.py -k rgb_encoder` for runtime/fallback canvas,
+full memory and generated PCM noninterference using an original cartridge.
+The fixed paired display benchmark is `python scripts/benchmark-rgb-encoder.py
+--output result.json`; its [first raw record](experiments/rgb-encoder-display-performance-v1.json)
+passes the declared inactive-ratio and active-transform gates.
+These remain in the full source/browser/package CI paths. Physical analogue
+behaviour, audible output and native desktop acceptance remain unverified.
+
 # v0.5.0 Cross-Platform Candidate Checks
 
 The actual-core video/audio/input case now serves the built site from a hosting

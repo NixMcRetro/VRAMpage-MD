@@ -1,32 +1,74 @@
 # Development status and continuation checkpoint
 
-## Video Encoder Research — Review Checkpoint
+## RGB Encoder Inputs Ready for CI — 27 October 2026 (Sydney)
 
-The user requested additional research into CXA1145P or equivalent manipulation
-while reviewing the completed Z80 RAM build. Work is isolated on
-`experiment/video-encoder-research` in `/workspace/vrampage-video-encoder`, based
-on main `1b464a90daa1b8ba8d9ff321475ccb4dc8ff865c`; the preceding verified Z80
-delivery record is carried forward without repeating implementation.
+Implementation/tests are committed through `18d0586`; independent GPT-6 Luna
+High review of that head found no concrete blockers and separately passed the
+model/schema/comparison Node suites. The [guide](RGB-ENCODER-INPUTS.md) defines
+the code-domain proxy, cuts-before-join rules, raw bypass and lifecycle limits.
+The user authorized this bounded extension by asking to continue independently;
+composite/sync/mono faults remain deferred.
 
-The [research report](VIDEO-ENCODER-RESEARCH.md) covers Sony primary pin/function
-text, Sega encoder variants, RGB/composite/mono-buffer fault hypotheses and the
-current 32-bit RGBA output path. It distinguishes receiver-dependent outcomes,
-analogue source/termination assumptions and the missing waveform/decoder model.
-RGB input contacts are a bounded candidate only; no feature implementation or
-feature-freeze exception is authorized. No application, version, release or
-McRetro.net change. Primary text was inspected; physical/waveform/listening and
-independent visual PDF checks were not performed.
+Local checks passed: `bash scripts/test.sh` (114 Python tests reported, two
+unchanged build-dependent classes skipped locally; strict native sanitizers,
+Node and C smoke suites passed), seven Chromium layout cases, nine actual-core
+Chromium cases and four focused RGB logic cases. Full Chromium logic is running.
+The first actual-core full run exposed two stale expected configuration/domain
+lists; both were updated to assert the complete v4/six-domain contract, and the
+full nine-case repeat passed. No assertion was removed or weakened.
 
-Research acceptance: source-backed device boundaries and core-path map, explicit
-hypothesis/implementation limits, a minimal candidate with future test oracles,
-independent specialist review, document/source checks and required PR/main CI.
-Independent GPT-6 Luna High review found no major blocker; its CXA1645 BFOUT/
-YCLPC wording correction is applied. Source checks passed (114 reported tests,
-two unchanged build-dependent classes skipped); all 302 relative Markdown paths
-resolve. The initial default sandbox blocked loopback/LSan; the network-enabled
-runner passed without weakening checks. Next: require all seven PR checks before
-merge and verify main CI. Preserve all published releases.
-Evidence: `/workspace/scratch/video-encoder-research/`.
+The first fixed five-pair [display benchmark](experiments/rgb-encoder-display-performance-v1.json)
+passes: inactive median/p95 ratios 1.0/1.0 (limit 1.05), active transform p95
+0.318 ms per 320×224 frame (limit 1 ms). Its three input hashes match current
+source; the recorded source commit is `00cc00b`. Runtime and normal-core hashes
+match the preceding verified build; native source is unchanged. Synthetic tests
+prove literal canvas pixels and byte-identical native framebuffer, full Work
+RAM, available Z80 RAM and generated PCM under paused edits. No physical or
+audible result is inferred. All 311 relative Markdown links resolve. Logs and
+synthetic UI inspection: `/workspace/scratch/rgb-encoder/`.
+
+Next: require all seven PR checks before merge, verify the exact merged tree,
+all seven main checks and the resulting ROM-free development package/source
+identity. Record final links on a delivery checkpoint without another trivial
+CI cycle. VERSION, existing release records/assets and McRetro.net stay unchanged.
+
+## Video Encoder Research Verified — 27 October 2026 (Sydney)
+
+[PR #78](https://github.com/NixMcRetro/VRAMpage-MD/pull/78) merged as
+`fbfe46a1007abd77141226c34421329a74f46592`; its tree exactly matches reviewed
+head `136127d467f5f94859a544a5831d8ca48e42e261`. All seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40421292278)
+and all seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40422107154)
+passed. The diff contains six Markdown files only, including the preceding
+verified Z80 delivery checkpoint. Application code and VERSION are unchanged;
+all 18 release records/asset identities match the starting snapshot. McRetro.net
+was not modified or deployed.
+
+The [CXA1145 report](VIDEO-ENCODER-RESEARCH.md) records Sony manufacturer signal
+text, CXA1645 differences, Sega-listed Model 2 alternatives and the current
+32-bit RGBA output boundary. Analogue RGB contacts are the smallest candidate;
+composite subcarrier/sync require timing and receiver assumptions. A distinct
+mono-buffer path is documented. This is research, not an implemented feature,
+feature-freeze exception or physical NTSC VA6 validation.
+
+Independent GPT-6 Luna High review found no major blocker; its exact BFOUT/YCLPC
+pin-function correction is applied. Source checks passed (114 reported tests,
+two unchanged build-dependent classes skipped locally), and all 302 relative
+Markdown paths resolve. Initial default-sandbox loopback/LSan failures are
+retained; the network-enabled runner passed without weakened checks. Logs:
+`/workspace/scratch/video-encoder-research/`.
+
+No board, waveform, listening or proposed encoder-model experiment was performed.
+Primary text was inspected; PDF screenshot markers did not supply inspectable
+images, so independent visual validation is not claimed. Future model tests are
+specified, not reported as passing.
+
+Next: await the user's Z80 RAM build review and address concrete stability reports.
+Encoder implementation needs a separate bounded decision; do not automatically
+add RGB/composite/mono faults. #73 still needs matching NTSC VA6 board evidence.
+This final queue/status record is preserved on `experiment/video-encoder-delivery`
+without another documentation-only integration cycle. No research-delivery blocker
+remains; physical/model calibration remains outstanding.
 
 ## Z80 RAM Write Verified — 27 October 2026 (Sydney)
 

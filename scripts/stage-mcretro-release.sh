@@ -18,7 +18,7 @@ if [[ -z "$branch" || "$branch" == "main" || "$branch" == "master" ]]; then
   echo "Refusing to stage on the website main/master branch. Switch to a release branch first." >&2
   exit 1
 fi
-for file in   "$ROOT/site/index.html" "$ROOT/site/app.js" "$ROOT/site/style.css" "$ROOT/site/framebuffer.js" "$ROOT/site/circuit-config.js" "$ROOT/site/experiment-comparison.js"   "$ROOT/site/core/genplus.js" "$ROOT/site/core/genplus.wasm"   "$ROOT/site/source/README.txt"; do
+for file in   "$ROOT/site/index.html" "$ROOT/site/app.js" "$ROOT/site/style.css" "$ROOT/site/framebuffer.js" "$ROOT/site/rgb-encoder.js" "$ROOT/site/circuit-config.js" "$ROOT/site/experiment-comparison.js"   "$ROOT/site/core/genplus.js" "$ROOT/site/core/genplus.wasm"   "$ROOT/site/source/README.txt"; do
   if [[ ! -f "$file" ]]; then
     echo "Missing release artifact: $file" >&2
     echo "Activate Emscripten and run ./scripts/build-core.sh first." >&2
@@ -31,7 +31,7 @@ if find "$ROOT/site" -type f \( -iname '*.bin' -o -iname '*.gen' -o -iname '*.sm
 fi
 DEST="$TARGET/homepages/vrampage"
 mkdir -p "$DEST/core" "$DEST/source"
-cp "$ROOT/site/index.html" "$ROOT/site/app.js" "$ROOT/site/style.css" "$ROOT/site/framebuffer.js" "$ROOT/site/circuit-config.js" "$ROOT/site/experiment-comparison.js" "$DEST/"
+cp "$ROOT/site/index.html" "$ROOT/site/app.js" "$ROOT/site/style.css" "$ROOT/site/framebuffer.js" "$ROOT/site/rgb-encoder.js" "$ROOT/site/circuit-config.js" "$ROOT/site/experiment-comparison.js" "$DEST/"
 cp "$ROOT/site/core/genplus.js" "$ROOT/site/core/genplus.wasm" "$DEST/core/"
 cp -R "$ROOT/site/source/." "$DEST/source/"
 cp "$ROOT/README.md" "$DEST/README.md"

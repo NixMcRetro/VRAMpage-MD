@@ -1,6 +1,8 @@
 # CXA1145 Video Encoder Research
 
-**Research only — 27 October 2026 (Sydney).** No encoder fault is implemented.
+**Research checkpoint — 27 October 2026 (Sydney).** This report predates the
+subsequently authorized [RGB input approximation](RGB-ENCODER-INPUTS.md). Its
+proposed experiments below are research gates, not completed physical tests.
 The user requested this investigation while reviewing the Z80 RAM build.
 Existing application behaviour, versions, releases and McRetro.net are unchanged.
 

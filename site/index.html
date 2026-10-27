@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="style.css">
   <script src="core/genplus.js" defer onerror="window.__coreMissing = true"></script>
   <script src="framebuffer.js" defer></script>
+  <script src="rgb-encoder.js" defer></script>
   <script src="circuit-config.js" defer></script>
   <script src="experiment-comparison.js" defer></script>
   <script src="app.js" defer></script>
@@ -100,7 +101,7 @@
           </section>
         </div>
         <div class="logic-actions chip-workbench-actions">
-          <button id="disconnectAllFaultsBtn" type="button" disabled title="Attempts to clear VRAM, Work RAM, Z80 RAM, PSG and FM faults. Confirmed success preserves the current run state; any uncertainty pauses before the next frame.">Disconnect All Faults</button>
+          <button id="disconnectAllFaultsBtn" type="button" disabled title="Attempts to clear VRAM, Work RAM, Z80 RAM, PSG, FM and RGB encoder faults. Confirmed success preserves the current run state; any uncertainty pauses before the next frame.">Disconnect All Faults</button>
         </div>
         <div class="randomiser-row" role="group" aria-label="Randomiser chip controls">
           <strong>Randomiser</strong>
@@ -129,6 +130,17 @@
           <button id="z80RamBridgeRemove" type="button" disabled>Remove Bridge</button>
         </div>
         <p class="randomiser-status"><span id="z80RamBridgeStatus" role="status" aria-live="polite">Z80 RAM Write Off</span> <span id="z80RamBridgeCounts"></span></p>
+        <div id="rgbEncoderControls" class="ram-frame-pairs rgb-encoder-controls" role="group" aria-label="RGB Encoder Input Contacts" aria-describedby="rgbEncoderStatus" title="RGB input approximation: cuts terminate to black; a joined pair has equal source impedance. Composite video, sync and audio are not simulated.">
+          <strong>RGB Encoder</strong><span>Input Approximation</span>
+          <button type="button" data-rgb-cut="0" aria-pressed="false" disabled>Cut R</button>
+          <button type="button" data-rgb-cut="1" aria-pressed="false" disabled>Cut G</button>
+          <button type="button" data-rgb-cut="2" aria-pressed="false" disabled>Cut B</button>
+          <button type="button" data-rgb-pair="0,1" aria-pressed="false" disabled>Join R ↔ G</button>
+          <button type="button" data-rgb-pair="0,2" aria-pressed="false" disabled>Join R ↔ B</button>
+          <button type="button" data-rgb-pair="1,2" aria-pressed="false" disabled>Join G ↔ B</button>
+          <button id="rgbEncoderClear" type="button" disabled>Reconnect RGB</button>
+        </div>
+        <p id="rgbEncoderStatus" class="randomiser-status" role="status" aria-live="polite">Load a ROM for RGB Encoder Contacts.</p>
         <p id="disconnectAllFaultsStatus" class="logic-status" role="status" aria-live="polite">Load a ROM to disconnect all fault domains.</p>
         <details class="chip-settings" id="vramSettings">
           <summary>VRAM Presets, Counters and Model Notes</summary>

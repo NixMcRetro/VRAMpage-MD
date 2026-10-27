@@ -409,11 +409,12 @@ footer { padding-top:9px; font-size:10px; }
 .ram-frame-pairs { margin:0 12px 6px; color:var(--muted); font:9px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace; }
 .ram-frame-pairs > strong { display:inline-block; margin:0 8px 3px 0; }
 .ram-frame-pairs select { padding:2px 4px; background:var(--surface); color:var(--ink); font:inherit; }
-.z80-ram-controls { display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px; }
-.z80-ram-controls > strong { margin:0; }
+.z80-ram-controls, .rgb-encoder-controls { display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px; }
+.z80-ram-controls > strong, .rgb-encoder-controls > strong { margin:0; }
 .z80-ram-controls label { display:flex; align-items:center; gap:4px; }
-.z80-ram-controls button { padding:4px 6px; font:inherit; }
-.z80-ram-controls button, .z80-ram-controls select { min-height:24px; }
+.z80-ram-controls button, .rgb-encoder-controls button { padding:4px 6px; font:inherit; }
+.z80-ram-controls button, .z80-ram-controls select, .rgb-encoder-controls button { min-height:24px; }
+.rgb-encoder-controls button[aria-pressed="true"] { background:#dcebd8; color:#243d27; border-color:#8bb281; }
 .ram-frame-pair-buttons { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:3px; min-width:0; }
 .ram-frame-pair-buttons button { min-width:0; padding:4px 2px; font-size:9px; white-space:nowrap; }
 @media (max-width:420px) {

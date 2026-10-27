@@ -7,7 +7,8 @@ const valid = {
   format, schemaVersion: version,
   configuration: {
     vram: {modelId: 2, mask: 0, pair: [0, 1]}, ram: null,
-    psg: audio([0, 7]), fm: audio([1, 6]), z80Ram:{pair:null}
+    psg: audio([0, 7]), fm: audio([1, 6]), z80Ram:{pair:null},
+    rgbEncoder:{cutMask:0,pair:null}
   }
 };
 assert.deepEqual(parse(JSON.stringify(valid)), valid);
@@ -19,7 +20,7 @@ const legacyV1 = {
 assert.deepEqual(parse(JSON.stringify(legacyV1)), {
   format, schemaVersion: version,
   configuration: {vram:{modelId:1,mask:0,pair:null},ram:null,
-    psg:audio([0,7]),fm:audio(),z80Ram:{pair:null}}
+    psg:audio([0,7]),fm:audio(),z80Ram:{pair:null},rgbEncoder:{cutMask:0,pair:null}}
 });
 
 const audioMasks = structuredClone(valid);
@@ -44,7 +45,7 @@ reversedPairs.configuration.psg = audio([7, 0]);
 reversedPairs.configuration.fm = audio([6, 1]);
 assert.deepEqual(validate(reversedPairs).configuration, {
   vram: {modelId: 1, mask: 0, pair: [2, 5]}, ram: null,
-  psg: audio([0,7]), fm: audio([1,6]), z80Ram:{pair:null}
+  psg: audio([0,7]), fm: audio([1,6]), z80Ram:{pair:null}, rgbEncoder:{cutMask:0,pair:null}
 });
 
 const reversedRam = structuredClone(linePair);
@@ -87,8 +88,22 @@ const invalidLegacy={...legacyV1,configuration:{...legacyV1.configuration,psg:[0
 assert.throws(()=>parse(JSON.stringify(invalidLegacy)));
 for (const text of ['', '{', '[]', 'null', ' '.repeat(32769)]) assert.throws(() => parse(text));
 const legacyV2={format,schemaVersion:2,configuration:{vram:{modelId:1,mask:0,pair:null},ram:null,psg:audio(null,3),fm:audio([0,1])}};
-assert.deepEqual(parse(JSON.stringify(legacyV2)).configuration,{...legacyV2.configuration,z80Ram:{pair:null}});
-assert.equal(parse(JSON.stringify(legacyV2)).schemaVersion,3);
+assert.deepEqual(parse(JSON.stringify(legacyV2)).configuration,{...legacyV2.configuration,
+  z80Ram:{pair:null},rgbEncoder:{cutMask:0,pair:null}});
+assert.deepEqual(parse(JSON.stringify(legacyV2)).configuration.rgbEncoder,{cutMask:0,pair:null});
+assert.equal(parse(JSON.stringify(legacyV2)).schemaVersion,4);
+const legacyV3={format,schemaVersion:3,configuration:{...legacyV2.configuration,z80Ram:{pair:null}}};
+assert.deepEqual(parse(JSON.stringify(legacyV3)).configuration.rgbEncoder,{cutMask:0,pair:null});
+assert.equal(parse(JSON.stringify(legacyV3)).schemaVersion,4);
+assert.throws(()=>parse(JSON.stringify({...legacyV3,configuration:{...legacyV3.configuration,rgbEncoder:{cutMask:1,pair:null}}})),/unknown fields/);
+const rgb=structuredClone(valid);rgb.configuration.rgbEncoder={cutMask:3,pair:[2,0]};
+assert.deepEqual(validate(rgb).configuration.rgbEncoder,{cutMask:3,pair:[0,2]});
+for(const config of [{cutMask:-1,pair:null},{cutMask:8,pair:null},{cutMask:1.5,pair:null},
+  {cutMask:0,pair:[0,0]},{cutMask:0,pair:[0,3]},{cutMask:0,pair:[0,1,2]},
+  {cutMask:0,pair:null,extra:true}]) {
+  const malformed=structuredClone(valid);malformed.configuration.rgbEncoder=config;
+  assert.throws(()=>validate(malformed));
+}
 const z80=structuredClone(valid);z80.configuration.z80Ram.pair=[12,0];
 assert.deepEqual(validate(z80).configuration.z80Ram,{pair:[0,12]});
 for(const value of [[0,13],[0,0],[-1,2],[0,1.5],[],[0,1,2],'0,1']) {
@@ -97,4 +112,4 @@ for(const value of [[0,13],[0,0],[-1,2],[0,1.5],[],[0,1,2],'0,1']) {
 z80.configuration.z80Ram={pair:null,dataMask:1};assert.throws(()=>validate(z80));
 const legacyUnknown=structuredClone(legacyV2);legacyUnknown.configuration.z80Ram={pair:[0,1]};
 assert.throws(()=>parse(JSON.stringify(legacyUnknown)));
-console.log('Circuit schema v3 validates independent Z80 RAM pairs and imports v1/v2 with the bridge off.');
+console.log('Circuit schema v4 validates RGB encoder contacts and imports v1/v2/v3 with RGB off.');

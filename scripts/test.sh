@@ -11,6 +11,8 @@ node tests/test_circuit_config_schema.cjs
 node --check site/framebuffer.js
 node tests/test_framebuffer.cjs
 node tests/test_framebuffer_properties.cjs
+node --check site/rgb-encoder.js
+node tests/test_rgb_encoder.cjs
 node tests/test_benchmark_vram_runtime.cjs
 node tests/test_pulse_sweep.cjs
 node --check scripts/observe-attract-demo.cjs

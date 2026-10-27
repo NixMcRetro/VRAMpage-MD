@@ -16,7 +16,7 @@
       ||key==='logic'&&!!value&&typeof value==='object'&&!Array.isArray(value)&&
         (value.schemaVersion===1||typeof value.active==='boolean'||value.fault===null||!!value.fault&&typeof value.fault==='object')
       ||key==='logicFault'&&!!value&&typeof value==='object'&&!Array.isArray(value)&&typeof value.kind==='string'
-      ||['fmInputFault','psgInputFault','z80RamFault'].includes(key)&&!!value&&typeof value==='object'&&!Array.isArray(value)&&typeof value.available==='boolean'
+      ||['fmInputFault','psgInputFault','z80RamFault','rgbEncoderFault'].includes(key)&&!!value&&typeof value==='object'&&!Array.isArray(value)&&typeof value.available==='boolean'
       ||key==='corePin'&&typeof value==='string'&&/^[a-f0-9]{40}$/.test(value)
       ||key==='modelVersion'&&typeof value==='string'&&value.length>0;
     if (!Object.keys(data).some(key=>recognizable(key,data[key])))
@@ -126,6 +126,13 @@
       ['Recorded Writes','ramWrites',isCount],['Changed Addresses','changedAddresses',isCount],
       ['Z80 Writes','z80Writes',isCount],['68000 Writes','m68kWrites',isCount]
     ]) field(`Z80 RAM ${label}`,['z80RamFault',key],['z80RamFault','available'],valid);
+    for (const [label,key,valid] of [
+      ['Configured','configured',isBoolean],['Effective','effective',isBoolean],
+      ['Cut Mask','cutMask',value=>isInteger(value,0,7)],
+      ['Pair','pair',value=>value===null||Array.isArray(value)&&value.length===2&&
+        value.every(channel=>isInteger(channel,0,2))&&value[0]!==value[1]],
+      ['Model Version','modelVersion',isString],['Reason','reason',isString]
+    ]) field(`RGB Encoder ${label}`,['rgbEncoderFault',key],['rgbEncoderFault','available'],valid);
     for(const [name,key] of [['FM','fmInputFault'],['PSG','psgInputFault']]) {
       for(const [label,fieldName] of [['Model Version','modelVersion'],['Changed Writes','changedWrites']])
         field(`${name} ${label}`,[key,fieldName],[key,'available'],fieldName==='changedWrites'?isCount:isString);

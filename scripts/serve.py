@@ -25,6 +25,7 @@ def validate_bundle():
         SITE / "style.css",
         SITE / "app.js",
         SITE / "framebuffer.js",
+        SITE / "rgb-encoder.js",
         SITE / "core" / "genplus.js",
         SITE / "core" / "genplus.wasm",
         SITE / "source" / "README.txt",
