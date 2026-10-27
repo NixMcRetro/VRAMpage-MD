@@ -1,5 +1,9 @@
 # Changelog
 
+## Development Maintenance — Dependency Updates
+
+- Schedule weekly GitHub Actions and browser-test dependency updates; group compatible Action updates and retain separate major-version reviews and the existing CI gates.
+
 ## Development Source — Mixed-Fault Stability
 
 - Exercise combined memory, sound-input and RGB contacts with repeated recovery/checkpoint/restart lifecycles using original cartridges and actual browser cores.
