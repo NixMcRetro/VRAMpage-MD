@@ -1,27 +1,41 @@
 # Development work queue
 
-## Dependency Maintenance Scope — 28 October 2026 (Sydney)
+## Dependency Maintenance Verified — 28 October 2026 (Sydney)
 
-The user authorised useful fixes while GitHub security-alert access is being
-resolved. This slice adds scheduled Dependabot updates for the declared Python
-browser-test requirement and GitHub Actions only. Weekly checks group compatible
-Action updates; major updates remain separate. Repository security toggles and
-GitHub App permissions remain administrator settings, outside this file.
+[PR #82](https://github.com/NixMcRetro/VRAMpage-MD/pull/82) merged as
+`c3c32be287b0645b204a1bd9127cb3d07073b21e`; the merged tree exactly matches
+reviewed head `fb3a595674f601ed1caa754bfdf875f6594c0f62`. All seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40592380830)
+and all seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40593361647)
+passed. GitHub's configuration check and four initial Dependabot runs also
+passed. Weekly Actions/root and pip/tests updates are active; compatible Action
+updates group together and major updates remain separate.
 
-Acceptance: validate the configuration against the published schema and actual
-manifest paths, obtain independent review, pass local source checks and all seven
-PR/main jobs, then verify the merged tree. Do not change emulator code, dependency
-pins, VERSION, releases, archived evidence or McRetro.net from this repository.
-The separately authorised website maintenance branch is tracked outside this
-repository. Preserve the verified mixed-fault evidence below.
+Published-schema and real-manifest validation passed. Independent GPT-6 Luna
+High review found no configuration/workflow blocker. Local source/native
+sanitizer/Node/C suites passed (114 Python tests reported, two unchanged
+build-dependent class skips). Application code, dependency pins, VERSION,
+pinned native cores and all 18 public release records/asset identities remain
+unchanged. Prior mixed-fault evidence is preserved below. Logs and schema/path
+validation notes are under `/workspace/scratch/dependabot-setup/`.
 
-Configuration schema and manifest-path checks passed. Independent GPT-6 Luna
-High review found no configuration/workflow blocker; the website wording was
-clarified to avoid claiming unverified security enablement. Local
-`bash scripts/test.sh` passed: 114 Python tests reported, two unchanged
-build-dependent classes skipped, plus native sanitizer/Node/C suites. Runtime
-source, pins, VERSION and release assets remain unchanged. GitHub PR checks,
-exact-tree merge and all seven main checks are the remaining integration gates.
+The separately authorised McRetro.net branch
+[`security/ruby-dependencies-2026-10-28`](https://github.com/NixMcRetro/mcretro.net/tree/security/ruby-dependencies-2026-10-28)
+is at `1f973398fc57a6cdcb43a3837bccf315ee01c279`. It patches concurrent-ruby
+1.3.6 to 1.3.8 and json 2.19.5 to 2.19.9, adds weekly active-root Ruby/npm/Actions
+updates and closes the root npm/workflow PR build-filter gap. Its full
+[website build](https://github.com/NixMcRetro/mcretro.net/actions/runs/40592234097)
+passed with deployment skipped. The website branch remains unmerged: PR
+creation is blocked by GitHub integration permissions. Posts, assets, deployed
+VRAMpage source and the live website remain unchanged. Archived npm findings
+are unresolved; private Dependabot alert reads remain blocked in both repos.
+Configuration does not grant permissions or enable repository security toggles.
+
+Next: review the generated [Playwright update #83](https://github.com/NixMcRetro/VRAMpage-MD/pull/83)
+first, then major Actions updates #84–#88 with their relevant migration notes and
+fresh CI. None was merged automatically. Retain #73's matching-board evidence
+boundary; do not restart completed emulator experiments. This verified record is
+preserved on `maintenance/dependabot-delivery` without a trivial doc-only CI loop.
 
 ## Mixed-Fault Stability Pass Verified — 27 October 2026
 
