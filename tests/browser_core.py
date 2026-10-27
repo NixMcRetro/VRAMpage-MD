@@ -50,6 +50,26 @@ def original_cartridge():
     return bytes(rom)
 
 
+def original_z80_store_cartridge():
+    """Original video/PSG cartridge with a Z80 program storing $44/$55."""
+    rom = bytearray(original_cartridge())
+    words = []
+    def word(address, value):
+        words.extend([0x33fc, value, address >> 16, address & 0xffff])
+    def byte(address, value):
+        words.extend([0x13fc, value, address >> 16, address & 0xffff])
+    z80 = [0x3e,0x44,0x32,0x00,0x01, 0x3e,0x55,0x32,0x00,0x11, 0xc3,0x00,0x00]
+    word(0xa11100,0x0100)
+    word(0xa11200,0x0100)
+    for i, value in enumerate(z80):
+        byte(0xa00000+i,value)
+    word(0xa11100,0)
+    words.append(0x60fe)
+    for i, value in enumerate(words):
+        struct.pack_into('>H',rom,0x200+2*i,value)
+    return bytes(rom)
+
+
 class ActualCoreBrowserTests(unittest.TestCase):
     def test_normal_core_rejects_optional_configuration_before_mutation(self):
         normal_source = OPTIONS.site_root / 'source/src/main/js'
@@ -1307,6 +1327,147 @@ class ActualCoreBrowserTests(unittest.TestCase):
                                     self.assertTrue(page.evaluate('(testCore._get_logic_cpu_flags() & 1)!==0'))
                                 self.assertEqual(errors,[])
                                 page.close()
+                    finally:browser.close()
+            finally:server.shutdown()
+
+    def test_mixed_fault_endurance_128_actual_core_cycles(self):
+        handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
+        with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            try:
+                with sync_playwright() as p:
+                    kwargs = {'executable_path': OPTIONS.executable} if OPTIONS.executable else {}
+                    browser = getattr(p, OPTIONS.browser).launch(**kwargs)
+                    try:
+                        page = browser.new_page(viewport={'width':1366,'height':768})
+                        errors=[]
+                        page.on('pageerror',lambda error:errors.append(str(error)))
+                        page.add_init_script("""
+                          window.testFrames=[];window.testTime=0;
+                          window.requestAnimationFrame=cb=>testFrames.push(cb);
+                          window.stepTestFrame=()=>{const q=testFrames.splice(0);testTime+=17;q.forEach(cb=>cb(testTime));};
+                          const Native=window.AudioContext||window.webkitAudioContext;
+                          window.soakAudio={contexts:0,created:0,active:new Set(),maxActive:0,finite:true};
+                          if(Native){
+                            const create=Native.prototype.createBufferSource;
+                            Native.prototype.createBufferSource=function(...args){
+                              const source=Reflect.apply(create,this,args),p=window.soakAudio;
+                              p.created++;const connect=source.connect,disconnect=source.disconnect,start=source.start;
+                              source.connect=function(...a){const r=Reflect.apply(connect,this,a);p.active.add(source);p.maxActive=Math.max(p.maxActive,p.active.size);return r;};
+                              source.disconnect=function(...a){p.active.delete(source);return Reflect.apply(disconnect,this,a);};
+                              source.addEventListener('ended',()=>p.active.delete(source),{once:true});
+                              source.start=function(...a){const b=source.buffer;if(!b)p.finite=false;else for(let c=0;c<b.numberOfChannels;c++)for(const v of b.getChannelData(c))if(!Number.isFinite(v))p.finite=false;return Reflect.apply(start,this,a);};
+                              return source;
+                            };
+                            window.AudioContext=new Proxy(Native,{construct(t,a){window.soakAudio.contexts++;window.testAudioContext=Reflect.construct(t,a);return window.testAudioContext;}});
+                            if(window.webkitAudioContext)window.webkitAudioContext=window.AudioContext;
+                          }
+                        """)
+                        core_js=(OPTIONS.site_root/'core/genplus.js').read_text()
+                        core_js+='\nconst originalFactory=window.Module;window.testModuleCount=0;window.Module=opts=>{window.testModuleCount++;return originalFactory(opts).then(c=>{window.testCore=c;return c;});};\n'
+                        page.route('**/core/genplus.js',lambda route:route.fulfill(content_type='text/javascript',body=core_js))
+                        page.goto(f'http://127.0.0.1:{server.server_port}/')
+                        page.wait_for_function('!!window.testCore')
+                        page.locator('#romFile').set_input_files({'name':'original-mixed-z80.bin','mimeType':'application/octet-stream','buffer':original_z80_store_cartridge()})
+                        expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+                        page.locator('#soundBtn').evaluate('(b)=>b.click()')
+                        page.locator('#logicExperiment > summary').evaluate('(b)=>b.click()')
+                        page.locator('#logicResumeBtn').evaluate('(b)=>{if(b.getAttribute("aria-pressed")==="true")b.click()}')
+                        page.locator('#armCpuRecoveryBtn').evaluate('(b)=>{if(b.getAttribute("aria-pressed")==="true")b.click()}')
+                        page.evaluate('for(let i=0;i<2;i++)stepTestFrame()')
+                        self.assertEqual(page.evaluate('''() => ({force:document.querySelector('#logicResumeBtn').getAttribute('aria-pressed'),cpu:document.querySelector('#armCpuRecoveryBtn').getAttribute('aria-pressed'),heap:testCore.HEAPU8.buffer.byteLength})''')['force'],'false')
+                        page.evaluate('(rom)=>{window.enduranceRom=Uint8Array.from(rom)}',list(original_z80_store_cartridge()))
+                        page.locator('#z80RamBridgeA').select_option('11')
+                        page.locator('#z80RamBridgeB').select_option('12')
+                        page.locator('#ramWriteMode').select_option('pulse')
+                        # The 130 loops run as DOM events and manual RAF frames in page context.
+                        report=page.evaluate('''async () => {
+                          const c=testCore,errors=[];let warmHeap=null,warmupCycles=0,measuredCycles=0,totalDrivenFrames=0;
+                          const bytes=(ref,n)=>Array.from(c.HEAPU8.subarray(ref>>>0,(ref>>>0)+n));
+                          const inputs=()=>Array.from(new Float32Array(c.HEAPF32.buffer,c._get_input_buffer_ref(),32));
+                          const equal=(a,b)=>a.length===b.length&&a.every((v,i)=>v===b[i]);
+                          const click=s=>document.querySelector(s).click();
+                          const state=()=>({v:c._get_vram_fault_model_state(),w:c._get_logic_address_mask(),z:c._get_z80_ram_bridge_state(),p:c._get_psg_data_bridge_state(),f:c._get_fm_data_bridge_state(),rgb:document.querySelector('[data-rgb-pair="0,1"]').getAttribute('aria-pressed')==='true'});
+                          const frames=()=>c._get_logic_frame();
+                          const step=n=>{const start=frames(),target=start+n;for(let j=0;j<n+5&&frames()<target;j++)stepTestFrame();const advanced=frames()-start;totalDrivenFrames+=advanced;return advanced;};
+                          const random=(selector,value)=>{const old=Math.random;Math.random=()=>value;try{click(selector)}finally{Math.random=old}};
+                          const image=()=>bytes(c._get_frame_buffer_ref(),640*480*4);
+                          let boundaries=0;
+                          for(let cycle=0;cycle<130;cycle++){
+                            if(cycle<2)warmupCycles++;else measuredCycles++;
+                            click('#disconnectAllFaultsBtn');
+                            document.querySelector('#vramModel').value=cycle%2?'1':'2';
+                            document.querySelector('#vramModel').dispatchEvent(new Event('change',{bubbles:true}));
+                            if(cycle%2===0)random('#randomVramBtn',0.999999);
+                            random('#randomFmBtn',cycle%3===0?0:0.999999);
+                            random('#randomPsgBtn',cycle%3===1?0:0.999999);
+                            document.querySelector('#z80RamBridgeApply').click();
+                            document.querySelector('[data-rgb-pair="0,1"]').click();
+                            if(cycle%2){
+                              const before=frames();document.querySelector('[data-ram-frame-pair="10,11"]').click();const advanced=step(8),pulseStatus=document.querySelector('#randomiserStatus').textContent;
+                              if(frames()-before!==8||advanced!==8||!pulseStatus.includes('ended after 8 emulated frames'))errors.push(`cycle ${cycle}: pulse expected exactly 8 frames; before=${before} after=${frames()} status=${pulseStatus}`);
+                            }else if(step(8)!==8)errors.push(`cycle ${cycle}: VRAM phase expected exactly 8 logic frames, got ${frames()}`);
+                            const active=state();
+                            if(!active.z.configured||!active.z.effective||!active.p.configured||!active.f.configured||!active.rgb)errors.push(`cycle ${cycle}: mixed domains did not configure`);
+                            const zstate=c._get_z80_ram_bridge_state(),zref=c._get_z80_ram_ref()>>>0;
+                            if(BigInt(zstate.z80Writes)===0n)errors.push(`cycle ${cycle}: generated repeated Z80 stores did not reach the native bridge; state=${JSON.stringify(zstate)} bytes=${c.HEAPU8[zref+0x100]}/${c.HEAPU8[zref+0x1100]}`);
+                            click('#pauseBtn');
+                            const frame=frames(), ram=bytes(c._get_logic_ram_ref(),65536),zram=bytes(c._get_z80_ram_ref(),8192),pcm=[bytes(c._get_web_audio_l_ref(),1400),bytes(c._get_web_audio_r_ref(),1400)],audio=[c._get_fm_data_bridge_state(),c._get_psg_data_bridge_state()];
+                            click('#logicCpuResetBtn');
+                            if(frames()!==frame||!equal(ram,bytes(c._get_logic_ram_ref(),65536))||!equal(zram,bytes(c._get_z80_ram_ref(),8192))||JSON.stringify(audio)!==JSON.stringify([c._get_fm_data_bridge_state(),c._get_psg_data_bridge_state()]))errors.push(`cycle ${cycle}: CPU Reset changed synchronous RAM/audio or ticked`);
+                            const reset=state();
+                            if(reset.z.configured||reset.v.mask!==0||reset.v.bridgeA!==-1||reset.v.bridgeB!==-1||reset.v.effective||reset.w!==0)errors.push(`cycle ${cycle}: CPU Reset RAM/VRAM state ${JSON.stringify(reset)}`);
+                            if(soakAudio.active.size)errors.push(`cycle ${cycle}: paused audio queue has ${soakAudio.active.size} connected sources`);
+                            click('#pauseBtn');
+                            if(cycle%16===15){
+                              click('#pauseBtn');click('#disconnectAllFaultsBtn');
+                              const beforeFrame=frames(),beforeImage=image();click('#saveCheckpointBtn');
+                              if(!document.querySelector('#checkpointStatus').textContent.includes('Saved Frame'))errors.push(`cycle ${cycle}: checkpoint save refused: ${document.querySelector('#checkpointStatus').textContent}`);
+                              // Mutate all six domains while paused, then demand a clean replay.
+                              document.querySelector('#vramModel').value='2';document.querySelector('#vramModel').dispatchEvent(new Event('change',{bubbles:true}));random('#randomVramBtn',0.999999);
+                              click('#ramFramePairs [data-ram-frame-pair="10,11"]');
+                              random('#randomFmBtn',0);random('#randomPsgBtn',0);
+                              document.querySelector('#z80RamBridgeApply').click();document.querySelector('[data-rgb-pair="0,1"]').click();
+                              const held=inputs();click('#pauseBtn');document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',code:'ArrowRight',bubbles:true}));
+                              if(step(1)!==1)errors.push(`cycle ${cycle}: held-input probe did not advance one frame`);
+                              const heldDown=inputs();if(heldDown[6]!==1)errors.push(`cycle ${cycle}: held controller input was not visible in WASM input buffer (${heldDown[6]})`);
+                              click('#pauseBtn');const restoreFrame=frames();click('#restoreCheckpointBtn');const restored=state(),heldAfter=inputs();
+                              document.body.dispatchEvent(new KeyboardEvent('keyup',{key:'ArrowRight',code:'ArrowRight',bubbles:true}));
+                              if(frames()!==restoreFrame||!equal(beforeImage,image())||!equal(held,heldAfter)||restored.v.mask!==0||restored.v.bridgeA!==-1||restored.v.bridgeB!==-1||restored.v.effective||restored.w!==0||restored.z.configured||restored.p.configured||restored.f.configured||restored.rgb||!document.querySelector('#pauseBtn').textContent.includes('Resume'))errors.push(`cycle ${cycle}: checkpoint invariant frame=${frames()}/${restoreFrame} image=${equal(beforeImage,image())} input=${equal(held,heldAfter)} state=${JSON.stringify(restored)} paused=${document.querySelector('#pauseBtn').textContent}`);
+                              click('#soundBtn');if(soakAudio.active.size)errors.push(`cycle ${cycle}: mute left ${soakAudio.active.size} connected sources`);click('#soundBtn');
+                              document.dispatchEvent(new Event('visibilitychange'));if(soakAudio.active.size)errors.push(`cycle ${cycle}: synthetic visibility event left ${soakAudio.active.size} connected sources`);
+                              click('#resetBtn');
+                              await new Promise(resolve=>setTimeout(resolve,100));
+                              if(!document.querySelector('#restoreCheckpointBtn').disabled||document.querySelectorAll('.chip-card.fault-active').length)errors.push(`cycle ${cycle}: Clean Restart state restoreDisabled=${document.querySelector('#restoreCheckpointBtn').disabled} activeCards=${document.querySelectorAll('.chip-card.fault-active').length} status=${document.querySelector('#powerLabel').textContent}`);
+                              const input=document.querySelector('#romFile'),dt=new DataTransfer();
+                              dt.items.add(new File([window.enduranceRom],'accepted-endurance.bin'));input.files=dt.files;input.dispatchEvent(new Event('change',{bubbles:true}));
+                              await new Promise(resolve=>setTimeout(resolve,100));
+                              const accepted=document.querySelector('#powerLabel').textContent;
+                              const rejected=new DataTransfer();rejected.items.add(new File([new Uint8Array(256)],'rejected-endurance.bin'));input.files=rejected.files;input.dispatchEvent(new Event('change',{bubbles:true}));
+                              await new Promise(resolve=>setTimeout(resolve,20));
+                              if(accepted!=='CONSOLE ON'||document.querySelector('#powerLabel').textContent!=='CONSOLE ON'||!document.querySelector('#restoreCheckpointBtn').disabled||document.querySelectorAll('.chip-card.fault-active').length)errors.push(`cycle ${cycle}: accepted/rejected load did not retain a clean accepted session`);
+                              step(2);
+                              boundaries++;
+                            }
+                            if(cycle===1)warmHeap=c.HEAPU8.buffer.byteLength;
+                            if(cycle>=2&&c.HEAPU8.buffer.byteLength!==warmHeap)errors.push(`cycle ${cycle}: WASM heap changed after two warm-up cycles (${warmHeap} -> ${c.HEAPU8.buffer.byteLength})`);
+                          }
+                          click('#pauseBtn');
+                          return {errors,boundaries,heap:c.HEAPU8.buffer.byteLength,warmHeap,warmupCycles,measuredCycles,totalDrivenFrames,frame:frames(),modules:testModuleCount,audio:{contexts:soakAudio.contexts,created:soakAudio.created,active:soakAudio.active.size,maxConnected:soakAudio.maxActive,finite:soakAudio.finite},z80:[c.HEAPU8[(c._get_z80_ram_ref()>>>0)+0x100],c.HEAPU8[(c._get_z80_ram_ref()>>>0)+0x1100]]};
+                        }''')
+                        self.assertEqual(report['boundaries'],8)
+                        self.assertEqual(report['warmupCycles'],2)
+                        self.assertEqual(report['measuredCycles'],128)
+                        self.assertEqual(report['heap'],report['warmHeap'])
+                        self.assertEqual(report['modules'],1)
+                        self.assertEqual(report['errors'],[],report['errors'][:4])
+                        self.assertEqual(report['audio']['contexts'],1)
+                        self.assertTrue(report['audio']['finite'])
+                        self.assertLessEqual(report['audio']['maxConnected'],16)
+                        self.assertGreater(report['audio']['created'],0)
+                        self.assertTrue(any(report['z80']),f'generated Z80 cartridge must write RAM: {report["z80"]}')
+                        self.assertEqual(errors,[])
+                        print('Mixed-fault endurance metrics: '+json.dumps(report,sort_keys=True))
                     finally:browser.close()
             finally:server.shutdown()
 
