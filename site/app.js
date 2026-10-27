@@ -2554,7 +2554,11 @@
     const coreWrites=logicApiReady() ? Number(emulator._get_logic_writes()) || 0 : 0;
     const reads=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.readCount : coreReads;
     const writes=!logicActive && logicStatsRetained && lastLogicExperiment ? lastLogicExperiment.writeCount : coreWrites;
-    const runtimeVramState=vramModelApiReady()?currentVramModelState():null;
+    let runtimeVramState=null;
+    if (vramModelApiReady()) {
+      try { runtimeVramState=emulator._get_vram_fault_model_state(); }
+      catch (_) { /* A display fallback is not observed runtime metadata. */ }
+    }
     const psgState=currentPsgDataState();
     const fmState=currentFmDataState();
     const z80RamState=currentZ80RamState();

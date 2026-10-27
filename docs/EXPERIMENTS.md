@@ -20,6 +20,12 @@ or recovery fields. New exports retain schema version 1 and add
 values. Historical exports remain unchanged; missing availability can leave
 counter comparisons unknown.
 
+VRAM runtime fields use `vramTransaction.available` in the same way. A missing,
+null or throwing optional getter marks them unavailable, even if the UI can
+continue using its legacy display fallback. `vramFault` separately retains the
+tracked contacts; compatibility defaults are not observed runtime evidence.
+Comparisons report unavailable model/settings/count fields as Unknown.
+
 Recorded counters and CPU flags describe the saved observation, not a replay.
 Equal identifiers and settings do not prove equal input timing, run length,
 gameplay, audio or physical behavior. Different counters can reflect different

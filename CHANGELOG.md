@@ -1,5 +1,9 @@
 # Changelog
 
+## Development Source — Export Availability
+
+- Mark VRAM runtime metadata unavailable when its optional getter returns null or throws. Preserve the legacy display fallback and tracked contacts while experiment comparisons show Unknown instead of a false frame-model match.
+
 ## Development Source — RGB Encoder Input Contacts
 
 - Add off-by-default RGB cuts and one equal-impedance joined pair as an explicit output approximation, separate from native memory/audio faults. Raw output bypasses it; CPU Reset retains contacts and Clean Restart clears them.

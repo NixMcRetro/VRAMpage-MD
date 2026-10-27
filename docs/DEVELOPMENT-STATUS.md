@@ -1,5 +1,28 @@
 # Development status and continuation checkpoint
 
+## VRAM Export Availability Fix In Progress — 27 October 2026 (Sydney)
+
+Bounded stability follow-up to the user's independent-work instruction. A
+Chromium probe on main `5e90aac` selected transaction model 2 with AD2↔AD5,
+then made optional runtime metadata unavailable. The native configuration stayed
+at model 2, but the export reported `available: true`, model 1 and
+`frame-projection-v1`: a UI compatibility fallback was presented as observed
+runtime evidence. Probe/log: `/workspace/scratch/fault-stability/`.
+
+Scope: make experiment exports distinguish unavailable runtime VRAM metadata
+from the existing legacy display fallback. Keep tracked contacts, app/core
+versions, native code, rendering, recovery and all public releases unchanged.
+Acceptance: healthy model-2 exports remain exact; null/throwing/absent optional
+metadata exports unavailable and compares Unknown; tracked contacts remain
+available separately; exports issue no native fault setters/ticks/recovery;
+independent review, focused/full applicable tests, seven PR checks before merge
+and verified main CI/package. No website deployment or additional hardware model.
+
+The independent lifecycle audit found no confirmed issue in cartridge-failure
+controls; its initially suspected stale-Z80 path was disproved in Chromium.
+Do not add a redundant refresh. Next: regression first, smallest reporting fix,
+then review and integration. #73 still requires matching board evidence.
+
 ## RGB Encoder Inputs Verified — 27 October 2026 (Sydney)
 
 [PR #79](https://github.com/NixMcRetro/VRAMpage-MD/pull/79) merged as

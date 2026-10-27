@@ -873,6 +873,42 @@ class BrowserLogicTests(unittest.TestCase):
         expect(page.locator('#pauseBtn')).to_have_text('Resume')
         self.assertFalse(self.export_payload_for(page)['rgbEncoderFault']['configured'])
 
+    def test_vram_export_marks_unavailable_runtime_metadata_unknown(self):
+        self.page.close();self.page=self.new_page(circuit_config=True)
+        page=self.page
+        self.load_rom();page.locator('#pauseBtn').click()
+        self.stage_circuit_file(self.circuit_configuration(model_id=2,vram_pair=[2,5]))
+        page.locator('#circuitConfigApply').click()
+        before=page.evaluate("""() => ({vram:structuredClone(mockCore.vramModel),
+          ticks:mockCore.ticks,recoveries:structuredClone(mockCore.logic.recoveries),starts:mockCore.starts})""")
+        page.evaluate('window.observedVramGetter=mockCore.core._get_vram_fault_model_state')
+        healthy=self.export_payload()
+        self.assertTrue(healthy['vramTransaction']['available'])
+        self.assertEqual(healthy['vramTransaction']['modelId'],2)
+        self.assertEqual(healthy['vramTransaction']['modelVersion'],'logical-byte-transaction-v1')
+        for failure in ['null','throw','absent']:
+            with self.subTest(failure=failure):
+                page.evaluate("""failure=>{
+                  if(failure==='null')mockCore.core._get_vram_fault_model_state=()=>null;
+                  else if(failure==='throw')mockCore.core._get_vram_fault_model_state=()=>{throw Error('metadata unavailable')};
+                  else delete mockCore.core._get_vram_fault_model_state;
+                }""",failure)
+                try:
+                    payload=self.export_payload()
+                    self.assertFalse(payload['vramTransaction']['available'])
+                    self.assertEqual(payload['vramFault'],healthy['vramFault'],
+                                     'tracked contacts remain independent of missing runtime observations')
+                    rows=page.evaluate('(record)=>VRAMpageExperimentComparison.compare(record,record)',payload)
+                    for label in ['VRAM Model ID','VRAM Model Version','VRAM Transaction Mask','VRAM Transaction Counts']:
+                        row=next(row for row in rows if row['label']==label)
+                        self.assertEqual((row['a'],row['b'],row['status']),('Unknown','Unknown','unknown'))
+                    self.assertEqual(page.evaluate("""() => ({vram:structuredClone(mockCore.vramModel),
+                      ticks:mockCore.ticks,recoveries:structuredClone(mockCore.logic.recoveries),starts:mockCore.starts})"""),before)
+                    expect(page.locator('#pauseBtn')).to_have_text('Resume')
+                finally:
+                    page.evaluate('mockCore.core._get_vram_fault_model_state=observedVramGetter')
+        self.assertEqual(self.export_payload()['vramTransaction'],healthy['vramTransaction'])
+
     def test_z80_ram_setter_partial_failure_reports_actual_state_and_pauses(self):
         self.load_rom()
         self.page.evaluate("mockCore.throwZ80RamAfter=true")
