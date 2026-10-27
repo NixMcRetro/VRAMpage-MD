@@ -1,5 +1,35 @@
 # Development work queue
 
+## RGB Encoder Inputs In Progress — 27 October 2026 (Sydney)
+
+The user's instruction to continue independently authorizes one bounded RGB
+input approximation following the verified encoder research. Start from main
+`fbfe46a1007abd77141226c34421329a74f46592`; do not repeat completed Z80 work.
+
+Scope: off-by-default R/G/B cuts and one joined pair, applied only to the copied
+canvas output. Source byte codes divided by 255 proxy normalized input voltage.
+Cuts terminate to black at equal source impedance; an ideal pair join averages
+the two inputs after cuts, rounded half up. This is not calibrated CXA1145,
+composite, sync or audio simulation. Native CPU, RAM, PCM and core APIs stay
+unchanged. Raw Emulator Output bypasses contacts. CPU Reset retains them; Clean
+Restart/new cartridge clear them. Reuse configuration, comparison, checkpoint
+and Disconnect All paths; Title Case controls and complete static packages.
+
+Acceptance before merge: literal/exhaustive model oracles; strict configuration
+v4 and v1/v2/v3 migration; browser lifecycle/independence/export checks; actual
+WASM raw-frame/RAM/PCM noninterference and literal canvas pixels; independent
+Luna High review; full applicable source/sanitizer/browser suite; all seven PR
+checks, exact reviewed merge and all seven main checks. Measure five fixed paired
+display-copy runs: inactive median and p95 ratios <=1.05, active transform p95
+<=1 ms per 320×224 frame; retain every result, including failures. No native
+core performance rerun is needed because C/WASM is unchanged.
+
+Pure model checkpoints are integrated; UI/configuration/export integration is
+in progress and is not yet accepted. Next: complete tests/docs, inspect the UI,
+measure the declared display gate, obtain independent review, then open one
+focused PR. VERSION, existing releases and McRetro.net remain unchanged. No
+physical, audible or native desktop validation is claimed.
+
 ## Video Encoder Research Verified — 27 October 2026 (Sydney)
 
 [PR #78](https://github.com/NixMcRetro/VRAMpage-MD/pull/78) merged as

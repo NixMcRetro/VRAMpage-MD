@@ -1,7 +1,7 @@
 'use strict';
 (() => {
   const FORMAT = 'vrampage-md-circuit-config';
-  const VERSION = 3;
+  const VERSION = 4;
 
   function fail(message) { throw new Error(message); }
   function object(value, label, keys) {
@@ -66,16 +66,26 @@
       fail('RAM and VRAM fault domains cannot both be active');
     return {vram:{modelId,mask,pair:bridgePair},ram};
   }
-  function validateV3(value) {
+  function validateV4(value) {
     object(value, 'configuration file', ['format', 'schemaVersion', 'configuration']);
     if (value.format !== FORMAT) fail('Unrecognized circuit configuration format');
     if (value.schemaVersion !== VERSION) fail('Unsupported circuit configuration version');
-    const config = object(value.configuration, 'configuration', ['vram', 'ram', 'psg', 'fm', 'z80Ram']);
+    const config = object(value.configuration, 'configuration', ['vram', 'ram', 'psg', 'fm', 'z80Ram', 'rgbEncoder']);
     const z80Ram=object(config.z80Ram,'Z80 RAM configuration',['pair']);
+    const rgb=object(config.rgbEncoder,'RGB encoder configuration',['cutMask','pair']);
     const common=commonConfiguration(config);
     return {format:FORMAT,schemaVersion:VERSION,configuration:{...common,
       psg:audioV2(config.psg,'PSG'),fm:audioV2(config.fm,'FM'),
-      z80Ram:{pair:z80Ram.pair===null?null:pair(z80Ram.pair,'Z80 RAM pair',12)}}};
+      z80Ram:{pair:z80Ram.pair===null?null:pair(z80Ram.pair,'Z80 RAM pair',12)},
+      rgbEncoder:{cutMask:integer(rgb.cutMask,0,7,'RGB cut mask'),
+        pair:rgb.pair===null?null:pair(rgb.pair,'RGB pair',2)}}};
+  }
+  function validateV3(value) {
+    object(value,'configuration file',['format','schemaVersion','configuration']);
+    if (value.format!==FORMAT || value.schemaVersion!==3) fail('Unsupported circuit configuration format or version');
+    const config=object(value.configuration,'configuration',['vram','ram','psg','fm','z80Ram']);
+    return validateV4({...value,schemaVersion:VERSION,
+      configuration:{...config,rgbEncoder:{cutMask:0,pair:null}}});
   }
   function validateV2(value) {
     object(value, 'configuration file', ['format', 'schemaVersion', 'configuration']);
@@ -83,7 +93,7 @@
     if (value.schemaVersion !== 2) fail('Unsupported circuit configuration version');
     const config=object(value.configuration,'configuration',['vram','ram','psg','fm']);
     return {format:FORMAT,schemaVersion:VERSION,configuration:{...commonConfiguration(config),
-      psg:audioV2(config.psg,'PSG'),fm:audioV2(config.fm,'FM'),z80Ram:{pair:null}}};
+      psg:audioV2(config.psg,'PSG'),fm:audioV2(config.fm,'FM'),z80Ram:{pair:null},rgbEncoder:{cutMask:0,pair:null}}};
   }
   function validateV1(value) {
     object(value, 'configuration file', ['format', 'schemaVersion', 'configuration']);
@@ -93,15 +103,16 @@
     const common=commonConfiguration(config);
     const oldPair=(raw,label)=>raw===null?{pair:null,dataMask:0}:{pair:pair(raw,`${label} pair`),dataMask:0};
     return {format:FORMAT,schemaVersion:VERSION,configuration:{...common,
-      psg:oldPair(config.psg,'PSG'),fm:oldPair(config.fm,'FM'),z80Ram:{pair:null}}};
+      psg:oldPair(config.psg,'PSG'),fm:oldPair(config.fm,'FM'),z80Ram:{pair:null},rgbEncoder:{cutMask:0,pair:null}}};
   }
-  function validate(value) { return validateV3(value); }
+  function validate(value) { return validateV4(value); }
   function parse(text) {
     if (typeof text !== 'string' || text.length > 32768) fail('Circuit configuration must be at most 32 KB');
     let parsed;
     try { parsed = JSON.parse(text); }
     catch (_) { fail('File is not valid JSON'); }
-    return parsed?.schemaVersion===1?validateV1(parsed):parsed?.schemaVersion===2?validateV2(parsed):validateV3(parsed);
+    return parsed?.schemaVersion===1?validateV1(parsed):parsed?.schemaVersion===2?validateV2(parsed):
+      parsed?.schemaVersion===3?validateV3(parsed):validateV4(parsed);
   }
   const api = {format: FORMAT, version: VERSION, validate, parse};
   if (typeof module === 'object' && module.exports) module.exports = api;

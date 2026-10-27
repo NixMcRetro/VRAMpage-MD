@@ -36,6 +36,7 @@ REQUIRED_FILES = (
     "site/style.css",
     "site/app.js",
     "site/framebuffer.js",
+    "site/rgb-encoder.js",
     "site/core/genplus.js",
     "site/core/genplus.wasm",
     "site/source/README.txt",

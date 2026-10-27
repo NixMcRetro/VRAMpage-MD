@@ -25,6 +25,7 @@ def make_checkout(root, *, wasm=True, include_rom=False):
         "site/style.css": b"body {}",
         "site/app.js": b"// app",
         "site/framebuffer.js": b"// framebuffer",
+        "site/rgb-encoder.js": b"// RGB encoder",
         "site/core/genplus.js": b"// generated core",
         "site/source/README.txt": b"Corresponding source",
         "site/source/patch_core.py": b"# patch source",

@@ -21,6 +21,9 @@
   const imageData = ctx.createImageData(GAME_WIDTH, GAME_HEIGHT);
   const frameAdapter = window.VRAMpageFrame;
   if (!frameAdapter) throw new Error("Missing framebuffer.js: display adapter could not load");
+  const rgbEncoderApi=window.VRAMpageRgbEncoder;
+  if (!rgbEncoderApi) throw new Error('Missing rgb-encoder.js: RGB output model could not load');
+  let rgbEncoderPlan=rgbEncoderApi.create({cutMask:0,pair:null});
   let previousVideoStatus = "";
   const pressed = new Set();
   const checkpointBlockedKeys = new Set();
@@ -66,6 +69,48 @@
   const APPLICATION_VERSION = '0.5.0';
   let buildInfo = {status:'unavailable',applicationVersion:APPLICATION_VERSION,sourceCommit:null};
   loadBuildInfo().then(info=>{buildInfo=info;});
+
+  function rgbEncoderSummary(config=rgbEncoderPlan.configuration) {
+    const cuts=['R','G','B'].filter((_,channel)=>config.cutMask&(1<<channel));
+    const joined=config.pair?config.pair.map(channel=>['R','G','B'][channel]).join(' ↔ '):'';
+    return [cuts.length?`Cut ${cuts.join(', ')}`:'',joined?`Join ${joined}`:''].filter(Boolean).join(' · ')||'Off';
+  }
+
+  function rgbEncoderState() {
+    const configured=rgbEncoderPlan.active;
+    const bypassed=$('rawVideoToggle').checked;
+    return {schemaVersion:1,available:true,modelVersion:rgbEncoderApi.modelVersion,
+      cutMask:rgbEncoderPlan.configuration.cutMask,pair:rgbEncoderPlan.configuration.pair,
+      configured,effective:started&&configured&&!bypassed,
+      reason:!started?'no-cartridge':!configured?'no-fault':bypassed?'raw-output-bypass':'active'};
+  }
+
+  function refreshRgbEncoderControls() {
+    const config=rgbEncoderPlan.configuration;
+    for (const button of document.querySelectorAll('[data-rgb-cut]')) {
+      button.disabled=!started;
+      button.setAttribute('aria-pressed',String(!!(config.cutMask&(1<<Number(button.dataset.rgbCut)))));
+    }
+    for (const button of document.querySelectorAll('[data-rgb-pair]')) {
+      button.disabled=!started;
+      button.setAttribute('aria-pressed',String(config.pair?.join(',')===button.dataset.rgbPair));
+    }
+    $('rgbEncoderClear').disabled=!started||!rgbEncoderPlan.active;
+    $('rgbEncoderStatus').textContent=!started?'Load a ROM for RGB Encoder Contacts.':
+      `RGB Encoder ${rgbEncoderSummary()}${rgbEncoderPlan.active&&$('rawVideoToggle').checked?' · Bypassed by Raw Output':''}`;
+  }
+
+  function setRgbEncoder(config,{silent=false}={}) {
+    if (!started) return false;
+    let next;
+    try { next=rgbEncoderApi.create(config); }
+    catch (_) { return false; }
+    rgbEncoderPlan=next;
+    refreshRgbEncoderControls();updateCheckpointControls();
+    ensureWasmViews();drawActiveVideo();
+    if (!silent) stamp(`RGB Encoder ${rgbEncoderSummary()} · Output approximation; game memory is unchanged.`);
+    return true;
+  }
 
   async function loadBuildInfo() {
     const unavailable = {status:'unavailable',applicationVersion:APPLICATION_VERSION,sourceCommit:null};
@@ -1148,6 +1193,7 @@
     refreshChipControls();
     refreshRandomiserControls();
     refreshZ80RamControls();
+    refreshRgbEncoderControls();
     updateCheckpointControls();
   }
 
@@ -1203,6 +1249,7 @@
       if (!checkpointAvailability().supported) throw new Error('Checkpoint unavailable for this core or cartridge.');
       if (recoveryTransientActive() || pressed.size || logicActive || logicAddressMask)
         throw new Error('Release held contacts and controls, and disconnect faults before saving.');
+      if (rgbEncoderPlan.active) throw new Error('Reconnect RGB encoder contacts before saving.');
       if (z80RamApiPresent() && currentZ80RamState()?.configured!==false)
         throw new Error('Disconnect the Z80 RAM write bridge and verify its state before saving.');
       const vram=emulator._get_vram_fault_model_state();
@@ -1782,6 +1829,10 @@
       }
     }
 
+    const hadRgb=rgbEncoderPlan.active;
+    const rgbCleared=setRgbEncoder({cutMask:0,pair:null},{silent:true});
+    note('RGB Encoder',rgbCleared&&!rgbEncoderPlan.active?hadRgb?'cleared':'already off':'clear failed',
+      rgbEncoderPlan.active?'configured output contacts remain':'no configured RGB input fault');
     const summary=results.map(item=>`${item.domain}: ${item.result} (${item.actual})`).join('; ');
     const allClear=results.every(item=>item.result==='already off'||item.result==='cleared');
     if (!allClear && !paused) pauseToggle();
@@ -2129,7 +2180,7 @@
     }
     return api.validate({format:api.format,schemaVersion:api.version,configuration:{
       vram:{modelId:vramModelId,mask:vramAddressMask,pair},
-      ram:logicActive?{...activeRamConfiguration}:null,psg,fm,z80Ram
+      ram:logicActive?{...activeRamConfiguration}:null,psg,fm,z80Ram,rgbEncoder:rgbEncoderPlan.configuration
     }});
   }
 
@@ -2144,7 +2195,7 @@
     const audio=(name,target)=>target.pair?`${name} D${target.pair[0]}↔D${target.pair[1]}`
       :target.dataMask?`${name} ${maskLineNames(target.dataMask)} low`:`${name} off`;
     const z80=c.z80Ram.pair?`Z80 RAM Write A${c.z80Ram.pair[0]}↔A${c.z80Ram.pair[1]}`:'Z80 RAM off';
-    return `${vram} (${model})\n${ram}\n${audio('PSG',c.psg)}\n${audio('FM',c.fm)}\n${z80}`;
+    return `${vram} (${model})\n${ram}\n${audio('PSG',c.psg)}\n${audio('FM',c.fm)}\n${z80}\nRGB Encoder ${rgbEncoderSummary(c.rgbEncoder)}`;
   }
 
   function refreshCircuitConfigControls() {
@@ -2186,7 +2237,7 @@
     const blob=new Blob([JSON.stringify(config,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob);
     const link=document.createElement('a');
-    link.href=url; link.download='vram-page-md-circuit-v3.json';
+    link.href=url; link.download='vram-page-md-circuit-v4.json';
     document.body.append(link); link.click(); link.remove();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
     $('circuitConfigStatus').textContent='Circuit configuration downloaded. ROM and execution history are not included.';
@@ -2259,7 +2310,8 @@
     if (!sameCircuitRam(c.ram,logicActive?activeRamConfiguration:null)) return false;
     return !circuitBridgeNeedsChange(c.psg,psgDataApiReady()?currentPsgDataState():null,psgDataApiReady()) &&
       !circuitBridgeNeedsChange(c.fm,fmDataApiReady()?currentFmDataState():null,fmDataApiReady()) &&
-      !circuitBridgeNeedsChange(c.z80Ram,currentZ80RamState(),z80RamApiReady());
+      !circuitBridgeNeedsChange(c.z80Ram,currentZ80RamState(),z80RamApiReady()) &&
+      JSON.stringify(c.rgbEncoder)===JSON.stringify(rgbEncoderPlan.configuration);
   }
 
   function syncCircuitSelectors(config) {
@@ -2303,7 +2355,7 @@
     const z80=currentZ80RamState();
     const z80Description=!z80RamApiPresent()?'Z80 RAM API absent':!z80?'Z80 RAM state unavailable':
       z80.configured?`Z80 RAM A${z80.bridgeA}↔A${z80.bridgeB}`:'Z80 RAM off';
-    const actual=`Observed state: ${vramDescription}; tracked RAM ${ram}; ${bridgeDescription(psg,'PSG')}; ${bridgeDescription(fm,'FM')}; ${z80Description}.`;
+    const actual=`Observed state: ${vramDescription}; tracked RAM ${ram}; ${bridgeDescription(psg,'PSG')}; ${bridgeDescription(fm,'FM')}; ${z80Description}; RGB Encoder ${rgbEncoderSummary()}.`;
     const message=`Apply stopped at ${domain}; earlier settings may have changed. ${actual} The staged file is retained and emulation is paused.`;
     $('circuitConfigStatus').textContent=message; stamp(message);
     updateFaultUI(); updateLogicControls(); refreshPsgDataControls(); refreshFmDataControls();
@@ -2316,15 +2368,15 @@
     }
     const config=stagedCircuitConfiguration;
     if (!config) return false;
-    cancelAutomaticRecovery();
     let error;
     try { error=preflightCircuitConfiguration(config); }
     catch (_) { error='Runtime state could not be read; no setters were called.'; }
-    if (error) { $('circuitConfigStatus').textContent=`Apply refused before mutation: ${error}`; return false; }
+    if (error) { cancelAutomaticRecovery();$('circuitConfigStatus').textContent=`Apply refused before mutation: ${error}`; return false; }
     let alreadyMatches;
     try { alreadyMatches=circuitTargetsMatch(config); }
-    catch (_) { $('circuitConfigStatus').textContent='Apply refused before mutation: runtime state could not be read.'; return false; }
+    catch (_) { cancelAutomaticRecovery();$('circuitConfigStatus').textContent='Apply refused before mutation: runtime state could not be read.'; return false; }
     if (alreadyMatches) {
+      cancelAutomaticRecovery();
       $('circuitConfigStatus').textContent='Configuration already matches. No setters were called; live counters were preserved.';
       stagedCircuitConfiguration=null; refreshCircuitConfigControls(); return true;
     }
@@ -2343,6 +2395,8 @@
     const changeRam=!sameCircuitRam(c.ram,logicActive?activeRamConfiguration:null);
     const changeVram=c.vram.modelId!==vramModelId || c.vram.mask!==vramAddressMask ||
       JSON.stringify(c.vram.pair)!==JSON.stringify(canonical(actualPair()));
+    const changeRgb=JSON.stringify(c.rgbEncoder)!==JSON.stringify(rgbEncoderPlan.configuration);
+    if (changePsg||changeFm||changeZ80||changeRam||changeVram) cancelAutomaticRecovery();
     const vramActive=!!(c.vram.mask||c.vram.pair);
 
     const applyRamTarget=()=>{
@@ -2390,6 +2444,12 @@
       currentDomain='Z80 RAM';mutationStarted=true;
       if (!setZ80RamBridge(!!c.z80Ram.pair,c.z80Ram.pair, true)) {
         pauseAfterCircuitApplyFailure('Z80 RAM');return false;
+      }
+    }
+    if (changeRgb) {
+      currentDomain='RGB Encoder';mutationStarted=true;
+      if (!setRgbEncoder(c.rgbEncoder,{silent:true})) {
+        pauseAfterCircuitApplyFailure('RGB Encoder');return false;
       }
     }
     syncCircuitSelectors(config);
@@ -2564,6 +2624,7 @@
         bridgeB:z80RamState?.bridgeB??-1,activationFrame:z80RamState?.activationFrame??null,
         ramWrites:z80RamState?.ramWrites??null,changedAddresses:z80RamState?.changedAddresses??null,
         z80Writes:z80RamState?.z80Writes??null,m68kWrites:z80RamState?.m68kWrites??null},
+      rgbEncoderFault:rgbEncoderState(),
       vramModelTransitions:vramModelTransitions.map(entry=>({...entry})),
       exportedAt:new Date().toISOString()
     };
@@ -2875,10 +2936,12 @@
     // scanlines. It never changes the emulator's memory or signal simulation.
     const raw = $('rawVideoToggle').checked;
     const result = frameAdapter.copyActiveFrame(frameView, imageData.data, {raw});
+    if (!raw) rgbEncoderPlan.apply(imageData.data);
     ctx.putImageData(imageData, 0, 0);
-    const status = raw ? 'Video: raw core pixels' : result.repairedRows
+    const nativeStatus = raw ? 'Video: raw core pixels' : result.repairedRows
       ? `Video: ${result.repairedRows} missing output lines recovered`
       : 'Video: native pixels';
+    const status=nativeStatus+(!raw&&rgbEncoderPlan.active?' · RGB Encoder Input Approximation':'');
     if (status !== previousVideoStatus) {
       $('videoStatus').textContent = status;
       previousVideoStatus = status;
@@ -2990,6 +3053,7 @@
         throw new Error('Core missing _set_vram_short. You must build the patched core (not the upstream prebuilt WASM).');
       frameView=null;
       started=true;
+      rgbEncoderPlan=rgbEncoderApi.create({cutMask:0,pair:null});
       cpuInterventions=[];
       faultPulses=[]; pendingPulse=null;
       ownedAddressHold=null;keyboardHeld=null;
@@ -3216,6 +3280,14 @@
   }
 
   function setup() {
+    for (const button of document.querySelectorAll('[data-rgb-cut]'))
+      button.addEventListener('click',()=>setRgbEncoder({...rgbEncoderPlan.configuration,
+        cutMask:rgbEncoderPlan.configuration.cutMask^(1<<Number(button.dataset.rgbCut))}));
+    for (const button of document.querySelectorAll('[data-rgb-pair]'))
+      button.addEventListener('click',()=>setRgbEncoder({...rgbEncoderPlan.configuration,
+        pair:rgbEncoderPlan.configuration.pair?.join(',')===button.dataset.rgbPair?null:button.dataset.rgbPair.split(',').map(Number)}));
+    $('rgbEncoderClear').addEventListener('click',()=>setRgbEncoder({cutMask:0,pair:null}));
+    refreshRgbEncoderControls();
     for (const id of ['z80RamBridgeA','z80RamBridgeB'])
       $(id).innerHTML=Array.from({length:13},(_,bit)=>`<option value="${bit}">A${bit}</option>`).join('');
     $('z80RamBridgeA').value='0';$('z80RamBridgeB').value='1';
@@ -3283,6 +3355,7 @@
     $('rawVideoToggle').addEventListener('change', () => {
       previousVideoStatus = "";
       drawActiveVideo();
+      refreshRgbEncoderControls();
     });
     $('romFile').addEventListener('change',event=>{loadLocalRom(event.target.files?.[0]);event.target.value='';});
     $('resetBtn').addEventListener('click',cleanRestart);
