@@ -1,5 +1,36 @@
 # Development status and continuation checkpoint
 
+## Mixed-Fault Endurance Pass In Progress — 27 October 2026
+
+The user approved the autonomous stability work, starting with a mixed-fault
+endurance pass. Baseline is verified main `528cc2778e33499fe4b2d35cbae39606ca9ba949`;
+reuse its unchanged core builds and earlier single-feature/performance evidence.
+
+Scope before implementation: extend the existing actual-core browser tests with
+one bounded 128-cycle workload, not a new framework or hardware model. Reuse
+original synthetic cartridges and real production UI/core/audio. Alternate VRAM
+and Work RAM (never both); combine independent FM/PSG, Z80 RAM and RGB contacts;
+exercise eight-frame/held release, CPU Reset, checkpoint restore, restart and
+accepted/rejected cartridge replacement. Use explicit unassisted recovery during
+the test so intentional corruption is not silently rescued.
+
+Acceptance: all 128 cycles complete with native fault configuration and exact
+pause/frame/input invariants checked, synchronous CPU-only RAM/audio preservation,
+verified six-domain clearing and paused no-extra-tick checkpoint replay. Repeated
+restart/replacement invalidates checkpoints and contacts; rejected files retain
+the accepted session. After two defined warm-up cycles, WASM heap size must stay
+at its warmed size; one module/context and bounded genuine audio sources must
+remain, draining at pause/mute/visibility boundaries. Test events are synthetic,
+not OS backgrounding. Intentional experiment history growth is not a leak.
+No page errors, non-finite PCM or failed clears may be ignored. Do not demand
+healthy gameplay after faults or weaken assertions to make a workload pass.
+
+Commit bounded test/source checkpoints before long runs. Obtain independent
+specialist review; fix only reproduced defects, then full applicable regression
+and seven PR/main checks before delivery. VERSION, public releases, historical
+evidence and McRetro.net remain unchanged. Physical/native desktop/audible
+acceptance is outside this synthetic pass. Logs: `/workspace/scratch/mixed-soak/`.
+
 ## VRAM Export Availability Verified — 27 October 2026
 
 [PR #80](https://github.com/NixMcRetro/VRAMpage-MD/pull/80) merged as
