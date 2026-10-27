@@ -1,39 +1,55 @@
 # Development work queue
 
-## VRAM Export Availability Fix Ready for CI — 27 October 2026 (Sydney)
+## VRAM Export Availability Verified — 27 October 2026
 
-Bounded stability follow-up to the user's independent-work instruction. A
-Chromium probe on main `5e90aac` selected transaction model 2 with AD2↔AD5,
-then made optional runtime metadata unavailable. The native configuration stayed
-at model 2, but the export reported `available: true`, model 1 and
-`frame-projection-v1`: a UI compatibility fallback was presented as observed
-runtime evidence. Probe/log: `/workspace/scratch/fault-stability/`.
+[PR #80](https://github.com/NixMcRetro/VRAMpage-MD/pull/80) merged as
+`528cc2778e33499fe4b2d35cbae39606ca9ba949`; its tree exactly matches checked
+head `687d07a4e466d8968157639ac4d360036d7f79a1`. All seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40462545301)
+and all seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40463216175)
+passed, including three-browser logic/layout, fresh native/WASM tests and
+extracted-package runtime/fallback/audio/control checks.
 
-Scope: make experiment exports distinguish unavailable runtime VRAM metadata
-from the existing legacy display fallback. Keep tracked contacts, app/core
-versions, native code, rendering, recovery and all public releases unchanged.
-Acceptance: healthy model-2 exports remain exact; null/throwing/absent optional
-metadata exports unavailable and compares Unknown; tracked contacts remain
-available separately; exports issue no native fault setters/ticks/recovery;
-independent review, focused/full applicable tests, seven PR checks before merge
-and verified main CI/package. No website deployment or additional hardware model.
+The bounded stability audit reproduced a false export observation: transaction
+model 2 with AD2↔AD5 stayed active, but a null/throwing optional getter produced
+an available frame-model-1 record via the UI compatibility fallback. The
+six-line exporter fix reads runtime observations directly; unavailable metadata
+now compares Unknown while tracked contacts and the UI/recovery fallback remain
+unchanged. No native, renderer, schema, version or hardware-model change.
 
-The independent lifecycle audit found no confirmed issue in cartridge-failure
-controls; its initially suspected stale-Z80 path was disproved in Chromium.
-Do not add a redundant refresh. The six-line exporter fix and regression are
-committed in `1ab067d`. Independent GPT-6 Luna High review found no blockers,
-passed the focused Chromium and Node comparison tests, and confirmed remaining
-fallback consumers retain their intended UI/recovery behavior. The regression
-failed on both null/throw before the fix and passes healthy/null/throw/absent
-cases afterward, including native state and pause preservation.
+Independent GPT-6 Luna High review of `1ab067d` found no blockers and separately
+passed the focused Chromium regression and Node comparison tests. Final head
+adds checkpoint documentation only. The regression failed before the fix on
+null/throw and now passes healthy/null/throw/absent cases, including unchanged
+native settings/ticks/recovery/starts and paused state. Full local source/native
+sanitizer/Node/C suites passed (114 Python tests reported, two unchanged
+build-dependent classes skipped locally), as did all 139 Chromium logic cases.
+All 316 relative documentation links resolved before delivery. Logs/probes:
+`/workspace/scratch/fault-stability/`.
 
-`bash scripts/test.sh` passed (114 Python tests reported, two unchanged
-build-dependent classes skipped locally; native sanitizers, Node/C suites pass).
-Full Chromium logic is running. Reuse the unchanged RGB performance and native
-core evidence; fresh full browser/core/package CI remains the integration gate.
-Logs are under `/workspace/scratch/fault-stability/`. Next: all seven PR checks,
-reviewed merge, all seven main checks and verified development package. #73
-still requires matching board evidence.
+The independent lifecycle audit found no confirmed cartridge/control defect.
+Its suspected stale Z80 controls were disproved by the existing transitive
+refresh and a Chromium post-mutation-start-failure probe. A forced canvas draw
+exception was synthetic; no normal-use failure was established and no speculative
+handling was added. Existing native/RGB performance evidence remains unchanged.
+
+The [verified development browser download](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40463216175/artifacts/12715258729)
+contains exact merge `528cc2778e33499fe4b2d35cbae39606ca9ba949`; all 258 tracked
+files match. Checksum, root/site metadata, corresponding source/notices,
+executable launcher and ROM-free contents passed inspection. ZIP SHA256:
+`49967ad23fb0b5911100f6aef24f48fda764162390f5c2dd90bb2270bc6ccff4`
+(3,598,698 bytes; 755 entries). Both runtime and normal fallback JS/WASM hashes
+match the preceding verified build. This Actions package includes current Z80
+RAM/RGB work and the reporting fix; public release assets were not replaced.
+
+All 18 release records/asset identities match the starting snapshot. VERSION and
+McRetro.net were not changed or deployed. No new physical, audible or native
+desktop validation is claimed. No other confirmed software blocker emerged.
+Next: investigate concrete regressions from the development build; #73 still
+requires matching NTSC VA6 board evidence. Do not repeat completed research or
+add another hardware model without a bounded oracle. This final checkpoint is
+preserved on `experiment/fault-stability-delivery` without another
+trivial documentation-only integration cycle.
 
 ## RGB Encoder Inputs Verified — 27 October 2026 (Sydney)
 
