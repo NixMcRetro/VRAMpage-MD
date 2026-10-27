@@ -16,7 +16,6 @@
   'use strict';
 
   const MODEL_VERSION = 'rgb-input-code-voltage-v1';
-  const PAIRS = [[0, 1], [0, 2], [1, 2]];
   const CONFIG_KEYS = ['cutMask', 'pair'];
 
   function exactOwnKeys(value, expected, label) {

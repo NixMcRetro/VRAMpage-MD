@@ -6,44 +6,38 @@ const encoder = require('../site/rgb-encoder.js');
 
 const clone = pixels => new Uint8Array(pixels);
 const rgba = (r, g, b, a=255) => new Uint8Array([r, g, b, a]);
-const pairCases = [
-  {pair:[0,1], left:0, right:1},
-  {pair:[0,2], left:0, right:2},
-  {pair:[1,2], left:1, right:2}
-];
+const pairCases = [[0,1],[0,2],[1,2]];
 
 assert.equal(encoder.modelVersion, 'rgb-input-code-voltage-v1');
 assert.equal(typeof encoder.create, 'function');
 
-// CRAM-like primary bars and greys prove pair joins preserve their source mean.
+// Literal primary bars exercise each join, including three half-up 255/0 cases.
 const bars = new Uint8Array([
   255,0,0,255, 0,255,0,128, 0,0,255,0,
-  255,255,255,17, 0,0,0,18, 85,85,85,19
+  255,255,255,17, 0,0,0,18, 85,86,84,19
 ]);
-for (const {pair,left,right} of pairCases) {
+const literalBars = [
+  [128,128,0,255, 128,128,0,128, 0,0,255,0, 255,255,255,17, 0,0,0,18, 86,86,84,19],
+  [128,0,128,255, 0,255,0,128, 128,0,128,0, 255,255,255,17, 0,0,0,18, 85,86,85,19],
+  [255,0,0,255, 0,128,128,128, 0,128,128,0, 255,255,255,17, 0,0,0,18, 85,85,85,19]
+];
+for (let index=0; index<pairCases.length; index++) {
+  const pair = pairCases[index];
   const output = clone(bars);
-  const plan = encoder.create({cutMask:0,pair}).apply(output);
-  assert.equal(plan, output, 'active application mutates and returns the supplied frame');
-  for (let i=0; i<bars.length; i+=4) {
-    const mean = Math.floor((bars[i+left]+bars[i+right]+1)/2);
-    assert.equal(output[i+left], mean, `${pair} joined first channel at pixel ${i/4}`);
-    assert.equal(output[i+right], mean, `${pair} joined second channel at pixel ${i/4}`);
-    for (let channel=0; channel<3; channel++)
-      if (channel!==left && channel!==right)
-        assert.equal(output[i+channel], bars[i+channel], `${pair} leaves the third channel untouched`);
-    assert.equal(output[i+3], bars[i+3], 'join preserves alpha');
-  }
+  const returned = encoder.create({cutMask:0,pair}).apply(output);
+  assert.equal(returned, output, 'active application mutates and returns the supplied frame');
+  assert.deepEqual([...output], literalBars[index], `literal RGBA bars for ${pair}`);
 }
 
-// Half-up integer code rounding is explicit: 255 and 0 join at 128; 5 and 0 at 3.
-for (const pair of [[0,1],[0,2],[1,2]]) {
-  const p = encoder.create({cutMask:0,pair});
-  const pixels = rgba(255,0,5);
-  p.apply(pixels);
-  const [a,b] = pair;
-  assert.equal(pixels[a], Math.floor(([255,0,5][a]+[255,0,5][b]+1)/2));
-  assert.equal(pixels[b], pixels[a]);
-}
+// Equal codes across a grey ramp are unchanged by any pair; odd sums round up.
+const greyRamp = new Uint8Array([
+  0,0,0,255, 17,17,17,192, 85,85,85,128, 128,128,128,64, 255,255,255,0
+]);
+for (const pair of pairCases)
+  assert.deepEqual([...encoder.create({cutMask:0,pair}).apply(clone(greyRamp))], [...greyRamp]);
+const oddRounding = rgba(5,0,0);
+encoder.create({cutMask:0,pair:[0,1]}).apply(oddRounding);
+assert.deepEqual([...oddRounding], [3,3,0,255], 'odd code sum rounds half up');
 
 // A cut is black termination at the same normalized impedance; cuts precede a join.
 const cutThenJoin = encoder.create({cutMask:1,pair:[1,0]});
@@ -54,24 +48,36 @@ const allCut = encoder.create({cutMask:7,pair:null});
 const allCutPixels = new Uint8Array([1,2,3,4, 255,128,64,5]);
 allCut.apply(allCutPixels);
 assert.deepEqual([...allCutPixels], [0,0,0,4, 0,0,0,5]);
+const cutMaskLiterals = [
+  [3,120,255,87], [0,120,255,87], [3,0,255,87], [0,0,255,87],
+  [3,120,0,87], [0,120,0,87], [3,0,0,87], [0,0,0,87]
+];
+for (let mask=0; mask<8; mask++)
+  assert.deepEqual([...encoder.create({cutMask:mask,pair:null}).apply(new Uint8Array([3,120,255,87]))], cutMaskLiterals[mask]);
 
-// Exhaust every mask and pair option against the stated per-channel equations.
-const options = [null,[0,1],[0,2],[1,2]];
-for (let mask=0; mask<8; mask++) for (const pair of options) {
-  const input = new Uint8Array([1,42,255,3, 127,128,129,4, 0,5,254,5]);
-  const expected = clone(input);
-  for (let i=0; i<input.length; i+=4) {
-    const rgb = [0,1,2].map(c => mask & (1<<c) ? 0 : input[i+c]);
-    if (pair) {
-      const mean=Math.floor((rgb[pair[0]]+rgb[pair[1]]+1)/2);
-      rgb[pair[0]]=mean;rgb[pair[1]]=mean;
-    }
-    expected.set(rgb,i);
+// Exhaust all 65,536 source-code pairs for every bridge and cut-mask combination.
+for (const pair of pairCases) {
+  const [a,b]=pair, third=3-a-b;
+  const input=new Uint8Array(256*256*4);
+  for (let x=0; x<256; x++) for (let y=0; y<256; y++) {
+    const i=(x*256+y)*4;
+    input[i+a]=x;input[i+b]=y;input[i+third]=173;input[i+3]=(x+y)&255;
   }
-  const target = clone(input);
-  const plan=encoder.create({cutMask:mask,pair});
-  assert.equal(plan.active, mask!==0 || pair!==null);
-  assert.deepEqual([...plan.apply(target)], [...expected], `mask ${mask}, pair ${pair}`);
+  for (let mask=0; mask<8; mask++) {
+    const output=clone(input);
+    const plan=encoder.create({cutMask:mask,pair});
+    assert.equal(plan.active,true);
+    plan.apply(output);
+    for (let x=0; x<256; x++) for (let y=0; y<256; y++) {
+      const i=(x*256+y)*4;
+      const sourceA=mask&(1<<a)?0:x, sourceB=mask&(1<<b)?0:y;
+      const joined=output[i+a];
+      if (joined!==output[i+b] || joined<Math.min(sourceA,sourceB) || joined>Math.max(sourceA,sourceB) ||
+          Math.abs(2*joined-sourceA-sourceB)>1 || output[i+third]!==((mask&(1<<third))?0:173) ||
+          output[i+3]!==input[i+3])
+        assert.fail(`pair ${pair}, mask ${mask}, input ${x}/${y} violates join invariants`);
+    }
+  }
 }
 
 // The disabled plan is an identity fast path and preserves frame storage exactly.
