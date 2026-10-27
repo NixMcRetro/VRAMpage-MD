@@ -38,6 +38,16 @@ Next: all seven PR checks, reviewed merge, all seven main checks and package
 source/checksum verification. No speculative production fix is authorized by a
 test-fixture failure. Native desktop/listening/physical acceptance is separate.
 
+First PR run [40481597734](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40481597734)
+passed source, three-browser layout/logic and fresh build/core checks, but both
+packaged jobs timed out before the new workload started. Default Playwright
+RAF polling waited on this test's deliberately paused RAF queue. Both startup
+waits now use independent 10 ms timer polling, retaining the original timeout,
+workload and assertions. Independent Luna High review confirmed the mechanism;
+focused Chromium passes with identical metrics. Local WebKit launch was blocked
+by missing libGLESv2.so.2 before any test; CI supplies browser dependencies.
+Require a fresh complete seven-check run, not a blind retry.
+
 ## VRAM Export Availability Verified — 27 October 2026
 
 [PR #80](https://github.com/NixMcRetro/VRAMpage-MD/pull/80) merged as

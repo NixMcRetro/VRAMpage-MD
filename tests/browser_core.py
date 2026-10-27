@@ -1370,12 +1370,13 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         core_js+='''\nconst originalFactory=window.Module;window.testModuleCount=0;window.Module=opts=>{window.testModuleCount++;return originalFactory(opts).then(c=>{window.testCore=c;window.soakCalls={ticks:0,starts:0,samples:0,recovery:[]};for(const key of ['_tick','_start','_sound','_recover_logic_cpu']){const native=c[key];c[key]=(...args)=>{if(key===\"_tick\")soakCalls.ticks++;if(key===\"_start\")soakCalls.starts++;if(key===\"_recover_logic_cpu\")soakCalls.recovery.push(args[0]);const result=Reflect.apply(native,c,args);if(key===\"_sound\")soakCalls.samples=result;return result;};}return c;});};\n'''
                         page.route('**/core/genplus.js',lambda route:route.fulfill(content_type='text/javascript',body=core_js))
                         page.goto(f'http://127.0.0.1:{server.server_port}/')
-                        page.wait_for_function('!!window.testCore')
+                        # RAF is controlled by this test; readiness must use timer polling.
+                        page.wait_for_function('!!window.testCore',polling=10)
                         page.locator('#romFile').set_input_files({'name':'original-mixed-z80.bin','mimeType':'application/octet-stream','buffer':original_z80_store_cartridge()})
                         expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
                         page.locator('#soundBtn').click()
                         expect(page.locator('#soundBtn')).to_have_text('Mute Sound')
-                        page.wait_for_function('testAudioContext.currentTime>0')
+                        page.wait_for_function('testAudioContext.currentTime>0',polling=10)
                         page.locator('#logicExperiment > summary').evaluate('(b)=>b.click()')
                         page.locator('#logicResumeBtn').evaluate('(b)=>{if(b.getAttribute("aria-pressed")==="true")b.click()}')
                         page.locator('#armCpuRecoveryBtn').evaluate('(b)=>{if(b.getAttribute("aria-pressed")==="true")b.click()}')
