@@ -1,36 +1,57 @@
 # Development status and continuation checkpoint
 
-## RGB Encoder Inputs Ready for CI — 27 October 2026 (Sydney)
+## RGB Encoder Inputs Verified — 27 October 2026 (Sydney)
 
-Implementation/tests are committed through `18d0586`; independent GPT-6 Luna
-High review of that head found no concrete blockers and separately passed the
-model/schema/comparison Node suites. The [guide](RGB-ENCODER-INPUTS.md) defines
-the code-domain proxy, cuts-before-join rules, raw bypass and lifecycle limits.
-The user authorized this bounded extension by asking to continue independently;
-composite/sync/mono faults remain deferred.
+[PR #79](https://github.com/NixMcRetro/VRAMpage-MD/pull/79) merged as
+`5e90aacd15b85254a4de39ba006ffd179e91e963`; its tree exactly matches checked
+head `711c15989d972bfef5c408532484963039e55bbb`. All seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40459211948)
+and all seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40459878011)
+passed, including fresh native/WASM builds, Chromium/Firefox/WebKit logic/layout
+and extracted-package runtime/fallback/audio/control checks.
 
-Local checks passed: `bash scripts/test.sh` (114 Python tests reported, two
-unchanged build-dependent classes skipped locally; strict native sanitizers,
-Node and C smoke suites passed), seven Chromium layout cases, nine actual-core
-Chromium cases and four focused RGB logic cases. Full Chromium logic is running.
-The first actual-core full run exposed two stale expected configuration/domain
-lists; both were updated to assert the complete v4/six-domain contract, and the
-full nine-case repeat passed. No assertion was removed or weakened.
+The [off-by-default RGB contacts](RGB-ENCODER-INPUTS.md) operate only on copied
+canvas pixels: independent cuts, one joined pair, explicit black termination and
+equal source impedances using normalized byte-code voltage proxies. Raw Output
+bypasses them; CPU Reset retains them; Clean Restart clears them. Configuration
+v4 imports v1/v2/v3 with RGB off; exports/comparison, sixth-domain disconnect and
+checkpoint handling are included. Native CPU/RAM/audio code is unchanged.
 
-The first fixed five-pair [display benchmark](experiments/rgb-encoder-display-performance-v1.json)
-passes: inactive median/p95 ratios 1.0/1.0 (limit 1.05), active transform p95
-0.318 ms per 320×224 frame (limit 1 ms). Its three input hashes match current
-source; the recorded source commit is `00cc00b`. Runtime and normal-core hashes
-match the preceding verified build; native source is unchanged. Synthetic tests
-prove literal canvas pixels and byte-identical native framebuffer, full Work
-RAM, available Z80 RAM and generated PCM under paused edits. No physical or
-audible result is inferred. All 311 relative Markdown links resolve. Logs and
-synthetic UI inspection: `/workspace/scratch/rgb-encoder/`.
+Independent GPT-6 Luna High review of implementation/test head `18d0586` found
+no concrete blockers; the final head adds checkpoint documentation only. Local
+source/native sanitizer/Node/C suites passed (114 Python tests reported, two
+unchanged build-dependent classes skipped locally), as did 138 Chromium logic,
+seven layout, nine actual-core and three transaction/handoff cases. Literal
+palette colours and byte-identical native frame, Work RAM, available Z80 RAM and
+stereo PCM prove paused output isolation on runtime/fallback profiles. The first
+full core run's two stale expected schema/domain lists were corrected to assert
+the complete contract; its full repeat passed without weakened assertions.
 
-Next: require all seven PR checks before merge, verify the exact merged tree,
-all seven main checks and the resulting ROM-free development package/source
-identity. Record final links on a delivery checkpoint without another trivial
-CI cycle. VERSION, existing release records/assets and McRetro.net stay unchanged.
+The [fixed five-pair display record](experiments/rgb-encoder-display-performance-v1.json)
+passes inactive median/p95 ratios 1.0/1.0 (limit 1.05) and active p95 0.318 ms per
+320×224 frame (limit 1 ms). All recorded input hashes still match merged source.
+All 311 relative Markdown links resolve. Logs and original synthetic UI inspection
+are under `/workspace/scratch/rgb-encoder/`.
+
+The [development browser download](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40459878011/artifacts/12713773822)
+contains the exact merged commit above: all 258 tracked files match. Its checksum,
+root/site metadata, corresponding source, notices, executable launcher and
+ROM-free contents were verified. ZIP SHA256:
+`ac5e91d68bb6a0aa6d6b025d5f290a1c66cb48fd9fc304fa6af749d209aa3628`
+(3,595,611 bytes; 755 entries). Runtime and normal fallback JS/WASM hashes remain
+identical to the preceding verified build. This Actions download is development
+source, not a replacement public release; it includes both Z80 RAM and RGB work.
+
+All 18 release records/asset identities match the starting snapshot. VERSION and
+McRetro.net were not changed or redeployed. No measured physical encoder match,
+audible result or native desktop acceptance is inferred from synthetic Linux
+checks. Composite, sync and mono faults remain outside this model.
+
+Next: use this development build for concrete browser feedback and fix reproduced
+regressions. #73 still needs matching NTSC VA6 board evidence; do not repeat
+completed RAM/encoder research or add another analogue model without a bounded
+oracle. No software delivery blocker remains. This final record is preserved on
+`experiment/rgb-encoder-delivery` without another documentation-only CI cycle.
 
 ## Video Encoder Research Verified — 27 October 2026 (Sydney)
 
