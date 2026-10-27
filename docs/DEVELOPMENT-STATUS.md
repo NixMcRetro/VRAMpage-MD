@@ -1,6 +1,6 @@
 # Development status and continuation checkpoint
 
-## VRAM Export Availability Fix In Progress — 27 October 2026 (Sydney)
+## VRAM Export Availability Fix Ready for CI — 27 October 2026 (Sydney)
 
 Bounded stability follow-up to the user's independent-work instruction. A
 Chromium probe on main `5e90aac` selected transaction model 2 with AD2↔AD5,
@@ -20,8 +20,20 @@ and verified main CI/package. No website deployment or additional hardware model
 
 The independent lifecycle audit found no confirmed issue in cartridge-failure
 controls; its initially suspected stale-Z80 path was disproved in Chromium.
-Do not add a redundant refresh. Next: regression first, smallest reporting fix,
-then review and integration. #73 still requires matching board evidence.
+Do not add a redundant refresh. The six-line exporter fix and regression are
+committed in `1ab067d`. Independent GPT-6 Luna High review found no blockers,
+passed the focused Chromium and Node comparison tests, and confirmed remaining
+fallback consumers retain their intended UI/recovery behavior. The regression
+failed on both null/throw before the fix and passes healthy/null/throw/absent
+cases afterward, including native state and pause preservation.
+
+`bash scripts/test.sh` passed (114 Python tests reported, two unchanged
+build-dependent classes skipped locally; native sanitizers, Node/C suites pass).
+Full Chromium logic is running. Reuse the unchanged RGB performance and native
+core evidence; fresh full browser/core/package CI remains the integration gate.
+Logs are under `/workspace/scratch/fault-stability/`. Next: all seven PR checks,
+reviewed merge, all seven main checks and verified development package. #73
+still requires matching board evidence.
 
 ## RGB Encoder Inputs Verified — 27 October 2026 (Sydney)
 
