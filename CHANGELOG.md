@@ -1,5 +1,10 @@
 # Changelog
 
+## Research — Work RAM Write Enables and FM Models
+
+- Define a bounded write-only upper/lower RAM inhibit proposal, separating retained old data from data cuts and active-low control polarity from a floating wire.
+- Audit exact pinned FM engine/model behavior and checkpoint constraints; add a reproducible native DAC-mode characterization probe. These research files do not change the app, native runtime, public interfaces, release or website.
+
 ## Development Source — Work RAM Data Lines
 
 - Add runtime-only D0–D15 cuts across independent byte lanes, sharing the compact Address/Data signal view and existing fault lifecycle. Address cuts, data cuts and byte-local bridges replace one another.

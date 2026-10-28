@@ -1,8 +1,18 @@
 # VRAMpage MD roadmap
 
-## Current Work RAM Data Lines — 29 October 2026
+## Next Bounded Research — 28 October 2026 (UTC)
 
-Implement [runtime data-line cuts](docs/WORK-RAM-DATA.md) across D0–D7 and
+The [write-enable report](docs/WORK-RAM-WRITE-ENABLE-RESEARCH.md) recommends
+future lower/upper byte-store inhibition using the accepted PAL two-byte circuit.
+The [FM follow-up](docs/FM-VARIANTS-RESEARCH.md) separates emulation engines,
+output models and board circuits, and identifies checkpoint-lifetime gates.
+These reports and the native characterization probe do not implement new runtime
+features. Prioritize the RAM contract before a staged FM model/replay proof;
+retain the existing composite-receiver and physical VRAM timing evidence gaps.
+
+## Completed Work RAM Data Lines — 29 October 2026
+
+Development source implements [runtime data-line cuts](docs/WORK-RAM-DATA.md) across D0–D7 and
 D8–D15, reusing the Work RAM chip, direction controls, byte-local bridges,
 configuration and recovery lifecycle. Use the documented PAL Model 1 VA6.5
 two-device circuit as the reference. Exact NTSC VA6 verification in #73 is
