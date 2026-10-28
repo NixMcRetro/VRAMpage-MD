@@ -137,7 +137,7 @@ class NativeBlitterPatchTests(unittest.TestCase):
             render.parent.mkdir(parents=True, exist_ok=True)
             wasm.write_text('#include "sms_ntsc.h"\n'
                             '#define SOUND_FREQUENCY 44100\n'
-                            'void start(void) {\n    system_reset();\n}\n'
+                            'void start(void) {\n    set_config_defaults();\n    system_reset();\n}\n'
                             'void EMSCRIPTEN_KEEPALIVE tick(void) {\n'
                             '    system_frame_gen(0);\n}\n')
             config.write_text('config.region_detect  = 3;\n'

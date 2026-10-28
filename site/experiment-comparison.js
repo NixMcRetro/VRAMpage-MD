@@ -91,6 +91,15 @@
       if(!hasPath(a,keys)||!hasPath(b,keys)||!valid(av)||!valid(bv)) { rows.push({label,a:valid(av)?show(av):'Unknown',b:valid(bv)?show(bv):'Unknown',status:'unknown'});return; }
       rows.push({label,a:show(av),b:show(bv),status:equal(av,bv)?'match':'mismatch'});
     };
+    for (const [key,label,valid] of [
+      ['requestedRegion','Requested Region',v=>isInteger(v,0,4)],
+      ['activeRequestedRegion','Active Region Request',v=>isInteger(v,0,4)],
+      ['regionCode','Effective Region',v=>[0,64,128,192].includes(v)],
+      ['pal','PAL Timing',isBoolean],['masterClock','Master Clock',v=>typeof v==='number'&&Number.isFinite(v)&&v>1000000],
+      ['frameRate','Frame Rate',v=>typeof v==='number'&&Number.isFinite(v)&&v>=40&&v<=70],
+      ['linesPerFrame','Lines Per Frame',v=>v===262||v===313],
+      ['width','Video Width',v=>isInteger(v,1,640)],['height','Video Height',v=>isInteger(v,1,480)],
+      ['interlaced','Interlaced',isBoolean]]) field(label,['machine',key],['machine','available'],valid);
     const audio=(name,key)=>{
       for(const [label,fieldName] of [['Configured','configured'],['Effective','effective'],['Data Mask','dataMask'],['Bridge A','bridgeA'],['Bridge B','bridgeB']]) {
         const valid=fieldName==='configured'||fieldName==='effective'?isBoolean:

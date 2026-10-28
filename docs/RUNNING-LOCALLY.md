@@ -95,6 +95,26 @@ reads cannot replace a newer selection. If native activation becomes uncertain,
 emulation stops explicitly. **Clean Restart** can retry the retained accepted
 cartridge; it is not automatic rollback.
 
+## Region Selection in Development Builds
+
+The runtime core offers **NTSC-U** (default), **NTSC-J**, **PAL (Europe)**,
+**Auto (ROM Header)** and **Japan PAL (Core Mode)**. Choose **Region** below
+the game controls, then use **Load ROM** or **Clean Restart** to apply it.
+Selecting alone leaves the running cartridge and session checkpoint intact;
+the status identifies a pending choice. **CPU Reset** retains the active region
+and checkpoint. Clean Restart clears faults, queued audio and the checkpoint.
+
+The header shows effective native timing; the picture follows the native active
+viewport, including 224/240-line modes. Eight-frame contacts still last eight
+emulated frames, so PAL pulses take longer in real time. Experiment exports and
+comparison record requested and effective regions separately. Circuit files
+remain fault settings and do not select a region. The normal fallback core
+shows region selection as unavailable and remains fixed NTSC-U.
+
+Japan PAL is an emulator mode, not a verified physical board profile. Region
+selection does not establish a VA motherboard revision or physical accuracy.
+It is development source, not a change to existing downloads or the live site.
+
 ## Package Contents and Verification Limits
 
 The complete ZIP contains HTML/CSS/JavaScript, compiled JS/WASM, matching modified

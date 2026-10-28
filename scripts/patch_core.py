@@ -1031,6 +1031,17 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
             raise SystemExit('Expected wasm.c include anchor missing; upstream changed. No modifications made.')
         wasm = wasm.replace(include_anchor, include_anchor + '\n' + runtime_includes, 1)
 
+    region_runtime_include = ('#ifdef VRAM_TX_RUNTIME\n'
+                              '#include "region_profile_runtime.c"\n'
+                              '#endif')
+    work_ram_include = '#include "work_ram_runtime.c" /* ' + WORK_RAM_MARKER + ' */'
+    if region_runtime_include not in wasm:
+        if wasm.count(work_ram_include) != 1:
+            raise SystemExit('Expected region profile runtime include anchor missing or ambiguous.')
+        wasm = wasm.replace(work_ram_include, work_ram_include + '\n' + region_runtime_include, 1)
+    elif wasm.count(region_runtime_include) != 1:
+        raise SystemExit('Region profile runtime include is ambiguous.')
+
     tx_include = ('#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)\n'
                   '#include "vram_transaction.c"\n'
                   '#endif')
@@ -1080,9 +1091,23 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     start_anchor = '    system_reset();\n}'
     old_start_hook = '    system_reset();\n    work_ram_logic_start();\n}'
     previous_runtime_start_hook = '    system_reset();\n    work_ram_logic_start();\n    bend_reset();\n}'
-    start_hook = '    system_reset();\n    work_ram_logic_start();\n#ifdef VRAM_TX_RUNTIME\n    z80_ram_bridge_start();\n#endif\n    bend_reset();\n}'
+    prior_runtime_start_hook = ('    system_reset();\n    work_ram_logic_start();\n'
+                                '#ifdef VRAM_TX_RUNTIME\n    z80_ram_bridge_start();\n#endif\n'
+                                '    bend_reset();\n}')
+    marked_prior_start_hook = ('    system_reset();\n    work_ram_logic_start();\n'
+                               '#ifdef VRAM_TX_RUNTIME\n    z80_ram_bridge_start();\n#endif\n'
+                               '    bend_reset();\n#ifdef VRAM_TX_RUNTIME\n'
+                               '    region_profile_mark_loaded();\n#endif\n}')
+    start_hook = ('    system_reset();\n    work_ram_logic_start();\n'
+                  '#ifdef VRAM_TX_RUNTIME\n    z80_ram_bridge_start();\n#endif\n'
+                  '    bend_reset();\n#ifdef VRAM_TX_RUNTIME\n'
+                  '    region_profile_mark_loaded();\n#endif\n}')
     if wasm.count(start_hook) == 0:
-        if wasm.count(previous_runtime_start_hook) == 1:
+        if wasm.count(marked_prior_start_hook) == 1:
+            wasm = wasm.replace(marked_prior_start_hook, start_hook, 1)
+        elif wasm.count(prior_runtime_start_hook) == 1:
+            wasm = wasm.replace(prior_runtime_start_hook, start_hook, 1)
+        elif wasm.count(previous_runtime_start_hook) == 1:
             wasm = wasm.replace(previous_runtime_start_hook, start_hook, 1)
         else:
             anchor = old_start_hook if old_start_hook in wasm else start_anchor
@@ -1091,6 +1116,18 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
             wasm = wasm.replace(anchor, start_hook, 1)
     elif wasm.count(start_hook) != 1:
         raise SystemExit('Fault reset start hook is ambiguous. No modifications made.')
+
+    defaults_anchor = '    set_config_defaults();\n'
+    runtime_defaults_hook = (defaults_anchor +
+                             '#ifdef VRAM_TX_RUNTIME\n'
+                             '    region_profile_prepare_start();\n'
+                             '#endif\n')
+    if wasm.count(runtime_defaults_hook) == 0:
+        if wasm.count(defaults_anchor) != 1:
+            raise SystemExit('Expected set_config_defaults() start anchor missing or ambiguous.')
+        wasm = wasm.replace(defaults_anchor, runtime_defaults_hook, 1)
+    elif wasm.count(runtime_defaults_hook) != 1:
+        raise SystemExit('Region profile default hook is ambiguous.')
 
     tick_hook = '    system_frame_gen(0);\n    bend_after_frame();\n'
     tick_replacement = '    system_frame_gen(0);\n    work_ram_logic_tick();\n    bend_after_frame();\n'
@@ -1163,6 +1200,8 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
         (wasm_dir / 'psg_data_fault_runtime.c').write_text((scripts / 'psg_data_fault_runtime.c').read_text())
         (wasm_dir / 'fm_data_fault_core.c').write_text((scripts / 'fm_data_fault_core.c').read_text())
         (wasm_dir / 'fm_data_fault_runtime.c').write_text((scripts / 'fm_data_fault_runtime.c').read_text())
+        (wasm_dir / 'region_profile_runtime.c').write_text((scripts / 'region_profile_runtime.c').read_text())
+        (wasm_dir / 'region_profile_runtime.h').write_text((scripts / 'region_profile_runtime.h').read_text())
         if transaction_adapter:
             fm_c.write_text(fm)
     else:
@@ -1205,6 +1244,11 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
             if not target.exists() or target.read_text() != content:
                 target.write_text(content)
         for filename in ('fm_data_fault_core.c', 'fm_data_fault_runtime.c'):
+            target = root / 'src/main/c/wasm' / filename
+            content = (scripts / filename).read_text()
+            if not target.exists() or target.read_text() != content:
+                target.write_text(content)
+        for filename in ('region_profile_runtime.c', 'region_profile_runtime.h'):
             target = root / 'src/main/c/wasm' / filename
             content = (scripts / filename).read_text()
             if not target.exists() or target.read_text() != content:

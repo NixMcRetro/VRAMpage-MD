@@ -18,6 +18,7 @@ PATCH_CORE_HELPERS = (
     "z80_ram_bridge_runtime.c", "z80_ram_bridge_runtime.h", "z80_ram_bridge_core.h", "z80_ram_bridge_api.js",
     "psg_data_fault.h", "psg_data_fault_core.c", "psg_data_fault_runtime.c",
     "fm_data_fault.h", "fm_data_fault_core.c", "fm_data_fault_runtime.c",
+    "region_profile_runtime.c", "region_profile_runtime.h",
 )
 
 

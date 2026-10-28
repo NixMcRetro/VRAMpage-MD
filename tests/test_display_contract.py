@@ -25,10 +25,10 @@ class DisplayContract(unittest.TestCase):
         self.assertIn('displayViewport.requestFullscreen()', self.js)
         self.assertNotIn('canvas.requestFullscreen()', self.js)
         self.assertIn('#displayViewport:fullscreen', self.css)
-        self.assertIn('aspect-ratio:10/7', self.css)
+        self.assertIn('aspect-ratio:var(--picture-ratio, 1.4285714285714286)', self.css)
 
     def test_resize_restores_native_buffer(self):
-        for text in ['canvas.width = GAME_WIDTH', 'canvas.height = GAME_HEIGHT',
+        for text in ['canvas.width = videoWidth', 'canvas.height = videoHeight',
                      "window.addEventListener('resize', scheduleDisplayRefresh)",
                      "document.addEventListener('fullscreenchange', scheduleDisplayRefresh)",
                      'ResizeObserver(scheduleDisplayRefresh)', 'drawActiveVideo()']:

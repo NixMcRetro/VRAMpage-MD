@@ -295,6 +295,27 @@ window.Module = async () => {
       return {...z80Ram,effective:z80Ram.supported&&z80Ram.configured,reason:z80Ram.configured?'active':'disabled',modelVersion:'z80-ram-write-address-pair-v1'};
     };
   }
+  if (window.__regionCore) {
+    const region={requestedRegion:1,loaded:false,regionCode:null,pal:null,masterClock:null,frameRate:null,
+      linesPerFrame:null,width:null,height:null,interlaced:null};
+    window.mockCore.region=region;
+    core._set_region_request=id=>{
+      if(window.mockCore.rejectRegion || !Number.isInteger(id)||id<0||id>4)return 1;
+      region.requestedRegion=id;return 0;
+    };
+    core._get_region_state=()=>{
+      if(window.mockCore.throwRegionState)throw new Error('region telemetry failed');
+      return {schemaVersion:1,available:true,...region};
+    };
+    const nativeStart=core._start;
+    core._start=()=>{
+      nativeStart();
+      const id=region.requestedRegion===0?2:region.requestedRegion;
+      Object.assign(region,{loaded:true,regionCode:{1:128,2:192,3:0,4:64}[id],pal:id===2||id===4,
+        masterClock:id===2||id===4?53203424:53693175,frameRate:id===2||id===4?49.701459:59.92274,
+        linesPerFrame:id===2||id===4?313:262,width:320,height:id===2||id===4?240:224,interlaced:false});
+    };
+  }
   window.mockCore.core=core;
   return core;
 };

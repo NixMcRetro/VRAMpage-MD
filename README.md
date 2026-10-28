@@ -44,6 +44,9 @@ Development source also includes an optional
 It is off by default and is not included in the published v0.5.0 download.
 The same development source adds optional [RGB Encoder Input Contacts](docs/RGB-ENCODER-INPUTS.md),
 an output-only approximation separate from memory and sound faults.
+Development builds also offer [Region Selection](docs/REGION-PROFILES-PLAN.md):
+NTSC-U remains the default; stage another region and apply it with Clean Restart.
+These additions are not in the published download or hosted v0.5.0 app.
 
 ## 💻 Run Locally
 

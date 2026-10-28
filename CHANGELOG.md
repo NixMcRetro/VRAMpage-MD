@@ -1,5 +1,15 @@
 # Changelog
 
+## Development Source — Region Selection
+
+- Add staged runtime region choices with NTSC-U as the default. Load ROM/Clean Restart applies the choice; CPU Reset retains the active region and checkpoint.
+- Drive frame cadence, viewport and status from native observations; include requested/effective region identity in exports and comparison, with unavailable legacy values shown as Unknown.
+- Verify software-visible regions, PAL/NTSC video/audio, exact native-frame pulses and unchanged default output. Keep the normal core fixed NTSC-U and published downloads intact; physical VA profiles remain research.
+
+## Development Maintenance — Actions
+
+- Upgrade setup-node, checkout, upload-artifact and setup-python to v7 and download-artifact to v8. Preserve explicit toolchain versions and archived artifacts; verify all seven PR/main checks after each individual integration.
+
 ## Development Maintenance — Dependency Updates
 
 - Schedule weekly GitHub Actions and browser-test dependency updates; group compatible Action updates and retain separate major-version reviews and the existing CI gates.

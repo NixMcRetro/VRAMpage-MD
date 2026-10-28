@@ -8,23 +8,27 @@
   const WIDTH = 320;
   const HEIGHT = 224;
   const PITCH = 640 * 4;
-  const ROW_BYTES = WIDTH * 4;
 
   function copyActiveFrame(source, destination, options = {}) {
-    if (!source || source.length < (HEIGHT - 1) * PITCH + ROW_BYTES)
+    const width=options.width===undefined?WIDTH:options.width;
+    const height=options.height===undefined?HEIGHT:options.height;
+    if (!Number.isInteger(width)||width<1||width>640||!Number.isInteger(height)||height<1||height>480)
+      throw new RangeError('Unsupported active framebuffer dimensions');
+    const rowBytes=width*4;
+    if (!source || source.length < (height - 1) * PITCH + rowBytes)
       throw new RangeError('Framebuffer is smaller than the visible Mega Drive picture');
-    if (!destination || destination.length < HEIGHT * ROW_BYTES)
+    if (!destination || destination.length < height * rowBytes)
       throw new RangeError('Destination video buffer is too small');
 
     // Never use CSS interpolation to hide holes: the raw source is readable.
-    // Sample 32 evenly spaced RGB pixels per native row to find an absent field.
+    // Sample RGB pixels across each native row to find an absent field.
     // A truly near-black row is checked fully before any repair takes place.
     let litEven = 0, litOdd = 0;
-    const rowActive = new Uint8Array(HEIGHT);
-    for (let y = 0; y < HEIGHT; y++) {
+    const rowActive = new Uint8Array(height);
+    for (let y = 0; y < height; y++) {
       const offset = y * PITCH;
       let active = false;
-      for (let x = 0; x < WIDTH; x += 10) {
+      for (let x = 0; x < width; x += 10) {
         const i = offset + 4 * x;
         if (source[i] > 16 || source[i + 1] > 16 || source[i + 2] > 16) {
           active = true;
@@ -40,9 +44,9 @@
     // some core modes can switch field alignment in the middle of a display.
     let gaps = 0;
     let activeRows = litEven + litOdd;
-    for (let y = 0; y < HEIGHT; y++) {
+    for (let y = 0; y < height; y++) {
       if (rowActive[y]) continue;
-      if (y === 0 ? rowActive[1] : y === HEIGHT - 1 ? rowActive[y - 1]
+      if (y === 0 ? rowActive[1] : y === height - 1 ? rowActive[y - 1]
           : rowActive[y - 1] && rowActive[y + 1]) gaps++;
     }
     // A normal black background or an occasional black row should not change.
@@ -57,7 +61,7 @@
 
     function rowIsFullyBlack(y) {
       const start = y * PITCH;
-      for (let x = 0; x < WIDTH; x++) {
+      for (let x = 0; x < width; x++) {
         const i = start + x * 4;
         if (source[i] > 16 || source[i + 1] > 16 || source[i + 2] > 16) return false;
       }
@@ -65,10 +69,10 @@
     }
 
     let repairedRows = 0;
-    for (let y = 0; y < HEIGHT; y++) {
+    for (let y = 0; y < height; y++) {
       let sourceY = y;
       const isolated = !rowActive[y] && (y === 0 ? !!rowActive[1] :
-        y === HEIGHT - 1 ? !!rowActive[y - 1] : !!(rowActive[y - 1] && rowActive[y + 1]));
+        y === height - 1 ? !!rowActive[y - 1] : !!(rowActive[y - 1] && rowActive[y + 1]));
       if (recover && isolated && rowIsFullyBlack(y)) {
         // Preserve vertical position by using the closest rendered row.
         const neighbor = y > 0 ? y - 1 : y + 1;
@@ -78,7 +82,7 @@
         }
       }
       const start = sourceY * PITCH;
-      destination.set(source.subarray(start, start + ROW_BYTES), y * ROW_BYTES);
+      destination.set(source.subarray(start, start + rowBytes), y * rowBytes);
     }
     return {repairedRows, missingParity, litEven, litOdd};
   }
