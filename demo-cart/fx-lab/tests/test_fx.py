@@ -9,7 +9,7 @@ import hashlib,struct,sys,unittest,json
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import build_fx
 R=build_fx
-ROM=(R.OUT/'VRAMpage-MD-FX-Lab-v0.3.2-Demoscene.bin').read_bytes()
+ROM=(R.OUT/'VRAMpage-MD-FX-Lab-v0.3.3-Demoscene.bin').read_bytes()
 
 class CPU:
     def __init__(self,pal=False,start_at=None,inputs=None):
@@ -183,6 +183,19 @@ class TestROM(unittest.TestCase):
     for name in ('title','vortex','aurora','sprites','colour','audio'):
      p=R.asm.labels['map_'+name]
      self.assertEqual(len(ROM[p:p+4096]),4096)
+ def test_chroma_reactor_hscroll_wrap_has_no_blank_columns(self):
+    # Cell-scroll excursions can expose Plane A columns beyond the visible 40.
+    chroma=R.full_map(R.colour_cells, fill_edges=True)
+    title=R.full_map(R.title_cells)
+    self.assertEqual(ROM[R.asm.labels['map_colour']:R.asm.labels['map_colour']+4096],chroma)
+    for y in range(28):
+        for x in range(40,64):
+            off=(y*64+x)*2
+            self.assertEqual(chroma[off:off+2],
+                             chroma[(y*64+(x%40))*2:(y*64+(x%40))*2+2])
+            self.assertNotEqual(int.from_bytes(chroma[off:off+2],'big')&0x7FF,R.blank_id)
+            self.assertEqual(int.from_bytes(title[off:off+2],'big')&0x7FF,R.blank_id)
+
  def test_ntsc_main_sequence(self):
     c=CPU();c.run()
     self.assertEqual(c.tmss,0x53454741)
