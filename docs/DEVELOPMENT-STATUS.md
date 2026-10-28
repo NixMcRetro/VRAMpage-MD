@@ -1,5 +1,59 @@
 # Development status and continuation checkpoint
 
+## Work RAM Write Inhibit Verified — 28 October 2026 (UTC)
+
+[PR #97](https://github.com/NixMcRetro/VRAMpage-MD/pull/97) merged as
+`e2a0813651968764b7bea086a5fa9460027774f0`. The merged tree
+`f8f94ba7430542db123652f41eaab2e89144e803` exactly matches tested head
+`bb885377031bf12d394a6bc1731de0f6d1e453bb`.
+All seven required [PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40786620256)
+and [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40787500679)
+passed on the first CI attempt. All four CodeQL analyses passed on both
+[PR](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40786617693) and
+[main](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40787499754).
+The active strict ruleset was satisfied without bypass. Both fresh CI builds
+verified the unchanged normal/fallback JS and WASM hashes.
+
+Choose **Writes** in the existing **SRAM (Work RAM)** panel and toggle `/LWR`
+(Lower Byte) or `/UWR` (Upper Byte). Either or both inhibit selected stores while
+retaining old bytes. This replaces existing Work RAM faults and keeps the current
+VRAM/audio/Z80/RGB coordination rules. CPU Reset clears inhibition but retains
+sound state and the checkpoint; Restore clears/verifies it before loading;
+Clean Restart clears controls and discards the slot. Schema 6 imports versions
+1–5; logic-v3 metadata/comparison records observed capability and mask state.
+See [the implementation guide](WORK-RAM-WRITE-INHIBIT.md).
+
+Luna High authored the native slice; independent Luna High review approved the
+integration and final deltas. Local source/sanitizer/Node/C checks, 33 actual-WASM
+CPU/Z80 cases, Chromium interface 159/159 plus one new focused case, actual-core
+12/12 (including 128 mixed-fault cycles), transaction 3/3 and layout 7/7 pass.
+The final CI suites also cover all 160 interface cases across Chromium, Firefox
+and WebKit and extracted runtime/fallback browser packages. Root found/fixed a
+normal-profile guard issue before CI; native regression now compiles and runs
+both normal and optional runtime profiles. Local ASan/UBSan pass with leak
+detection disabled only for the container's ptrace limitation; CI settings are
+unchanged. No assertion was weakened.
+
+[Download the verified development browser build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40787500679/artifacts/12860231649)
+(artifact 12860231649; expires 27 November 2026). It contains the built runtime,
+normal fallback, corresponding source and metadata for the verified main commit.
+All 18 release records and asset identities match the starting snapshot; VERSION
+remains 0.5.0. Original Demo Cart assets, separate PRs #93/#94/#95 and McRetro.net
+were not changed. No public release or website deployment was performed.
+
+The reviewed RAM/FM research and reproducible native FM characterization probe
+are now carried on main with this feature. FM model selection is not implemented.
+Next bounded work is a separate staged MAME Discrete/Integrated model and replay
+proof; do not expose a backend selector that loses checkpoint support. Exact
+NTSC #73 validation remains optional, and composite/physical VRAM timing retain
+their existing source/receiver/ordering gaps. Do not repeat completed research.
+
+This models write enables held inactive/high, not floating physical cuts or
+refresh/contention timing. Commercial-game outcomes, physical electrical fidelity
+and audible acceptance remain unverified. This final queue/status checkpoint is
+on `maintenance/write-inhibit-delivery`, avoiding a trivial additional source-CI
+cycle; implementation, research and tests are on verified main.
+
 ## Work RAM Write Inhibit — Integration Checkpoint, 28 October 2026 (UTC)
 
 Authorized bounded follow-up to the reviewed [write-enable research](WORK-RAM-WRITE-ENABLE-RESEARCH.md).
