@@ -185,6 +185,8 @@ window.Module=opts=>originalFactory(opts).then(core=>{
         self.assertEqual(data["logic"]["schemaVersion"], 3)
         self.assertTrue(data["logic"]["dataMaskAvailable"])
         self.assertEqual(data["logic"]["dataMask"], 0)
+        self.assertTrue(data["logic"]["writeInhibitAvailable"])
+        self.assertEqual(data["logic"]["writeInhibitMask"], 0)
         self.assertEqual(data["vramTransaction"]["modelId"], 2)
         self.assertTrue(data["vramModelTransitions"])
         self.assertTrue(any(change["result"]=="ram-fault-rejected"

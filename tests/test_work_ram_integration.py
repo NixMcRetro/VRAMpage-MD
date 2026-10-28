@@ -15,19 +15,21 @@ SPEC.loader.exec_module(patch_core)
 
 class WorkRamIntegration(unittest.TestCase):
     def test_runtime_bridge_native_transactions(self):
-        with tempfile.TemporaryDirectory(prefix="work-ram-runtime-") as temp:
-            executable = Path(temp) / "runtime-smoke"
-            subprocess.run(
-                [
-                    "cc", "-std=c11", "-O2", "-Wall", "-Wextra", "-Werror",
-                    "-DLSB_FIRST", "-DWORK_RAM_RUNTIME_TEST", "-DVRAM_TX_RUNTIME", "-Iscripts",
-                    "scripts/work_ram_fault.c", "scripts/work_ram_runtime.c",
-                    "tests/work_ram_runtime_smoke.c", "-o", str(executable),
-                ],
-                cwd=ROOT,
-                check=True,
-            )
-            subprocess.run([str(executable)], cwd=ROOT, check=True)
+        for runtime in (False, True):
+            with self.subTest(runtime=runtime), tempfile.TemporaryDirectory(prefix="work-ram-runtime-") as temp:
+                executable = Path(temp) / "runtime-smoke"
+                subprocess.run(
+                    [
+                        "cc", "-std=c11", "-O2", "-Wall", "-Wextra", "-Werror",
+                        "-DLSB_FIRST", "-DWORK_RAM_RUNTIME_TEST",
+                        *(["-DVRAM_TX_RUNTIME"] if runtime else []), "-Iscripts",
+                        "scripts/work_ram_fault.c", "scripts/work_ram_runtime.c",
+                        "tests/work_ram_runtime_smoke.c", "-o", str(executable),
+                    ],
+                    cwd=ROOT,
+                    check=True,
+                )
+                subprocess.run([str(executable)], cwd=ROOT, check=True)
 
     def test_runtime_bridge_native_transactions_sanitized(self):
         with tempfile.TemporaryDirectory(prefix="work-ram-runtime-sanitized-") as temp:

@@ -201,7 +201,9 @@ void work_ram_logic_write8(uint32_t address, uint8_t value)
     uint32_t offset = mapped_byte_offset(original,
                                          WORK_RAM_FAULT_APPLY_WRITE);
     uint8_t projected = value;
-    uint32_t reason = 0;
+#ifdef VRAM_TX_RUNTIME
+    uint32_t control_inhibited = 0;
+#endif
     if (work_ram_fault_project_byte(value, offset, &logic_config,
                                     WORK_RAM_FAULT_APPLY_WRITE,
                                     &projected) != WORK_RAM_FAULT_OK) {
@@ -212,15 +214,18 @@ void work_ram_logic_write8(uint32_t address, uint8_t value)
     if (logic_data_mask && (logic_data_mask_access == WORK_RAM_FAULT_APPLY_BOTH ||
                             logic_data_mask_access == WORK_RAM_FAULT_APPLY_WRITE))
         projected &= (uint8_t)~((offset & 1u) ? logic_data_mask : (logic_data_mask >> 8));
-#endif
     if (logic_write_inhibit & ((offset & 1u) ? 1u : 2u)) {
         uint8_t retained = native_read_byte(offset);
         projected = retained;
-        if (retained != value) reason |= WORK_RAM_TRACE_REASON_CONTROL;
+        control_inhibited = retained != value;
     }
+#endif
     if (offset != original || projected != value) {
-        reason |= (offset != original ? WORK_RAM_TRACE_REASON_ADDRESS : 0u) |
-                  ((projected != value && !(reason & WORK_RAM_TRACE_REASON_CONTROL)) ? WORK_RAM_TRACE_REASON_DATA : 0u);
+        uint32_t reason = (offset != original ? WORK_RAM_TRACE_REASON_ADDRESS : 0u) |
+                          (projected != value ? WORK_RAM_TRACE_REASON_DATA : 0u);
+#ifdef VRAM_TX_RUNTIME
+        if (control_inhibited) reason = (reason & ~WORK_RAM_TRACE_REASON_DATA) | WORK_RAM_TRACE_REASON_CONTROL;
+#endif
         trace_affected_write(address, original, offset, 1u, reason);
         native_write_byte(offset, projected);
         changed_write();
@@ -234,7 +239,9 @@ void work_ram_logic_write16(uint32_t address, uint16_t value)
     uint16_t word = mapped_word_offset(original,
                                        WORK_RAM_FAULT_APPLY_WRITE);
     uint16_t projected = value;
+#ifdef VRAM_TX_RUNTIME
     uint32_t control_inhibited = 0;
+#endif
     if (work_ram_fault_project_word(value, &logic_config,
                                     WORK_RAM_FAULT_APPLY_WRITE,
                                     &projected) != WORK_RAM_FAULT_OK) {
@@ -245,7 +252,6 @@ void work_ram_logic_write16(uint32_t address, uint16_t value)
     if (logic_data_mask && (logic_data_mask_access == WORK_RAM_FAULT_APPLY_BOTH ||
                             logic_data_mask_access == WORK_RAM_FAULT_APPLY_WRITE))
         projected &= (uint16_t)~logic_data_mask;
-#endif
     if (logic_write_inhibit) {
         uint16_t retained = *(uint16_t *)(work_ram + ((uint32_t)word << 1));
         uint16_t inhibit_bits = (uint16_t)(((logic_write_inhibit & 2u) ? 0xff00u : 0u) |
@@ -254,11 +260,14 @@ void work_ram_logic_write16(uint32_t address, uint16_t value)
         control_inhibited = inhibited != projected;
         projected = inhibited;
     }
+#endif
     if (((uint32_t)word << 1) != original || projected != value) {
         uint32_t mapped = (uint32_t)word << 1;
         uint32_t reason = (mapped != original ? WORK_RAM_TRACE_REASON_ADDRESS : 0u) |
-                          (control_inhibited ? WORK_RAM_TRACE_REASON_CONTROL :
-                           (projected != value ? WORK_RAM_TRACE_REASON_DATA : 0u));
+                          (projected != value ? WORK_RAM_TRACE_REASON_DATA : 0u);
+#ifdef VRAM_TX_RUNTIME
+        if (control_inhibited) reason = (reason & ~WORK_RAM_TRACE_REASON_DATA) | WORK_RAM_TRACE_REASON_CONTROL;
+#endif
         trace_affected_write(address, original, mapped, 2u, reason);
         *(uint16_t *)(work_ram + mapped) = projected;
         changed_write();
