@@ -260,17 +260,30 @@ def full_map(viewport):
             else:rows.append(blank_id)
     return b''.join(struct.pack('>H',v) for v in rows)
 
-# title_cells is the reviewed source bitmap with only the menu/controls blocks redrawn above.
-# Reusing the original title patterns makes VRAM bending conspicuous.
-# Alternate scenes are intentionally original tile-index compositions, not static copies.
+# Do not scatter title/portrait glyphs through the effects! Scene maps only
+# reference ORIGINAL procedural FX tiles; no approved portrait/logo tiles are used.
+# These maps are independent of any circuit bending, which remains user-controlled.
 tile_cells=[];colour_cells=[];sprite_cells=[];audio_cells=[]
 for y in range(28):
     for x in range(40):
-        shape=((x//2+y//2)*17+(x^y)*5)%pattern_count
-        tile_cells.append(((x//10)%4<<13)|shape)
-        colour_cells.append(((x//5+y//5)%4<<13)|((x*7+y*23)%pattern_count))
-        sprite_cells.append((((x+y)//12)%4<<13)|((x*3+y*11)%pattern_count))
-        audio_cells.append((((x+y)//9)%4<<13)|((x*13+y*3)%pattern_count))
+        # Alternating interlocking ribbons with warm/cool regions.
+        a=((x//4)+2*(y//4)) & 15
+        phase=(3*x+2*y+(x//3)) & 15
+        tile_cells.append((((x//10)+(y//7))%4<<13)|(FX_BASE+a*16+phase))
+        # Large, legible colour regions reveal deliberate palette mutations.
+        colour_cells.append(((((x//8)+(y//5))%4)<<13)|(FX_BASE+((x+y)//5%16)*16+((x//2+y//2)&15)))
+        # Calm stage backdrop, with a moving 1x1 hardware sprite on top.
+        sprite_cells.append(((((y//8)+(x//12))%4)<<13)|(FX_BASE+((y//3)&15)*16+((x//4)&15)))
+        # A muted oscilloscope-style diagonal backdrop for the PSG stage.
+        audio_cells.append(((((x//12)+(y//8))%4)<<13)|(FX_BASE+((x+2*y)//5%16)*16+((x+y*3)&15)))
+
+# The ROM must actually upload every tile referenced by the maps AND cursor.
+# The previous version included those pixels in its ROM but uploaded only the
+# old title patterns, leaving all selector and FX tile IDs uninitialised in VRAM.
+ALL_PATTERNS=PATTERNS+b'\0'*32+b'\x00\x0F'*16+FX_PATTERNS+UI_PATTERNS
+assert len(ALL_PATTERNS)==(ARROW_ID+1)*32
+assert len(ALL_PATTERNS)<0xC000, 'Tile upload must not overlap Plane A'
+assert all((word&0x7FF)>=FX_BASE for scene in (tile_cells,colour_cells,sprite_cells,audio_cells) for word in scene)
 
 asm=A68()
 # Mega Drive vectors: stack and reset PC, all unused exception vectors stop safely.
@@ -557,7 +570,8 @@ asm.label('disable_display');asm.movew_imm_ai(0,0x8104);asm.rts()
 asm.label('load_pattern')
 asm.movel_imm_ai(0,0x40000000)
 asm.movea_ref(2,'patterns')
-asm.movew_imm_d(0,(len(PATTERNS)+64)//2-1)
+# Copy all contiguous pattern data, including FX and the native menu text.
+asm.movew_imm_d(0,len(ALL_PATTERNS)//2-1)
 asm.bsr('copy_words');asm.rts()
 asm.label('load_palettes')
 asm.movel_imm_ai(0,0xC0000000)
@@ -587,7 +601,15 @@ for name in ('title','vortex','aurora','sprites','colour','audio'):
     # Use full-width scroll for non-FX scenes; 1-cell horizontal bands in FX scenes.
     asm.movew_imm_ai(0,0x8B02 if name in ('vortex','aurora') else 0x8B00)
     if name not in ('vortex','aurora'):
-        asm.bsr('load_palettes')
+        if name=='title':
+            asm.bsr('load_palettes')  # Preserve approved captain and logo colours.
+        else:
+            # Procedural scenes need the corresponding procedural palette,
+            # not the portrait's original colour banks.
+            asm.movel_imm_ai(0,0xC0000000)
+            asm.movea_ref(2,'palette_static_colour' if name=='colour' else 'palette_static_cool')
+            asm.movew_imm_d(0,63)
+            asm.bsr('copy_words')
         asm.movel_imm_ai(0,0x78000003)
         asm.movew_imm_ai(1,0)
         asm.movew_imm_ai(1,0)
@@ -610,8 +632,10 @@ asm.moveb_imm_ai(5,0x8A);asm.moveb_imm_ai(5,0x14)
 asm.moveb_imm_ai(5,0x94);asm.rts()
 asm.label('sound_off');asm.moveb_imm_ai(5,0x9F);asm.rts()
 
-asm.append('patterns',PATTERNS+b'\0'*32+b'\x00\x0F'*16+FX_PATTERNS+UI_PATTERNS) # Keep approved title tiles; append menu and arrow tiles
+asm.append('patterns',ALL_PATTERNS) # Keep approved title tiles; append menu and arrow tiles
 asm.append('cram',CRAM)
+asm.append('palette_static_colour',FX_PALETTES['vortex'][:128])
+asm.append('palette_static_cool',FX_PALETTES['aurora'][:128])
 for name,cell in [('title',title_cells),('vortex',VORTEX_MAP),('aurora',AURORA_MAP),('sprites',sprite_cells),('colour',colour_cells),('audio',audio_cells)]:
     asm.append('map_'+name, b''.join(struct.pack('>H',v) for v in cell)
                if name in ('vortex','aurora') else full_map(cell))
@@ -626,8 +650,8 @@ def put(start,stop,text):
     rom[start:stop]=b.ljust(stop-start,b' ')
 put(0x100,0x110,'SEGA MEGA DRIVE')
 put(0x110,0x120,'(C) MCRETRO 2026')
-put(0x120,0x150,'VRAMPAGE MD FX LAB V0.3 SELECTOR')
-put(0x150,0x180,'VRAMPAGE MD FX LAB V0.3 SELECTOR')
+put(0x120,0x150,'VRAMPAGE MD FX LAB V0.3.1 FIXED')
+put(0x150,0x180,'VRAMPAGE MD FX LAB V0.3.1 FIXED')
 put(0x180,0x18E,'GM 00000000-00')
 put(0x190,0x1A0,'J               ')
 rom[0x1A0:0x1A8]=struct.pack('>II',0,len(rom)-1)
@@ -637,7 +661,7 @@ if len(rom)%2:rom+=b'\x00'
 rom[0x1A4:0x1A8]=struct.pack('>I',len(rom)-1)
 checksum=sum(struct.unpack_from('>H',rom,i)[0] for i in range(0x200,len(rom),2))&0xFFFF
 rom[0x18E:0x190]=struct.pack('>H',checksum)
-(OUT/'VRAMpage-MD-FX-Lab-v0.3-Selector.bin').write_bytes(rom)
+(OUT/'VRAMpage-MD-FX-Lab-v0.3.1-Fixed.bin').write_bytes(rom)
 report={
  'romSize':len(rom),'checksum':f'{checksum:04X}',
  'sha256':hashlib.sha256(rom).hexdigest(), 'baseKitSHA256':APPROVED_KIT_SHA256,
