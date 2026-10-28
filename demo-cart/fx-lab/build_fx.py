@@ -160,7 +160,7 @@ AURORA_MAP=fx_map('aurora')
 # Uses the approved title's existing bank 1: black (0), white (4), electric blue (8).
 PANEL_X0,PANEL_X1=16,144
 PANEL_Y0,PANEL_Y1=64,168
-CHOICES=('CHROMATIC VORTEX','NEON AURORA','SPRITE MOTION','COLOUR LAB','PSG SOUND')
+CHOICES=('CHROMATIC VORTEX','NEON AURORA','SPRITE STORM','CHROMA REACTOR','PSG SOUND')
 LABEL_YS=(69,81,93,105,117)
 BASE_TITLE_CELLS=[int.from_bytes(TILEMAP[i:i+2],'big') for i in range(0,len(TILEMAP),2)]
 selector_pixels={}
