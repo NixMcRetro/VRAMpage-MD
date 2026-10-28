@@ -69,7 +69,7 @@ async function create(words, config, init, dataMaskConfig, inhibitMask) {
   // Real CPU stores retain prior bytes on selected lanes; reads stay ordinary.
   c=await create([
     ...wordWrite(0xff1000,0x1122),...wordWrite(0xff1002,0x1122),
-    ...longWrite(0xff1004,0x11223344),...byteWrite(0xff1008,0x11),
+    ...longWrite(0xff1004,0x11223344),...byteWrite(0xff1008,0x11),...byteWrite(0xff1009,0x22),
     0x3039,0x00ff,0x1000,0x33c0,0x00ff,0x1010,...stop
   ],null,core=>{putWord(core,0x1000,0xaabb);putWord(core,0x1002,0xaabb);
     putWord(core,0x1004,0xaabb);putWord(core,0x1006,0xccdd);putWord(core,0x1008,0xaabb);},null,1);
@@ -77,7 +77,8 @@ async function create(words, config, init, dataMaskConfig, inhibitMask) {
   assert.equal(getWord(c,0x1000),0x11bb);
   assert.equal(getWord(c,0x1002),0x11bb);
   assert.equal(getWord(c,0x1004),0x11bb);assert.equal(getWord(c,0x1006),0x33dd);
-  assert.equal(getByte(c,0x1008),0xaa,'even byte address selects inhibited upper lane');
+  assert.equal(getByte(c,0x1008),0x11,'even byte address selects the uninhibited upper lane');
+  assert.equal(getByte(c,0x1009),0xbb,'odd byte address retains the inhibited lower lane');
   assert.equal(getWord(c,0x1010),0xaabb,'CPU reads return stored bytes unchanged');
   assert.equal(c._get_logic_reads(),0);
   assert.equal(c._set_logic_write_inhibit(4),5);
