@@ -1196,6 +1196,8 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
         (wasm_dir / 'psg_data_fault_runtime.c').write_text((scripts / 'psg_data_fault_runtime.c').read_text())
         (wasm_dir / 'fm_data_fault_core.c').write_text((scripts / 'fm_data_fault_core.c').read_text())
         (wasm_dir / 'fm_data_fault_runtime.c').write_text((scripts / 'fm_data_fault_runtime.c').read_text())
+        (wasm_dir / 'region_profile_runtime.c').write_text((scripts / 'region_profile_runtime.c').read_text())
+        (wasm_dir / 'region_profile_runtime.h').write_text((scripts / 'region_profile_runtime.h').read_text())
         if transaction_adapter:
             fm_c.write_text(fm)
     else:
@@ -1238,6 +1240,11 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
             if not target.exists() or target.read_text() != content:
                 target.write_text(content)
         for filename in ('fm_data_fault_core.c', 'fm_data_fault_runtime.c'):
+            target = root / 'src/main/c/wasm' / filename
+            content = (scripts / filename).read_text()
+            if not target.exists() or target.read_text() != content:
+                target.write_text(content)
+        for filename in ('region_profile_runtime.c', 'region_profile_runtime.h'):
             target = root / 'src/main/c/wasm' / filename
             content = (scripts / filename).read_text()
             if not target.exists() or target.read_text() != content:
