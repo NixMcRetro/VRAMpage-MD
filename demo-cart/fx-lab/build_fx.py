@@ -332,11 +332,11 @@ COLOUR_SCROLLS=b''.join(colour_scroll(frame) for frame in range(PHASES))
 blank_id=pattern_count
 assert len(PATTERNS)+64+len(FX_PATTERNS) < 0xC000
 
-def full_map(viewport):
+def full_map(viewport, fill_edges=False):
     rows=[]
     for y in range(32):
         for x in range(64):
-            if x < 40 and y < 28:rows.append(viewport[y*40+x])
+            if y < 28 and (x < 40 or fill_edges):rows.append(viewport[y*40+(x%40)])
             else:rows.append(blank_id)
     return b''.join(struct.pack('>H',v) for v in rows)
 
@@ -763,7 +763,7 @@ asm.append('palette_static_sprites',SPRITE_PALETTES[:128])
 asm.append('palette_static_cool',FX_PALETTES['aurora'][:128])
 for name,cell in [('title',title_cells),('vortex',VORTEX_MAP),('aurora',AURORA_MAP),('sprites',sprite_cells),('colour',colour_cells),('audio',audio_cells)]:
     asm.append('map_'+name, b''.join(struct.pack('>H',v) for v in cell)
-               if name in ('vortex','aurora') else full_map(cell))
+               if name in ('vortex','aurora') else full_map(cell, fill_edges=name=='colour'))
 for name in ('vortex','aurora'):
     asm.append('scroll_'+name,FX_SCROLLS[name])
     asm.append('palframes_'+name,FX_PALETTES[name])
@@ -779,8 +779,8 @@ def put(start,stop,text):
     rom[start:stop]=b.ljust(stop-start,b' ')
 put(0x100,0x110,'SEGA MEGA DRIVE')
 put(0x110,0x120,'(C) MCRETRO 2026')
-put(0x120,0x150,'VRAMPAGE MD FX LAB V0.3.2 DEMOSCENE')
-put(0x150,0x180,'VRAMPAGE MD FX LAB V0.3.2 DEMOSCENE')
+put(0x120,0x150,'VRAMPAGE MD FX LAB V0.3.3 DEMOSCENE')
+put(0x150,0x180,'VRAMPAGE MD FX LAB V0.3.3 DEMOSCENE')
 put(0x180,0x18E,'GM 00000000-00')
 put(0x190,0x1A0,'J               ')
 rom[0x1A0:0x1A8]=struct.pack('>II',0,len(rom)-1)
@@ -790,7 +790,7 @@ if len(rom)%2:rom+=b'\x00'
 rom[0x1A4:0x1A8]=struct.pack('>I',len(rom)-1)
 checksum=sum(struct.unpack_from('>H',rom,i)[0] for i in range(0x200,len(rom),2))&0xFFFF
 rom[0x18E:0x190]=struct.pack('>H',checksum)
-(OUT/'VRAMpage-MD-FX-Lab-v0.3.2-Demoscene.bin').write_bytes(rom)
+(OUT/'VRAMpage-MD-FX-Lab-v0.3.3-Demoscene.bin').write_bytes(rom)
 report={
  'romSize':len(rom),'checksum':f'{checksum:04X}',
  'sha256':hashlib.sha256(rom).hexdigest(), 'baseKitSHA256':APPROVED_KIT_SHA256,
