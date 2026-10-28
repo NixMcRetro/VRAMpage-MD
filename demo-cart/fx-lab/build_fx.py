@@ -248,6 +248,86 @@ FX_SCROLLS={name:b''.join(fx_scroll(name,frame) for frame in range(PHASES)) for 
 assert all(len(x)==PHASES*128 for x in FX_PALETTES.values())
 assert all(len(x)==PHASES*60 for x in FX_SCROLLS.values())
 
+# v0.3.2 original demoscene effects. These are 68000-owned VDP sprites and
+# complete CRAM cycles, not simulated browser overlays or staged corruption.
+SPRITE_COUNT=20
+SPRITE_VARIANTS=4
+SPRITE_PHASES=96
+SPRITE_TILE_COUNT=SPRITE_VARIANTS*4 # 16x16 hardware sprites require four tiles each
+
+def make_sprite_patterns():
+    result=bytearray()
+    # Mega Drive sprite tile order is column-major (top then bottom).
+    for kind in range(SPRITE_VARIANTS):
+        canvas=[]
+        for y in range(16):
+            row=[]
+            for x in range(16):
+                dx=x-7.5;dy=y-7.5;dist=math.hypot(dx,dy)
+                if kind==0: # glass jewel
+                    v=0 if dist>7.3 else (15 if dist<2.8 else 10 if dist<5.4 else 5)
+                    if dx<-2 and dy<-2 and dist<6:v=15
+                elif kind==1: # piercing four-point star
+                    tip=max(abs(dx),abs(dy)); width=min(abs(dx),abs(dy))
+                    v=0 if not (tip<7.4 and width<max(0.6,3.5-tip*0.44)) else (15 if tip<2.5 else 11 if tip<5 else 6)
+                elif kind==2: # pulsing torus
+                    v=0 if dist>7.2 or dist<2.8 else (15 if 4.5<=dist<=5.7 else 8)
+                else: # faceted diamond
+                    k=abs(dx)+abs(dy)
+                    v=0 if k>10.4 else (15 if k<3 else 11 if k<6.6 else 5)
+                row.append(v)
+            canvas.append(row)
+        for tx in (0,8):
+            for ty in (0,8):
+                for y in range(ty,ty+8):
+                    for x in range(tx,tx+8,2):
+                        result.append((canvas[y][x]<<4)|canvas[y][x+1])
+    assert len(result)==SPRITE_TILE_COUNT*32
+    return bytes(result)
+
+def sprite_palette(frame):
+    entries=[]
+    phase=frame*math.tau/SPRITE_PHASES
+    for bank in range(4):
+        entries.append(0)
+        for shade in range(1,16):
+            if bank < 2: # lower-energy blue-violet backdrop, no sudden flashes
+                hue=(0.56+0.10*bank+0.02*math.sin(phase))%1
+                val=(0.06+0.43*shade/15)
+                sat=0.68
+            else: # warm and cyan foreground jewels in independent banks
+                hue=(0.08 if bank==2 else 0.50)+0.04*math.sin(phase+(bank-2)*2)
+                val=min(1,0.12+0.86*shade/15)*(0.93+0.07*math.cos(phase))
+                sat=0.84
+            entries.append(genesis_colour(*colorsys.hsv_to_rgb(hue,sat,val)))
+    return struct.pack('>64H',*entries)
+
+def colour_palette(frame):
+    phase=frame*math.tau/PHASES
+    entries=[]
+    for bank in range(4):
+        entries.append(0)
+        for shade in range(1,16):
+            hue=(bank*0.25+shade*0.026+frame/PHASES)%1
+            hue=(hue+0.025*math.sin(phase+bank))%1
+            sat=0.84
+            val=min(1,0.22+0.76*shade/15)
+            entries.append(genesis_colour(*colorsys.hsv_to_rgb(hue,sat,val)))
+    return struct.pack('>64H',*entries)
+
+def colour_scroll(frame):
+    angle=frame*math.tau/PHASES
+    words=[]
+    for row in range(30):
+        offset=round(18*math.sin(row*0.35+angle)+9*math.sin(row*0.74-angle*2))
+        words.append(offset & 0x3FF)
+    return struct.pack('>30H',*words)
+
+SPRITE_PATTERNS=make_sprite_patterns()
+SPRITE_PALETTES=b''.join(sprite_palette(frame) for frame in range(SPRITE_PHASES))
+COLOUR_PALETTES=b''.join(colour_palette(frame) for frame in range(PHASES))
+COLOUR_SCROLLS=b''.join(colour_scroll(frame) for frame in range(PHASES))
+
 # Exact 64-column plane layout. Index 892 is reserved as a completely transparent tile.
 blank_id=pattern_count
 assert len(PATTERNS)+64+len(FX_PATTERNS) < 0xC000
@@ -280,8 +360,32 @@ for y in range(28):
 # The ROM must actually upload every tile referenced by the maps AND cursor.
 # The previous version included those pixels in its ROM but uploaded only the
 # old title patterns, leaving all selector and FX tile IDs uninitialised in VRAM.
-ALL_PATTERNS=PATTERNS+b'\0'*32+b'\x00\x0F'*16+FX_PATTERNS+UI_PATTERNS
-assert len(ALL_PATTERNS)==(ARROW_ID+1)*32
+SPRITE_TILE_BASE=ARROW_ID+1
+ALL_PATTERNS=PATTERNS+b'\0'*32+b'\x00\x0F'*16+FX_PATTERNS+UI_PATTERNS+SPRITE_PATTERNS
+assert len(ALL_PATTERNS)==(SPRITE_TILE_BASE+SPRITE_TILE_COUNT)*32
+assert SPRITE_TILE_BASE+SPRITE_TILE_COUNT < 2048
+
+def sprite_sat(frame):
+    records=[]
+    theta=frame*math.tau/SPRITE_PHASES
+    for i in range(SPRITE_COUNT):
+        # Two counter-rotating rings with a gentle 2:3 phase relationship.
+        ring=i//10;slot=i%10
+        t=theta*(1 if ring==0 else -1.5)+slot*math.tau/10+ring*0.24
+        rx=78 if ring==0 else 133
+        ry=50 if ring==0 else 82
+        px=round(152+rx*math.cos(t))
+        py=round(106+ry*math.sin(t)+7*math.sin(theta*2+slot*0.8))
+        assert 0<=px<=304 and 0<=py<=208
+        # Size 2x2 in bits 8-11 and explicit linked SAT chain.
+        size_link=0x0500 | (i+1 if i<SPRITE_COUNT-1 else 0)
+        attr=0x8000|((2+i%2)<<13)|(SPRITE_TILE_BASE+(i%SPRITE_VARIANTS)*4)
+        records.extend((128+py,size_link,attr,128+px))
+    assert len(records)==SPRITE_COUNT*4
+    return struct.pack('>'+str(len(records))+'H',*records)
+
+SPRITE_SAT_FRAMES=b''.join(sprite_sat(frame) for frame in range(SPRITE_PHASES))
+assert len(SPRITE_SAT_FRAMES)==SPRITE_PHASES*SPRITE_COUNT*8
 assert len(ALL_PATTERNS)<0xC000, 'Tile upload must not overlap Plane A'
 assert all((word&0x7FF)>=FX_BASE for scene in (tile_cells,colour_cells,sprite_cells,audio_cells) for word in scene)
 
@@ -478,20 +582,27 @@ asm.movea(2,0xA10001);asm.moveb_ai_d(2,0);asm.andib(0,0x40)
 asm.bne('pal_sprites')
 asm.movew_imm_d(6,478)
 asm.bra('start_sprites')
-asm.label('pal_sprites')
-asm.movew_imm_d(6,399)
+asm.label('pal_sprites');asm.movew_imm_d(6,399)
 asm.label('start_sprites')
+asm.movea_ref(2,'satframes_sprites')
+asm.movea_ref(6,'palframes_sprites')
+asm.movew_imm_d(4,SPRITE_PHASES-1)
 asm.moveq(5,0)
 asm.label('tick_sprites')
 asm.bsr('wait_vblank')
+# Twenty 16x16 hardware sprites, with authentic linked SAT entries.
 asm.movel_imm_ai(0,0x74000003)
-asm.movew_imm_ai(1,288)
-asm.movew_imm_ai(1,0)
-asm.movew_imm_ai(1,(3<<13)|(blank_id+1))
-asm.movew_d_d(5,2)
-asm.andiw(2,0x00FF)
-asm.addiw(2,128)
-asm.movew_d_ai(2,1)
+asm.movew_imm_d(0,SPRITE_COUNT*4-1)
+asm.bsr('copy_words')
+# Cycle all 64 palette entries for the background and two foreground banks.
+asm.movel_imm_ai(0,0xC0000000)
+asm.movew_imm_d(0,63)
+asm.bsr('copy_words_a6')
+asm.dbra(4,'sprite_phase_done')
+asm.movea_ref(2,'satframes_sprites')
+asm.movea_ref(6,'palframes_sprites')
+asm.movew_imm_d(4,SPRITE_PHASES-1)
+asm.label('sprite_phase_done')
 asm.addq(5,1)
 asm.bsr('poll_buttons')
 asm.andiw(2,0x0080)
@@ -507,16 +618,29 @@ asm.movea(2,0xA10001);asm.moveb_ai_d(2,0);asm.andib(0,0x40)
 asm.bne('pal_colour')
 asm.movew_imm_d(6,478)
 asm.bra('start_colour')
-asm.label('pal_colour')
-asm.movew_imm_d(6,399)
+asm.label('pal_colour');asm.movew_imm_d(6,399)
 asm.label('start_colour')
+asm.movea_ref(2,'scroll_colour')
+asm.movea_ref(6,'palframes_colour')
+asm.movew_imm_d(4,PHASES-1)
 asm.moveq(5,0)
 asm.label('tick_colour')
 asm.bsr('wait_vblank')
-asm.movel_imm_ai(0,0xC0020000)
-asm.movew_d_d(5,2)
-asm.andiw(2,0x000E)
-asm.movew_d_ai(2,1)
+# Horizontal one-cell scrolling uses HScroll table with 32-byte autoincrement.
+asm.movew_imm_ai(0,0x8F20)
+asm.movel_imm_ai(0,0x78000003)
+asm.movew_imm_d(0,29)
+asm.bsr('copy_words')
+asm.movew_imm_ai(0,0x8F02)
+# Full four-bank CRAM rotation, not the previous single-word flicker.
+asm.movel_imm_ai(0,0xC0000000)
+asm.movew_imm_d(0,63)
+asm.bsr('copy_words_a6')
+asm.dbra(4,'colour_phase_done')
+asm.movea_ref(2,'scroll_colour')
+asm.movea_ref(6,'palframes_colour')
+asm.movew_imm_d(4,PHASES-1)
+asm.label('colour_phase_done')
 asm.addq(5,1)
 asm.bsr('poll_buttons')
 asm.andiw(2,0x0080)
@@ -599,7 +723,7 @@ for name in ('title','vortex','aurora','sprites','colour','audio'):
     asm.movea_ref(2,'map_'+name)
     asm.movew_imm_d(0,2047);asm.bsr('copy_words')
     # Use full-width scroll for non-FX scenes; 1-cell horizontal bands in FX scenes.
-    asm.movew_imm_ai(0,0x8B02 if name in ('vortex','aurora') else 0x8B00)
+    asm.movew_imm_ai(0,0x8B02 if name in ('vortex','aurora','colour') else 0x8B00)
     if name not in ('vortex','aurora'):
         if name=='title':
             asm.bsr('load_palettes')  # Preserve approved captain and logo colours.
@@ -607,7 +731,7 @@ for name in ('title','vortex','aurora','sprites','colour','audio'):
             # Procedural scenes need the corresponding procedural palette,
             # not the portrait's original colour banks.
             asm.movel_imm_ai(0,0xC0000000)
-            asm.movea_ref(2,'palette_static_colour' if name=='colour' else 'palette_static_cool')
+            asm.movea_ref(2,'palette_static_colour' if name=='colour' else 'palette_static_sprites' if name=='sprites' else 'palette_static_cool')
             asm.movew_imm_d(0,63)
             asm.bsr('copy_words')
         asm.movel_imm_ai(0,0x78000003)
@@ -634,7 +758,8 @@ asm.label('sound_off');asm.moveb_imm_ai(5,0x9F);asm.rts()
 
 asm.append('patterns',ALL_PATTERNS) # Keep approved title tiles; append menu and arrow tiles
 asm.append('cram',CRAM)
-asm.append('palette_static_colour',FX_PALETTES['vortex'][:128])
+asm.append('palette_static_colour',COLOUR_PALETTES[:128])
+asm.append('palette_static_sprites',SPRITE_PALETTES[:128])
 asm.append('palette_static_cool',FX_PALETTES['aurora'][:128])
 for name,cell in [('title',title_cells),('vortex',VORTEX_MAP),('aurora',AURORA_MAP),('sprites',sprite_cells),('colour',colour_cells),('audio',audio_cells)]:
     asm.append('map_'+name, b''.join(struct.pack('>H',v) for v in cell)
@@ -642,6 +767,10 @@ for name,cell in [('title',title_cells),('vortex',VORTEX_MAP),('aurora',AURORA_M
 for name in ('vortex','aurora'):
     asm.append('scroll_'+name,FX_SCROLLS[name])
     asm.append('palframes_'+name,FX_PALETTES[name])
+asm.append('satframes_sprites',SPRITE_SAT_FRAMES)
+asm.append('palframes_sprites',SPRITE_PALETTES)
+asm.append('scroll_colour',COLOUR_SCROLLS)
+asm.append('palframes_colour',COLOUR_PALETTES)
 
 rom=asm.final()
 # Header is installed only after byte offsets/branches are fixed.
@@ -650,8 +779,8 @@ def put(start,stop,text):
     rom[start:stop]=b.ljust(stop-start,b' ')
 put(0x100,0x110,'SEGA MEGA DRIVE')
 put(0x110,0x120,'(C) MCRETRO 2026')
-put(0x120,0x150,'VRAMPAGE MD FX LAB V0.3.1 FIXED')
-put(0x150,0x180,'VRAMPAGE MD FX LAB V0.3.1 FIXED')
+put(0x120,0x150,'VRAMPAGE MD FX LAB V0.3.2 DEMOSCENE')
+put(0x150,0x180,'VRAMPAGE MD FX LAB V0.3.2 DEMOSCENE')
 put(0x180,0x18E,'GM 00000000-00')
 put(0x190,0x1A0,'J               ')
 rom[0x1A0:0x1A8]=struct.pack('>II',0,len(rom)-1)
@@ -661,11 +790,14 @@ if len(rom)%2:rom+=b'\x00'
 rom[0x1A4:0x1A8]=struct.pack('>I',len(rom)-1)
 checksum=sum(struct.unpack_from('>H',rom,i)[0] for i in range(0x200,len(rom),2))&0xFFFF
 rom[0x18E:0x190]=struct.pack('>H',checksum)
-(OUT/'VRAMpage-MD-FX-Lab-v0.3.1-Fixed.bin').write_bytes(rom)
+(OUT/'VRAMpage-MD-FX-Lab-v0.3.2-Demoscene.bin').write_bytes(rom)
 report={
  'romSize':len(rom),'checksum':f'{checksum:04X}',
  'sha256':hashlib.sha256(rom).hexdigest(), 'baseKitSHA256':APPROVED_KIT_SHA256,
- 'patternTiles':ARROW_ID+1,'patternBytes':(ARROW_ID+1)*32,
+ 'patternTiles':SPRITE_TILE_BASE+SPRITE_TILE_COUNT,'patternBytes':len(ALL_PATTERNS),
+ 'spriteCount':SPRITE_COUNT,'spriteTileBase':SPRITE_TILE_BASE,'spritePhases':SPRITE_PHASES,
+ 'spriteSatBytes':len(SPRITE_SAT_FRAMES),'spritePaletteBytes':len(SPRITE_PALETTES),
+ 'colourPaletteBytes':len(COLOUR_PALETTES),'colourScrollBytes':len(COLOUR_SCROLLS),
  'planeA':0xC000,'planeB':0xE000,'spriteTable':0xF400,'hscrollTable':0xF800,
  'phases':PHASES,'hscrollEntriesPerFrame':30,'hscrollAutoincrement':32,
  'paletteWordsPerFrame':64,'tileMaps':['title','vortex','aurora','sprites','colour','audio'],
