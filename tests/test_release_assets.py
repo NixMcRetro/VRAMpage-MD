@@ -1,4 +1,5 @@
 """Guard the standalone website's asset completeness and ROM-free publishing policy."""
+import hashlib
 from html.parser import HTMLParser
 from pathlib import Path
 import re
@@ -6,6 +7,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
+ORIGINAL_DEMO_ROM = SITE / 'demo' / 'VRAMpage-MD-Demo-Cart-v0.1.bin'
+ORIGINAL_DEMO_SHA256 = '93b9fc72a428657c012fb4325bc1382b69b9d3c9d0af4a4dc312732789dfe0d4'
 
 
 class AssetReferences(HTMLParser):
@@ -63,6 +66,11 @@ class ReleaseAssetTests(unittest.TestCase):
             if not file.is_file():
                 continue
             with self.subTest(file=str(file.relative_to(ROOT))):
+                if file == ORIGINAL_DEMO_ROM:
+                    self.assertEqual(hashlib.sha256(file.read_bytes()).hexdigest(), ORIGINAL_DEMO_SHA256,
+                                     'The approved original Demo Cart must retain its exact checksum')
+                    self.assertEqual(file.read_bytes()[0x100:0x104], b'SEGA')
+                    continue
                 self.assertNotIn(file.suffix.lower(), forbidden)
                 self.assertNotEqual(file.name.lower(), "sonic.md")
 

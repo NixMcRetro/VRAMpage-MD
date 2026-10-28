@@ -96,6 +96,46 @@ class ReviewBundleTests(unittest.TestCase):
                 self.assertFalse(any("__pycache__" in name for name in names))
                 self.assertFalse(any(name.endswith(".bin") for name in names))
 
+    def test_only_pinned_original_homebrew_rom_and_source_kit_are_allowed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "checkout"
+            root.mkdir()
+            launcher = make_checkout(root)
+            paths = (
+                "site/demo/VRAMpage-MD-Demo-Cart-v0.1.bin",
+                "demo-cart/VRAMpage-MD-Demo-Cart-v0.1-Source-Kit.zip",
+            )
+            for relative in paths:
+                target = root / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes((ROOT / relative).read_bytes())
+            subprocess.run(["git", "-C", str(root), "add", *paths], check=True)
+            subprocess.run(["git", "-C", str(root), "-c", "user.name=Bundle test",
+                            "-c", "user.email=bundle-test@example.invalid", "commit",
+                            "-qm", "Original demo assets"], check=True)
+            output = Path(directory) / "approved.zip"
+            result = self.run_packager(launcher, output)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            with zipfile.ZipFile(output) as archive:
+                for relative in paths:
+                    self.assertEqual(archive.read("VRAMpage-MD/" + relative),
+                                     (ROOT / relative).read_bytes())
+            # Any modification to even the permitted path is a hard failure.
+            rom = root / paths[0]
+            modified = bytearray(rom.read_bytes())
+            modified[-1] ^= 1
+            rom.write_bytes(modified)
+            rejected = self.run_packager(launcher, Path(directory) / "tampered.zip")
+            self.assertEqual(rejected.returncode, 1)
+            self.assertIn("unexpected checksum", rejected.stderr)
+            # Unrelated ROMs remain prohibited even when the original is intact.
+            rom.write_bytes((ROOT / paths[0]).read_bytes())
+            other = root / "site/demo/unapproved.bin"
+            other.write_bytes((ROOT / paths[0]).read_bytes())
+            rejected = self.run_packager(launcher, Path(directory) / "unapproved.zip")
+            self.assertEqual(rejected.returncode, 1)
+            self.assertIn("Refusing to package a game ROM", rejected.stderr)
+
     def test_stale_local_metadata_is_replaced_without_changing_checkout(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "checkout"

@@ -13,8 +13,9 @@ The [original colour-test ROM and source](https://mcretro.net/assets/downloads/2
 are separate blog downloads, not part of the emulator release. They contain no
 commercial game assets and the program is silent.
 
-Future website updates still require separate approval. The historical staging
-script below targets `/homepages/vrampage/`; do not use it for the current URL.
+Future website updates still require separate approval. The staging helper now
+copies to `/homepages/vrampage-md/` and lists that same path for review. The
+historical procedure below predates this URL; staging never publishes the site.
 
 ## Cross-platform browser release
 

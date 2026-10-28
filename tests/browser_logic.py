@@ -54,7 +54,7 @@ class BrowserLogicTests(unittest.TestCase):
             context.close()
         self.assertEqual(self.errors, [], "Uncaught application errors")
 
-    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False, manual_frames=False, session_checkpoint=False, automatic_recovery=False, legacy_z80_ram=False, region_core=False):
+    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False, manual_frames=False, session_checkpoint=False, automatic_recovery=False, legacy_z80_ram=False, region_core=False, demo_rom=False, stalled_demo=False):
         context = self.browser.new_context(
             viewport={"width": 1366, "height": 768},
             color_scheme="light",
@@ -98,6 +98,22 @@ class BrowserLogicTests(unittest.TestCase):
         page.route("**/core/genplus.js", lambda route: route.fulfill(
             path=str(ROOT / "tests/fixtures/mock-core.js"),
             content_type="application/javascript"))
+        # All existing tests exercise the manual-ROM workflow unless opted in.
+        page.route("**/demo/VRAMpage-MD-Demo-Cart-v0.1.bin", lambda route: route.fulfill(
+            status=200 if demo_rom else 404,
+            content_type="application/octet-stream",
+            body=self.synthetic_rom() if demo_rom else b"Missing test demo"))
+        if stalled_demo:
+            page.add_init_script("""(() => {
+                const originalFetch=window.fetch;
+                window.fetch=(url,opts)=>{
+                    if(String(url)==='./demo/VRAMpage-MD-Demo-Cart-v0.1.bin')
+                        return new Promise(resolve=>{
+                            window.__resumeDemoFetch=()=>originalFetch(url,opts).then(resolve);
+                        });
+                    return originalFetch(url,opts);
+                };
+            })();""")
         if stalled_build_info:
             # This fetch deliberately ignores abort, proving the export race is bounded.
             page.add_init_script("""(() => {
@@ -128,10 +144,11 @@ class BrowserLogicTests(unittest.TestCase):
                 body='Not found' if build_info is None else
                     json.dumps(build_info) if isinstance(build_info, (dict,list)) else build_info))
         page.goto(f"http://127.0.0.1:{self.server.server_port}/")
-        expect(page.locator("#powerLabel")).to_have_text("WAITING FOR ROM")
+        expect(page.locator("#powerLabel")).to_have_text(
+            "CONSOLE ON" if demo_rom and not stalled_demo else "WAITING FOR ROM")
         if legacy_core:
             expect(page.locator("#logicStatus")).to_have_text("Rebuild core for logic faults")
-        else:
+        elif not demo_rom or stalled_demo:
             expect(page.locator("#logicStatus")).to_contain_text("Load a ROM")
         details = page.locator("#logicExperiment")
         if not details.evaluate("node => node.open"):
@@ -147,6 +164,29 @@ class BrowserLogicTests(unittest.TestCase):
         data = bytearray(512)
         data[0x100:0x104] = b"SEGA"
         return bytes(data)
+
+    def test_demo_auto_loads_and_custom_cartridge_wins(self):
+        page=self.new_page(demo_rom=True)
+        expect(page.locator("#romName")).to_have_text("VRAMPAGE MD DEMO CART")
+        self.assertEqual(page.evaluate("window.mockCore.starts"),1)
+        page.locator("#romFile").set_input_files({
+            "name":"my-cartridge.bin","mimeType":"application/octet-stream","buffer":self.synthetic_rom()})
+        expect(page.locator("#romName")).to_have_text("MY-CARTRIDGE.BIN")
+        self.assertEqual(page.evaluate("window.mockCore.starts"),2)
+        page.reload()
+        expect(page.locator("#powerLabel")).to_have_text("WAITING FOR ROM")
+        self.assertEqual(page.evaluate("window.mockCore.starts"),0)
+
+    def test_pending_demo_fetch_cannot_replace_user_cartridge(self):
+        page=self.new_page(demo_rom=True,stalled_demo=True)
+        page.wait_for_function("typeof window.__resumeDemoFetch==='function'")
+        page.locator("#romFile").set_input_files({
+            "name":"preferred.bin","mimeType":"application/octet-stream","buffer":self.synthetic_rom()})
+        expect(page.locator("#romName")).to_have_text("PREFERRED.BIN")
+        page.evaluate("window.__resumeDemoFetch()")
+        page.wait_for_timeout(100)
+        expect(page.locator("#romName")).to_have_text("PREFERRED.BIN")
+        self.assertEqual(page.evaluate("window.mockCore.starts"),1)
 
     def load_rom(self, page=None):
         page = page or self.page

@@ -1,5 +1,14 @@
 # Changelog
 
+## Demo Cart — Development Merge Authorized
+
+- Correct the staging helper's review list to match its `vrampage-md` destination. Record the authorized development merge and defer full Demo Cart acceptance until around v0.6.0; preserve its original assets, published releases and separate website approval.
+
+## Draft Demo Cart — Actual-Core Test Fixtures
+
+- Give manual-cartridge browser tests an explicit empty startup using the existing session preference, retaining disabled-control checks and accepted-ROM identity checks.
+- Keep the genuine built-in Demo Cart boot/render/override test and auto-load race coverage. No app, original asset, release or deployment change; PR #90 remains under its explicit merge hold.
+
 ## Hardware Evidence — Supplied Sega Manuals
 
 - Record Sega developer errata, a qualified NEC Work RAM map for PAL VA6.5, Model 2 memory/encoder differences and fresh pinned MiSTer comparisons. Keep the NTSC VA6 mapping in #73 unverified.

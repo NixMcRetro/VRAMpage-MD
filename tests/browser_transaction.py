@@ -9,7 +9,7 @@ import unittest
 
 from playwright.sync_api import expect, sync_playwright
 
-from browser_core import original_cartridge
+from browser_core import original_cartridge, prefer_manual_startup
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,6 +40,7 @@ class TransactionBrowserTests(unittest.TestCase):
         self.context = self.browser.new_context(viewport={"width": 1366, "height": 768}, accept_downloads=True)
         self.addCleanup(self.context.close)
         self.page = self.context.new_page()
+        prefer_manual_startup(self.page)
         self.errors = []
         self.page.on("pageerror", lambda error: self.errors.append(str(error)))
 
@@ -96,6 +97,7 @@ window.Module=opts=>originalFactory(opts).then(core=>{
             "mimeType": "application/octet-stream",
             "buffer": original_cartridge(),
         })
+        expect(self.page.locator("#romName")).to_have_text("ORIGINAL-VIDEO-TONE.BIN")
         expect(self.page.locator("#powerLabel")).to_have_text("CONSOLE ON")
         self.page.wait_for_function("testCore._get_logic_frame()>5")
 
@@ -196,6 +198,7 @@ window.Module=opts=>originalFactory(opts).then(core=>{
             "mimeType": "application/octet-stream",
             "buffer": original_cartridge(),
         })
+        expect(page.locator("#romName")).to_have_text("SECOND-ORIGINAL.BIN")
         page.wait_for_function("testCore._get_vram_fault_model_state().modelId===1")
         self.assertEqual(page.evaluate("testCore._get_vram_fault_model_state().modelId"), 1)
         self.assertEqual(page.evaluate("testCore._get_vram_fault_model_state().mask"), 0)

@@ -1,5 +1,37 @@
 # Development status and continuation checkpoint
 
+## Demo Cart Development Merge Authorized — 28 October 2026 (Sydney)
+
+The user explicitly authorized merging PR #90, deferring full artwork, audible
+output, PAL/NTSC scene timing and fault-interaction review until around v0.6.0.
+This supersedes the earlier merge hold below, without authorizing website
+deployment, a new release or scene additions. The complete independent audit
+found only a stale staging status path; it now matches `homepages/vrampage-md`.
+Fresh required PR checks and verified post-merge main CI remain integration gates.
+
+After the merge, review the three replacement PDFs, now downloaded successfully,
+and the supplied ConsoleMods references. Keep #73 open until identifiable NTSC
+Model 1 VA6 device/routing evidence is established. Do not repeat completed
+region, RAM or recovery implementation; revisit release-candidate work afterward.
+
+## Draft PR #90 CI Repair — 28 October 2026 (Sydney)
+
+The user requested correction of actual-core tests that assumed an empty
+console before the built-in Demo Cart existed. Start from PR head `97019c6`,
+merge verified main `32970b1` without rewriting history, and fix the shared
+manual-cartridge fixture. Preserve the genuine default auto-load test, race and
+missing-demo cases, disabled-control assertions and original asset hashes.
+
+The bounded fixture change uses the existing session preference before navigation,
+with accepted-ROM identity waits for affected loads. Production app/core, artwork,
+original ROM/source kit, VERSION, releases and McRetro.net remain unchanged.
+Local Chromium actual-core 12/12, transaction 3/3, source/sanitizer/Node/C checks
+and local packaging pass. Independent Luna High review of `f19c27f` found no
+blockers. All required fresh PR CI/CodeQL remain the completion gates. Keep PR #90 draft: its
+[design guardrail](DEMO-CART-DESIGN.md#development-order-and-release-guardrails)
+requires explicit user approval before merge or website deployment. This request
+repairs CI and does not remove that hold or add demonstration scenes.
+
 ## Supplied Manual Evidence — 28 October 2026 (Sydney)
 
 The user authorized working with the supplied Sega developer/service manuals
