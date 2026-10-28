@@ -17,9 +17,18 @@ function cartridge(country = 'U', activeLines = 224, interlaced = false) {
   rom.set(Buffer.from('REGION PROFILE TEST'), 0x120);
   rom.set(Buffer.from(country), 0x1f0);
   v.setUint32(0x1a4, rom.length - 1); v.setUint32(0x1a8, 0xff0000); v.setUint32(0x1ac, 0xffffff);
-  const words = [0x33fc, activeLines === 240 ? 0x814c : 0x8144, 0x00c0, 0x0004];
-  if (interlaced) words.push(0x33fc, 0x8c02, 0x00c0, 0x0004);
-  words.push(0x60fe);
+  const words = [];
+  const word=(address,value)=>words.push(0x33fc,value,address>>>16,address&0xffff);
+  const byte=(address,value)=>words.push(0x13fc,value,address>>>16,address&0xffff);
+  word(0xc00004,0x8004);
+  word(0xc00004,activeLines===240?0x814c:0x8144);
+  word(0xc00004,interlaced?0x8c02:0x8c00);
+  word(0xc00004,0x8f02);
+  words.push(0x23fc,0xc000,0x0000,0x00c0,0x0004);
+  word(0xc00000,0x000e);
+  byte(0xc00011,0x8a);byte(0xc00011,0x10);byte(0xc00011,0x90);
+  words.push(0x13f9,0x00a1,0x0001,0x00ff,0x1002); // Save the software-visible version register.
+  words.push(0x5279,0x00ff,0x1000,0x60f8);
   words.forEach((word, index) => v.setUint16(0x200 + index * 2, word));
   v.setUint16(0x300, 0x4e72); v.setUint16(0x302, 0x2700); v.setUint16(0x304, 0x60fe);
   return rom;
@@ -34,7 +43,7 @@ function rendered(core) {
   const frame = core._get_frame_buffer_ref();
   const count = core._sound();
   const lp = core._get_web_audio_l_ref() >>> 2, rp = core._get_web_audio_r_ref() >>> 2;
-  assert.ok(count >= 0 && count <= 1024, `audio count ${count} fits the 2048-interleaved-sample allocation`);
+  assert.ok(count >= 700 && count <= 1024, `audio count ${count} fits the 2048-interleaved-sample allocation`);
   const left = Array.from(core.HEAPF32.subarray(lp, lp + count));
   const right = Array.from(core.HEAPF32.subarray(rp, rp + count));
   assert.ok(left.concat(right).every(Number.isFinite));
@@ -99,6 +108,11 @@ function tickToViewport(core) {
     assert.equal(core._get_region_state().width, 256, 'active Mode 5 width follows the native viewport');
     assert.equal(core._get_region_state().height, 224, 'PAL and NTSC can both render 224 active lines');
     const audio = rendered(core);
+    assert.ok(audio.frame.some((v,i)=>i%4===0&&v>0),'nonzero red backdrop exercises framebuffer parity');
+    assert.ok(audio.left.some(v=>v!==0)||audio.right.some(v=>v!==0),'nonzero PSG samples exercise PCM parity');
+    assert.ok(audio.ram[0x1000]||audio.ram[0x1001],'eligible synthetic code updates Work RAM');
+    assert.equal(audio.ram[0x1003]&0xc0,item.code,'software-visible region agrees (native RAM byte lanes are swapped)');
+    assert.ok(Math.abs(audio.left.length-44100/state.frameRate)<8,'generated sample count follows native cadence');
     if (item.id === 1) {
       const legacy = await factory(normalFile);
       legacy._init(); legacy.HEAPU8.set(cartridge(item.country), legacy._get_rom_buffer_ref(0x10000)); legacy._start();

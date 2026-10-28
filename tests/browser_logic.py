@@ -173,7 +173,8 @@ class BrowserLogicTests(unittest.TestCase):
         page=self.new_page(region_core=True,manual_frames=True,session_checkpoint=True,circuit_config=True)
         expect(page.locator('#regionSelect')).to_be_enabled()
         page.locator('#romFile').set_input_files({'name':'region.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
-        page.evaluate('stepTestFrame();stepTestFrame()')
+        expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+        page.evaluate('stepTestFrame();stepTestFrame();stepTestFrame()')
         expect(page.locator('#machineSummary')).to_contain_text('NTSC-U')
         page.locator('#saveCheckpointBtn').evaluate("el=>{for(let p=el.parentElement;p;p=p.parentElement)if(p.tagName==='DETAILS')p.open=true;}")
         page.locator('#saveCheckpointBtn').click()
@@ -192,7 +193,7 @@ class BrowserLogicTests(unittest.TestCase):
         expect(page.locator('#regionStatus')).to_contain_text('Active')
         expect(page.locator('#restoreCheckpointBtn')).to_be_disabled()
         self.assertEqual(page.evaluate("[document.getElementById('screen').width,document.getElementById('screen').height]"),[320,240])
-        page.evaluate('stepTestFrame();stepTestFrame()')
+        page.evaluate('stepTestFrame();stepTestFrame();stepTestFrame()')
         self.assertEqual(page.evaluate('mockCore.region.linesPerFrame'),313)
 
     def test_region_unavailable_legacy_and_rejected_change(self):
@@ -214,6 +215,7 @@ class BrowserLogicTests(unittest.TestCase):
             page=self.new_page(region_core=True,manual_frames=True)
             page.locator('#regionSelect').select_option(region)
             page.locator('#romFile').set_input_files({'name':'timing.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
+            expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
             page.evaluate('testTime=performance.now();for(let i=0;i<61;i++)stepTestFrame()')
             self.assertEqual(page.evaluate('mockCore.ticks'),int(60*17*fps/1000))
             expect(page.locator('#fpsIndicator')).to_contain_text(f'{fps:.2f} TARGET')
@@ -221,7 +223,7 @@ class BrowserLogicTests(unittest.TestCase):
             page.evaluate('([w,h])=>{mockCore.region.width=w;mockCore.region.height=h;mockCore.region.interlaced=h>240;stepTestFrame();stepTestFrame();}',[width,height])
             for viewport in [{'width':1366,'height':768},{'width':390,'height':844}]:
                 page.set_viewport_size(viewport)
-                page.evaluate('stepTestFrame();stepTestFrame()')
+                page.evaluate('stepTestFrame();stepTestFrame();stepTestFrame()')
                 shape=page.locator('#screen').evaluate('(el)=>{const r=el.getBoundingClientRect();return [el.width,el.height,r.width/r.height,document.documentElement.scrollWidth>innerWidth];}')
                 self.assertEqual(shape[:2],[width,height])
                 self.assertAlmostEqual(shape[2],width/height,delta=0.003)
@@ -236,6 +238,44 @@ class BrowserLogicTests(unittest.TestCase):
         page.evaluate('mockCore.throwRegionState=true')
         expect(page.locator('#regionStatus')).to_contain_text('Unavailable')
         expect(page.locator('#regionSelect')).to_be_disabled()
+
+    def test_region_export_observations_and_rejected_rom(self):
+        page=self.new_page(region_core=True,manual_frames=True)
+        page.locator('#romFile').set_input_files({'name':'accepted.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
+        expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+        page.evaluate('stepTestFrame();stepTestFrame();stepTestFrame()')
+        page.locator('#regionSelect').select_option('2')
+        before=page.evaluate('[mockCore.starts,mockCore.ticks]')
+        page.locator('#romFile').set_input_files({'name':'invalid.bin','mimeType':'application/octet-stream','buffer':bytes(512)})
+        self.assertEqual(page.evaluate('[mockCore.starts,mockCore.ticks]'),before)
+        expect(page.locator('#romName')).to_have_text('ACCEPTED.BIN')
+        expect(page.locator('#machineSummary')).to_contain_text('NTSC-U')
+        expect(page.locator('#regionStatus')).to_contain_text('Pending')
+        machine=self.export_payload_for(page)['machine']
+        self.assertTrue(machine['available'])
+        self.assertEqual((machine['requestedRegion'],machine['activeRequestedRegion'],machine['regionCode']),(2,1,128))
+        page.evaluate('mockCore.throwRegionState=true')
+        machine=self.export_payload_for(page)['machine']
+        self.assertFalse(machine['available'])
+        self.assertIsNone(machine['frameRate'])
+        self.assertIsNone(machine['regionCode'])
+        self.assertEqual(machine['reason'],'state-unavailable')
+
+    def test_region_restart_releases_held_controls(self):
+        page=self.new_page(region_core=True,manual_frames=True)
+        page.locator('#romFile').set_input_files({'name':'input.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
+        expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+        page.evaluate('stepTestFrame();stepTestFrame();stepTestFrame()')
+        page.keyboard.down('ArrowRight')
+        page.locator('#regionSelect').select_option('2')
+        page.locator('#resetBtn').click()
+        page.evaluate('stepTestFrame();stepTestFrame();stepTestFrame()')
+        self.assertEqual(page.evaluate('mockCore.inputs[6]'),0)
+        page.keyboard.up('ArrowRight')
+        page.keyboard.down('ArrowRight')
+        page.evaluate('stepTestFrame();stepTestFrame();stepTestFrame()')
+        self.assertEqual(page.evaluate('mockCore.inputs[6]'),1)
+        page.keyboard.up('ArrowRight')
 
     def test_checkpoint_save_restore_no_ticks_and_immediate_saved_image(self):
         page=self.checkpoint_page()

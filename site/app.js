@@ -129,6 +129,11 @@
       requestedRegion!==activeRegionRequest?`${REGION_NAMES[requestedRegion]} Pending · Use Clean Restart`:
       `${EFFECTIVE_REGION_NAMES[s.regionCode]} Active · ${videoWidth} × ${videoHeight}`);
   }
+  function blockHeldInputs() {
+    for (const code of pressed) checkpointBlockedKeys.add(code);
+    if (keyboardHeld?.code) checkpointBlockedKeys.add(keyboardHeld.code);
+    pressed.clear();checkpointBlockGamepad=true;
+  }
   function stageRegion() {
     const value=$('regionSelect').value;
     try {
@@ -1366,9 +1371,7 @@
       if (!checkpointAvailability().ready) throw new Error('No compatible checkpoint in this cartridge session.');
       if (!paused) pauseToggle();
       cancelAutomaticRecovery();
-      for (const code of pressed) checkpointBlockedKeys.add(code);
-      if (keyboardHeld?.code) checkpointBlockedKeys.add(keyboardHeld.code);
-      pressed.clear();checkpointBlockGamepad=true;
+      blockHeldInputs();
       if (!disconnectAllFaults()) throw new Error('Checkpoint restore stopped: fault clearing was incomplete.');
       ensureWasmViews();pollControls();clearAudioQueue();
       event.nativeAttempted=true;event.status=emulator._restore_session_checkpoint();
@@ -3118,7 +3121,9 @@
       const target=new Uint8Array(emulator.HEAPU8.buffer,ptr,bytes.length);
       if (typeof emulator._discard_session_checkpoint==='function') emulator._discard_session_checkpoint();
       sessionCheckpoint=null;checkpointEvents=[];checkpointSegment=0;
-      checkpointBlockedKeys.clear();checkpointBlockGamepad=false;checkpointMessage='No Session Checkpoint';
+      if(regionApiReady()&&requestedRegion!==activeRegionRequest)blockHeldInputs();
+      else {checkpointBlockedKeys.clear();checkpointBlockGamepad=false;}
+      checkpointMessage='No Session Checkpoint';
       target.set(bytes);
       // The accepted new image is about to replace core state; drain old audio
       // and cancel app-scheduled pulse work before native activation can throw.
@@ -3322,7 +3327,7 @@
       // Use document coordinates so scrolling cannot grow/shrink the picture.
       // Very short windows retain a usable minimum and may scroll vertically.
       const chrome = section.height - frame.height;
-      const height = Math.max(96, Math.floor(window.innerHeight -
+      const height = Math.max(100, Math.floor(window.innerHeight -
         (section.top + window.scrollY) - chrome - 12));
       displayViewport.style.setProperty('--window-display-height', `${height}px`);
     }

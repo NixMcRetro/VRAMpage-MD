@@ -74,6 +74,116 @@ def original_z80_store_cartridge():
 
 
 class ActualCoreBrowserTests(unittest.TestCase):
+    def test_region_selection_uses_native_timing_video_audio_and_lifecycle(self):
+        handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
+        with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            try:
+                with sync_playwright() as p:
+                    kwargs = {'executable_path': OPTIONS.executable} if OPTIONS.executable else {}
+                    browser = getattr(p, OPTIONS.browser).launch(**kwargs)
+                    try:
+                        page = browser.new_page(accept_downloads=True)
+                        errors = []
+                        page.on('pageerror', lambda error: errors.append(str(error)))
+                        page.add_init_script('''window.testFrames=[];window.testTime=0;
+                            window.requestAnimationFrame=cb=>testFrames.push(cb);
+                            window.stepTestFrame=()=>{const q=testFrames.splice(0);testTime+=17;q.forEach(cb=>cb(testTime));};''')
+                        core_js = (OPTIONS.site_root/'core/genplus.js').read_text()
+                        core_js += '''\nconst originalFactory=window.Module;
+                            window.regionCalls={starts:0,ticks:0,audio:[]};
+                            window.Module=opts=>originalFactory(opts).then(c=>{
+                              window.testCore=c;
+                              for(const key of ['_start','_tick','_sound']){
+                                const native=c[key];c[key]=(...args)=>{
+                                  const result=Reflect.apply(native,c,args);
+                                  if(key==='_start')regionCalls.starts++;
+                                  if(key==='_tick')regionCalls.ticks++;
+                                  if(key==='_sound'){
+                                    const left=new Float32Array(c.HEAPF32.buffer,c._get_web_audio_l_ref(),result);
+                                    const right=new Float32Array(c.HEAPF32.buffer,c._get_web_audio_r_ref(),result);
+                                    regionCalls.audio.push({count:result,finite:left.every(Number.isFinite)&&right.every(Number.isFinite),
+                                      nonzero:left.some(v=>v!==0)||right.some(v=>v!==0)});
+                                  }return result;
+                                };
+                              }return c;
+                            });\n'''
+                        page.route('**/core/genplus.js', lambda route: route.fulfill(content_type='text/javascript', body=core_js))
+                        page.goto(f'http://127.0.0.1:{server.server_port}/')
+                        page.wait_for_function('!!window.testCore', polling=10)
+                        # Header Europe deliberately disagrees with forced NTSC modes.
+                        rom = bytearray(original_cartridge())
+                        rom[0x1f0] = ord('E')
+                        offset = rom.index(bytes.fromhex('527900ff100060f8'), 0x200)
+                        for i, value in enumerate([0x13f9,0x00a1,0x0001,0x00ff,0x1002,0x5279,0x00ff,0x1000,0x60f8]):
+                            struct.pack_into('>H', rom, offset+2*i, value)
+                        for request, code, pal in [(1,128,False),(3,0,False),(2,192,True),(0,192,True),(4,64,True)]:
+                            struct.pack_into('>H', rom, 0x20a, 0x814c if pal else 0x8144)
+                            page.locator('#regionSelect').select_option(str(request))
+                            starts = page.evaluate('regionCalls.starts')
+                            page.locator('#romFile').set_input_files({'name':f'original-region-{request}.bin',
+                                'mimeType':'application/octet-stream','buffer':bytes(rom)})
+                            page.wait_for_function('n=>regionCalls.starts===n+1', arg=starts, polling=10)
+                            expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+                            page.evaluate('regionCalls.audio=[];for(let i=0;i<9;i++)stepTestFrame()')
+                            state = page.evaluate('testCore._get_region_state()')
+                            self.assertEqual((state['requestedRegion'],state['regionCode'],state['pal']), (request,code,pal))
+                            self.assertEqual((state['linesPerFrame'],state['masterClock']), (313,53203424) if pal else (262,53693175))
+                            self.assertAlmostEqual(state['frameRate'], state['masterClock']/(3420*state['linesPerFrame']), places=9)
+                            self.assertEqual((state['width'],state['height']), (320,240 if pal else 224))
+                            # Native Work RAM exposes swapped byte lanes on this build.
+                            self.assertEqual(page.evaluate('testCore.HEAPU8[testCore._get_logic_ram_ref()+0x1003]&0xc0'), code)
+                            expect(page.locator('#machineSummary')).to_contain_text(f"{state['frameRate']:.2f} Hz")
+                            pixels = page.evaluate('''() => {
+                              const c=document.querySelector('#screen'),p=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+                              return {width:c.width,height:c.height,top:Array.from(p.slice(0,4)),bottom:Array.from(p.slice(-4))};
+                            }''')
+                            self.assertEqual((pixels['width'],pixels['height']), (state['width'],state['height']))
+                            self.assertGreater(pixels['top'][0], 0)
+                            self.assertGreater(pixels['bottom'][0], 0, 'last active line must be copied')
+                            audio = page.evaluate('regionCalls.audio')
+                            self.assertTrue(audio and all(700 <= s['count'] <= 1024 and s['finite'] for s in audio))
+                            self.assertTrue(any(s['nonzero'] for s in audio))
+                            self.assertLess(abs(audio[-1]['count']-44100/state['frameRate']), 8)
+                        page.locator('#pauseBtn').click()
+                        page.locator('#logicExperiment > summary').click()
+                        page.locator('#saveCheckpointBtn').click()
+                        expect(page.locator('#checkpointStatus')).to_contain_text('Saved Frame')
+                        ticks = page.evaluate('regionCalls.ticks')
+                        page.locator('#regionSelect').select_option('1')
+                        expect(page.locator('#regionStatus')).to_contain_text('Pending')
+                        page.locator('#logicCpuResetBtn').click()
+                        self.assertEqual(page.evaluate('regionCalls.ticks'), ticks)
+                        self.assertEqual(page.evaluate('testCore._get_region_state().regionCode'), 64)
+                        expect(page.locator('#restoreCheckpointBtn')).to_be_enabled()
+                        with page.expect_download() as info:
+                            page.locator('#logicExperimentBtn').click()
+                        machine = json.loads(Path(info.value.path()).read_text())['machine']
+                        self.assertEqual((machine['requestedRegion'],machine['activeRequestedRegion'],machine['regionCode']), (1,4,64))
+                        page.locator('#resetBtn').click()
+                        expect(page.locator('#restoreCheckpointBtn')).to_be_disabled()
+                        self.assertEqual(page.evaluate('testCore._get_region_state().regionCode'), 128)
+                        page.locator('#regionSelect').select_option('2')
+                        page.locator('#resetBtn').click()
+                        page.evaluate('for(let i=0;i<5;i++)stepTestFrame()')
+                        page.locator('#ramWriteMode').select_option('pulse')
+                        page.locator('[data-ram-frame-pair="10,11"]').click()
+                        pulse = page.evaluate('''() => {
+                          const start=testCore._get_logic_frame();let steps=0;
+                          while(testCore._get_logic_frame()<start+7&&steps++<30)stepTestFrame();
+                          const before=document.querySelector('#randomiserStatus').textContent;
+                          while(testCore._get_logic_frame()<start+8&&steps++<30)stepTestFrame();
+                          return {frames:testCore._get_logic_frame()-start,before,after:document.querySelector('#randomiserStatus').textContent};
+                        }''')
+                        self.assertEqual(pulse['frames'], 8)
+                        self.assertIn('active', pulse['before'])
+                        self.assertIn('ended after 8 emulated frames', pulse['after'])
+                        self.assertEqual(errors, [])
+                    finally:
+                        browser.close()
+            finally:
+                server.shutdown()
+
     def test_normal_core_rejects_optional_configuration_before_mutation(self):
         normal_source = OPTIONS.site_root / 'source/src/main/js'
         normal_js = normal_source / 'genplus.js'

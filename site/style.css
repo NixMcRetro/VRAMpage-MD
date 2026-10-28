@@ -230,7 +230,7 @@ footer { padding-top:9px; font-size:10px; }
    The media query is live: no saved manual override or page reload required. */
 .video-options {
   display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between;
-  gap:8px; padding:5px 10px 7px; background:var(--surface-2);
+  gap:8px; padding:5px 10px 3px; background:var(--surface-2);
   border-bottom:1px solid var(--rule); color:var(--muted);
   font:11px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;
 }
@@ -427,8 +427,12 @@ footer { padding-top:9px; font-size:10px; }
   .compact-recovery-actions button { padding-inline:5px; }
 }
 
-.machine-options { display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; padding:6px 10px; border-bottom:1px solid var(--rule); font-size:11px; }
+.machine-options { display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; padding:0 10px; border-bottom:1px solid var(--rule); font-size:11px; }
 .machine-options label { font-weight:700; }
-.machine-options select { max-width:100%; min-height:28px; }
+.machine-options select { max-width:100%; min-height:24px; padding-top:1px; padding-bottom:1px; }
 #regionStatus { color:var(--muted); flex:1 1 180px; }
 #machineSummary { text-align:right; }
+/* Keep the staged Region control within the existing window-height budget. */
+.screen-section > .section-heading { padding-top:4px; padding-bottom:3px; }
+.screen-section > .toolbar { padding-top:5px; padding-bottom:5px; }
+.screen-section > .instructions { padding-top:4px; padding-bottom:4px; }
