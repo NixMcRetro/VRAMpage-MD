@@ -1,20 +1,28 @@
 # Development work queue
 
-## Next Feature Review — Region Selection, 28 October 2026 (Sydney)
+## Region Selection Implementation — 28 October 2026 (Sydney)
 
-The user asked to examine the next feature after security setup. The
-[region/profile design](REGION-PROFILES-PLAN.md) recommends staged runtime-only
-region selection first, retaining NTSC-U by default. Native source supports
-other regions, but the current app/core API does not expose them and the UI uses
-fixed NTSC cadence/geometry. Applying a staged choice uses Load ROM/Clean Restart;
-CPU Reset retains active machine settings. Physical VA profiles remain research.
+The user approved the [runtime region plan](REGION-PROFILES-PLAN.md). Implementation
+through `e176a4b` adds staged Auto/NTSC-U/NTSC-J/PAL Europe/Japan PAL selection,
+with NTSC-U unchanged by default. Native cadence, viewport and effective machine
+identity drive display, exports and comparison. CPU Reset retains the active
+region and checkpoint; Load ROM/Clean Restart applies the request and clears the
+checkpoint through the existing lifecycle. Circuit files remain fault-only.
+The normal/fallback core remains fixed NTSC-U with its existing hash gates.
 
-Independent Luna High feasibility review checked the native startup/config path
-and runtime-only guard strategy. This checkpoint contains design/documentation
-only: no emulator edits, builds, runtime tests, VERSION changes or deployment.
-Next implementation must satisfy the documented oracles and active main ruleset;
-issue #73's target-board mapping remains unverified. Preserve previous completed
-stability, recovery, dependency and Actions work below.
+Luna High authored the native runtime and independently reviewed implementation
+through `95ac5d8`, with no blockers. Actual-WASM original cartridges verify
+software-visible region, nonzero video/PCM/RAM, clock/cadence/viewport and exact
+default parity. Local Chromium actual-core11/11 (including 128-cycle mixed-fault
+endurance), layout7/7 and focused region6/6 pass. Full source/logic, fresh
+actual-WASM builds, final staging review and required GitHub CI/CodeQL remain
+integration gates; final outcomes will replace this pending checkpoint.
+
+No VERSION change, public release replacement or McRetro.net deployment.
+Physical VA profiles and #73 remain unverified. Do not repeat completed security,
+Actions, RAM research or recovery work. Next: finish these integration gates,
+merge only the tested current head under the active main ruleset, then verify
+main CI and record exact PR/commit/build links.
 
 ## Actions Upgrades Verified — 28 October 2026 (Sydney)
 
