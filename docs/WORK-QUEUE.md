@@ -1,22 +1,38 @@
 # Development work queue
 
-## Draft PR #90 CI Repair — 28 October 2026 (Sydney)
+## Draft PR #90 CI Repair Verified — 28 October 2026 (Sydney)
 
-The user requested correction of actual-core tests that assumed an empty
-console before the built-in Demo Cart existed. Start from PR head `97019c6`,
-merge verified main `32970b1` without rewriting history, and fix the shared
-manual-cartridge fixture. Preserve the genuine default auto-load test, race and
-missing-demo cases, disabled-control assertions and original asset hashes.
+User-requested startup-fixture repair is complete on PR head
+`b7434df0ac78b15ade736a16a97e8589556188d5`, tree
+`e1f984536eec6943f707fc2edc818f11619123c6`, including verified main `32970b1`.
+All seven [required PR Actions jobs](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40684375250),
+[standalone push checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40684363569)
+and four [CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40684366546)
+passed on their first attempt at this head. Fresh CI rebuilds the native cores,
+runs the expanded WASM tests and tests extracted Firefox/WebKit packages.
 
-The bounded fixture change uses the existing session preference before navigation,
-with accepted-ROM identity waits for affected loads. Production app/core, artwork,
-original ROM/source kit, VERSION, releases and McRetro.net remain unchanged.
-Local Chromium actual-core 12/12, transaction 3/3, source/sanitizer/Node/C checks
-and local packaging pass. Independent Luna High review of `f19c27f` found no
-blockers. All required fresh PR CI/CodeQL remain the completion gates. Keep PR #90 draft: its
-[design guardrail](DEMO-CART-DESIGN.md#development-order-and-release-guardrails)
-requires explicit user approval before merge or website deployment. This request
-repairs CI and does not remove that hold or add demonstration scenes.
+Manual-ROM tests use the existing session custom-cartridge preference before
+navigation. Disabled-control assertions remain, accepted-ROM identity waits are
+added, and the transaction suite shares the fixture. The dedicated genuine
+Demo Cart default boot/render/manual-override test and mock race/failure cases
+remain intact. Local actual-core 12/12, transaction 3/3, source/sanitizer/Node/C
+checks and review packaging pass. Independent Luna High review of `f19c27f`
+found no blockers; subsequent changes are verification documentation only.
+
+[Verified draft browser download](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40684375250/artifacts/12813499542).
+The original ROM/source-kit hashes match the original PR; this repair changes
+no app/core, artwork or demo behavior. Main remains `32970b1`; all 18 release
+records/asset identities and McRetro.net are unchanged. Logs and a genuine
+native title screenshot are under `/workspace/scratch/demo-ci/`.
+
+Keep [PR #90](https://github.com/NixMcRetro/VRAMpage-MD/pull/90) draft under its
+[explicit design approval hold](DEMO-CART-DESIGN.md#development-order-and-release-guardrails).
+No merge or deployment was requested or performed by this CI repair. Final art,
+actual PAL/NTSC scene timing, audible output, full fault interactions and physical
+hardware acceptance remain separate. Next: review the verified draft; do not add
+scenes or repeat the repaired startup investigation before that review. This
+final checkpoint is on `maintenance/demo-ci-delivery` without triggering another
+trivial full CI cycle on the tested feature head.
 
 ## Supplied Manual Evidence — 28 October 2026 (Sydney)
 

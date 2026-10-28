@@ -2,36 +2,31 @@
 
 The user approved the second diagnostic-style design, with the mature captain facing left, the metallic-cyan VRAMpage MD logo, a 10-second opening scene, and automatic demo cycling.
 
-## Actual-Core CI Repair — 28 October 2026
+## Actual-Core CI Repair — Verified, 28 October 2026
 
-The user requested the startup-fixture correction after the draft bundle job
-failed three disabled-control assertions: shortcut controls and RGB inputs in
-runtime/normal profiles. Those tests began with a genuinely auto-loaded cartridge
-while expecting the old empty-console state. Their assertions are retained;
-manual-ROM tests now explicitly select the existing session preference before
-navigation, while the dedicated Demo Cart test retains a fresh default session.
-The transaction suite shares that fixture, and affected manual loads observe
-accepted cartridge identity before inspecting state.
+The requested startup-fixture repair is complete on draft PR head
+`b7434df0ac78b15ade736a16a97e8589556188d5`. All seven
+[PR Actions checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40684375250)
+and four [CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40684366546)
+pass, including fresh actual-WASM builds and extracted-package Firefox/WebKit.
+Local actual-core 12/12, transaction 3/3, source/sanitizer/Node/C and packaging
+checks pass. Independent Luna High review found no blockers.
 
-The repair includes current verified main and changes test setup/documentation
-only. The original ROM/source-kit SHA-256s below are unchanged. The earlier CI
-run already passed the dedicated real-WASM boot/render/manual-override test;
-that did not make the failed complete suite acceptable. Final full-suite and
-packaged-browser results will be recorded after verification. Keep the PR draft
-and retain explicit user approval before merge/deployment. No new ROM scenes,
-artwork edits or production auto-load behavior are authorized by this CI repair.
+The three former disabled-control failures were fixture errors: manual-ROM tests
+began with an auto-loaded cartridge while asserting an empty console. They now
+select the existing session preference before navigation; assertions remain.
+The transaction fixture is shared, manual load identity is observed, and the
+native default Demo Cart boot/render/manual-override test remains genuine.
+No production code or original ROM/source-kit hash was changed by the repair.
+A native-core title screenshot is retained at
+`/workspace/scratch/demo-ci/demo-native-title.png`, without regenerating artwork.
 
-Local verification of the repair: Chromium actual-core **12/12**, transaction
-**3/3**, full source/sanitizer/Node/C checks (**115 Python tests reported**, two
-unchanged build-dependent classes skipped), and local review packaging all pass.
-Independent Luna High review of `f19c27f` found no blockers. A native-core title
-screenshot was captured at `/workspace/scratch/demo-ci/demo-native-title.png`;
-it is execution evidence, not a regenerated mockup or final artwork approval.
-Full fresh GitHub PR/core/package checks and CodeQL remain required. No skipped
-build-dependent check is claimed as a new local pass.
-
-The original implementation checkpoint follows; its initial verification notes
-record the earlier state and do not replace the repair's final CI evidence.
+[Download the verified draft](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40684375250/artifacts/12813499542).
+Keep the PR draft and the explicit merge/deployment approval hold. Boot/pixels
+and CI do not replace final artwork review, actual PAL/NTSC scene timing,
+audible acceptance, all fault interactions or physical-hardware tests.
+The original implementation checkpoint below records the earlier state;
+its initial verification notes are superseded only by the evidence above.
 
 ## Development ROM
 
