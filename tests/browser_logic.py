@@ -720,6 +720,8 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertEqual(pins.count(),16)
         expect(pins.nth(15)).to_be_disabled()
         self.load_rom()
+        expect(self.page.locator('#ramChipSignals')).to_have_value('1')
+        self.page.locator('#ramChipSignals').select_option('2')
         self.page.locator('#logicAccess').select_option('2')
         for line in (0,8,15): pins.nth(line).click()
         self.assertEqual(self.page.evaluate('[mockCore.logic.dataMask,mockCore.logic.addressMask]'),[0x8101,0])
@@ -797,7 +799,7 @@ class BrowserLogicTests(unittest.TestCase):
     def test_ram_data_mask_rejection_restores_previous_vram(self):
         self.page.close();self.page=self.new_page(circuit_config=True)
         self.load_rom()
-        self.page.locator('#vramChip .pin').nth(2).click()
+        self.page.locator('#pinGrid .pin').nth(2).click()
         before=self.page.evaluate('mockCore.vramModel.mask')
         self.assertNotEqual(before,0)
         self.page.locator('#ramChipSignals').select_option('2')
