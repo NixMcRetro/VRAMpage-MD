@@ -3197,9 +3197,36 @@
     // Browser audio is unlocked by a separate Sound button after user gesture.
   }
 
+  // Original, same-origin Demo Cart. Never outranks a local cartridge selection.
+  const DEMO_ROM_URL='./demo/VRAMpage-MD-Demo-Cart-v0.1.bin';
+  const CUSTOM_CHOSEN_KEY='vrampage-custom-rom-preferred';
+  function customCartridgePreviouslyChosen() {
+    try { return window.sessionStorage.getItem(CUSTOM_CHOSEN_KEY)==='1'; }
+    catch (_) { return false; }
+  }
+  async function loadBuiltInDemo() {
+    const generation=romLoadGeneration;
+    try {
+      stamp('Loading original Demo Cart…');
+      const response=await fetch(DEMO_ROM_URL,{credentials:'same-origin'});
+      if(!response.ok) throw new Error(`HTTP ${response.status}`);
+      const bytes=new Uint8Array(await response.arrayBuffer());
+      if(generation!==romLoadGeneration || started || customCartridgePreviouslyChosen()) return;
+      ++romLoadGeneration;
+      await startCartridge(bytes,'VRAMpage MD Demo Cart');
+    } catch(error) {
+      if(generation!==romLoadGeneration || started) return;
+      stamp(`Built-in demo unavailable: ${error.message}`);
+      message('INSERT YOUR CARTRIDGE',
+        'The original demo cartridge could not be loaded. Choose a local Mega Drive ROM to continue.');
+    }
+  }
+
   async function loadLocalRom(file) {
     if (!file) return;
     const generation=++romLoadGeneration;
+    try { window.sessionStorage.setItem(CUSTOM_CHOSEN_KEY,'1'); }
+    catch (_) { /* Private browsing may block session storage. */ }
     try {
       stamp(`Loading local cartridge: ${file.name}`);
       if (file.size<0x200 || file.size>4*1024*1024)
@@ -3310,7 +3337,8 @@
       updateLogicControls();
       message('INSERT YOUR CARTRIDGE','Choose a Sonic the Hedgehog ROM stored on your computer. The file is loaded only in this browser.');
       refreshRegionState();
-      stamp('Core loaded; ready for local ROM.');
+      stamp('Core loaded; ready for cartridge.');
+      if(!customCartridgePreviouslyChosen()) void loadBuiltInDemo();
     } catch(e) {
       emulator=null;
       message('CORE INITIALISATION FAILED',e.message);
