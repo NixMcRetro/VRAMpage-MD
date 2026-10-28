@@ -90,7 +90,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         errors = []
                         page.on('pageerror', lambda error: errors.append(str(error)))
                         core_js = (OPTIONS.site_root / 'core/genplus.js').read_text()
-                        core_js += '\\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\\n'
+                        core_js += '\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\n'
                         page.route('**/core/genplus.js', lambda route: route.fulfill(
                             content_type='text/javascript', body=core_js))
                         page.goto(f'http://127.0.0.1:{server.server_port}/')
