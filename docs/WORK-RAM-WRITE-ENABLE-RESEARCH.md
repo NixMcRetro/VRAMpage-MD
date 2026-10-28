@@ -9,7 +9,8 @@ configuration version, release or website changes accompany this report.
 A write-only **Lower Byte / Upper Byte Write Inhibit** is the smallest useful
 next RAM experiment. Suppress the selected byte's future stores while retaining
 its previous contents. Reuse the current Work RAM transaction hooks, fault
-replacement and recovery rules. A second motherboard profile is unnecessary.
+replacement and recovery rules. A second motherboard profile is unnecessary
+for this bounded digital contract.
 
 This is different from the delivered D0–D15 cuts: those force selected incoming
 bits low; write inhibition can leave arbitrary old bits behind. Stale variables,
@@ -90,13 +91,16 @@ If implemented later:
   pause and remain clearable, following the delivered data-mask handling.
 - Force Resume/CPU Reset remove the control but retain RAM and sound state under
   their existing contracts. CPU Reset retains the checkpoint; Clean Restart
-  clears controls and discards it. Checkpoint save must refuse active inhibits.
+  clears controls and discards it. The native checkpoint guard must reject active
+  inhibits for save/restore. Preserve the UI's Restore behavior: first clear and
+  verify all faults, including this control, then call the native restore.
   Temporary address contacts must restore a prior inhibit configuration only
   where the existing ownership rules already restore the previous fault.
 
-Count an affected write once per bus transaction when the retained bytes differ
-from what the CPU attempted to store. An inhibited store of the already-stored
-value has no observed effect and should not spend an affected-write budget.
+Count an affected write once per byte/word hook call when the retained bytes
+differ from what the CPU attempted to store. A longword traverses two 16-bit bus
+subtransactions and can count 0–2 affected writes. An inhibited store of the
+already-stored value emits no affected-write trace/count or budget consumption.
 Add an explicit control-inhibit trace reason rather than claiming the CPU's
 data-bus value changed; document completion as handler completion even when no
 RAM store occurs. Reuse frame timing and tracing, without building a new subsystem.
@@ -115,7 +119,7 @@ RAM store occurs. Reuse frame timing and tracing, without building a new subsyst
 | Lifecycle and holds | Clear/recovery/checkpoint/restart and temporary-contact ownership stay correct |
 | Compatibility | Optional API absence degrades clearly; off path and normal-core hashes unchanged |
 
-Use literal native/sanitized tests, original actual-WASM cartridges, configuration
+Use literal native/sanitized tests, original synthetic actual-WASM cartridge probes, configuration
 round-trips and the existing three-browser/package CI gates. Require independent
 specialist review before merge. Do not use commercial-game recovery or physical
 electrical accuracy as inferred acceptance results.
