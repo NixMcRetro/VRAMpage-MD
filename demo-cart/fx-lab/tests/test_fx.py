@@ -288,6 +288,8 @@ class TestROM(unittest.TestCase):
     # Preserved native hardware budgets, no bitmap overlays or extra sprites.
     self.assertEqual(len(R.SPRITE_SAT_FRAMES),96*20*8)
     self.assertEqual(len(R.COLOUR_SCROLLS),96*30*2)
+    self.assertEqual({(word>>13)&3 for word in R.sprite_cells},{0,1},
+                     'Keep warm/cyan banks 2 and 3 exclusive to moving sprites')
     self.assertEqual(len({(word>>13)&3 for word in R.colour_cells}),4)
     self.assertGreater(len(set(R.colour_cells)),100)
     self.assertEqual(R.ALL_PATTERNS[:len(R.PATTERNS)],R.PATTERNS)

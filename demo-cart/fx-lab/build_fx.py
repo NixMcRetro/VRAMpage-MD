@@ -362,11 +362,12 @@ for y in range(28):
         radius=math.hypot(dx,dy)
         sector=int((math.atan2(dy,dx)+math.pi)*8/math.pi)&15
         ring=int(radius//5)
-        colour_cells.append(((((ring+sector//4)%4)<<13)
-                             |(FX_BASE+((sector+2*ring)&15)*16
-                               +((int(radius*1.6)+(x-y)//5)&15)))
+        bank=(ring+sector//4)%4
+        pattern=FX_BASE+((sector+2*ring)&15)*16+((int(radius*1.6)+(x-y)//5)&15)
+        colour_cells.append((bank<<13)|pattern)
         # Calm stage backdrop, with a moving 1x1 hardware sprite on top.
-        sprite_cells.append(((((y//8)+(x//12))%4)<<13)|(FX_BASE+((y//3)&15)*16+((x//4)&15)))
+        # Reserve vivid CRAM banks 2/3 for the moving hardware sprites.
+        sprite_cells.append(((((y//8)+(x//12))%2)<<13)|(FX_BASE+((y//3)&15)*16+((x//4)&15)))
         # A muted oscilloscope-style diagonal backdrop for the PSG stage.
         audio_cells.append(((((x//12)+(y//8))%4)<<13)|(FX_BASE+((x+2*y)//5%16)*16+((x+y*3)&15)))
 

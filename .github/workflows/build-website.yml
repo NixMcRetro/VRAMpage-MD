@@ -34,6 +34,8 @@ jobs:
           python3 --version
           git --version
           make --version
+      - name: Check experimental cartridge Python syntax before core compilation
+        run: python3 -m py_compile demo-cart/fx-lab/build_fx.py demo-cart/fx-lab/tests/test_fx.py demo-cart/fx-lab/render_preview.py
       - name: Install Emscripten
         shell: bash
         run: |

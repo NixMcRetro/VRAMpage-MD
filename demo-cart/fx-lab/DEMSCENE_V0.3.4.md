@@ -8,6 +8,8 @@ This focuses on two effects the user found technically functional but visually u
 
 Chroma Reactor now uses a centre-weighted 4bpp tile map of concentric sectors rather than a generic grid. Its four real CRAM banks use contrasting, continuously cycling colours and a pair of rhythmic one-cell horizontal-scroll waves. These are original Mega Drive tile, palette and scroll operations, not browser video overlays or fabricated circuit faults.
 
+Sprite Storm's procedural background now uses only the darker CRAM banks 0/1, reserving its brilliant warm/cyan banks 2/3 for the animated hardware sprites. This fixes the low contrast observed in the original emulator captures without increasing sprite or tile budgets.
+
 The captain's original portrait patterns and the VRAMpage MD chrome logo stay bit-for-bit identical to the pinned source kit. The v0.3.3 single bright-cyan selector cursor, cleared original arrow, and off-screen colour map coverage remain intact. START, A/B/C, PAL/NTSC duration, the attract loop, and the unfinished PSG sound demonstration are unchanged.
 
 ## Technical budget and verification
