@@ -1,3 +1,7 @@
+# VRAMpage MD FX Lab development history
+
+The newest design and test checkpoint is [v0.3.2: Sprite Storm and Chroma Reactor](DEMSCENE_V0.3.2.md). Previous handover notes follow for historical reference.
+
 # VRAMpage MD Hypnotic FX Lab v0.2
 
 **Status:** experimental original Mega Drive development cartridge. NOT a published VRAMpage MD application release, and NOT a verified Genesis Plus GX capture.
