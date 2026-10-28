@@ -35,7 +35,7 @@ Both scenes remain about eight seconds per run (PAL: 400 VBlanks, NTSC: 479 VBla
 | Sprite scene frame transfers | 80 SAT words + 64 CRAM words |
 | Colour scene frame transfers | 30 HScroll words + 64 CRAM words |
 | Loop | 96 frames, wrap-seam palette components checked |
-| ROM | 150,106 bytes; SHA-256 is in build/rom_report.json |
+| ROM | 150,170 bytes; SHA-256 is in build/rom_report.json |
 
 The graphics and frame tables are generated deterministically in Python, stored in the original ROM, and copied by 68000 VDP writes. Palette 0 and 1 also change during Sprite Storm, but the more prominent independent warm/cyan foreground objects use banks 2 and 3.
 
