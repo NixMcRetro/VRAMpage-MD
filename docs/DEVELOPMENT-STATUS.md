@@ -1,5 +1,48 @@
 # Development status and continuation checkpoint
 
+## Final Verified Delivery — 28 October 2026 (UTC)
+
+[PR #90](https://github.com/NixMcRetro/VRAMpage-MD/pull/90) merged as `a8ba05f`;
+all seven required [main jobs](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40693866935)
+and all four [CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40693866567)
+passed. Its exact reviewed/tested tree is unchanged by the merge. The original
+Demo Cart ROM/source-kit hashes remain pinned; the only integration fix was the
+staging helper's review path. Full art/audio/scene/fault acceptance is deferred
+until around v0.6.0 under the user's explicit development-merge authorization.
+
+[PR #92](https://github.com/NixMcRetro/VRAMpage-MD/pull/92) merged as current main
+`8733a5594a243a48c5fd9cd6d80760106ee99dad`, tree
+`7786dea5539f78f56df8adde0c10fb81ed80fa58`, exactly matching independently reviewed
+head `133f7eddf964101a5dabbb354fcc85ebd3f804aa`. All seven required
+[PR jobs](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40696334316) and
+[main jobs](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40697665333)
+passed on the final head's first attempt; all four CodeQL analyses passed on
+[PR](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40696324405) and
+[main](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40697664612).
+The superseded PR run was cancelled after narrowing one printed-page citation;
+no failing assertion was relaxed. Local documentation tests 6/6, relative-link
+checks 167/167, source-file hashes and Markdown-only scope checks passed.
+
+[Download the verified main browser build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40697665333/artifacts/12820825465)
+(artifact 12820825465, expires 27 November 2026). The
+[research report](SEGA-MANUAL-EVIDENCE.md) records all three accessible replacements,
+their Model II VA0/VA1 identities, qualified lane/control mapping, the apparent
+VA1 heading/serial-VRAM diagram mismatch and all nine supplied ConsoleMods leads.
+Website board photos/audio and the Zenith schematic image were not inspected;
+the disputed Model 1 DIN sync numbering remains unresolved.
+
+No PRs remain open. Keep #73 open: matching NTSC Model 1 VA6 fitted RAM markings,
+byte lanes and routing are still unverified. All 18 public release records and
+asset identities match the pre-merge snapshot. VERSION remains 0.5.0; no website
+modification/deployment, physical profile or extra Demo Cart scene was performed.
+The user deferred release-candidate work until this slice moved forward; await
+that next scope or concrete new board evidence rather than repeating finished
+region/RAM/recovery/security maintenance. Logs and local evidence remain under
+`/workspace/scratch/manual-followup/`.
+
+This final evidence-only checkpoint is on `maintenance/hardware-reference-delivery`,
+preserving the exact already-tested main without another trivial CI cycle.
+
 ## Demo Cart Merged; Hardware Follow-Up — 28 October 2026 (Sydney)
 
 [PR #90](https://github.com/NixMcRetro/VRAMpage-MD/pull/90) merged as
