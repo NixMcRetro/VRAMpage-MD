@@ -21,6 +21,15 @@ packaged-browser results will be recorded after verification. Keep the PR draft
 and retain explicit user approval before merge/deployment. No new ROM scenes,
 artwork edits or production auto-load behavior are authorized by this CI repair.
 
+Local verification of the repair: Chromium actual-core **12/12**, transaction
+**3/3**, full source/sanitizer/Node/C checks (**115 Python tests reported**, two
+unchanged build-dependent classes skipped), and local review packaging all pass.
+Independent Luna High review of `f19c27f` found no blockers. A native-core title
+screenshot was captured at `/workspace/scratch/demo-ci/demo-native-title.png`;
+it is execution evidence, not a regenerated mockup or final artwork approval.
+Full fresh GitHub PR/core/package checks and CodeQL remain required. No skipped
+build-dependent check is claimed as a new local pass.
+
 The original implementation checkpoint follows; its initial verification notes
 record the earlier state and do not replace the repair's final CI evidence.
 

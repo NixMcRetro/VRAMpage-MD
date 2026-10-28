@@ -11,8 +11,9 @@ missing-demo cases, disabled-control assertions and original asset hashes.
 The bounded fixture change uses the existing session preference before navigation,
 with accepted-ROM identity waits for affected loads. Production app/core, artwork,
 original ROM/source kit, VERSION, releases and McRetro.net remain unchanged.
-Local full actual-core/transaction and source checks, review and all required
-PR CI/CodeQL are the completion gates. Keep PR #90 draft: its
+Local Chromium actual-core 12/12, transaction 3/3, source/sanitizer/Node/C checks
+and local packaging pass. Independent Luna High review of `f19c27f` found no
+blockers. All required fresh PR CI/CodeQL remain the completion gates. Keep PR #90 draft: its
 [design guardrail](DEMO-CART-DESIGN.md#development-order-and-release-guardrails)
 requires explicit user approval before merge or website deployment. This request
 repairs CI and does not remove that hold or add demonstration scenes.
