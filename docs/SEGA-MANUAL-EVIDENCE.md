@@ -117,7 +117,7 @@ for the main architecture comparison.
 
 ## Limits and Next Bounded Work
 
-Three image-only PDFs were inventoried but could not be locally inspected:
+Three PDFs were inventoried but could not be locally inspected:
 `Sega Mega Drive VA0 1 of 2 A4.pdf` (45,189,030 bytes), its A3 Part 2
 (53,639,842 bytes), and `Sega Gen2 & MD2 Supp VA1 2 of 2 A3.pdf`
 (51,204,289 bytes). The attachment materializer has a 32 MiB limit; the

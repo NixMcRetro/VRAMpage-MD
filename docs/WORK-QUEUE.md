@@ -5,7 +5,7 @@
 The user authorized working with the supplied Sega developer/service manuals
 and MiSTer HDL. The [evidence review](SEGA-MANUAL-EVIDENCE.md) records visually
 checked errata, a qualified NEC PAL VA6.5 RAM map, Model 2 memory/encoder
-variations and fresh pinned HDL cross-checks. Three oversized image-only PDFs
+variations and fresh pinned HDL cross-checks. Three oversized PDFs
 remain uninspected because the materializer limit and proxy block their downloads;
 the report names these files without inferring their content from filenames.
 
