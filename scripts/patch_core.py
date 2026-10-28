@@ -1115,9 +1115,11 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     elif wasm.count(runtime_defaults_hook) != 1:
         raise SystemExit('Region profile default hook is ambiguous.')
 
-    init_anchor = '    audio_init(SOUND_FREQUENCY, 0);\n    system_init();\n'
-    runtime_init_hook = (init_anchor + '#ifdef VRAM_TX_RUNTIME\n'
-                         '    region_profile_mark_loaded();\n#endif\n')
+    init_anchor = '    bend_reset();\n}'
+    runtime_init_hook = ('    bend_reset();\n'
+                         '#ifdef VRAM_TX_RUNTIME\n'
+                         '    region_profile_mark_loaded();\n'
+                         '#endif\n}')
     if wasm.count(runtime_init_hook) == 0:
         if wasm.count(init_anchor) != 1:
             raise SystemExit('Expected audio/system init anchor missing or ambiguous.')

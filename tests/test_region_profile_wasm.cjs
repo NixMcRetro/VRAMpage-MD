@@ -9,7 +9,7 @@ const FRAME_BYTES = 640 * 480 * 4;
 function factory(file) {
   return require(file)({locateFile: name => path.join(path.dirname(file), name)});
 }
-function cartridge(country = 'U') {
+function cartridge(country = 'U', activeLines = 224, interlaced = false) {
   const rom = new Uint8Array(0x10000), v = new DataView(rom.buffer);
   for (let p = 0; p < 0x100; p += 4) v.setUint32(p, 0x300);
   v.setUint32(0, 0xffff00); v.setUint32(4, 0x200);
@@ -17,15 +17,16 @@ function cartridge(country = 'U') {
   rom.set(Buffer.from('REGION PROFILE TEST'), 0x120);
   rom.set(Buffer.from(country), 0x1f0);
   v.setUint32(0x1a4, rom.length - 1); v.setUint32(0x1a8, 0xff0000); v.setUint32(0x1ac, 0xffffff);
-  v.setUint16(0x200, 0x60fe);
+  const words = [0x33fc, activeLines === 240 ? 0x814c : 0x8144, 0x00c0, 0x0004];
+  if (interlaced) words.push(0x33fc, 0x8c02, 0x00c0, 0x0004);
+  words.push(0x60fe);
+  words.forEach((word, index) => v.setUint16(0x200 + index * 2, word));
   v.setUint16(0x300, 0x4e72); v.setUint16(0x302, 0x2700); v.setUint16(0x304, 0x60fe);
   return rom;
 }
-async function start(file, request, country) {
-  const core = await factory(file);
-  core._init();
-  if (typeof core._set_region_request === 'function') assert.equal(core._set_region_request(request), 0);
-  core.HEAPU8.set(cartridge(country), core._get_rom_buffer_ref(0x10000));
+async function start(core, request, country, activeLines = 224, interlaced = false) {
+  assert.equal(core._set_region_request(request), 0);
+  core.HEAPU8.set(cartridge(country, activeLines, interlaced), core._get_rom_buffer_ref(0x10000));
   core._start();
   return core;
 }
@@ -37,7 +38,13 @@ function rendered(core) {
   const left = Array.from(core.HEAPF32.subarray(lp, lp + count));
   const right = Array.from(core.HEAPF32.subarray(rp, rp + count));
   assert.ok(left.concat(right).every(Number.isFinite));
-  return {frame: Buffer.from(core.HEAPU8.subarray(frame, frame + FRAME_BYTES)), left, right};
+  const ram = core._get_logic_ram_ref();
+  return {frame: Buffer.from(core.HEAPU8.subarray(frame, frame + FRAME_BYTES)),
+    ram: Buffer.from(core.HEAPU8.subarray(ram, ram + 0x10000)), left, right};
+}
+function tickToViewport(core) {
+  core._wasm_input_update(); core._tick(); core._sound();
+  core._tick();
 }
 
 (async () => {
@@ -46,6 +53,7 @@ function rendered(core) {
   assert.equal(typeof untouched._get_region_state, 'undefined', 'normal profile has no region state API');
 
   const unstarted = await factory(runtimeFile);
+  unstarted._init();
   const before = unstarted._get_region_state();
   assert.deepEqual(before, {schemaVersion:1,available:true,loaded:false,requestedRegion:1,
     regionCode:null,pal:null,masterClock:null,frameRate:null,linesPerFrame:null,width:null,height:null,interlaced:null});
@@ -62,7 +70,7 @@ function rendered(core) {
     {id:4,country:'U',code:0x40,pal:true,clock:53203424,lines:313}
   ];
   for (const item of expected) {
-    const core = await start(runtimeFile, item.id, item.country);
+    const core = await start(unstarted, item.id, item.country);
     const state = core._get_region_state();
     assert.equal(state.loaded, true);
     assert.equal(state.requestedRegion, item.id);
@@ -75,17 +83,28 @@ function rendered(core) {
     assert.equal(state.interlaced, false);
     const frequency = item.pal ? 53203424 / (3420 * 313) : 53693175 / (3420 * 262);
     assert.ok(Math.abs(state.frameRate - frequency) < 1e-9);
-    core._wasm_input_update(); core._tick();
+    tickToViewport(core);
+    assert.equal(core._get_region_state().width, 256, 'active Mode 5 width follows the native viewport');
+    assert.equal(core._get_region_state().height, 224, 'PAL and NTSC can both render 224 active lines');
     const audio = rendered(core);
     if (item.id === 1) {
-      const legacy = await start(normalFile, 1, item.country);
-      legacy._wasm_input_update(); legacy._tick();
+      const legacy = await factory(normalFile);
+      legacy._init(); legacy.HEAPU8.set(cartridge(item.country), legacy._get_rom_buffer_ref(0x10000)); legacy._start();
+      tickToViewport(legacy);
       assert.deepEqual(audio, rendered(legacy), 'default NTSC-U framebuffer and PCM match normal runtime');
     }
   }
 
-  const autoJapan = await start(runtimeFile, 0, 'J');
+  const autoJapan = await start(unstarted, 0, 'J');
   assert.equal(autoJapan._get_region_state().regionCode, 0x00, 'Auto follows the ROM Japan header');
   assert.equal(autoJapan._get_region_state().linesPerFrame, 262);
+  const pal240 = await start(unstarted, 2, 'U', 240);
+  tickToViewport(pal240);
+  assert.equal(pal240._get_region_state().height, 240, 'native active viewport reports 240 lines when VDP mode selects it');
+  const interlace = await start(unstarted, 3, 'U', 224, true);
+  tickToViewport(interlace);
+  assert.equal(interlace._get_region_state().interlaced, true);
+  assert.equal(interlace._get_region_state().height, 224,
+    'interlace reports its native rendered height while double-resolution output is disabled');
   console.log('PASS native region profile API, timing, viewport bounds, audio bounds, Auto detection and NTSC-U parity');
 })().catch(error => { console.error(error); process.exitCode = 1; });

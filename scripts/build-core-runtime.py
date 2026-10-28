@@ -2,6 +2,7 @@
 """Build the opt-in VRAM transaction runtime in an isolated source tree."""
 from pathlib import Path
 import io
+import hashlib
 import os
 import shutil
 import subprocess
@@ -224,12 +225,18 @@ def copy_package(root: Path, upstream: Path, work: Path, output: Path) -> None:
         if not artifact.is_file() or artifact.stat().st_size == 0:
             raise RuntimeError(f"Emscripten output is missing or empty: {artifact}")
         shutil.copy2(artifact, core_dir / name)
+    artifact_hashes = {
+        name: hashlib.sha256((core_dir / name).read_bytes()).hexdigest()
+        for name in ("genplus.js", "genplus.wasm")
+    }
     (output / "BUILDING.txt").write_text(
         "Opt-in VRAM transaction runtime profile\n"
         f"Pinned wasm-genplus source: {PINNED_COMMIT}\n"
         "Profile flags: VRAM_TX_RUNTIME, HEAPU8/HEAPF32 and build-owned pre-js API shims.\n"
         "Region selection is runtime-only; requested IDs are 0 Auto, 1 NTSC-U, 2 PAL Europe, 3 NTSC-J, 4 Japan PAL.\n"
         "Effective timing and viewport are read from the initialized native core.\n"
+        f"genplus.js SHA-256: {artifact_hashes['genplus.js']}\n"
+        f"genplus.wasm SHA-256: {artifact_hashes['genplus.wasm']}\n"
         "No VRAM_TX_DIAGNOSTIC bridge is compiled into this profile.\n\n"
         "The matching modified source is in source/wasm-genplus and its build scripts\n"
         "and API shim are in source/scripts. With Emscripten, CMake and Make available:\n\n"
