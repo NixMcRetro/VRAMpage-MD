@@ -48,6 +48,15 @@ function installMode5Rom(core) {
   assert.equal(typeof core._set_fm_data_mask, 'function');
   assert.equal(typeof core._set_fm_data_mask_c, 'undefined');
   assert.equal(typeof core._get_fm_data_bridge_state, 'function');
+  assert.equal(typeof core._set_logic_data_mask, 'function');
+  assert.equal(typeof core._set_logic_data_mask_c, 'undefined');
+  assert.equal(typeof core._get_logic_data_mask, 'function');
+  assert.equal(typeof core._get_logic_data_mask_c, 'undefined');
+  assert.equal(core._get_logic_data_mask(), 0);
+  assert.equal(core._set_logic_data_mask(0x10000, 1), 5);
+  assert.equal(core._set_logic_data_mask(1.5, 1), 5);
+  assert.equal(core._set_logic_data_mask(1, 4), 5);
+  assert.equal(core._get_logic_data_mask(), 0, 'invalid mask requests do not mutate state');
   const diagnosticOnly = [
     '_run_vram_tx_test', '_get_vram_tx_counter', '_set_vram_transaction_diagnostic',
     '_get_vram_tx_test_physical_byte', '_get_vram_tx_test_sat_byte',
