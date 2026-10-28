@@ -1,18 +1,31 @@
 # Development status and continuation checkpoint
 
-## Demo Cart Development Merge Authorized — 28 October 2026 (Sydney)
+## Demo Cart Merged; Hardware Follow-Up — 28 October 2026 (Sydney)
 
-The user explicitly authorized merging PR #90, deferring full artwork, audible
-output, PAL/NTSC scene timing and fault-interaction review until around v0.6.0.
-This supersedes the earlier merge hold below, without authorizing website
-deployment, a new release or scene additions. The complete independent audit
-found only a stale staging status path; it now matches `homepages/vrampage-md`.
-Fresh required PR checks and verified post-merge main CI remain integration gates.
+[PR #90](https://github.com/NixMcRetro/VRAMpage-MD/pull/90) merged as
+`a8ba05f2133097fea80a689d38e7c74dff3640ce`, tree
+`33ef378ac8e0e30bbd348e69f3ebb33f74a18a3d`, exactly matching tested head
+`8c5539586347b2d4cebfd5072deedf9b63cc0a73`. All seven required
+[PR jobs](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40692733654) and
+[main jobs](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40693866935)
+passed on the first attempt; all four CodeQL analyses passed on both
+[PR](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40692727011) and
+[main](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40693866567).
+Independent Luna High review approved the complete integration at `8c55395`.
+The staging path correction passed the source/sanitizer suite and an isolated
+local fixture showing the staged destination in the review list, without commits.
 
-After the merge, review the three replacement PDFs, now downloaded successfully,
-and the supplied ConsoleMods references. Keep #73 open until identifiable NTSC
-Model 1 VA6 device/routing evidence is established. Do not repeat completed
-region, RAM or recovery implementation; revisit release-candidate work afterward.
+The user explicitly superseded the earlier merge hold and deferred full Demo
+Cart art/audio/PAL/NTSC scene/fault acceptance until around v0.6.0. No new scenes,
+version bump, release replacement or McRetro.net deployment was performed.
+[Verified main browser download](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40693866935/artifacts/12819097164).
+
+The [manual/ConsoleMods follow-up](SEGA-MANUAL-EVIDENCE.md) resolves the PDF access
+blocker, qualifies Model II VA0/VA1 mappings and records source inconsistencies.
+Keep #73 open: target NTSC Model 1 VA6 RAM markings and matching routing remain
+unverified. Research changes are documentation only; independent review and
+required PR/main checks remain gates for that bounded follow-up. Revisit release
+candidate work afterward; do not repeat completed region/RAM/recovery work.
 
 ## Draft PR #90 CI Repair — 28 October 2026 (Sydney)
 
