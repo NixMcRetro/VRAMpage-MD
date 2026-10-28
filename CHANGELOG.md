@@ -1,5 +1,16 @@
 # Changelog
 
+## Development Source — Work RAM Write Inhibit
+
+- Add independent lower/upper byte write inhibition through the compact SRAM Writes view, retaining old data while selected stores are suppressed.
+- Reuse fault replacement and recovery, retain sound/checkpoint semantics, and record strict optional API state in schema-6 configurations and logic-v3 exports/comparison.
+- Verify literal CPU and banked-Z80 byte lanes, counters/control traces and native normal/runtime builds. Preserve normal hashes, VERSION, releases and the website.
+
+## Research — Work RAM Write Enables and FM Models
+
+- Define a bounded write-only upper/lower RAM inhibit proposal, separating retained old data from data cuts and active-low control polarity from a floating wire.
+- Audit exact pinned FM engine/model behavior and checkpoint constraints; add a reproducible native DAC-mode characterization probe. These research files do not change the app, native runtime, public interfaces, release or website.
+
 ## Development Source — Work RAM Data Lines
 
 - Add runtime-only D0–D15 cuts across independent byte lanes, sharing the compact Address/Data signal view and existing fault lifecycle. Address cuts, data cuts and byte-local bridges replace one another.

@@ -57,7 +57,7 @@
   const isInteger=(value,min=0,max=Number.MAX_SAFE_INTEGER)=>Number.isInteger(value)&&value>=min&&value<=max;
   const isPair=value=>value===null||Array.isArray(value)&&value.length===2&&value.every(line=>isInteger(line,0,31));
   const isVramPair=value=>value===null||Array.isArray(value)&&value.length===2&&value.every(line=>isInteger(line,0,7))&&value[0]!==value[1];
-  const isLineList=value=>Array.isArray(value)&&value.every(line=>typeof line==='string'&&/^(A(?:[1-9]|1[0-5])|D(?:[0-9]|1[0-5]))$/.test(line));
+  const isLineList=value=>Array.isArray(value)&&value.every(line=>typeof line==='string'&&/^(A(?:[1-9]|1[0-5])|D(?:[0-9]|1[0-5])|\/(?:LWR|UWR))$/.test(line));
   const isRecord=value=>!!value&&typeof value==='object'&&!Array.isArray(value);
   const isCount=value=>typeof value==='string'&&/^\d+$/.test(value)||isInteger(value);
   const isString=value=>typeof value==='string';
@@ -110,10 +110,11 @@
     };
     const ramA=ramFault(a),ramB=ramFault(b);
     for(const [label,get,valid] of [
-      ['Kind',v=>v?.kind,value=>typeof value==='string'&&['address','data','address-stuck-low','data-stuck-low','address-mask','line-pair'].includes(value)],
+      ['Kind',v=>v?.kind,value=>typeof value==='string'&&['address','data','address-stuck-low','data-stuck-low','address-mask','line-pair','write-inhibit'].includes(value)],
       ['Access',v=>v?.access,value=>typeof value==='string'&&['read','write','read + write','both'].includes(value)],
       ['Address Mask',v=>v?.addressMask,value=>isInteger(value,0,32767)],
       ['Data Mask',v=>v?.dataMask,value=>isInteger(value,0,65535)],
+      ['Write Inhibit Mask',v=>v?.writeInhibitMask,value=>isInteger(value,0,3)],
       ['Lines / Pair',v=>v?.lines??v?.linesPair,value=>isLineList(value)||isPair(value)],
       ['Activation Frame',v=>v?.activationFrame,value=>isInteger(value)]
     ]) {
@@ -130,6 +131,7 @@
       ['Transaction Bridge B',['vramTransaction','bridgeB'],value=>isInteger(value,-1,7)]
     ]) field(`VRAM ${label}`,keys,keys[0]==='vramTransaction'?['vramTransaction','available']:null,valid);
     field('RAM Data Mask',['logic','dataMask'],['logic','dataMaskAvailable'],value=>isInteger(value,0,65535));
+    field('RAM Write Inhibit Mask',['logic','writeInhibitMask'],['logic','writeInhibitAvailable'],value=>isInteger(value,0,3));
     audio('FM','fmInputFault'); audio('PSG','psgInputFault');
     for (const [label,key,valid] of [
       ['Configured','configured',isBoolean],['Effective','effective',isBoolean],

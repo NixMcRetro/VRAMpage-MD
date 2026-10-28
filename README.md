@@ -39,7 +39,8 @@ it is removed. **CPU Reset** preserves RAM and sound-chip state, although
 restarted game code can overwrite RAM. **Clean Restart** fully reboots.
 See the [controls and recovery guide](docs/RUNNING-LOCALLY.md).
 
-Development source also includes an optional
+Development source adds [Work RAM Write Inhibit](docs/WORK-RAM-WRITE-INHIBIT.md),
+which retains old upper/lower bytes by suppressing selected writes. It also includes an optional
 [Z80 RAM Write Bridge](docs/Z80-RAM-WRITE-BRIDGE.md) for sound-driver memory.
 It is off by default and is not included in the published v0.5.0 download.
 The same development source adds optional [RGB Encoder Input Contacts](docs/RGB-ENCODER-INPUTS.md),

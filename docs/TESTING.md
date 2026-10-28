@@ -1,3 +1,13 @@
+# Work RAM Write Inhibit Checks
+
+Native Work RAM integration now compiles both normal and optional runtime
+profiles. Literal native/sanitized tests and actual-WASM CPU/Z80 probes cover
+upper/lower byte retention, word/longword writes, mirrors, CONTROL trace reason,
+no-op counters and strict setter replacement. The normal binary hash gate remains
+mandatory. Browser tests cover schema-6 saved state, optional legacy capability,
+native getter uncertainty and the clear-before-restore checkpoint lifecycle.
+See [the implementation contract](WORK-RAM-WRITE-INHIBIT.md).
+
 # Demo Cart Actual-Core Fixtures (Draft PR #90)
 
 The development [Work RAM data-line slice](WORK-RAM-DATA.md) adds native and

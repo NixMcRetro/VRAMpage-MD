@@ -1140,11 +1140,28 @@
     return logicActive && activeRamConfiguration?.type==='data-mask' ? activeRamConfiguration.mask : 0;
   }
 
+  function writeInhibitApiReady() {
+    return typeof emulator?._set_logic_write_inhibit==='function' &&
+      typeof emulator?._get_logic_write_inhibit==='function';
+  }
+
+  function currentRamWriteInhibit() {
+    if (!writeInhibitApiReady()) return null;
+    try {
+      const mask=emulator._get_logic_write_inhibit();
+      return Number.isInteger(mask) && mask>=0 && mask<=3 ? mask : null;
+    } catch (_) { return null; }
+  }
+
+  function trackedRamWriteInhibit() {
+    return logicActive && activeRamConfiguration?.type==='write-inhibit' ? activeRamConfiguration.mask : 0;
+  }
+
   function refreshChipControls() {
-    const kind=Number($('ramChipSignals').value), data=kind===2;
-    const ready=started && ($('ramLegAction').value==='bridge' ? logicApiReady()
+    const kind=Number($('ramChipSignals').value), data=kind===2, inhibit=kind===3;
+    const ready=started && (inhibit ? writeInhibitApiReady() : $('ramLegAction').value==='bridge' ? logicApiReady()
       : data ? dataMaskApiReady() : addressMaskApiReady());
-    const mask=data?trackedRamDataMask():logicAddressMask;
+    const mask=inhibit?trackedRamWriteInhibit():data?trackedRamDataMask():logicAddressMask;
     const pair=logicActive && activeRamConfiguration?.type==='line-pair' && activeRamConfiguration.kind===kind
       ? activeRamConfiguration : null;
     for (const button of document.querySelectorAll('[data-chip-line]')) {
@@ -1157,16 +1174,23 @@
       button.classList.toggle('selected',pending);
       button.querySelector('.chip-cut').textContent=forced?'×':bridged?'↔':'×';
       button.setAttribute('aria-pressed',String(forced||bridged||pending));
-      button.setAttribute('aria-label',`${name}: ${forced?'forced low; reconnect':bridged?'bridged; select another leg action to change':'connected'}`);
+      button.setAttribute('aria-label',inhibit
+        ? `${line===0?'Lower':'Upper'} Byte Write Enable (${name}): ${forced?'inhibited, held inactive/high; restore writes':'writes enabled'}`
+        : `${name}: ${forced?'forced low; reconnect':bridged?'bridged; select another leg action to change':'connected'}`);
     }
     $('chipRestoreBtn').disabled=!started || !logicApiReady() || (!mask && !pair);
-    $('chipRestoreBtn').textContent=data?'Reconnect All D Lines':'Reconnect All A Lines';
-    $('ramLegAction').disabled=!started || !logicApiReady();
+    $('chipRestoreBtn').textContent=inhibit?'Restore All Writes':data?'Reconnect All D Lines':'Reconnect All A Lines';
+    $('ramLegAction').disabled=inhibit || !started || !logicApiReady();
+    $('ramLegAction').parentElement.hidden=inhibit;
+    $('logicAccess').disabled=inhibit || !started || !logicApiReady();
+    if (inhibit) $('logicAccess').value='2';
     $('ramChipState').textContent=mask
-      ? `${Array.from({length:data?16:15},(_,i)=>i).filter(i=>mask&(1<<i)).map(i=>logicLineName(kind,i)).join(', ')} forced low`
+      ? inhibit ? `${[mask&1?'Lower':null,mask&2?'Upper':null].filter(Boolean).join(' + ')} byte writes inhibited; old contents retained.`
+        : `${Array.from({length:data?16:15},(_,i)=>i).filter(i=>mask&(1<<i)).map(i=>logicLineName(kind,i)).join(', ')} forced low`
       : pair ? data ? `Data bridge D${pair.a} ↔ D${pair.b} active`
         : `${logicLineName(kind,pair.a)} ↔ ${logicLineName(kind,pair.b)} bridge`
       : logicActive ? 'A fault is active in the other signal view.'
+      : inhibit ? started && !writeInhibitApiReady() ? 'Write inhibition requires an updated runtime core.' : 'Both byte writes are enabled.'
       : data && !dataMaskApiReady() && started ? 'Data cuts require an updated runtime core; byte-local bridges remain available.'
       : `${data?'Data':'Address'} lines are connected.`;
   }
@@ -1183,10 +1207,11 @@
 
   function applyRamMask(mask, accessOverride=undefined, type='address-mask') {
     resetCpuRecoveryObservation();
-    const data=type==='data-mask', label=data?'data':'address';
-    if (!started || !(data?dataMaskApiReady():addressMaskApiReady())) return false;
-    const access=Number(accessOverride===undefined ? $('logicAccess').value : accessOverride);
-    if (!Number.isInteger(mask) || mask<0 || mask>(data?0xffff:0x7fff) ||
+    const data=type==='data-mask', inhibit=type==='write-inhibit', label=inhibit?'write inhibit':data?'data':'address';
+    if (!started || !(inhibit?writeInhibitApiReady():data?dataMaskApiReady():addressMaskApiReady())) return false;
+    const access=inhibit?2:Number(accessOverride===undefined ? $('logicAccess').value : accessOverride);
+    if (!['address-mask','data-mask','write-inhibit'].includes(type) ||
+        !Number.isInteger(mask) || mask<0 || mask>(inhibit?3:data?0xffff:0x7fff) ||
         !Number.isInteger(access) || access<1 || access>3) {
       setLogicStatus(`Invalid RAM ${label} mask; no fault was applied.`);
       return false;
@@ -1195,11 +1220,13 @@
     if (mask===0) return disconnectLogic();
     const handoff=prepareVramForRamFault('VRAM fault cleared before RAM fault activation');
     if (!handoff.ok) return false;
+    const target=inhibit?{type,mask}:{type,mask,access};
     let status;
     try {
-      status=data ? emulator._set_logic_data_mask(mask,access) : emulator._set_logic_address_mask(mask,access);
+      status=inhibit ? emulator._set_logic_write_inhibit(mask)
+        : data ? emulator._set_logic_data_mask(mask,access) : emulator._set_logic_address_mask(mask,access);
     } catch (error) {
-      logicActive=true;activeRamConfiguration={type,mask,access};
+      logicActive=true;activeRamConfiguration=target;
       if (!paused) pauseToggle();
       setLogicStatus(`RAM ${label} setter outcome is unknown (${error.message}); emulation paused. Disconnect before continuing.`);
       return false;
@@ -1208,21 +1235,21 @@
       const rollback=restoreVramAfterRamReject(handoff.snapshot,`restored after RAM ${label}-line rejection`);
       recordRamHandoffRejection(handoff.snapshot,`RAM ${label}-line setter rejected after VRAM clear`,status,rollback);
       setLogicStatus(rollback.ok
-        ? `${data?'Data':'Address'}-line setting rejected (status ${status}); previous VRAM configuration restored.`
-        : `${data?'Data':'Address'}-line setting rejected (status ${status}); VRAM configuration restore failed.`);
+        ? `${inhibit?'Write-inhibit':data?'Data-line':'Address-line'} setting rejected (status ${status}); previous VRAM configuration restored.`
+        : `${inhibit?'Write-inhibit':data?'Data-line':'Address-line'} setting rejected (status ${status}); VRAM configuration restore failed.`);
       stamp(`RAM ${label}-line request rejected: core status ${status}; ${rollback.ok?'previous VRAM configuration restored':'VRAM restore also failed'}.`);
       return false;
     }
     abandonKeyboardHold('WRAM');
     ownedAddressHold=null;
     cancelPulse(`replaced by ${label}-line switches`);
-    recordAddressMask(data?0:mask,data?0:access,`${label} line toggled`,event);
+    recordAddressMask(data||inhibit?0:mask,data||inhibit?0:access,`${label} line toggled`,event);
     logicActive=true;logicStatsRetained=false;
-    activeRamConfiguration={type,mask,access};
-    const lines=Array.from({length:data?16:15},(_,i)=>i).filter(i=>mask & (1<<i)).map(i=>logicLineName(data?2:1,i));
+    activeRamConfiguration=target;
+    const lines=Array.from({length:inhibit?2:data?16:15},(_,i)=>i).filter(i=>mask & (1<<i)).map(i=>logicLineName(inhibit?3:data?2:1,i));
     const accessLabel=['','read','write','read + write'][access];
-    lastLogicExperiment={kind:`${label}-stuck-low`,access:accessLabel,lines,
-      [data?'dataMask':'addressMask']:mask,
+    lastLogicExperiment={kind:inhibit?'write-inhibit':`${label}-stuck-low`,access:accessLabel,lines,
+      [inhibit?'writeInhibitMask':data?'dataMask':'addressMask']:mask,
       activationFrame:Number(emulator._get_logic_activation_frame()),resetState:logicResetState,
       currentFrame:event.frame,readCount:0,writeCount:0,cpuFlags:Number(emulator._get_logic_cpu_flags())};
     if (dataMaskApiReady() && currentRamDataMask()!==(data?mask:0)) {
@@ -1230,25 +1257,36 @@
       setLogicStatus('RAM data mask could not be confirmed; emulation paused. Disconnect before continuing.');
       return false;
     }
-    setLogicStatus(`${lines.join(', ')} forced low on ${accessLabel}. Click crossed wires to reconnect; stored writes persist.`);
-    stamp(`${data?'Data':'Address'} lines forced low: ${lines.join(', ')} (${accessLabel})`);
+    if (writeInhibitApiReady() && currentRamWriteInhibit()!==(inhibit?mask:0)) {
+      if (!paused) pauseToggle();
+      setLogicStatus('RAM write inhibit could not be confirmed; emulation paused. Disconnect before continuing.');
+      return false;
+    }
+    setLogicStatus(inhibit ? `${lines.join(', ')} writes inhibited (inactive/high); previous bytes are retained. Restore Writes permits future stores.`
+      : `${lines.join(', ')} forced low on ${accessLabel}. Click crossed wires to reconnect; stored writes persist.`);
+    stamp(inhibit?`Work RAM write inhibit: ${lines.join(', ')}`:`${data?'Data':'Address'} lines forced low: ${lines.join(', ')} (${accessLabel})`);
     return true;
   }
 
   function renderRamChip() {
-    const kind=Number($('ramChipSignals').value), data=kind===2;
+    const kind=Number($('ramChipSignals').value), data=kind===2, inhibit=kind===3;
     $('ramChip').querySelectorAll('[data-chip-line]').forEach(button=>button.remove());
-    $('ramChip').setAttribute('aria-label',`Conceptual SRAM (Work RAM) ${data?'data':'address'} lines`);
-    $('ramChip').querySelector('small').textContent=data?'D0–D7 / D8–D15':'A1–A15';
-    for (let line=0;line<(data?16:15);line++) {
+    $('ramChip').setAttribute('aria-label',`Conceptual SRAM (Work RAM) ${inhibit?'write enables':data?'data':'address'} lines`);
+    $('ramChip').querySelector('small').textContent=inhibit?'Write Inhibit · Lower / Upper':data?'D0–D7 / D8–D15':'A1–A15';
+    for (let line=0;line<(inhibit?2:data?16:15);line++) {
       const button=document.createElement('button');
       button.type='button';button.className='chip-pin';button.dataset.chipLine=String(line);
-      button.style.gridColumn=line<8?'1':'3';button.style.gridRow=String(line<8?line+1:line-7);
+      const left=inhibit?line===0:line<8;
+      button.style.gridColumn=left?'1':'3';button.style.gridRow=String(inhibit?4:line<8?line+1:line-7);
       const label=document.createElement('span');label.className='chip-signal';label.textContent=logicLineName(kind,line);
       const wire=document.createElement('span');wire.className='chip-wire';wire.setAttribute('aria-hidden','true');
       const cut=document.createElement('span');cut.className='chip-cut';cut.textContent='×';wire.append(cut);
-      button.append(...(line<8?[wire,label]:[label,wire]));
+      button.append(...(left?[wire,label]:[label,wire]));
       button.addEventListener('click',()=>{
+        if (inhibit) {
+          applyRamMask(trackedRamWriteInhibit() ^ (1<<line),undefined,'write-inhibit');
+          refreshChipControls();return;
+        }
         if ($('ramLegAction').value==='cut') {
           ramSelectedPin=null;
           applyRamMask((data?trackedRamDataMask():logicAddressMask) ^ (1<<line),undefined,data?'data-mask':'address-mask');
@@ -1275,13 +1313,14 @@
     $('chipRestoreBtn').addEventListener('click',()=>{
       ramSelectedPin=null;
       const kind=Number($('ramChipSignals').value);
-      if ((kind===1 && logicAddressMask) || (kind===2 && trackedRamDataMask()) ||
+      if ((kind===1 && logicAddressMask) || (kind===2 && trackedRamDataMask()) || (kind===3 && trackedRamWriteInhibit()) ||
           (logicActive && activeRamConfiguration?.type==='line-pair' && activeRamConfiguration.kind===kind)) disconnectLogic();
       refreshChipControls();
     });
     $('ramChipSignals').addEventListener('change',()=>{
       ramSelectedPin=null;
-      $('logicKind').value=$('ramChipSignals').value;configureLogicLines();renderRamChip();
+      if ($('ramChipSignals').value!=='3') {$('logicKind').value=$('ramChipSignals').value;configureLogicLines();}
+      renderRamChip();
     });
     $('ramLegAction').addEventListener('change',()=>{ramSelectedPin=null;refreshChipControls();});
   }
@@ -1615,7 +1654,7 @@
     };
   }
 
-  function logicLineName(kind,line) { return kind===1 ? `A${line+1}` : `D${line}`; }
+  function logicLineName(kind,line) { return kind===3 ? ['/LWR','/UWR'][line] : kind===1 ? `A${line+1}` : `D${line}`; }
 
   function applyLogicFault(writeLimit=null, configOverride=null) {
     resetCpuRecoveryObservation();
@@ -1679,6 +1718,11 @@
       writeCount:Number(emulator._get_logic_writes()) || 0,
       cpuFlags:Number(emulator._get_logic_cpu_flags()) || 0
     };
+    if (writeInhibitApiReady() && currentRamWriteInhibit()!==0) {
+      if (!paused) pauseToggle();
+      setLogicStatus('RAM write-inhibit replacement could not be confirmed; emulation paused.');
+      return false;
+    }
     setLogicStatus(`Applied ${kindLabel} ${lineA} ↔ ${lineB} on ${accessLabel}.`);
     stamp(`LOGIC / Work RAM FAULT: ${kindLabel} ${lineA} ↔ ${lineB}, ${accessLabel}`);
     return true;
@@ -1704,6 +1748,11 @@
     if (dataMaskApiReady() && currentRamDataMask()!==0) {
       if (!paused) pauseToggle();
       setLogicStatus('RAM data-mask clear could not be confirmed; emulation paused.');
+      return false;
+    }
+    if (writeInhibitApiReady() && currentRamWriteInhibit()!==0) {
+      if (!paused) pauseToggle();
+      setLogicStatus('RAM write-inhibit clear could not be confirmed; emulation paused.');
       return false;
     }
     abandonKeyboardHold('WRAM');
@@ -1891,7 +1940,9 @@
     catch (_) { pulseStateUnknown=true; }
     const dataMaskBefore=currentRamDataMask();
     const dataMaskUnknown=dataMaskApiReady() && dataMaskBefore===null;
-    if (!logicActive && !pendingPulse && !pulseArmed && !pulseStateUnknown && !dataMaskBefore && !dataMaskUnknown) note('RAM','already off','no tracked RAM fault');
+    const inhibitBefore=currentRamWriteInhibit();
+    const inhibitUnknown=writeInhibitApiReady() && inhibitBefore===null;
+    if (!logicActive && !pendingPulse && !pulseArmed && !pulseStateUnknown && !dataMaskBefore && !dataMaskUnknown && !inhibitBefore && !inhibitUnknown) note('RAM','already off','no tracked RAM fault');
     else {
       try {
         let cleared;
@@ -1909,9 +1960,10 @@
           }
         } catch (_) { /* A telemetry failure cannot undo the clear attempt. */ }
         const dataMaskAfterKnown=!dataMaskApiReady() || currentRamDataMask()===0;
-        const verifiedClear=cleared&&!logicActive&&pulseAfterKnown&&!pulseAfter&&dataMaskAfterKnown;
+        const inhibitAfterKnown=!writeInhibitApiReady() || currentRamWriteInhibit()===0;
+        const verifiedClear=cleared&&!logicActive&&pulseAfterKnown&&!pulseAfter&&dataMaskAfterKnown&&inhibitAfterKnown;
         const ramResult=verifiedClear?'cleared':cleared
-          ? (!dataMaskAfterKnown?'clear accepted; data-mask state unverified':pulseAfter?'clear accepted; pulse remains armed':'clear accepted; pulse state unknown')
+          ? (!inhibitAfterKnown?'clear accepted; write-inhibit state unverified':!dataMaskAfterKnown?'clear accepted; data-mask state unverified':pulseAfter?'clear accepted; pulse remains armed':'clear accepted; pulse state unknown')
           : 'clear failed';
         note('RAM',ramResult,cleared
           ? `no tracked RAM fault; core clear accepted${pulseAfter?'; core pulse remains armed while paused':!pulseAfterKnown?'; core pulse state unverified':''}`
@@ -2283,6 +2335,8 @@
       throw new Error('The active RAM fault settings are unavailable; no file was created.');
     if (dataMaskApiReady() && currentRamDataMask()!==trackedRamDataMask())
       throw new Error('RAM data-mask state is unavailable or differs from the app state; no file was created.');
+    if (writeInhibitApiReady() && currentRamWriteInhibit()!==trackedRamWriteInhibit())
+      throw new Error('RAM write-inhibit state is unavailable or differs from the app state; no file was created.');
     let psg={pair:null,dataMask:0}, fm={pair:null,dataMask:0}, z80Ram={pair:null};
     if (z80RamApiPresent()) {
       const state=currentZ80RamState();
@@ -2323,7 +2377,7 @@
     const vram=c.vram.pair?`VRAM AD${c.vram.pair[0]}↔AD${c.vram.pair[1]}`
       :c.vram.mask?`VRAM mask 0x${c.vram.mask.toString(16).toUpperCase()}`:'VRAM identity';
     const model=c.vram.modelId===2?'transaction':'frame projection';
-    const ram=!c.ram?'RAM off':['address-mask','data-mask'].includes(c.ram.type)
+    const ram=!c.ram?'RAM off':c.ram.type==='write-inhibit'?`RAM write inhibit ${c.ram.mask&1?'Lower ':''}${c.ram.mask&2?'Upper':''}`:['address-mask','data-mask'].includes(c.ram.type)
       ?`RAM ${c.ram.type==='data-mask'?'data':'address'} mask 0x${c.ram.mask.toString(16).toUpperCase()}, access ${c.ram.access}`
       :`RAM ${c.ram.kind===1?'address':'data'} pair ${c.ram.a}↔${c.ram.b}, access ${c.ram.access}`;
     const audio=(name,target)=>target.pair?`${name} D${target.pair[0]}↔D${target.pair[1]}`
@@ -2371,7 +2425,7 @@
     const blob=new Blob([JSON.stringify(config,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob);
     const link=document.createElement('a');
-    link.href=url; link.download='vram-page-md-circuit-v5.json';
+    link.href=url; link.download='vram-page-md-circuit-v6.json';
     document.body.append(link); link.click(); link.remove();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
     $('circuitConfigStatus').textContent='Circuit configuration downloaded. ROM and execution history are not included.';
@@ -2425,6 +2479,10 @@
       return 'This core cannot apply the requested RAM address-mask model.';
     if (c.ram?.type==='data-mask' && (!dataMaskApiReady() || currentRamDataMask()===null))
       return 'This core cannot apply or verify the requested RAM data-mask model.';
+    if (c.ram?.type==='write-inhibit' && (!writeInhibitApiReady() || currentRamWriteInhibit()===null))
+      return 'This core cannot apply or verify the requested RAM write-inhibit model.';
+    if (writeInhibitApiReady() && currentRamWriteInhibit()!==trackedRamWriteInhibit())
+      return 'Current RAM write-inhibit state is unavailable or differs from the app state; disconnect faults before applying.';
     for (const [name,target,ready,getState] of [
       ['PSG',c.psg,psgDataApiReady,currentPsgDataState],
       ['FM',c.fm,fmDataApiReady,currentFmDataState]
@@ -2455,9 +2513,10 @@
     $('vramModel').value=String(c.vram.modelId);
     $('vramMode').value=c.vram.pair?'bridge':'disconnect';
     if (c.ram) {
-      $('logicKind').value=String(c.ram.type==='address-mask'?1:c.ram.type==='data-mask'?2:c.ram.kind);
-      $('ramChipSignals').value=$('logicKind').value;renderRamChip();
-      $('logicAccess').value=String(c.ram.access); configureLogicLines();
+      const inhibit=c.ram.type==='write-inhibit';
+      if (!inhibit) $('logicKind').value=String(c.ram.type==='address-mask'?1:c.ram.type==='data-mask'?2:c.ram.kind);
+      $('ramChipSignals').value=inhibit?'3':$('logicKind').value;renderRamChip();
+      $('logicAccess').value=String(inhibit?2:c.ram.access); configureLogicLines();
       if (c.ram.type==='line-pair') {
         $('logicLineA').value=String(c.ram.a); $('logicLineB').value=String(c.ram.b);
       }
@@ -2540,7 +2599,7 @@
     const applyRamTarget=()=>{
       if (!changeRam) return true;
       if (!c.ram) return disconnectLogic({silent:true});
-      if (['address-mask','data-mask'].includes(c.ram.type)) return applyRamMask(c.ram.mask,c.ram.access,c.ram.type);
+      if (['address-mask','data-mask','write-inhibit'].includes(c.ram.type)) return applyRamMask(c.ram.mask,c.ram.access,c.ram.type);
       return applyLogicFault(null,{kind:c.ram.kind,access:c.ram.access,a:c.ram.a,b:c.ram.b});
     };
     let currentDomain='configuration';
@@ -2687,6 +2746,7 @@
     if (exportIdentity!==romIdentity) throw new Error('ROM changed while preparing export; download canceled.');
     if (!started || !emulator) throw new Error('Cartridge activation is uncertain; restart the last accepted cartridge before exporting.');
     const ramDataMask=currentRamDataMask();
+    const ramWriteInhibit=currentRamWriteInhibit();
     const currentFrame=logicApiReady() ? Number(emulator._get_logic_frame()) || 0 : 0;
     const coreReads=logicApiReady() ? Number(emulator._get_logic_reads()) || 0 : 0;
     const coreWrites=logicApiReady() ? Number(emulator._get_logic_writes()) || 0 : 0;
@@ -2725,8 +2785,9 @@
       resetState:logicResetState,
       currentFrame,readCount:reads,writeCount:writes,
       cpuFlags:logicApiReady() ? Number(emulator._get_logic_cpu_flags()) || 0 : null,
-      logic:{schemaVersion:dataMaskApiReady()?2:1,modelVersion:dataMaskApiReady()?'work-ram-transaction-v2':'work-ram-transaction-v1',
+      logic:{schemaVersion:writeInhibitApiReady()?3:dataMaskApiReady()?2:1,modelVersion:writeInhibitApiReady()?'work-ram-transaction-v3':dataMaskApiReady()?'work-ram-transaction-v2':'work-ram-transaction-v1',
         referenceProfile:'model1-pal-va65-two-byte-v1',dataMaskAvailable:ramDataMask!==null,
+        writeInhibitAvailable:ramWriteInhibit!==null,writeInhibitMask:ramWriteInhibit,
         dataMask:ramDataMask,available:logicApiReady(),active:logicActive,
         fault:lastLogicExperiment ? {...lastLogicExperiment} : null,
         readCount:reads,writeCount:writes,currentFrame,
@@ -2942,7 +3003,7 @@
         const expectedOwner=held.code.startsWith('Digit')?'numeric':'keyboard';
         if (ownedAddressHold && (ownedAddressHold.type!==expectedOwner || ownedAddressHold.code!==held.code || ownedAddressHold.key!==`${held.pair[0]},${held.pair[1]}`)) return;
         if (!applyKeyboardMutation(()=>disconnectLogic())) throw new Error('core refused RAM disconnect');
-        if (held.restore && !applyKeyboardMutation(()=>['address-mask','data-mask'].includes(held.restore.type)
+        if (held.restore && !applyKeyboardMutation(()=>['address-mask','data-mask','write-inhibit'].includes(held.restore.type)
           ? applyRamMask(held.restore.mask,held.restore.access,held.restore.type)
           : applyLogicFault(null,held.restore))) throw new Error('core rejected the prior RAM fault restoration');
         return;

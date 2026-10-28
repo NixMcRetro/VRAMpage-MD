@@ -1,7 +1,7 @@
 'use strict';
 (() => {
   const FORMAT = 'vrampage-md-circuit-config';
-  const VERSION = 5;
+  const VERSION = 6;
 
   function fail(message) { throw new Error(message); }
   function object(value, label, keys) {
@@ -31,7 +31,7 @@
     if (bridgePair && dataMask) fail(`${label} pair and data mask cannot both be active`);
     return {pair:bridgePair,dataMask};
   }
-  function commonConfiguration(config, allowDataMask=false) {
+  function commonConfiguration(config, allowDataMask=false, allowWriteInhibit=false) {
     const vram = object(config.vram, 'VRAM configuration', ['modelId', 'mask', 'pair']);
     const modelId = vram.modelId;
     if (modelId !== 1 && modelId !== 2) fail('VRAM model must be 1 or 2');
@@ -48,6 +48,9 @@
         object(raw, `RAM ${data?'data':'address'}-mask configuration`, ['type', 'mask', 'access']);
         ram = {type: raw.type, mask: integer(raw.mask, 1, data?0xffff:0x7fff, `RAM ${data?'data':'address'} mask`),
           access: integer(raw.access, 1, 3, 'RAM access')};
+      } else if (allowWriteInhibit && raw.type==='write-inhibit') {
+        object(raw,'RAM write-inhibit configuration',['type','mask']);
+        ram={type:raw.type,mask:integer(raw.mask,1,3,'RAM write-inhibit mask')};
       } else if (raw.type === 'line-pair') {
         object(raw, 'RAM line-pair configuration', ['type', 'kind', 'access', 'a', 'b']);
         const kind = integer(raw.kind, 1, 2, 'RAM kind');
@@ -60,21 +63,21 @@
         ram = {type: raw.type, kind, access: integer(raw.access, 1, 3, 'RAM access'),
           a: Math.min(a, b), b: Math.max(a, b)};
       } else {
-        fail(allowDataMask?'RAM type must be address-mask, data-mask or line-pair':'RAM type must be address-mask or line-pair');
+        fail(allowWriteInhibit?'RAM type must be address-mask, data-mask, write-inhibit or line-pair':allowDataMask?'RAM type must be address-mask, data-mask or line-pair':'RAM type must be address-mask or line-pair');
       }
     }
     if (ram && (mask !== 0 || bridgePair !== null))
       fail('RAM and VRAM fault domains cannot both be active');
     return {vram:{modelId,mask,pair:bridgePair},ram};
   }
-  function validateCurrent(value, allowDataMask=true) {
+  function validateCurrent(value, allowDataMask=true, allowWriteInhibit=true) {
     object(value, 'configuration file', ['format', 'schemaVersion', 'configuration']);
     if (value.format !== FORMAT) fail('Unrecognized circuit configuration format');
     if (value.schemaVersion !== VERSION) fail('Unsupported circuit configuration version');
     const config = object(value.configuration, 'configuration', ['vram', 'ram', 'psg', 'fm', 'z80Ram', 'rgbEncoder']);
     const z80Ram=object(config.z80Ram,'Z80 RAM configuration',['pair']);
     const rgb=object(config.rgbEncoder,'RGB encoder configuration',['cutMask','pair']);
-    const common=commonConfiguration(config,allowDataMask);
+    const common=commonConfiguration(config,allowDataMask,allowWriteInhibit);
     return {format:FORMAT,schemaVersion:VERSION,configuration:{...common,
       psg:audioV2(config.psg,'PSG'),fm:audioV2(config.fm,'FM'),
       z80Ram:{pair:z80Ram.pair===null?null:pair(z80Ram.pair,'Z80 RAM pair',12)},
@@ -84,7 +87,12 @@
   function validateV4(value) {
     object(value,'configuration file',['format','schemaVersion','configuration']);
     if (value.schemaVersion!==4) fail('Unsupported circuit configuration version');
-    return validateCurrent({...value,schemaVersion:VERSION},false);
+    return validateCurrent({...value,schemaVersion:VERSION},false,false);
+  }
+  function validateV5(value) {
+    object(value,'configuration file',['format','schemaVersion','configuration']);
+    if (value.schemaVersion!==5) fail('Unsupported circuit configuration version');
+    return validateCurrent({...value,schemaVersion:VERSION},true,false);
   }
   function validateV3(value) {
     object(value,'configuration file',['format','schemaVersion','configuration']);
@@ -118,7 +126,8 @@
     try { parsed = JSON.parse(text); }
     catch (_) { fail('File is not valid JSON'); }
     return parsed?.schemaVersion===1?validateV1(parsed):parsed?.schemaVersion===2?validateV2(parsed):
-      parsed?.schemaVersion===3?validateV3(parsed):parsed?.schemaVersion===4?validateV4(parsed):validateCurrent(parsed);
+      parsed?.schemaVersion===3?validateV3(parsed):parsed?.schemaVersion===4?validateV4(parsed):
+      parsed?.schemaVersion===5?validateV5(parsed):validateCurrent(parsed);
   }
   const api = {format: FORMAT, version: VERSION, validate, parse};
   if (typeof module === 'object' && module.exports) module.exports = api;

@@ -1,5 +1,80 @@
 # Development work queue
 
+## Work RAM Write Inhibit — Integration Checkpoint, 28 October 2026 (UTC)
+
+Authorized bounded follow-up to the reviewed [write-enable research](WORK-RAM-WRITE-ENABLE-RESEARCH.md).
+Start from verified main `9b29a5b9380ed4fe760f41015d15c51c53674e1e`
+([main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40773753902),
+[CodeQL](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40773753398)).
+The [implementation guide](WORK-RAM-WRITE-INHIBIT.md) defines runtime/API, UI,
+configuration/export, lifecycle and measurable acceptance. Lower/Upper inactive-high
+write enables retain old bytes and replace existing RAM faults; there is no new
+motherboard selector or pulse engine. FM selection remains research only.
+
+Native/API changes and literal CPU/banked-Z80 actual-WASM tests are integrated.
+Independent Luna High review approved source/test deltas through `a6cdb30`.
+Root caught unguarded normal-profile references before CI, fixed them in
+`7d93422`, and added normal/runtime strict compilation to the shared regression;
+the independent reviewer freshly compiled and ran both profiles successfully.
+
+Local source/sanitizer/Node/C checks pass (115 Python tests reported, two
+build-dependent classes skipped there). The rebuilt runtime passes 33 actual-WASM
+CPU/Z80 cases and the production factory/API assertions. Chromium interface
+159/159 plus one new focused orphan-state case, actual-core 12/12 (including
+128 mixed-fault cycles), transaction 3/3 and layout 7/7 pass. LeakSanitizer is
+disabled locally for container ptrace; ASan/UBSan and normal CI settings remain.
+
+Rebuilt runtime JS SHA-256 is
+`e8da1c28303fd3900f35c032ce01802c76d1d041dc8a0d6cd57bdc97ee3af4d0`;
+WASM is `8fa2fa0fe6a47890c948ed39a7f095980d9ffde7d4405a88ce07a5f34b8814b7`.
+Fresh normal-WASM hash checks and all required PR checks/CodeQL, then verified
+main CI, remain integration gates. Cached prior normal hashes are not presented
+as a new build verification. VERSION/public v0.5.0, all releases, Demo Cart assets
+and McRetro.net remain unchanged. Carry the already reviewed RAM/FM research and
+standalone FM characterization probe with this implementation; no FM selector
+or other runtime feature is added. Next bounded task after delivery is the
+separate staged-MAME-model/replay proof, not another motherboard catalogue.
+
+## Next Fault Research — 28 October 2026 (UTC)
+
+Research branch `research/ram-enables-fm-variants` starts from verified main
+`9b29a5b9380ed4fe760f41015d15c51c53674e1e` ([PR #96](https://github.com/NixMcRetro/VRAMpage-MD/pull/96),
+[seven main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40773753902),
+[four main CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40773753398)).
+It carries research reports and a standalone native characterization probe;
+application/native runtime behavior and existing interfaces are unchanged.
+
+1. [Work RAM Write Enables](WORK-RAM-WRITE-ENABLE-RESEARCH.md): use the accepted
+   PAL two-byte reference. Inhibit means holding active-low `/WE` high; a floating
+   cut or forcing low is not the same contract. Keep old upper/lower bytes on
+   selected stores, reuse existing hooks and clear/recovery rules, and validate
+   literal bytes/counters/checkpoints before any implementation.
+2. [FM Models and Engines](FM-VARIANTS-RESEARCH.md): distinguish MAME/Nuked backend
+   selection from digital output models and board filters. Native mode-2/3 DAC
+   probes show real differences in core outputs, without proving final sound.
+   Nuked lacks checkpoint support; MAME model choice is also absent from the
+   snapshot. A staged Discrete/Integrated choice needs immutable active-model
+   lifetime plus actual-WASM replay proof before exposure.
+
+The standalone FM probe passes strict C11 and ASan/UBSan with identical summaries
+(SHA-256 `98bd338cec8355256efd054ab3d507a4d4f69cb7fa2be897f8a5c3eb307c77ef`).
+It verifies accepted register/pan programming and literal midpoint outputs.
+LeakSanitizer is disabled locally for the known ptrace limitation. This research
+is not a new WASM or browser test run; main's previous verified evidence is reused.
+Independent Luna High review of reports/probe through `8ce5350` found no blockers;
+the coordinator separately inspected the pinned source and reran the strengthened
+native probe. A second specialist verified source citations, observed outputs and
+checkpoint invariants. Relative documentation links and whitespace checks pass.
+No PR was opened or main changed for this research-only checkpoint.
+
+Next bounded implementation candidate: write-only RAM inhibit controls, without
+another board catalogue. FM model staging/replay is second. Composite burst/sync
+and physical VRAM timing retain the specific receiver/ordering evidence gaps
+already documented; do not repeat those broad inventories. Exact NTSC #73 remains
+optional. No release, deployment, Demo Cart work or new runtime feature is part of
+this research checkpoint. Keep the reports on the research branch for the next
+implementation slice instead of opening a trivial documentation-only PR.
+
 ## Work RAM Data Lines — Integration Checkpoint, 29 October 2026 (Sydney)
 
 Development source adds runtime-only D0–D15 cut masks, independently
