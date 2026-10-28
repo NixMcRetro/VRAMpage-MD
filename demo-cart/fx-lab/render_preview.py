@@ -15,7 +15,7 @@ PALETTES={'title':B.CRAM,'sprites':B.SPRITE_PALETTES[:128], 'colour':B.COLOUR_PA
 PALETTES.update({n:B.FX_PALETTES[n][:128] for n in ('vortex','aurora')})
 PATTERNS=B.ALL_PATTERNS
 MAPS={'title':B.full_map(B.title_cells),'vortex':struct.pack('>2048H',*B.VORTEX_MAP),'aurora':struct.pack('>2048H',*B.AURORA_MAP),
-      'sprites':B.full_map(B.sprite_cells),'colour':B.full_map(B.colour_cells),'audio':B.full_map(B.audio_cells)}
+      'sprites':B.full_map(B.sprite_cells),'colour':B.full_map(B.colour_cells,fill_edges=True),'audio':B.full_map(B.audio_cells)}
 
 def rgb(c):
     return (((c>>1)&7)*36,((c>>5)&7)*36,((c>>9)&7)*36)
@@ -48,7 +48,7 @@ def render(kind,frame=0):
             for col in range(8):
                 byte=pat[row*4+col//2]
                 v=byte>>4 if col%2==0 else byte&15
-                if v:result.putpixel((11+col,69+row),colours[16+v])
+                if v:result.putpixel((11+col,69+row),colours[v])
         return result
     scroll=struct.unpack('>30H',B.colour_scroll(frame) if kind=='colour' else B.fx_scroll(kind,frame)) if kind in ('vortex','aurora','colour') else (0,)*30
     out=Image.new('RGB',(320,224))
@@ -91,6 +91,6 @@ def make():
     for kind in ('vortex','aurora','sprites','colour'):
         for frame in range(0,B.PHASES,4):
             images.append(render(kind,frame).resize((640,448),Image.Resampling.NEAREST))
-    images[0].save(OUT/'FX_Lab_Storyboard_v0.3.2.gif',save_all=True,append_images=images[1:],duration=90,loop=0,optimize=False)
+    images[0].save(OUT/'FX_Lab_Storyboard_v0.3.4.gif',save_all=True,append_images=images[1:],duration=90,loop=0,optimize=False)
     print('Wrote previews to',OUT)
 if __name__=='__main__':make()

@@ -9,7 +9,7 @@ import hashlib,struct,sys,unittest,json
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import build_fx
 R=build_fx
-ROM=(R.OUT/'VRAMpage-MD-FX-Lab-v0.3.3-Demoscene.bin').read_bytes()
+ROM=(R.OUT/'VRAMpage-MD-FX-Lab-v0.3.4-Demoscene.bin').read_bytes()
 
 class CPU:
     def __init__(self,pal=False,start_at=None,inputs=None):
@@ -276,6 +276,25 @@ class TestROM(unittest.TestCase):
     c=CPU()
     c.run_until(lambda c:c.scene=='sprites' and c.pc==R.asm.labels['run_sprites']+4)
     self.assertEqual(c.cram,R.SPRITE_PALETTES[:128])
+
+ def test_v034_sprite_choreography_and_reactor_palette_are_cyclic(self):
+    frames=[R.sprite_sat(f) for f in (0,24,48,72)]
+    self.assertEqual(len(set(frames)),4,'Orbit, columns, burst and ribbon must differ')
+    first,last=R.sprite_sat(0),R.sprite_sat(95)
+    for i in range(R.SPRITE_COUNT):
+        y0,_,_,x0=struct.unpack_from('>4H',first,i*8)
+        y1,_,_,x1=struct.unpack_from('>4H',last,i*8)
+        self.assertLessEqual(max(abs(x0-x1),abs(y0-y1)),22,'Loop seam is continuous')
+    # Preserved native hardware budgets, no bitmap overlays or extra sprites.
+    self.assertEqual(len(R.SPRITE_SAT_FRAMES),96*20*8)
+    self.assertEqual(len(R.COLOUR_SCROLLS),96*30*2)
+    self.assertEqual(len({(word>>13)&3 for word in R.colour_cells}),4)
+    self.assertGreater(len(set(R.colour_cells)),100)
+    self.assertEqual(R.ALL_PATTERNS[:len(R.PATTERNS)],R.PATTERNS)
+    for frame in range(96):
+        self.assertEqual(len(R.sprite_sat(frame)),160)
+        scroll=struct.unpack('>30H',R.colour_scroll(frame))
+        self.assertTrue(all(min(x,1024-x)<=32 for x in scroll))
 
  def test_sprite_storm_is_real_linked_sprites_with_two_phase_banks(self):
     self.assertEqual(R.SPRITE_COUNT,20)

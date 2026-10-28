@@ -66,19 +66,19 @@ jobs:
           node tests/test_region_profile_wasm.cjs site/core/genplus.js "$RUNNER_TEMP/normal-core/genplus.js"
           node tests/test_session_checkpoint_runtime.cjs site/core/genplus.js "$RUNNER_TEMP/normal-core/genplus.js"
           node tests/test_wasm_logic.cjs site/core/genplus.js
-      - name: Rebuild and verify exact Demo Cart v0.3.3 in actual Genesis Plus GX
+      - name: Rebuild and verify exact Demo Cart v0.3.4 in actual Genesis Plus GX
         shell: bash
         run: |
           python3 demo-cart/fx-lab/build_fx.py
           python3 -m unittest discover -s demo-cart/fx-lab/tests -v
-          node tests/test_demo_cart_v033_wasm.cjs site/core/genplus.js
-      - name: Save genuine v0.3.3 emulator framebuffer captures
+          node tests/test_demo_cart_v034_wasm.cjs site/core/genplus.js
+      - name: Save genuine v0.3.4 emulator framebuffer captures
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: demo-cart-v033-genplus-frames
-          path: artifacts/demo-cart-v032-genplus/
-          if-no-files-found: warn
+          name: demo-cart-v034-genplus-frames
+          path: artifacts/demo-cart-v034-genplus/
+          if-no-files-found: error
           retention-days: 14
       - name: Verify isolated RAM diagnostics with synthetic CPU tests
         shell: bash

@@ -251,7 +251,7 @@ FX_SCROLLS={name:b''.join(fx_scroll(name,frame) for frame in range(PHASES)) for 
 assert all(len(x)==PHASES*128 for x in FX_PALETTES.values())
 assert all(len(x)==PHASES*60 for x in FX_SCROLLS.values())
 
-# v0.3.2 original demoscene effects. These are 68000-owned VDP sprites and
+# Original v0.3.4 choreography builds on the v0.3.2 hardware effects. These are 68000-owned VDP sprites and
 # complete CRAM cycles, not simulated browser overlays or staged corruption.
 SPRITE_COUNT=20
 SPRITE_VARIANTS=4
@@ -306,23 +306,26 @@ def sprite_palette(frame):
     return struct.pack('>64H',*entries)
 
 def colour_palette(frame):
+    # Four contrasting prismatic palette banks pulse independently. Fully periodic.
     phase=frame*math.tau/PHASES
     entries=[]
     for bank in range(4):
         entries.append(0)
         for shade in range(1,16):
-            hue=(bank*0.25+shade*0.026+frame/PHASES)%1
-            hue=(hue+0.025*math.sin(phase+bank))%1
-            sat=0.84
-            val=min(1,0.22+0.76*shade/15)
-            entries.append(genesis_colour(*colorsys.hsv_to_rgb(hue,sat,val)))
+            hue=(0.56+bank*0.25+0.095*math.sin(phase+bank*1.6)+0.02*shade/15)%1
+            strength=0.78+0.22*(0.5+0.5*math.cos(phase*2+bank*1.1))
+            val=min(1,(0.10+0.90*shade/15)*strength)
+            entries.append(genesis_colour(*colorsys.hsv_to_rgb(hue,0.90,val)))
     return struct.pack('>64H',*entries)
 
 def colour_scroll(frame):
+    # Two interacting raster waves: a large pulse and fine interference.
     angle=frame*math.tau/PHASES
+    swing=8+12*math.sin(angle/2)**2
     words=[]
     for row in range(30):
-        offset=round(18*math.sin(row*0.35+angle)+9*math.sin(row*0.74-angle*2))
+        offset=round(swing*math.sin(row*0.31+angle*2)
+                     +8*math.sin(row*0.74-angle*3))
         words.append(offset & 0x3FF)
     return struct.pack('>30H',*words)
 
@@ -354,7 +357,14 @@ for y in range(28):
         phase=(3*x+2*y+(x//3)) & 15
         tile_cells.append((((x//10)+(y//7))%4<<13)|(FX_BASE+a*16+phase))
         # Large, legible colour regions reveal deliberate palette mutations.
-        colour_cells.append(((((x//8)+(y//5))%4)<<13)|(FX_BASE+((x+y)//5%16)*16+((x//2+y//2)&15)))
+        # Reactor sectors and concentric rings, rather than arbitrary checker noise.
+        dx=x-19.5;dy=(y-13.5)*1.35
+        radius=math.hypot(dx,dy)
+        sector=int((math.atan2(dy,dx)+math.pi)*8/math.pi)&15
+        ring=int(radius//5)
+        colour_cells.append(((((ring+sector//4)%4)<<13)
+                             |(FX_BASE+((sector+2*ring)&15)*16
+                               +((int(radius*1.6)+(x-y)//5)&15)))
         # Calm stage backdrop, with a moving 1x1 hardware sprite on top.
         sprite_cells.append(((((y//8)+(x//12))%4)<<13)|(FX_BASE+((y//3)&15)*16+((x//4)&15)))
         # A muted oscilloscope-style diagonal backdrop for the PSG stage.
@@ -371,17 +381,29 @@ assert SPRITE_TILE_BASE+SPRITE_TILE_COUNT < 2048
 def sprite_sat(frame):
     records=[]
     theta=frame*math.tau/SPRITE_PHASES
+    phase=frame*4/SPRITE_PHASES
+    stage=int(phase)
+    fraction=phase-stage
+    eased=fraction*fraction*(3-2*fraction)
     for i in range(SPRITE_COUNT):
-        # Two counter-rotating rings with a gentle 2:3 phase relationship.
-        ring=i//10;slot=i%10
-        t=theta*(1 if ring==0 else -1.5)+slot*math.tau/10+ring*0.24
-        rx=78 if ring==0 else 133
-        ry=50 if ring==0 else 82
-        px=round(152+rx*math.cos(t))
-        py=round(106+ry*math.sin(t)+7*math.sin(theta*2+slot*0.8))
+        ring,slot=divmod(i,10)
+        # Four distinct, cyclic formations: opposing orbits, twin columns,
+        # radial starburst and an undulating ribbon. Smooth blends at the cuts.
+        t=slot*math.tau/10+theta*(2 if ring==0 else -2)+ring*0.16
+        orbit=(152+(77 if ring==0 else 129)*math.cos(t),
+               104+(54 if ring==0 else 79)*math.sin(t))
+        columns=(80+ring*144+20*math.sin(theta*3+slot*0.6+ring),
+                 24+slot*18+5*math.sin(theta*2+ring))
+        spoke=i*math.tau/SPRITE_COUNT+theta*2
+        radius=80+33*math.sin(theta*3+i*0.15)**2
+        burst=(152+radius*math.cos(spoke),104+radius*0.73*math.sin(spoke))
+        ribbon=(25+i*14,104+62*math.sin(i*0.52+theta*3))
+        forms=(orbit,columns,burst,ribbon)
+        ax,ay=forms[stage];bx,by=forms[(stage+1)%4]
+        px=round(ax+(bx-ax)*eased)
+        py=round(ay+(by-ay)*eased)
         assert 0<=px<=304 and 0<=py<=208
-        # Size 2x2 in bits 8-11 and explicit linked SAT chain.
-        size_link=0x0500 | (i+1 if i<SPRITE_COUNT-1 else 0)
+        size_link=0x0500|(i+1 if i<SPRITE_COUNT-1 else 0)
         attr=0x8000|((2+i%2)<<13)|(SPRITE_TILE_BASE+(i%SPRITE_VARIANTS)*4)
         records.extend((128+py,size_link,attr,128+px))
     assert len(records)==SPRITE_COUNT*4
@@ -782,8 +804,8 @@ def put(start,stop,text):
     rom[start:stop]=b.ljust(stop-start,b' ')
 put(0x100,0x110,'SEGA MEGA DRIVE')
 put(0x110,0x120,'(C) MCRETRO 2026')
-put(0x120,0x150,'VRAMPAGE MD FX LAB V0.3.3 DEMOSCENE')
-put(0x150,0x180,'VRAMPAGE MD FX LAB V0.3.3 DEMOSCENE')
+put(0x120,0x150,'VRAMPAGE MD FX LAB V0.3.4 DEMOSCENE')
+put(0x150,0x180,'VRAMPAGE MD FX LAB V0.3.4 DEMOSCENE')
 put(0x180,0x18E,'GM 00000000-00')
 put(0x190,0x1A0,'J               ')
 rom[0x1A0:0x1A8]=struct.pack('>II',0,len(rom)-1)
@@ -793,7 +815,7 @@ if len(rom)%2:rom+=b'\x00'
 rom[0x1A4:0x1A8]=struct.pack('>I',len(rom)-1)
 checksum=sum(struct.unpack_from('>H',rom,i)[0] for i in range(0x200,len(rom),2))&0xFFFF
 rom[0x18E:0x190]=struct.pack('>H',checksum)
-(OUT/'VRAMpage-MD-FX-Lab-v0.3.3-Demoscene.bin').write_bytes(rom)
+(OUT/'VRAMpage-MD-FX-Lab-v0.3.4-Demoscene.bin').write_bytes(rom)
 report={
  'romSize':len(rom),'checksum':f'{checksum:04X}',
  'sha256':hashlib.sha256(rom).hexdigest(), 'baseKitSHA256':APPROVED_KIT_SHA256,

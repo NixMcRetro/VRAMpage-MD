@@ -1,6 +1,6 @@
 /* Run the exact experimental Demo Cart inside compiled Genesis Plus GX WASM.
  * This is a runtime probe, not a replacement for human visual acceptance.
- * Usage: node tests/test_demo_cart_v033_wasm.cjs site/core/genplus.js
+ * Usage: node tests/test_demo_cart_v034_wasm.cjs site/core/genplus.js
  */
 'use strict';
 const assert = require('node:assert/strict');
@@ -11,12 +11,12 @@ const zlib = require('node:zlib');
 
 const root = path.resolve(__dirname, '..');
 const coreFile = path.resolve(process.argv[2] || 'site/core/genplus.js');
-const romFile = path.join(root, 'demo-cart/fx-lab/build/VRAMpage-MD-FX-Lab-v0.3.3-Demoscene.bin');
+const romFile = path.join(root, 'demo-cart/fx-lab/build/VRAMpage-MD-FX-Lab-v0.3.4-Demoscene.bin');
 const reportFile = path.join(root, 'demo-cart/fx-lab/build/rom_report.json');
-const output = path.join(root, 'artifacts/demo-cart-v033-genplus');
+const output = path.join(root, 'artifacts/demo-cart-v034-genplus');
 const WIDTH = 320, HEIGHT = 224, PITCH = 640;
-const PREVIOUS_SHA = 'd68e000980a38c715f8c057564e06f9c29e29025e9396232c15d9a5b9a334386';
-// Pin the new digest after the first generated CI artefact has been independently inspected.
+const PREVIOUS_SHA = '5be306c35e7342101eea7079f74fe8ed3db4591253e17f5c67fd6e8740458c0e';
+// Pin the new v0.3.4 digest after the first real Genesis Plus GX build report is inspected.
 const EXPECTED_SHA = null;
 
 function crc32(bytes) {
@@ -110,8 +110,8 @@ async function machine(region, rom) {
   const rom = fs.readFileSync(romFile);
   const report = JSON.parse(fs.readFileSync(reportFile, 'utf8'));
   const sha = crypto.createHash('sha256').update(rom).digest('hex');
-  assert.equal(rom.length, 150170, 'Test only the exact v0.3.3 build, never a stale ROM');
-  assert.notEqual(sha, PREVIOUS_SHA, 'v0.3.3 must not reproduce the broken v0.3.2 map');
+  assert.equal(rom.length, 150170, 'Test only the exact v0.3.4 build, never a stale ROM');
+  assert.notEqual(sha, PREVIOUS_SHA, 'v0.3.4 must not reproduce the broken v0.3.2 map');
   if (EXPECTED_SHA) assert.equal(sha, EXPECTED_SHA);
   assert.equal(report.sha256, sha);
   assert.equal(report.romSize, rom.length);
@@ -141,7 +141,11 @@ async function machine(region, rom) {
   const sprite1 = manual.capture('ntsc-sprite-storm-early');
   manual.run(28);
   const sprite2 = manual.capture('ntsc-sprite-storm-later');
-  captures.push(sprite1, sprite2);
+  manual.run(24);
+  const sprite3 = manual.capture('ntsc-sprite-storm-third-formation');
+  captures.push(sprite1, sprite2, sprite3);
+  assert.equal(new Set([sprite1.rgbaSHA256,sprite2.rgbaSHA256,sprite3.rgbaSHA256]).size,3,
+    'New choreography should display three distinct formation snapshots');
   assert.notEqual(sprite1.rgbaSHA256, sprite2.rgbaSHA256,
     'Sprite Storm output must change during real emulation');
   manual.press('START');
@@ -153,7 +157,11 @@ async function machine(region, rom) {
   const chroma1 = manual.capture('ntsc-chroma-reactor-early');
   manual.run(28);
   const chroma2 = manual.capture('ntsc-chroma-reactor-later');
-  captures.push(chroma1, chroma2);
+  manual.run(24);
+  const chroma3 = manual.capture('ntsc-chroma-reactor-third-phase');
+  captures.push(chroma1, chroma2, chroma3);
+  assert.equal(new Set([chroma1.rgbaSHA256,chroma2.rgbaSHA256,chroma3.rgbaSHA256]).size,3,
+    'Reactor palette and raster motion should show distinct phases');
   assert.notEqual(chroma1.rgbaSHA256, chroma2.rgbaSHA256,
     'Chroma Reactor output must change during real emulation');
   assert.notEqual(sprite1.rgbaSHA256, chroma1.rgbaSHA256,
@@ -187,6 +195,6 @@ async function machine(region, rom) {
     scope:'Native framebuffer, input and attract-loop smoke; visual design review remains manual',
     captures};
   fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify(result, null, 2)+'\n');
-  console.log('PASS actual Genesis Plus GX v0.3.3 ROM test; frames saved: ' + captures.length);
+  console.log('PASS actual Genesis Plus GX v0.3.4 ROM test; frames saved: ' + captures.length);
   console.log(JSON.stringify(result, null, 2));
 })().catch(error => { console.error(error); process.exitCode = 1; });
