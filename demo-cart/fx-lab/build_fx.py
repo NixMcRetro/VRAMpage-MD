@@ -6,7 +6,7 @@ is mandatory; run only with matching approved asset files.
 """
 from __future__ import annotations
 from pathlib import Path
-import json, hashlib, struct, zipfile, math, colorsys
+import json, hashlib, struct, zipfile, math, colorsys, ast
 
 ROOT = Path(__file__).resolve().parent
 BASE_KIT = ROOT.parent / 'VRAMpage-MD-Demo-Cart-v0.1-Source-Kit.zip'
@@ -18,7 +18,11 @@ with zipfile.ZipFile(BASE_KIT) as archive:
     PATTERNS = archive.read('demo-cart/assets/title_patterns.bin')
     TILEMAP = archive.read('demo-cart/assets/title_tilemap_viewport.bin')
     CRAM = archive.read('demo-cart/assets/title_cram.bin')
+    TITLE_FONT_SOURCE = archive.read('demo-cart/polish_title.py').decode('utf-8')
 assert len(PATTERNS) % 32 == 0 and len(TILEMAP) == 40*28*2 and len(CRAM) == 128
+font_ast=ast.parse(TITLE_FONT_SOURCE)
+FONT=next(eval(compile(ast.Expression(stmt.value),"<trusted-font>","eval"),{"__builtins__":{}},{}) for stmt in font_ast.body if isinstance(stmt,ast.Assign) and
+          any(isinstance(t,ast.Name) and t.id=='FONT' for t in stmt.targets))
 pattern_count = len(PATTERNS)//32
 assert all((int.from_bytes(TILEMAP[i:i+2],'big') & 0x7ff) < pattern_count for i in range(0,len(TILEMAP),2))
 
@@ -58,8 +62,17 @@ class A68:
     def bsr(self,label):self.branch(0x6100,label)
     def bra(self,label):self.branch(0x6000,label)
     def beq(self,label):self.branch(0x6700,label)
+    def bpl(self,label):self.branch(0x6A00,label)
     def bne(self,label):self.branch(0x6600,label)
     def tstb(self,reg):self.w(0x4A00+reg)
+    def tstw(self,reg):self.w(0x4A40+reg)
+    def cmpiw(self,reg,imm):self.w(0x0C40+reg);self.w(imm)
+    def eorib(self,reg,imm):self.w(0x0A00+reg);self.w(imm)
+    def lslw(self,reg,count):self.w(0xE148+(count<<9)+reg)
+    def orb(self,src,dst):self.w(0x8000+(dst<<9)+src)
+    def eorb(self,src,dst):self.w(0xB100+(src<<9)+dst)
+    def andb(self,src,dst):self.w(0xC000+(dst<<9)+src)
+    def addw(self,src,dst):self.w(0xD040+(dst<<9)+src)
     def rts(self):self.w(0x4E75)
     def append(self,n,blob):
         if len(self.data)%2:self.data+=b'\0'
@@ -128,6 +141,65 @@ def fx_map(kind):
 VORTEX_MAP=fx_map('vortex')
 AURORA_MAP=fx_map('aurora')
 
+# Controller selector: redraw ONLY the left-side text panel and lower instruction
+# strip at native tile resolution. Portrait/logo source tiles remain untouched.
+# Uses the approved title's existing bank 1: black (0), white (4), electric blue (8).
+PANEL_X0,PANEL_X1=16,144
+PANEL_Y0,PANEL_Y1=64,168
+CHOICES=('CHROMATIC VORTEX','NEON AURORA','SPRITE MOTION','COLOUR LAB','PSG SOUND')
+LABEL_YS=(69,81,93,105,117)
+BASE_TITLE_CELLS=[int.from_bytes(TILEMAP[i:i+2],'big') for i in range(0,len(TILEMAP),2)]
+selector_pixels={}
+def label_pixels(text,x,y,colour=4):
+    for ch in text:
+        for dy,row in enumerate(FONT[ch]):
+            for dx,bit in enumerate(row):
+                if bit=='1':selector_pixels[(x+dx,y+dy)]=colour
+        x+=6
+
+for i,(name,y) in enumerate(zip(CHOICES,LABEL_YS),1):
+    text=f'{i:02d} {name}'
+    assert 20+6*len(text)<=PANEL_X1
+    label_pixels(text,20,y)
+label_pixels('ARROWS: SELECT',20,139,8)
+label_pixels('A/B/C/START: RUN',20,152,4)
+label_pixels('IDLE: AUTO LOOP',100,196,4)
+label_pixels('START: RETURN',100,205,4)
+
+# Each UI tile is newly generated only inside approved text regions. The untouched
+# viewport elsewhere retains its original pattern IDs, palette bank and flips.
+UI_BLOCKS=((PANEL_X0,PANEL_Y0,PANEL_X1,PANEL_Y1),(88,192,256,216))
+extra_patterns=[];new_tile_ids={}
+def get_ui_tile(tx,ty):
+    pixels=[]
+    for py in range(8):
+        for px in range(8):
+            pixels.append(selector_pixels.get((tx*8+px,ty*8+py),0))
+    pat=bytes(((pixels[i]<<4)|pixels[i+1]) for i in range(0,64,2))
+    if pat not in new_tile_ids:
+        new_tile_ids[pat]=FX_BASE+FX_TILE_COUNT+len(extra_patterns)
+        extra_patterns.append(pat)
+    return (1<<13)|new_tile_ids[pat]
+
+title_cells=BASE_TITLE_CELLS[:]
+for ty in range(28):
+    for tx in range(40):
+        if any(x0<=tx*8<x1 and y0<=ty*8<y1 for x0,y0,x1,y1 in UI_BLOCKS):
+            title_cells[ty*40+tx]=get_ui_tile(tx,ty)
+# One 8x8 right-pointing cursor sprite, with cyan fill, drawn over the left margin.
+arrow_rows=('10000000','11000000','11100000','11110000',
+            '11100000','11000000','10000000','00000000')
+# Explicit nibble encoding from boolean pixels, rather than binary bit-pairs.
+arrow=bytes((8 if row[x]=='1' else 0)<<4 | (8 if row[x+1]=='1' else 0)
+            for row in arrow_rows for x in range(0,8,2))
+ARROW_ID=FX_BASE+FX_TILE_COUNT+len(extra_patterns)
+extra_patterns.append(arrow)
+UI_PATTERNS=b''.join(extra_patterns)
+assert (ARROW_ID+1)*32 < 0xC000,'UI graphic patterns overlap Plane A'
+assert all(title_cells[i]==BASE_TITLE_CELLS[i] for i in range(40*28)
+           if not any(x0<=(i%40)*8<x1 and y0<=(i//40)*8<y1 for x0,y0,x1,y1 in UI_BLOCKS))
+
+
 def fx_palette(kind, frame):
     entries=[]
     for bank in range(4):
@@ -174,7 +246,7 @@ def full_map(viewport):
             else:rows.append(blank_id)
     return b''.join(struct.pack('>H',v) for v in rows)
 
-title_cells=[int.from_bytes(TILEMAP[i:i+2],'big') for i in range(0,len(TILEMAP),2)]
+# title_cells is the reviewed source bitmap with only the menu/controls blocks redrawn above.
 # Reusing the original title patterns makes VRAM bending conspicuous.
 # Alternate scenes are intentionally original tile-index compositions, not static copies.
 tile_cells=[];colour_cells=[];sprite_cells=[];audio_cells=[]
@@ -212,104 +284,251 @@ asm.bsr('load_palettes')
 asm.bsr('clear_plane_b')
 asm.bsr('clear_sprites')
 asm.bsr('clear_hscroll')
+# D7: menu selection 0..4. D3: previous 8-bit button state, for edge detection.
+# Button bits: UP=1 DOWN=2 LEFT=4 RIGHT=8 B=16 C=32 A=64 START=128.
+asm.moveq(7,0);asm.moveq(3,0)
 asm.label('whole_demo')
-for n,duration,mode in [('title',10,0),('vortex',12,5),('aurora',12,6),('sprites',8,2),('colour',8,3),('audio',8,4)]:
-    asm.bsr('load_'+n)
-    if n=='audio':asm.bsr('sound_on')
-    # Detect PAL from version register bit 6: 0 => NTSC; 1 => PAL.
-    asm.movea(2,0xA10001)
-    asm.moveb_ai_d(2,0)
-    asm.andib(0,0x40)
-    asm.bne('pal_'+n)
-    asm.movew_imm_d(6,round(duration*59.92)-1)
-    asm.bra('start_'+n)
-    asm.label('pal_'+n)
-    asm.movew_imm_d(6,duration*50-2 if n=='title' else duration*50-1)
-    asm.label('start_'+n)
-    if n in ('vortex','aurora'):
-        asm.movea_ref(2,'scroll_'+n)
-        asm.movea_ref(6,'palframes_'+n)
-        asm.movew_imm_d(4,PHASES-1)
-    asm.moveq(5,0)
-    asm.label('tick_'+n)
-    asm.bsr('wait_vblank')
-    if mode==0:
-        # Low-cost metallic-cyan logo shimmer: swap just one legal CRAM entry.
-        asm.movel_imm_ai(0,0xC0340000) # CRAM palette 1, entry 10
-        asm.movew_d_d(5,2)
-        asm.andiw(2,0x0010)
-        asm.beq('title_bright')
-        asm.movew_imm_ai(1,0x02CE)
-        asm.bra('title_shimmer_done')
-        asm.label('title_bright')
-        asm.movew_imm_ai(1,0x04EE)
-        asm.label('title_shimmer_done')
-    elif mode in (5,6):
-        # 30 cell-scroll registers. Horizontal scroll mode=per 8-pixel strip.
-        # Register 15 autoincrement 32 writes A at F800+row*32, B remains 0.
-        # This is <300 bytes of CRAM/VRAM writes per VBlank, not 896-byte
-        # per-line table upload and not an impossible pixel-scaling effect.
-        asm.movew_imm_ai(0,0x8F20)
-        asm.movel_imm_ai(0,0x78000003) # VRAM write $F800
-        asm.movew_imm_d(0,29)
-        asm.bsr('copy_words')
-        asm.movew_imm_ai(0,0x8F02)
-        # Cycle all 4 legal 16-colour CRAM palette banks coherently.
-        asm.movel_imm_ai(0,0xC0000000)
-        asm.movew_imm_d(0,63)
-        asm.bsr('copy_words_a6')
-        # One-screen vertical scroll complements the tile-row horizontal waves.
-        asm.movel_imm_ai(0,0x40000010)
-        asm.movew_d_ai(5,1)
-        asm.dbra(4,'phase_ok_'+n)
-        asm.movea_ref(2,'scroll_'+n)
-        asm.movea_ref(6,'palframes_'+n)
-        asm.movew_imm_d(4,PHASES-1)
-        asm.label('phase_ok_'+n)
-    elif mode==2:
-        # SAT sprite 0 bounces horizontally. Y=160 +128, size=8x8, tile 893.
-        asm.movel_imm_ai(0,0x74000003) # VRAM write $F400
-        asm.movew_imm_ai(1,288)
-        asm.movew_imm_ai(1,0) # 1x1 sprite, end of link chain
-        asm.movew_imm_ai(1,(3<<13)|(blank_id+1))
-        asm.movew_d_d(5,2)
-        asm.andiw(2,0x00FF)
-        asm.addiw(2,128)
-        asm.movew_d_ai(2,1) # X includes 128-pixel hardware bias
-    elif mode==3:
-        # CRAM entry index 1: cycling low red bits through legal CRAM values.
-        asm.movel_imm_ai(0,0xC0020000)
-        asm.movew_d_d(5,2)
-        asm.andiw(2,0x000E)
-        asm.movew_d_ai(2,1)
-    elif mode==4:
-        # Alter one PSG tone as the display animates; a browser gesture still governs sound.
-        asm.moveb_imm_ai(5,0x80) # PSG ch0 tone latch, low nibble 0
-        asm.movew_d_d(5,2)
-        asm.andib(2,0x3F)
-        asm.moveb_d_ai(2,5)
-    asm.addq(5,1)
-    asm.bsr('poll_start')
-    asm.beq('end_'+n)
-    asm.dbra(6,'tick_'+n)
-    asm.label('end_'+n)
-    if n=='audio':asm.bsr('sound_off')
-    if n=='sprites':asm.bsr('clear_sprites')
-# Return to title when the cycle ends.
+asm.bsr('load_title')
+asm.bsr('draw_cursor')
+asm.bsr('reset_idle')
+asm.moveq(5,0)
+asm.label('menu_tick')
+asm.bsr('wait_vblank')
+# Metallic chrome shimmer within the original logo's palette bank.
+asm.movel_imm_ai(0,0xC0340000)
+asm.movew_d_d(5,2);asm.andiw(2,0x0010)
+asm.beq('menu_bright')
+asm.movew_imm_ai(1,0x02CE)
+asm.bra('menu_shimmer_done')
+asm.label('menu_bright');asm.movew_imm_ai(1,0x04EE)
+asm.label('menu_shimmer_done')
+asm.addq(5,1)
+asm.bsr('poll_buttons')
+asm.movew_d_d(2,1);asm.andiw(1,0x00F0)
+asm.bne('manual_launch')
+asm.movew_d_d(2,1);asm.andiw(1,0x0005)
+asm.bne('select_previous')
+asm.movew_d_d(2,1);asm.andiw(1,0x000A)
+asm.bne('select_next')
+asm.dbra(6,'menu_tick')
+asm.label('auto_cycle')
+for n in ('vortex','aurora','sprites','colour','audio'):
+    asm.bsr('run_'+n)
 asm.bra('whole_demo')
+asm.label('select_previous')
+asm.subq(7)
+asm.tstw(7);asm.bpl('nav_updated')
+asm.moveq(7,4);asm.bra('nav_updated')
+asm.label('select_next')
+asm.addq(7);asm.cmpiw(7,5);asm.bne('nav_updated')
+asm.moveq(7,0)
+asm.label('nav_updated')
+asm.bsr('draw_cursor')
+asm.bsr('reset_idle')
+asm.bra('menu_tick')
+asm.label('manual_launch')
+for i,name in enumerate(('vortex','aurora','sprites','colour')):
+    asm.cmpiw(7,i);asm.beq('manual_'+name)
+asm.bsr('run_audio');asm.bra('whole_demo')
+for n in ('vortex','aurora','sprites','colour'):
+    asm.label('manual_'+n)
+    asm.bsr('run_'+n)
+    asm.bra('whole_demo')
+
+asm.label('reset_idle')
+asm.movea(2,0xA10001);asm.moveb_ai_d(2,0);asm.andib(0,0x40)
+asm.bne('reset_pal')
+asm.movew_imm_d(6,598);asm.rts()
+asm.label('reset_pal');asm.movew_imm_d(6,498);asm.rts()
+
+asm.label('draw_cursor')
+# Y = 128 + 69 + selected * 12; X = 128 + 11. Uses the real SAT.
+asm.movew_d_d(7,2)
+asm.addw(7,2);asm.addw(7,2) # D2 = 3 * selected
+asm.addw(2,2);asm.addw(2,2) # D2 = 12 * selected
+asm.addiw(2,197)
+asm.movel_imm_ai(0,0x74000003) # SAT $F400
+asm.movew_d_ai(2,1) # Y
+asm.movew_imm_ai(1,0) # 1x1 sprite, last link
+asm.movew_imm_ai(1,(1<<13)|ARROW_ID)
+asm.movew_imm_ai(1,139) # X = 128 + 11
+asm.rts()
+
+# Full native Mega Drive three-button protocol. Poll high TH for U/D/L/R/B/C,
+# low TH for A/START; compare to previous state so holding cannot repeat a menu
+# action every frame. The emulator's existing keyboard/gamepad mapping is used.
+asm.label('poll_buttons')
+asm.moveb_imm_ai(3,0x40)
+asm.moveb_ai_d(3,2);asm.eorib(2,0x3F);asm.andib(2,0x3F)
+asm.moveb_imm_ai(3,0)
+asm.moveb_ai_d(3,1);asm.eorib(1,0x30);asm.andib(1,0x30)
+asm.lslw(1,2);asm.orb(1,2)
+asm.moveb_imm_ai(3,0x40)
+asm.movew_d_d(2,1) # current state
+asm.eorb(3,2);asm.andb(1,2) # rising edges only
+asm.movew_d_d(1,3)
+asm.rts()
+
+asm.label('run_vortex')
+asm.bsr('load_vortex')
+asm.movea(2,0xA10001);asm.moveb_ai_d(2,0);asm.andib(0,0x40)
+asm.bne('pal_vortex')
+asm.movew_imm_d(6,718)
+asm.bra('start_vortex')
+asm.label('pal_vortex')
+asm.movew_imm_d(6,599)
+asm.label('start_vortex')
+asm.movea_ref(2,'scroll_vortex')
+asm.movea_ref(6,'palframes_vortex')
+asm.movew_imm_d(4,PHASES-1)
+asm.moveq(5,0)
+asm.label('tick_vortex')
+asm.bsr('wait_vblank')
+asm.movew_imm_ai(0,0x8F20)
+asm.movel_imm_ai(0,0x78000003)
+asm.movew_imm_d(0,29)
+asm.bsr('copy_words')
+asm.movew_imm_ai(0,0x8F02)
+asm.movel_imm_ai(0,0xC0000000)
+asm.movew_imm_d(0,63)
+asm.bsr('copy_words_a6')
+asm.movel_imm_ai(0,0x40000010)
+asm.movew_d_ai(5,1)
+asm.dbra(4,'phase_ok_vortex')
+asm.movea_ref(2,'scroll_vortex')
+asm.movea_ref(6,'palframes_vortex')
+asm.movew_imm_d(4,PHASES-1)
+asm.label('phase_ok_vortex')
+asm.addq(5,1)
+asm.bsr('poll_buttons')
+asm.andiw(2,0x0080)
+asm.bne('scene_end_vortex')
+asm.dbra(6,'tick_vortex')
+asm.label('scene_end_vortex')
+asm.rts()
+
+asm.label('run_aurora')
+asm.bsr('load_aurora')
+asm.movea(2,0xA10001);asm.moveb_ai_d(2,0);asm.andib(0,0x40)
+asm.bne('pal_aurora')
+asm.movew_imm_d(6,718)
+asm.bra('start_aurora')
+asm.label('pal_aurora')
+asm.movew_imm_d(6,599)
+asm.label('start_aurora')
+asm.movea_ref(2,'scroll_aurora')
+asm.movea_ref(6,'palframes_aurora')
+asm.movew_imm_d(4,PHASES-1)
+asm.moveq(5,0)
+asm.label('tick_aurora')
+asm.bsr('wait_vblank')
+asm.movew_imm_ai(0,0x8F20)
+asm.movel_imm_ai(0,0x78000003)
+asm.movew_imm_d(0,29)
+asm.bsr('copy_words')
+asm.movew_imm_ai(0,0x8F02)
+asm.movel_imm_ai(0,0xC0000000)
+asm.movew_imm_d(0,63)
+asm.bsr('copy_words_a6')
+asm.movel_imm_ai(0,0x40000010)
+asm.movew_d_ai(5,1)
+asm.dbra(4,'phase_ok_aurora')
+asm.movea_ref(2,'scroll_aurora')
+asm.movea_ref(6,'palframes_aurora')
+asm.movew_imm_d(4,PHASES-1)
+asm.label('phase_ok_aurora')
+asm.addq(5,1)
+asm.bsr('poll_buttons')
+asm.andiw(2,0x0080)
+asm.bne('scene_end_aurora')
+asm.dbra(6,'tick_aurora')
+asm.label('scene_end_aurora')
+asm.rts()
+
+asm.label('run_sprites')
+asm.bsr('load_sprites')
+asm.movea(2,0xA10001);asm.moveb_ai_d(2,0);asm.andib(0,0x40)
+asm.bne('pal_sprites')
+asm.movew_imm_d(6,478)
+asm.bra('start_sprites')
+asm.label('pal_sprites')
+asm.movew_imm_d(6,399)
+asm.label('start_sprites')
+asm.moveq(5,0)
+asm.label('tick_sprites')
+asm.bsr('wait_vblank')
+asm.movel_imm_ai(0,0x74000003)
+asm.movew_imm_ai(1,288)
+asm.movew_imm_ai(1,0)
+asm.movew_imm_ai(1,(3<<13)|(blank_id+1))
+asm.movew_d_d(5,2)
+asm.andiw(2,0x00FF)
+asm.addiw(2,128)
+asm.movew_d_ai(2,1)
+asm.addq(5,1)
+asm.bsr('poll_buttons')
+asm.andiw(2,0x0080)
+asm.bne('scene_end_sprites')
+asm.dbra(6,'tick_sprites')
+asm.label('scene_end_sprites')
+asm.bsr('clear_sprites')
+asm.rts()
+
+asm.label('run_colour')
+asm.bsr('load_colour')
+asm.movea(2,0xA10001);asm.moveb_ai_d(2,0);asm.andib(0,0x40)
+asm.bne('pal_colour')
+asm.movew_imm_d(6,478)
+asm.bra('start_colour')
+asm.label('pal_colour')
+asm.movew_imm_d(6,399)
+asm.label('start_colour')
+asm.moveq(5,0)
+asm.label('tick_colour')
+asm.bsr('wait_vblank')
+asm.movel_imm_ai(0,0xC0020000)
+asm.movew_d_d(5,2)
+asm.andiw(2,0x000E)
+asm.movew_d_ai(2,1)
+asm.addq(5,1)
+asm.bsr('poll_buttons')
+asm.andiw(2,0x0080)
+asm.bne('scene_end_colour')
+asm.dbra(6,'tick_colour')
+asm.label('scene_end_colour')
+asm.rts()
+
+asm.label('run_audio')
+asm.bsr('load_audio')
+asm.bsr('sound_on')
+asm.movea(2,0xA10001);asm.moveb_ai_d(2,0);asm.andib(0,0x40)
+asm.bne('pal_audio')
+asm.movew_imm_d(6,478)
+asm.bra('start_audio')
+asm.label('pal_audio')
+asm.movew_imm_d(6,399)
+asm.label('start_audio')
+asm.moveq(5,0)
+asm.label('tick_audio')
+asm.bsr('wait_vblank')
+asm.moveb_imm_ai(5,0x80)
+asm.movew_d_d(5,2)
+asm.andib(2,0x3F)
+asm.moveb_d_ai(2,5)
+asm.addq(5,1)
+asm.bsr('poll_buttons')
+asm.andiw(2,0x0080)
+asm.bne('scene_end_audio')
+asm.dbra(6,'tick_audio')
+asm.label('scene_end_audio')
+asm.bsr('sound_off')
+asm.rts()
 
 asm.label('wait_vblank')
 asm.label('wait_leave')
 asm.movew_ai_d(0,1);asm.andiw(1,8);asm.bne('wait_leave')
 asm.label('wait_enter')
 asm.movew_ai_d(0,1);asm.andiw(1,8);asm.beq('wait_enter')
-asm.rts()
-
-asm.label('poll_start')
-asm.moveb_imm_ai(3,0) # TH low exposes active-low START at bit 5
-asm.moveb_ai_d(3,2);asm.andib(2,0x20)
-asm.moveb_imm_ai(3,0x40) # restore TH high
-asm.tstb(2)
 asm.rts()
 
 asm.label('setup_vdp')
@@ -347,6 +566,7 @@ asm.label('clear_sprites_loop');asm.movew_imm_ai(1,0);asm.dbra(0,'clear_sprites_
 for name in ('title','vortex','aurora','sprites','colour','audio'):
     asm.label('load_'+name)
     asm.bsr('disable_display')
+    asm.bsr('clear_sprites')
     asm.movel_imm_ai(0,0x40000003) # VRAM $C000
     asm.movea_ref(2,'map_'+name)
     asm.movew_imm_d(0,2047);asm.bsr('copy_words')
@@ -376,7 +596,7 @@ asm.moveb_imm_ai(5,0x8A);asm.moveb_imm_ai(5,0x14)
 asm.moveb_imm_ai(5,0x94);asm.rts()
 asm.label('sound_off');asm.moveb_imm_ai(5,0x9F);asm.rts()
 
-asm.append('patterns',PATTERNS+b'\0'*32+b'\x00\x0F'*16+FX_PATTERNS) # 893 is an original single-8x8 sprite motif
+asm.append('patterns',PATTERNS+b'\0'*32+b'\x00\x0F'*16+FX_PATTERNS+UI_PATTERNS) # Keep approved title tiles; append menu and arrow tiles
 asm.append('cram',CRAM)
 for name,cell in [('title',title_cells),('vortex',VORTEX_MAP),('aurora',AURORA_MAP),('sprites',sprite_cells),('colour',colour_cells),('audio',audio_cells)]:
     asm.append('map_'+name, b''.join(struct.pack('>H',v) for v in cell)
@@ -392,8 +612,8 @@ def put(start,stop,text):
     rom[start:stop]=b.ljust(stop-start,b' ')
 put(0x100,0x110,'SEGA MEGA DRIVE')
 put(0x110,0x120,'(C) MCRETRO 2026')
-put(0x120,0x150,'VRAMPAGE MD FX LAB V0.2')
-put(0x150,0x180,'VRAMPAGE MD FX LAB V0.2')
+put(0x120,0x150,'VRAMPAGE MD FX LAB V0.3 SELECTOR')
+put(0x150,0x180,'VRAMPAGE MD FX LAB V0.3 SELECTOR')
 put(0x180,0x18E,'GM 00000000-00')
 put(0x190,0x1A0,'J               ')
 rom[0x1A0:0x1A8]=struct.pack('>II',0,len(rom)-1)
@@ -403,21 +623,24 @@ if len(rom)%2:rom+=b'\x00'
 rom[0x1A4:0x1A8]=struct.pack('>I',len(rom)-1)
 checksum=sum(struct.unpack_from('>H',rom,i)[0] for i in range(0x200,len(rom),2))&0xFFFF
 rom[0x18E:0x190]=struct.pack('>H',checksum)
-(OUT/'VRAMpage-MD-FX-Lab-v0.2.bin').write_bytes(rom)
+(OUT/'VRAMpage-MD-FX-Lab-v0.3-Selector.bin').write_bytes(rom)
 report={
  'romSize':len(rom),'checksum':f'{checksum:04X}',
  'sha256':hashlib.sha256(rom).hexdigest(), 'baseKitSHA256':APPROVED_KIT_SHA256,
- 'patternTiles':FX_BASE+FX_TILE_COUNT,'patternBytes':(FX_BASE+FX_TILE_COUNT)*32,
+ 'patternTiles':ARROW_ID+1,'patternBytes':(ARROW_ID+1)*32,
  'planeA':0xC000,'planeB':0xE000,'spriteTable':0xF400,'hscrollTable':0xF800,
  'phases':PHASES,'hscrollEntriesPerFrame':30,'hscrollAutoincrement':32,
  'paletteWordsPerFrame':64,'tileMaps':['title','vortex','aurora','sprites','colour','audio'],
  'titleSecondsNTSC':round(10*59.92),'titleSecondsPAL':500,
  'loopScenes':['title','vortex','aurora','sprites','colour','audio'],
+ 'menuChoices':list(CHOICES),'input':{'up':'previous','left':'previous','down':'next','right':'next','start':'launch or return','A':'launch','B':'launch','C':'launch'},
+ 'autoAttractIdleNTSCFrames':600,'autoAttractIdlePALFrames':500,
+ 'cursorTile':ARROW_ID,'uiPatternTiles':len(extra_patterns),
  'assetSHA256':{'title_patterns.bin':hashlib.sha256(PATTERNS).hexdigest(),
                 'title_tilemap_viewport.bin':hashlib.sha256(TILEMAP).hexdigest(),
                 'title_cram.bin':hashlib.sha256(CRAM).hexdigest()},
  'labelOffsets':{n:hex(addr) for n,addr in asm.labels.items() if n in
-                 ['start','whole_demo','patterns','cram','map_title','scroll_vortex','scroll_aurora']},
+                 ['start','whole_demo','poll_buttons','run_vortex','run_aurora','patterns','cram','map_title','scroll_vortex','scroll_aurora']},
  'restrictions':['Rom build and source-based previews are not proof of emulator boot',
                  'Intended hardware scrolling and CRAM writes require Genesis Plus GX validation',
                  'No public release or browser auto-load substitution',
