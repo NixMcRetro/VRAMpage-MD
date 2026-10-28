@@ -42,6 +42,9 @@ HELPER_FILES = (
     "work_ram_runtime.h",
     "session_checkpoint_runtime.c",
     "session_checkpoint_patch.py",
+    "region_profile_runtime.c",
+    "region_profile_runtime.h",
+    "region_profile_api.js",
 )
 PATCHED_FILES = (
     "src/main/c/wasm/wasm.c",
@@ -153,6 +156,7 @@ def patch_cmake(cmake: Path) -> None:
         'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/psg_data_fault_api.js")',
         'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/fm_data_fault_api.js")',
         'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/z80_ram_bridge_api.js")',
+        'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/region_profile_api.js")',
     )
     if any(flag in text for flag in flags):
         raise RuntimeError("Pinned source already contains runtime profile flags")
@@ -224,6 +228,8 @@ def copy_package(root: Path, upstream: Path, work: Path, output: Path) -> None:
         "Opt-in VRAM transaction runtime profile\n"
         f"Pinned wasm-genplus source: {PINNED_COMMIT}\n"
         "Profile flags: VRAM_TX_RUNTIME, HEAPU8/HEAPF32 and build-owned pre-js API shims.\n"
+        "Region selection is runtime-only; requested IDs are 0 Auto, 1 NTSC-U, 2 PAL Europe, 3 NTSC-J, 4 Japan PAL.\n"
+        "Effective timing and viewport are read from the initialized native core.\n"
         "No VRAM_TX_DIAGNOSTIC bridge is compiled into this profile.\n\n"
         "The matching modified source is in source/wasm-genplus and its build scripts\n"
         "and API shim are in source/scripts. With Emscripten, CMake and Make available:\n\n"

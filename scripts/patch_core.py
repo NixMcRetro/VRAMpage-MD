@@ -1031,6 +1031,17 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
             raise SystemExit('Expected wasm.c include anchor missing; upstream changed. No modifications made.')
         wasm = wasm.replace(include_anchor, include_anchor + '\n' + runtime_includes, 1)
 
+    region_runtime_include = ('#ifdef VRAM_TX_RUNTIME\n'
+                              '#include "region_profile_runtime.c"\n'
+                              '#endif')
+    work_ram_include = '#include "work_ram_runtime.c" /* ' + WORK_RAM_MARKER + ' */'
+    if region_runtime_include not in wasm:
+        if wasm.count(work_ram_include) != 1:
+            raise SystemExit('Expected region profile runtime include anchor missing or ambiguous.')
+        wasm = wasm.replace(work_ram_include, work_ram_include + '\n' + region_runtime_include, 1)
+    elif wasm.count(region_runtime_include) != 1:
+        raise SystemExit('Region profile runtime include is ambiguous.')
+
     tx_include = ('#if defined(VRAM_TX_RUNTIME) || defined(VRAM_TX_DIAGNOSTIC)\n'
                   '#include "vram_transaction.c"\n'
                   '#endif')
@@ -1091,6 +1102,28 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
             wasm = wasm.replace(anchor, start_hook, 1)
     elif wasm.count(start_hook) != 1:
         raise SystemExit('Fault reset start hook is ambiguous. No modifications made.')
+
+    defaults_anchor = '    set_config_defaults();\n'
+    runtime_defaults_hook = (defaults_anchor +
+                             '#ifdef VRAM_TX_RUNTIME\n'
+                             '    region_profile_prepare_start();\n'
+                             '#endif\n')
+    if wasm.count(runtime_defaults_hook) == 0:
+        if wasm.count(defaults_anchor) != 1:
+            raise SystemExit('Expected set_config_defaults() start anchor missing or ambiguous.')
+        wasm = wasm.replace(defaults_anchor, runtime_defaults_hook, 1)
+    elif wasm.count(runtime_defaults_hook) != 1:
+        raise SystemExit('Region profile default hook is ambiguous.')
+
+    init_anchor = '    audio_init(SOUND_FREQUENCY, 0);\n    system_init();\n'
+    runtime_init_hook = (init_anchor + '#ifdef VRAM_TX_RUNTIME\n'
+                         '    region_profile_mark_loaded();\n#endif\n')
+    if wasm.count(runtime_init_hook) == 0:
+        if wasm.count(init_anchor) != 1:
+            raise SystemExit('Expected audio/system init anchor missing or ambiguous.')
+        wasm = wasm.replace(init_anchor, runtime_init_hook, 1)
+    elif wasm.count(runtime_init_hook) != 1:
+        raise SystemExit('Region profile loaded hook is ambiguous.')
 
     tick_hook = '    system_frame_gen(0);\n    bend_after_frame();\n'
     tick_replacement = '    system_frame_gen(0);\n    work_ram_logic_tick();\n    bend_after_frame();\n'
