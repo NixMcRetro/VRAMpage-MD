@@ -2,6 +2,28 @@
 
 The user approved the second diagnostic-style design, with the mature captain facing left, the metallic-cyan VRAMpage MD logo, a 10-second opening scene, and automatic demo cycling.
 
+## Actual-Core CI Repair — 28 October 2026
+
+The user requested the startup-fixture correction after the draft bundle job
+failed three disabled-control assertions: shortcut controls and RGB inputs in
+runtime/normal profiles. Those tests began with a genuinely auto-loaded cartridge
+while expecting the old empty-console state. Their assertions are retained;
+manual-ROM tests now explicitly select the existing session preference before
+navigation, while the dedicated Demo Cart test retains a fresh default session.
+The transaction suite shares that fixture, and affected manual loads observe
+accepted cartridge identity before inspecting state.
+
+The repair includes current verified main and changes test setup/documentation
+only. The original ROM/source-kit SHA-256s below are unchanged. The earlier CI
+run already passed the dedicated real-WASM boot/render/manual-override test;
+that did not make the failed complete suite acceptable. Final full-suite and
+packaged-browser results will be recorded after verification. Keep the PR draft
+and retain explicit user approval before merge/deployment. No new ROM scenes,
+artwork edits or production auto-load behavior are authorized by this CI repair.
+
+The original implementation checkpoint follows; its initial verification notes
+record the earlier state and do not replace the repair's final CI evidence.
+
 ## Development ROM
 
 An original 68000 cartridge prototype was built in an isolated workspace on 28 October 2026. Its binary is `VRAMpage-MD-Demo-Cart-v0.1.bin` (49,388 bytes, SHA-256 `93b9fc72a428657c012fb4325bc1382b69b9d3c9d0af4a4dc312732789dfe0d4`). The user was supplied a self-contained review ZIP with the ROM, sources, original artwork, deterministic tile/palette assets, tests and preview. **The original ROM binary is now committed in the feature branch** at `site/demo/VRAMpage-MD-Demo-Cart-v0.1.bin` (commit `127c19b3`). A reproducible original source kit is committed at `demo-cart/VRAMpage-MD-Demo-Cart-v0.1-Source-Kit.zip` (commit `3e09642`). The larger review pack, including the untouched reference artwork, is also preserved in the user's Google Drive ([download](https://drive.google.com/file/d/1JE4LbRh5O3tvxoXE00SclPuUOLCcPsL2/view)). The code and ROM are **development-only**, pending real emulator tests. Do not merge this incomplete feature branch.

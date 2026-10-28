@@ -1,3 +1,22 @@
+# Demo Cart Actual-Core Fixtures (Draft PR #90)
+
+`tests/browser_core.py` keeps the default built-in Demo Cart test on a fresh
+browser session: it must auto-load the real original ROM, render non-uniform
+native pixels, leave sound disabled until consent, and respect manual replacement
+and Clean Restart. It does not use the manual-startup helper.
+
+Tests that supply their own generated cartridge use `prefer_manual_startup`
+before navigation. This selects the existing session-scoped custom-cartridge
+preference, retaining a genuine empty-console/manual-insertion baseline without
+changing the app or mocking its core. The actual-core transaction suite reuses
+the same helper. The prior disabled-control assertions remain; affected manual
+loads also verify the accepted cartridge's name before inspecting its state.
+Mock-core auto-load/race and missing-demo cases remain separate coverage.
+
+The draft's native auto-load test proves boot/rendering and manual override,
+not full artwork acceptance, PAL/NTSC scene timing, audible output or physical
+hardware behavior. Keep the [design merge/deployment hold](DEMO-CART-DESIGN.md#development-order-and-release-guardrails).
+
 # Region Selection Development Checks
 
 `node tests/test_region_profile_wasm.cjs RUNTIME/genplus.js NORMAL/genplus.js`

@@ -1,5 +1,22 @@
 # Development work queue
 
+## Draft PR #90 CI Repair — 28 October 2026 (Sydney)
+
+The user requested correction of actual-core tests that assumed an empty
+console before the built-in Demo Cart existed. Start from PR head `97019c6`,
+merge verified main `32970b1` without rewriting history, and fix the shared
+manual-cartridge fixture. Preserve the genuine default auto-load test, race and
+missing-demo cases, disabled-control assertions and original asset hashes.
+
+The bounded fixture change uses the existing session preference before navigation,
+with accepted-ROM identity waits for affected loads. Production app/core, artwork,
+original ROM/source kit, VERSION, releases and McRetro.net remain unchanged.
+Local full actual-core/transaction and source checks, review and all required
+PR CI/CodeQL are the completion gates. Keep PR #90 draft: its
+[design guardrail](DEMO-CART-DESIGN.md#development-order-and-release-guardrails)
+requires explicit user approval before merge or website deployment. This request
+repairs CI and does not remove that hold or add demonstration scenes.
+
 ## Supplied Manual Evidence — 28 October 2026 (Sydney)
 
 The user authorized working with the supplied Sega developer/service manuals
