@@ -48,4 +48,4 @@ cp "$ROOT/README.md" "$DEST/README.md"
 printf 'VRAMpage MD release staged locally at: %s\n' "$DEST"
 printf 'Website branch: %s\n' "$branch"
 printf 'No commit, push or deployment was made. Review these files:\n'
-git -C "$TARGET" status --short -- homepages/vrampage
+git -C "$TARGET" status --short -- homepages/vrampage-md

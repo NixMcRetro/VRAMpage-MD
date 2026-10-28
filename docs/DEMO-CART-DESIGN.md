@@ -1,5 +1,16 @@
 # VRAMpage MD Demo Cart: Approved Title-Screen Direction
 
+## Development Merge Authorized — 28 October 2026
+
+The user explicitly authorized merging [PR #90](https://github.com/NixMcRetro/VRAMpage-MD/pull/90)
+as development work, superseding the initial merge hold below. Full artwork,
+audible output, PAL/NTSC scene timing and fault-interaction review are deferred
+until around v0.6.0 while the cartridge continues to be developed separately.
+Actual-core boot/render/manual-override checks pass; those narrower checks do
+not establish the deferred acceptance. No new scenes, public release replacement
+or McRetro.net deployment are part of this merge. Website deployment still needs
+separate approval. The design-stage notes below are historical.
+
 ## Design Decision (28 October 2026)
 
 **Approved visual direction:** the second diagnostic-style VRAMpage MD title screen from the 28 October 2026 design review, with the final corrected, mature captain portrait. This approves the **visual direction**, not a ROM build or website deployment.

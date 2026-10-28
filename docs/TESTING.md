@@ -15,7 +15,9 @@ Mock-core auto-load/race and missing-demo cases remain separate coverage.
 
 The draft's native auto-load test proves boot/rendering and manual override,
 not full artwork acceptance, PAL/NTSC scene timing, audible output or physical
-hardware behavior. Keep the [design merge/deployment hold](DEMO-CART-DESIGN.md#development-order-and-release-guardrails).
+hardware behavior. The user authorized the development merge on 28 October
+2026 and deferred that fuller review until around v0.6.0; website deployment
+still requires separate approval. See the [current design status](DEMO-CART-DESIGN.md).
 
 # Region Selection Development Checks
 

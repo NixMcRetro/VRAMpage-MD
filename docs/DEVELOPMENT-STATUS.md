@@ -1,5 +1,19 @@
 # Development status and continuation checkpoint
 
+## Demo Cart Development Merge Authorized — 28 October 2026 (Sydney)
+
+The user explicitly authorized merging PR #90, deferring full artwork, audible
+output, PAL/NTSC scene timing and fault-interaction review until around v0.6.0.
+This supersedes the earlier merge hold below, without authorizing website
+deployment, a new release or scene additions. The complete independent audit
+found only a stale staging status path; it now matches `homepages/vrampage-md`.
+Fresh required PR checks and verified post-merge main CI remain integration gates.
+
+After the merge, review the three replacement PDFs, now downloaded successfully,
+and the supplied ConsoleMods references. Keep #73 open until identifiable NTSC
+Model 1 VA6 device/routing evidence is established. Do not repeat completed
+region, RAM or recovery implementation; revisit release-candidate work afterward.
+
 ## Draft PR #90 CI Repair — 28 October 2026 (Sydney)
 
 The user requested correction of actual-core tests that assumed an empty

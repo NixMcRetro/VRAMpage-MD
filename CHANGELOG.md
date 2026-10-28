@@ -1,5 +1,9 @@
 # Changelog
 
+## Demo Cart — Development Merge Authorized
+
+- Correct the staging helper's review list to match its `vrampage-md` destination. Record the authorized development merge and defer full Demo Cart acceptance until around v0.6.0; preserve its original assets, published releases and separate website approval.
+
 ## Draft Demo Cart — Actual-Core Test Fixtures
 
 - Give manual-cartridge browser tests an explicit empty startup using the existing session preference, retaining disabled-control checks and accepted-ROM identity checks.

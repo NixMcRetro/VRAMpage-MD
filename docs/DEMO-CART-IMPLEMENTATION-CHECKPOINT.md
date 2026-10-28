@@ -1,5 +1,15 @@
 # Demo Cart v0.1: Implementation Checkpoint
 
+## Current Development Decision — 28 October 2026
+
+The user authorized the development merge of [PR #90](https://github.com/NixMcRetro/VRAMpage-MD/pull/90)
+and deferred full artwork/audio/PAL/NTSC scene/fault-interaction review until
+around v0.6.0. This supersedes the earlier draft/merge hold in the historical
+notes below; website deployment and release replacement remain outside scope.
+The seven required PR checks and four CodeQL analyses passed on `b7434df`.
+The final integration audit found a stale staging-review path; its correction
+must pass the required checks again before merge. Demo assets are unchanged.
+
 The user approved the second diagnostic-style design, with the mature captain facing left, the metallic-cyan VRAMpage MD logo, a 10-second opening scene, and automatic demo cycling.
 
 ## Actual-Core CI Repair — 28 October 2026
