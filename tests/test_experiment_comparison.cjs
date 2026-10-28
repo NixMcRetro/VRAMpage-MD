@@ -92,3 +92,11 @@ assert.equal(compare(regionA,{rom:{name:'legacy'}}).find(x=>x.label==='Frame Rat
 assert.equal(compare(regionA,{...regionA,machine:{...regionA.machine,available:false}}).find(x=>x.label==='PAL Timing').status,'unknown');
 assert.equal(compare(regionA,{...regionA,machine:{...regionA.machine,height:true}}).find(x=>x.label==='Video Height').status,'unknown');
 console.log('Machine-region comparison observations passed.');
+
+const dataRecord=mask=>({logic:{available:true,referenceProfile:'model1-pal-va65-two-byte-v1',
+  dataMaskAvailable:true,dataMask:mask,fault:{kind:'data-stuck-low',access:'write',dataMask:mask,lines:['D0']}}});
+assert.equal(compare(dataRecord(1),dataRecord(0x100)).find(row=>row.label==='RAM Data Mask').status,'mismatch');
+assert.equal(compare(dataRecord(1),{}).find(row=>row.label==='RAM Data Mask').status,'unknown');
+assert.equal(compare(dataRecord(1),{logic:{dataMaskAvailable:false,dataMask:0}}).find(row=>row.label==='RAM Data Mask').status,'unknown');
+assert.equal(compare(dataRecord(1),dataRecord(1)).find(row=>row.label==='RAM Recorded Data Mask').status,'match');
+assert.equal(compare(dataRecord(1),{}).find(row=>row.label==='RAM Reference Profile').status,'unknown');

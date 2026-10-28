@@ -9,8 +9,8 @@ Choosing a file only stages a preview. It does not activate faults or change the
 existing controls. Cancel discards the preview. Invalid replacement files leave
 the previous valid preview visible and report that the replacement was rejected.
 
-The development-source version 4 format saves the selected VRAM model and either its disconnected
-lines or bridge pair, one stable Work RAM fault, independent PSG/FM settings, and a separate optional
+The development-source version 5 format saves the selected VRAM model and either its disconnected
+lines or bridge pair, one stable Work RAM address/data mask or bridge pair, independent PSG/FM settings, and a separate optional
 Z80 RAM write-address pair and RGB encoder input contacts. Published v0.5.0 retains its original version 2 format.
 It excludes ROM identity/content, memory contents, counters, timing, pulses and
 experiment history. These are reusable settings, not emulator save states or a
@@ -23,6 +23,10 @@ The `z80Ram` object has a nullable pair of distinct local address bits 0–12;
 it is independent of the other fault domains.
 The `rgbEncoder` object contains a cut mask 0–7 and nullable pair of distinct
 channel indexes 0–2. See [RGB assumptions and bypass rules](RGB-ENCODER-INPUTS.md).
+A Work RAM `data-mask` uses a mask from 1–65535 and access 1 (Read),
+2 (Write) or 3 (Read + Write); bit N selects CPU data line DN. It replaces
+address masks or pairs and requires the updated runtime core. A zero mask is
+saved as null. See [data-line semantics](WORK-RAM-DATA.md).
 RAM and active VRAM faults cannot coexist. Bridge endpoints are unordered: a
 reversed pair represents the same connection and must not reset live counters.
 Unknown fields, incompatible versions, invalid values and cross-byte RAM data
@@ -50,17 +54,18 @@ throwing setters, and round-trips through the actual compiled runtime.
 Version 1 files with nullable audio pairs, version 2 files with audio masks
 and version 3 files with a Z80 RAM pair
 remain importable and are normalized without modifying the original file.
-Versions 1/2 import with Z80 RAM off; all three older versions import with RGB
-off. New development-source downloads use version 4.
+Versions 1/2 import with Z80 RAM off; versions 1–3 import with RGB
+off. Version 4 files retain their RGB settings. All four older versions remain
+importable; none can encode a data mask. New development-source downloads use version 5.
 Older applications reject the newer schema rather than silently losing its settings.
 
-For example, this version 4 file selects a frame-model VRAM bridge, two
+For example, this version 5 file selects a frame-model VRAM bridge, two
 independent audio settings and a Z80 RAM write bridge with RGB contacts off:
 
 ```json
 {
   "format": "vrampage-md-circuit-config",
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "configuration": {
     "vram": {"modelId": 1, "mask": 0, "pair": [0, 1]},
     "ram": null,

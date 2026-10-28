@@ -27,7 +27,7 @@ start with the free original test program:
 | Chip | Experiments |
 | --- | --- |
 | **VRAM** | Cut modelled video-memory address lines or bridge a pair. |
-| **SRAM (Work RAM)** | Alter address lines; hold A11–A15 write contacts or apply eight-frame pulses. |
+| **SRAM (Work RAM)** | Alter address/data lines; hold A11–A15 write contacts or apply eight-frame pulses. |
 | **FM / PSG** | Alter each chip's input writes independently, or use its **Randomiser** button. |
 
 Save configurations, compare exported experiments, use a session checkpoint,

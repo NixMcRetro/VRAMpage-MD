@@ -79,6 +79,7 @@
       identity(a,b,'Application Version',['build','applicationVersion'],v=>/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(v)),
       identity(a,b,'Model Version',['modelVersion']),
       identity(a,b,'RAM Model Version',['logic','modelVersion']),
+      identity(a,b,'RAM Reference Profile',['logic','referenceProfile']),
       identity(a,b,'ROM Title',['rom','name'])
     ];
     const field=(label,keys,availability,valid=()=>true)=> {
@@ -109,9 +110,10 @@
     };
     const ramA=ramFault(a),ramB=ramFault(b);
     for(const [label,get,valid] of [
-      ['Kind',v=>v?.kind,value=>typeof value==='string'&&['address','data','address-stuck-low','address-mask','line-pair'].includes(value)],
+      ['Kind',v=>v?.kind,value=>typeof value==='string'&&['address','data','address-stuck-low','data-stuck-low','address-mask','line-pair'].includes(value)],
       ['Access',v=>v?.access,value=>typeof value==='string'&&['read','write','read + write','both'].includes(value)],
       ['Address Mask',v=>v?.addressMask,value=>isInteger(value,0,32767)],
+      ['Data Mask',v=>v?.dataMask,value=>isInteger(value,0,65535)],
       ['Lines / Pair',v=>v?.lines??v?.linesPair,value=>isLineList(value)||isPair(value)],
       ['Activation Frame',v=>v?.activationFrame,value=>isInteger(value)]
     ]) {
@@ -127,6 +129,7 @@
       ['Transaction Bridge A',['vramTransaction','bridgeA'],value=>isInteger(value,-1,7)],
       ['Transaction Bridge B',['vramTransaction','bridgeB'],value=>isInteger(value,-1,7)]
     ]) field(`VRAM ${label}`,keys,keys[0]==='vramTransaction'?['vramTransaction','available']:null,valid);
+    field('RAM Data Mask',['logic','dataMask'],['logic','dataMaskAvailable'],value=>isInteger(value,0,65535));
     audio('FM','fmInputFault'); audio('PSG','psgInputFault');
     for (const [label,key,valid] of [
       ['Configured','configured',isBoolean],['Effective','effective',isBoolean],

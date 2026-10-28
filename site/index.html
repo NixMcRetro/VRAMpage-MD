@@ -82,7 +82,13 @@
             <p id="vramModelStatus" class="chip-state" role="status" aria-live="polite">Frame projection is the default model.</p>
           </section>
           <section class="chip-card" data-keyboard-chip="WRAM" aria-label="SRAM (Work RAM) chip">
-            <h2>SRAM (Work RAM) <small>Logical Address Lines</small></h2>
+            <h2>SRAM (Work RAM) <small>Logical Address and Data Lines</small></h2>
+            <label class="chip-compact-control">Signals
+              <select id="ramChipSignals"><option value="1">Address Lines</option><option value="2">Data Lines</option></select>
+            </label>
+            <label class="chip-compact-control">Access
+              <select id="logicAccess"><option value="1">Read</option><option value="2">Write</option><option value="3">Read + Write</option></select>
+            </label>
             <label class="chip-compact-control">Leg Action
               <select id="ramLegAction"><option value="cut">Cut / Reconnect</option><option value="bridge">Bridge Pair</option></select>
             </label>
@@ -179,9 +185,6 @@
         <label>Line Type
           <select id="logicKind"><option value="1">Address</option><option value="2">Data</option></select>
         </label>
-        <label>Access
-          <select id="logicAccess"><option value="1">Read</option><option value="2">Write</option><option value="3">Read + Write</option></select>
-        </label>
         <label>Line A
           <select id="logicLineA"></select>
         </label>
@@ -189,7 +192,7 @@
           <select id="logicLineB"></select>
         </label>
       </div>
-      <p class="logic-note" id="chipExplanation"><strong>Address-line switches.</strong> Click a wire to toggle its × and force that signal low, using Access above. This applies immediately and stays active until reconnected or replaced by another fault. The chip is a conceptual address-bus diagram, not a physical pinout. “Disabled” uses a stuck-low model; a real open wire can float.</p>
+      <p class="logic-note" id="chipExplanation"><strong>Address and data switches.</strong> Choose Signals in the Work RAM panel, then click a wire to toggle its × and force that signal low using the selected Access. D0–D7 are the lower byte and D8–D15 the upper byte; data bridges stay within one byte. Address faults, data masks and bridges replace one another. The Model 1 reference uses two byte-wide RAM devices; the drawing shows logical signals. A real open wire can float.</p>
       <div class="logic-actions">
         <button id="logicApplyBtn" type="button" disabled>Apply RAM Fault</button>
         <button id="logicDisconnectBtn" type="button" disabled>Disconnect RAM</button>

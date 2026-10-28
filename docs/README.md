@@ -37,6 +37,7 @@ and experimental; older standalone-model descriptions are historical records.
 | [Testing guide](TESTING.md) | Automated and manual test matrix, commands and release gates |
 | [Video output](VIDEO-OUTPUT.md) | 640-pixel source stride, native pixels, missing-line recovery and raw output |
 | [Logic bending](LOGIC-BENDING.md) | v0.2 work-RAM model, runtime scope and known limits |
+| [Work RAM Data Lines](WORK-RAM-DATA.md) | Runtime byte-lane cuts, compact controls, lifecycle and evidence boundary |
 | [Byte transactions](WORK-RAM-BYTES.md) | Standalone byte-lane rules and regression coverage |
 | [Renderer diagnostic](VRAM-RENDER-DIAGNOSTIC.md) | Mode 5 read inventory, visible/cache acceptance and performance gates |
 | [VDP access diagnostic](VRAM-ACCESS-DIAGNOSTIC.md) | Developer-only CPU/Z80/DMA hooks, actual-WASM checks and remaining renderer gates |

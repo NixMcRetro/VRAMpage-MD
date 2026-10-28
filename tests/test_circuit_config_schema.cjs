@@ -91,10 +91,10 @@ const legacyV2={format,schemaVersion:2,configuration:{vram:{modelId:1,mask:0,pai
 assert.deepEqual(parse(JSON.stringify(legacyV2)).configuration,{...legacyV2.configuration,
   z80Ram:{pair:null},rgbEncoder:{cutMask:0,pair:null}});
 assert.deepEqual(parse(JSON.stringify(legacyV2)).configuration.rgbEncoder,{cutMask:0,pair:null});
-assert.equal(parse(JSON.stringify(legacyV2)).schemaVersion,4);
+assert.equal(parse(JSON.stringify(legacyV2)).schemaVersion,version);
 const legacyV3={format,schemaVersion:3,configuration:{...legacyV2.configuration,z80Ram:{pair:null}}};
 assert.deepEqual(parse(JSON.stringify(legacyV3)).configuration.rgbEncoder,{cutMask:0,pair:null});
-assert.equal(parse(JSON.stringify(legacyV3)).schemaVersion,4);
+assert.equal(parse(JSON.stringify(legacyV3)).schemaVersion,version);
 assert.throws(()=>parse(JSON.stringify({...legacyV3,configuration:{...legacyV3.configuration,rgbEncoder:{cutMask:1,pair:null}}})),/unknown fields/);
 const rgb=structuredClone(valid);rgb.configuration.rgbEncoder={cutMask:3,pair:[2,0]};
 assert.deepEqual(validate(rgb).configuration.rgbEncoder,{cutMask:3,pair:[0,2]});
@@ -112,4 +112,21 @@ for(const value of [[0,13],[0,0],[-1,2],[0,1.5],[],[0,1,2],'0,1']) {
 z80.configuration.z80Ram={pair:null,dataMask:1};assert.throws(()=>validate(z80));
 const legacyUnknown=structuredClone(legacyV2);legacyUnknown.configuration.z80Ram={pair:[0,1]};
 assert.throws(()=>parse(JSON.stringify(legacyUnknown)));
-console.log('Circuit schema v4 validates RGB encoder contacts and imports v1/v2/v3 with RGB off.');
+console.log('Circuit schema v5 validates Work RAM data masks and imports v1/v2/v3/v4.');
+
+const dataMask = structuredClone(addressMask);
+dataMask.configuration.ram={type:'data-mask',mask:0x8101,access:2};
+assert.deepEqual(validate(dataMask).configuration.ram,dataMask.configuration.ram);
+for(const mask of [0,-1,65536,1.5,'1',null]) {
+  const bad=structuredClone(dataMask);bad.configuration.ram.mask=mask;
+  assert.throws(()=>validate(bad));
+}
+for(const access of [0,4,1.5,'2']) {
+  const bad=structuredClone(dataMask);bad.configuration.ram.access=access;
+  assert.throws(()=>validate(bad));
+}
+const legacyV4={...structuredClone(valid),schemaVersion:4};
+assert.equal(parse(JSON.stringify(legacyV4)).schemaVersion,version);
+assert.throws(()=>parse(JSON.stringify({...dataMask,schemaVersion:4})));
+const overlap=structuredClone(dataMask);overlap.configuration.vram.mask=1;
+assert.throws(()=>validate(overlap));

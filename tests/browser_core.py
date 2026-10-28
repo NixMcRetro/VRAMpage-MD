@@ -310,7 +310,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     with page.expect_download() as download_info:
                         page.locator('#circuitConfigDownload').click()
                     saved = json.loads(Path(download_info.value.path()).read_text())
-                    self.assertEqual(saved['schemaVersion'], 4)
+                    self.assertEqual(saved['schemaVersion'], 5)
                     self.assertEqual(saved['configuration'], {
                         'vram': {'modelId': 1, 'mask': 0, 'pair': None},
                         'ram': None, 'psg': {'pair':None,'dataMask':0}, 'fm': {'pair':None,'dataMask':0}, 'z80Ram':{'pair':None},
@@ -451,7 +451,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     with page.expect_download() as download_info:
                         page.locator('#circuitConfigDownload').click()
                     saved = json.loads(Path(download_info.value.path()).read_text())
-                    self.assertEqual(saved['schemaVersion'], 4)
+                    self.assertEqual(saved['schemaVersion'], 5)
                     self.assertEqual(saved['configuration']['fm'], {'pair':None,'dataMask':4})
                     self.assertEqual(saved['configuration']['psg'], {'pair':None,'dataMask':129})
                     self.assertNotIn('rom', saved)
@@ -486,7 +486,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     with page.expect_download() as download_info:
                         page.locator('#circuitConfigDownload').click()
                     ram_saved=json.loads(Path(download_info.value.path()).read_text())
-                    self.assertEqual(ram_saved['schemaVersion'], 4)
+                    self.assertEqual(ram_saved['schemaVersion'], 5)
                     self.assertEqual(ram_saved['configuration']['psg'], {'pair':[1,6],'dataMask':0})
                     self.assertEqual(ram_saved['configuration']['fm'], {'pair':[0,7],'dataMask':0})
                     if not page.locator('#logicExperiment').evaluate('element => element.open'):

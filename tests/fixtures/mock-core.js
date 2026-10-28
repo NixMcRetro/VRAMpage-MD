@@ -7,7 +7,7 @@ window.Module = async () => {
   const logic = {
     active: false, config: {kind: 0, access: 0, a: 0, b: 0},
     reads: 0, writes: 0, frame: 0, activationFrame: 0, cpuFlags: 0,
-    setterCalls: [], storedWrites: 0, recoveries: [], pulseState: 0, budget: 0, writesPerTick: 1, addressMask:0,
+    setterCalls: [], storedWrites: 0, recoveries: [], pulseState: 0, budget: 0, writesPerTick: 1, addressMask:0, dataMask:0, dataMaskCalls:[],
   };
   const psg = {configured:false,bridgeA:-1,bridgeB:-1,dataMask:0,supported:true,inputWrites:'0',changedWrites:'0',calls:[],maskCalls:[]};
   const fm = {configured:false,bridgeA:-1,bridgeB:-1,dataMask:0,supported:true,inputWrites:'0',changedWrites:'0',calls:[],maskCalls:[]};
@@ -25,13 +25,13 @@ window.Module = async () => {
     logic.setterCalls.push([kind, access, a, b]);
     if (kind === 0) {
       if(window.mockCore.throwLogicClearAfter) {
-        logic.pulseState = 0;logic.budget=0;logic.addressMask=0;logic.active=false;
+        logic.pulseState = 0;logic.budget=0;logic.addressMask=0;logic.dataMask=0;logic.active=false;
         logic.config={kind:0,access:0,a:0,b:0};logic.reads=0;logic.writes=0;logic.activationFrame=0;
         throw new Error('synthetic RAM clear trap after mutation');
       }
       if(window.mockCore.rejectLogicClear)return 5;
       if (logic.pulseState === 1 && !window.mockCore.leavePulseArmedAfterClear) logic.pulseState = 4;
-      logic.addressMask=0;
+      logic.addressMask=0;logic.dataMask=0;
       logic.active = false;
       logic.config = {kind: 0, access: 0, a: 0, b: 0};
       logic.reads = 0;
@@ -50,7 +50,7 @@ window.Module = async () => {
         a >= lineLimit || b >= lineLimit || a === b)
       return 5;
     if (kind === 2 && Math.floor(a / 8) !== Math.floor(b / 8)) return 6;
-    logic.pulseState = 0; logic.budget = 0;logic.addressMask=0;
+    logic.pulseState = 0; logic.budget = 0;logic.addressMask=0;logic.dataMask=0;
     logic.active = true;
     logic.config = {kind, access, a, b};
     logic.reads = 0;
@@ -67,7 +67,7 @@ window.Module = async () => {
     logic.frame = 0;
     logic.activationFrame = 0;
     logic.cpuFlags = 0;
-    logic.storedWrites = 0;logic.addressMask=0;
+    logic.storedWrites = 0;logic.addressMask=0;logic.dataMask=0;
     logic.pulseState = 0; logic.budget = 0;
   }
   // Native 640-pixel pitch, coloured even rows, missing odd rows.
@@ -226,6 +226,19 @@ window.Module = async () => {
         return 0;
       },
       _get_logic_address_mask:()=>logic.addressMask,
+      _set_logic_data_mask(mask,access) {
+        logic.dataMaskCalls.push([mask,access]);
+        if (window.mockCore.rejectDataMask || !Number.isInteger(mask)||mask<0||mask>0xffff||![1,2,3].includes(access)) return 5;
+        const status=setLogicFault(0,0,0,0);if(status!==0)return status;
+        logic.dataMask=mask;
+        if(mask) {logic.active=true;logic.config={kind:4,access,a:0,b:0};logic.activationFrame=logic.frame;}
+        if(window.mockCore.throwDataMaskAfter)throw Error('synthetic data mask trap after mutation');
+        return 0;
+      },
+      _get_logic_data_mask:()=>{
+        if(window.mockCore.throwDataMaskState)throw Error('synthetic data mask telemetry trap');
+        return window.mockCore.invalidDataMaskState??logic.dataMask;
+      },
       _arm_logic_write_pulse(kind,a,b,limit) {
         if (!Number.isInteger(limit) || limit<1 || limit>1024) return 5;
         if (window.mockCore.rejectPulseArm) return 5;
@@ -252,6 +265,7 @@ window.Module = async () => {
       },
     });
   }
+  if(window.__legacyRamDataCore) {delete core._set_logic_data_mask;delete core._get_logic_data_mask;}
   if (window.__legacyRecoveryCore) delete core._recover_logic_cpu;
   if (window.__legacyWritePulseCore) {
     delete core._arm_logic_write_pulse;delete core._get_logic_pulse_state;

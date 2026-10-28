@@ -1,5 +1,28 @@
 # Development work queue
 
+## Work RAM Data Lines — In Progress, 29 October 2026 (Sydney)
+
+The next bounded feature adds runtime-only D0–D15 cut masks, independently
+selectable across both byte lanes, using the documented PAL Model 1 VA6.5
+two-device circuit as its reference. The existing Work RAM panel switches
+between Address Lines and Data Lines; same-byte bridges reuse the existing
+engine. Address masks, data masks and bridge pairs replace one another.
+See [scope and acceptance](WORK-RAM-DATA.md).
+
+Exact NTSC VA6 population/routing in [#73](https://github.com/NixMcRetro/VRAMpage-MD/issues/73)
+is now optional follow-up, not a development gate. User-supplied PAL/USA board
+photos support two-device populations but do not establish every trace or
+part pinout. Add a physical model selector only when another evidenced model
+has meaningful implemented differences; region selection remains separate.
+
+Started from verified main `8733a5594a243a48c5fd9cd6d80760106ee99dad`
+([seven required jobs](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40697665333),
+[four CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40697664612)).
+Implementation, focused native/browser tests and schema-5 circuit files are in
+progress. Independent specialist review, full applicable suites and PR/main CI
+remain completion gates. Preserve all releases, normal-core hashes, original
+Demo Cart assets and McRetro.net. New Demo Cart PRs #93/#94 are separate work.
+
 ## Demo Cart Merged; Hardware Follow-Up — 28 October 2026 (Sydney)
 
 [PR #90](https://github.com/NixMcRetro/VRAMpage-MD/pull/90) merged as
