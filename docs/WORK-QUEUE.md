@@ -1,5 +1,24 @@
 # Development work queue
 
+## Supplied Manual Evidence — 28 October 2026 (Sydney)
+
+The user authorized working with the supplied Sega developer/service manuals
+and MiSTer HDL. The [evidence review](SEGA-MANUAL-EVIDENCE.md) records visually
+checked errata, a qualified NEC PAL VA6.5 RAM map, Model 2 memory/encoder
+variations and fresh pinned HDL cross-checks. Three oversized image-only PDFs
+remain uninspected because the materializer limit and proxy block their downloads;
+the report names these files without inferring their content from filenames.
+
+Commit `dea1685` adds literal actual-WASM Auto/header-mask checks from Sega
+Bulletin #31; these pass using the unchanged verified runtime and normal core.
+Production code, native artifacts, VERSION, releases and McRetro.net are unchanged.
+Independent review and the required PR/main CI/CodeQL remain integration gates.
+
+Keep #73 open: the supplied PAL VA6.5 reference does not prove the selected
+NTSC Model 1 VA6's fitted devices or routing. Do not implement a cosmetic VA
+selector or repeat completed region/recovery/RAM work. Next: complete this bounded
+review/integration and retain exact source/page and GitHub evidence.
+
 ## Region Selection Verified — 28 October 2026 (Sydney)
 
 [PR #89](https://github.com/NixMcRetro/VRAMpage-MD/pull/89) merged as

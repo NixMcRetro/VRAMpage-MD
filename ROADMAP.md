@@ -1,5 +1,13 @@
 # VRAMpage MD roadmap
 
+## Supplied Hardware References — 28 October 2026
+
+The [Sega manual evidence review](docs/SEGA-MANUAL-EVIDENCE.md) records useful
+primary errata, a PAL VA6.5 reference map and Model 2 package differences, checked
+against the pinned MiSTer HDL where relevant. Documented header masks extend
+the existing region test. Physical VA profiles still require matching board,
+device and routing evidence; no extra selector or electrical model is implied.
+
 ## Authorized Region Selection — Development Source
 
 The user approved the [region selection plan](docs/REGION-PROFILES-PLAN.md).

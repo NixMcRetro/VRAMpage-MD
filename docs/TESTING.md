@@ -8,6 +8,12 @@ changing RAM and exact default NTSC-U framebuffer/PCM/RAM parity with the normal
 core. The normal profile retains its existing binary hash gates and has no
 region API. The runtime installer includes matching C/header/API source.
 
+The [Sega manual evidence review](SEGA-MANUAL-EVIDENCE.md) grounds additional Auto
+cases in Technical Bulletin #31: ASCII masks `1`, `2`, `4`, `8`, `F`, with
+space-padded header bytes. Each original cartridge reads its version register;
+literal assertions check identity and native timing. `F` choosing NTSC-U records
+the core's priority, not a preference specified by Sega.
+
 `python tests/browser_logic.py -k region` covers staging, accepted/rejected
 loads, CPU Reset/checkpoints, held-input release, native scheduling and viewport,
 unavailable observations and exports. `python tests/browser_core.py -k region`
