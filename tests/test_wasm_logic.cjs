@@ -72,7 +72,8 @@ async function create(words, config, init, dataMaskConfig, inhibitMask) {
     ...longWrite(0xff1004,0x11223344),...byteWrite(0xff1008,0x11),...byteWrite(0xff1009,0x22),
     0x3039,0x00ff,0x1000,0x33c0,0x00ff,0x1010,...stop
   ],null,core=>{putWord(core,0x1000,0xaabb);putWord(core,0x1002,0xaabb);
-    putWord(core,0x1004,0xaabb);putWord(core,0x1006,0xccdd);putWord(core,0x1008,0xaabb);},null,1);
+    putWord(core,0x1004,0xaabb);putWord(core,0x1006,0xccdd);putWord(core,0x1008,0xaabb);
+    putWord(core,0x1010,0xaabb);},null,1);
   assert.equal(c._get_logic_write_inhibit(),1);
   assert.equal(getWord(c,0x1000),0x11bb);
   assert.equal(getWord(c,0x1002),0x11bb);
