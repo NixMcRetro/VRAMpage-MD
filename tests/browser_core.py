@@ -19,6 +19,17 @@ ROOT = Path(__file__).resolve().parents[1]
 OPTIONS = None
 
 
+def prefer_manual_startup(page):
+    """Keep actual-core tests at the manual cartridge insertion screen."""
+    page.add_init_script("window.sessionStorage.setItem('vrampage-custom-rom-preferred', '1')")
+
+
+def new_manual_startup_page(browser, **kwargs):
+    page = browser.new_page(**kwargs)
+    prefer_manual_startup(page)
+    return page
+
+
 def original_cartridge():
     rom = bytearray(65536)
     for offset in range(0, 256, 4):
@@ -131,7 +142,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     kwargs = {'executable_path': OPTIONS.executable} if OPTIONS.executable else {}
                     browser = getattr(p, OPTIONS.browser).launch(**kwargs)
                     try:
-                        page = browser.new_page(accept_downloads=True)
+                        page = new_manual_startup_page(browser, accept_downloads=True)
                         errors = []
                         page.on('pageerror', lambda error: errors.append(str(error)))
                         page.add_init_script('''window.testFrames=[];window.testTime=0;
@@ -246,7 +257,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                 with sync_playwright() as p:
                     kwargs = {'executable_path': OPTIONS.executable} if OPTIONS.executable else {}
                     browser = getattr(p, OPTIONS.browser).launch(**kwargs)
-                    page = browser.new_page(viewport={'width': 1366, 'height': 768}, accept_downloads=True)
+                    page = new_manual_startup_page(browser, viewport={'width': 1366, 'height': 768}, accept_downloads=True)
                     errors = []
                     page.on('pageerror', lambda error: errors.append(str(error)))
                     core_js = normal_js.read_text()
@@ -345,7 +356,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                 with sync_playwright() as p:
                     kwargs = {'executable_path': OPTIONS.executable} if OPTIONS.executable else {}
                     browser = getattr(p, OPTIONS.browser).launch(**kwargs)
-                    page = browser.new_page(viewport={'width': 1366, 'height': 768}, accept_downloads=True)
+                    page = new_manual_startup_page(browser, viewport={'width': 1366, 'height': 768}, accept_downloads=True)
                     errors = []
                     page.on('pageerror', lambda error: errors.append(str(error)))
                     core_js = (OPTIONS.site_root / 'core/genplus.js').read_text()
@@ -511,7 +522,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                 with sync_playwright() as p:
                     kwargs = {'executable_path': OPTIONS.executable} if OPTIONS.executable else {}
                     browser = getattr(p, OPTIONS.browser).launch(**kwargs)
-                    page = browser.new_page(viewport={'width':1366,'height':768},accept_downloads=True)
+                    page = new_manual_startup_page(browser, viewport={'width':1366,'height':768},accept_downloads=True)
                     errors=[]
                     page.on('pageerror',lambda error:errors.append(str(error)))
                     core_js=(OPTIONS.site_root/'core/genplus.js').read_text()
@@ -573,7 +584,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                 with sync_playwright() as p:
                     kwargs = {'executable_path': OPTIONS.executable} if OPTIONS.executable else {}
                     browser = getattr(p, OPTIONS.browser).launch(**kwargs)
-                    page = browser.new_page(viewport={'width': 1366, 'height': 768})
+                    page = new_manual_startup_page(browser, viewport={'width': 1366, 'height': 768})
                     errors = []
                     page.on('pageerror', lambda e: errors.append(str(e)))
                     page.add_init_script("""
@@ -819,7 +830,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                 with sync_playwright() as p:
                     kwargs = {'executable_path': OPTIONS.executable} if OPTIONS.executable else {}
                     browser = getattr(p, OPTIONS.browser).launch(**kwargs)
-                    page = browser.new_page(viewport={'width': 1366, 'height': 768})
+                    page = new_manual_startup_page(browser, viewport={'width': 1366, 'height': 768})
                     errors = []
                     page.on('pageerror', lambda error: errors.append(str(error)))
                     core_js = (OPTIONS.site_root / 'core/genplus.js').read_text()
@@ -844,6 +855,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     page.locator('#romFile').set_input_files({
                         'name': 'original-shortcut-hold.bin',
                         'mimeType': 'application/octet-stream', 'buffer': original_cartridge()})
+                    expect(page.locator('#romName')).to_have_text('ORIGINAL-SHORTCUT-HOLD.BIN')
                     expect(page.locator('#compactResetBtn')).to_be_enabled()
                     page.wait_for_function('testCore._get_logic_frame()>3')
                     page.locator('#pauseBtn').click()
@@ -963,7 +975,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                 with sync_playwright() as p:
                     kwargs = {'executable_path': OPTIONS.executable} if OPTIONS.executable else {}
                     browser = getattr(p, OPTIONS.browser).launch(**kwargs)
-                    page = browser.new_page(viewport={'width': 1366, 'height': 768}, accept_downloads=True)
+                    page = new_manual_startup_page(browser, viewport={'width': 1366, 'height': 768}, accept_downloads=True)
                     errors = []
                     page.on('pageerror', lambda e: errors.append(str(e)))
                     console_messages = []
@@ -1250,7 +1262,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     try:
                         for profile in ['runtime','normal']:
                             with self.subTest(profile=profile):
-                                page=browser.new_page(accept_downloads=True)
+                                page=new_manual_startup_page(browser, accept_downloads=True)
                                 errors=[]
                                 page.on('pageerror',lambda error:errors.append(str(error)))
                                 page.add_init_script("""window.testFrames=[];window.testTime=0;
@@ -1273,6 +1285,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                                 page.goto(f'http://127.0.0.1:{server.server_port}/')
                                 expect(page.locator('[data-rgb-cut="0"]')).to_be_disabled()
                                 page.locator('#romFile').set_input_files({'name':'original-rgb.bin','mimeType':'application/octet-stream','buffer':original_cartridge()})
+                                expect(page.locator('#romName')).to_have_text('ORIGINAL-RGB.BIN')
                                 expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
                                 page.evaluate('for(let i=0;i<32;i++)stepTestFrame()')
                                 page.locator('#pauseBtn').click()
@@ -1336,7 +1349,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     kwargs={'executable_path':OPTIONS.executable} if OPTIONS.executable else {}
                     browser=getattr(p,OPTIONS.browser).launch(**kwargs)
                     try:
-                        page=browser.new_page(accept_downloads=True)
+                        page=new_manual_startup_page(browser, accept_downloads=True)
                         errors=[]
                         page.on('pageerror',lambda error:errors.append(str(error)))
                         page.add_init_script("""window.testFrames=[];window.testTime=0;
@@ -1404,7 +1417,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                             ('halt-force-off',halt_words,False,True),
                             ('halt-cpu-off',halt_words,True,False)]:
                             with self.subTest(cpu=kind):
-                                page=browser.new_page(accept_downloads=True)
+                                page=new_manual_startup_page(browser, accept_downloads=True)
                                 errors=[]
                                 page.on('pageerror',lambda error:errors.append(str(error)))
                                 page.add_init_script("""window.testFrames=[];window.testTime=0;
@@ -1500,7 +1513,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     kwargs = {'executable_path': OPTIONS.executable} if OPTIONS.executable else {}
                     browser = getattr(p, OPTIONS.browser).launch(**kwargs)
                     try:
-                        page = browser.new_page(viewport={'width':1366,'height':768})
+                        page = new_manual_startup_page(browser, viewport={'width':1366,'height':768})
                         errors=[]
                         page.on('pageerror',lambda error:errors.append(str(error)))
                         page.add_init_script("""
