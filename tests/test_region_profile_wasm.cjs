@@ -15,6 +15,7 @@ function cartridge(country = 'U', activeLines = 224, interlaced = false) {
   v.setUint32(0, 0xffff00); v.setUint32(4, 0x200);
   rom.set(Buffer.from('SEGA MEGA DRIVE '), 0x100);
   rom.set(Buffer.from('REGION PROFILE TEST'), 0x120);
+  rom.fill(0x20, 0x1f0, 0x200);
   rom.set(Buffer.from(country), 0x1f0);
   v.setUint32(0x1a4, rom.length - 1); v.setUint32(0x1a8, 0xff0000); v.setUint32(0x1ac, 0xffffff);
   const words = [];
@@ -124,6 +125,19 @@ function tickToViewport(core) {
   const autoJapan = await start(unstarted, 0, 'J');
   assert.equal(autoJapan._get_region_state().regionCode, 0x00, 'Auto follows the ROM Japan header');
   assert.equal(autoJapan._get_region_state().linesPerFrame, 262);
+  // Sega Technical Bulletin #31 (22 Nov 1994): ASCII hardware-enable masks.
+  // F enables all hardware; selecting USA for it is this core's priority.
+  for (const [header, code, pal] of [['1',0x00,false],['2',0x40,true],['4',0x80,false],['8',0xc0,true],['F',0x80,false]]) {
+    const core = await start(unstarted, 0, header);
+    tickToViewport(core);
+    const state = core._get_region_state();
+    assert.equal(state.regionCode, code, `Auto hardware-enable code ${header}`);
+    assert.equal(state.pal, pal);
+    assert.equal(state.linesPerFrame, pal ? 313 : 262);
+    assert.equal(state.masterClock, pal ? 53203424 : 53693175);
+    const ram = core._get_logic_ram_ref();
+    assert.equal(core.HEAPU8[ram+0x1003]&0xc0, code, 'cartridge reads the selected hardware identity');
+  }
   const pal240 = await start(unstarted, 2, 'U', 240);
   tickToViewport(pal240);
   assert.equal(pal240._get_region_state().height, 240, 'native active viewport reports 240 lines when VDP mode selects it');
