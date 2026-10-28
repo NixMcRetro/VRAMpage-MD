@@ -3217,8 +3217,9 @@
     } catch(error) {
       if(generation!==romLoadGeneration || started) return;
       stamp(`Built-in demo unavailable: ${error.message}`);
-      message('INSERT YOUR CARTRIDGE',
-        'The original demo cartridge could not be loaded. Choose a local Mega Drive ROM to continue.');
+      if(!error.cartridgeActivationUncertain)
+        message('INSERT YOUR CARTRIDGE',
+          'The original demo cartridge could not be loaded. Choose a local Mega Drive ROM to continue.');
     }
   }
 
