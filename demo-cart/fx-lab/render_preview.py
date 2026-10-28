@@ -13,7 +13,7 @@ import build_fx as B
 OUT=Path(__file__).resolve().parent/'build'
 PALETTES={'title':B.CRAM}
 PALETTES.update({n:B.FX_PALETTES[n][:128] for n in ('vortex','aurora')})
-PATTERNS=B.PATTERNS+b'\0'*32+b'\x00\x0F'*16+B.FX_PATTERNS
+PATTERNS=B.PATTERNS+b'\0'*32+b'\x00\x0F'*16+B.FX_PATTERNS+B.UI_PATTERNS
 MAPS={'title':B.full_map(B.title_cells),'vortex':struct.pack('>2048H',*B.VORTEX_MAP),'aurora':struct.pack('>2048H',*B.AURORA_MAP)}
 
 def rgb(c):
@@ -37,7 +37,18 @@ def render(kind,frame=0):
                     byte=tile[ty*4+tx//2]
                     p=(byte>>4) if tx%2==0 else byte&0x0F
                     px[col*8+tx,row*8+ty]=pal[bank*16+p]
-    if kind=='title':return pix.crop((0,0,320,224))
+    if kind=='title':
+        result=pix.crop((0,0,320,224))
+        # The ROM itself positions this original sprite through the SAT.
+        # The following reproduces only its static default-selected location.
+        pat=PATTERNS[B.ARROW_ID*32:(B.ARROW_ID+1)*32]
+        colours=palette('title',0)
+        for row in range(8):
+            for col in range(8):
+                byte=pat[row*4+col//2]
+                v=byte>>4 if col%2==0 else byte&15
+                if v:result.putpixel((11+col,69+row),colours[16+v])
+        return result
     scroll=struct.unpack('>30H',B.fx_scroll(kind,frame))
     out=Image.new('RGB',(320,224))
     outpix=out.load()
