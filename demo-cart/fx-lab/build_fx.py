@@ -202,11 +202,12 @@ for ty in range(28):
     for tx in range(40):
         if any(x0<=tx*8<x1 and y0<=ty*8<y1 for x0,y0,x1,y1 in UI_BLOCKS):
             title_cells[ty*40+tx]=get_ui_tile(tx,ty)
-# One 8x8 right-pointing cursor sprite, with cyan fill, drawn over the left margin.
+# Single 8x8 moving cursor, using the title's bright cyan in palette 0.
+# Do not let the approved static cyan arrow survive underneath it.
 arrow_rows=('10000000','11000000','11100000','11110000',
             '11100000','11000000','10000000','00000000')
 # Explicit nibble encoding from boolean pixels, rather than binary bit-pairs.
-arrow=bytes((8 if row[x]=='1' else 0)<<4 | (8 if row[x+1]=='1' else 0)
+arrow=bytes((6 if row[x]=='1' else 0)<<4 | (6 if row[x+1]=='1' else 0)
             for row in arrow_rows for x in range(0,8,2))
 ARROW_ID=FX_BASE+FX_TILE_COUNT+len(extra_patterns)
 extra_patterns.append(arrow)
@@ -483,7 +484,7 @@ asm.addiw(2,197)
 asm.movel_imm_ai(0,0x74000003) # SAT $F400
 asm.movew_d_ai(2,1) # Y
 asm.movew_imm_ai(1,0) # 1x1 sprite, last link
-asm.movew_imm_ai(1,(1<<13)|ARROW_ID)
+asm.movew_imm_ai(1,ARROW_ID) # Palette 0, index 6: bright cyan
 asm.movew_imm_ai(1,139) # X = 128 + 11
 asm.rts()
 
