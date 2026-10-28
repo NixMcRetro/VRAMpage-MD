@@ -9,7 +9,7 @@ import hashlib,struct,sys,unittest,json
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import build_fx
 R=build_fx
-ROM=(R.OUT/'VRAMpage-MD-FX-Lab-v0.3-Selector.bin').read_bytes()
+ROM=(R.OUT/'VRAMpage-MD-FX-Lab-v0.3.1-Fixed.bin').read_bytes()
 
 class CPU:
     def __init__(self,pal=False,start_at=None,inputs=None):
@@ -229,6 +229,28 @@ class TestROM(unittest.TestCase):
         for a,b in zip(first,last):
             for shift in (1,5,9):
                 self.assertLessEqual(abs(((a>>shift)&7)-((b>>shift)&7)),2)
+ def test_startup_copies_all_approved_and_effect_patterns_to_actual_vram(self):
+    # This regression fails against v0.3: its startup only uploaded the old
+    # title tiles and left the selector/FX patterns uninitialised in VRAM.
+    c=CPU()
+    c.run_until(lambda c:c.pc==R.asm.labels['whole_demo'])
+    self.assertEqual(c.vram[:len(R.ALL_PATTERNS)], R.ALL_PATTERNS)
+    self.assertEqual(c.vram[R.ARROW_ID*32:(R.ARROW_ID+1)*32],R.UI_PATTERNS[-32:])
+    self.assertGreater(len(R.ALL_PATTERNS),len(R.PATTERNS)+64)
+    self.assertTrue(any(c.vram[R.FX_BASE*32:(R.FX_BASE+R.FX_TILE_COUNT)*32]))
+
+ def test_demonstration_maps_never_reuse_portrait_or_logo_tiles(self):
+    # All non-title stages use original FX patterns and no image tile IDs.
+    for name,cell in [('sprites',R.sprite_cells),('colour',R.colour_cells),('audio',R.audio_cells)]:
+        with self.subTest(scene=name):
+            self.assertTrue(all(R.FX_BASE <= (word&0x7ff) < R.FX_BASE+R.FX_TILE_COUNT for word in cell))
+            self.assertGreater(len(set(cell)),100)
+
+ def test_static_effect_palettes_are_loaded_at_scene_start(self):
+    c=CPU()
+    c.run_until(lambda c:c.scene=='sprites' and c.pc==R.asm.labels['run_sprites']+4)
+    self.assertEqual(c.cram,R.FX_PALETTES['aurora'][:128])
+
  def test_approved_portrait_tiles_are_byte_identical(self):
     self.assertEqual(ROM[R.asm.labels['patterns']:R.asm.labels['patterns']+len(R.PATTERNS)],R.PATTERNS)
     for idx,original in enumerate(R.BASE_TITLE_CELLS):
