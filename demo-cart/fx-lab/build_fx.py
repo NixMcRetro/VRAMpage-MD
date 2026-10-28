@@ -156,9 +156,11 @@ VORTEX_MAP=fx_map('vortex')
 AURORA_MAP=fx_map('aurora')
 
 # Controller selector: redraw ONLY the left-side text panel and lower instruction
-# strip at native tile resolution. Portrait/logo source tiles remain untouched.
+# strip at native tile resolution. The first panel column clears the static
+# cyan arrow in the approved v0.1 title, leaving a single moving SAT cursor.
+# Portrait/logo source tiles remain untouched.
 # Uses the approved title's existing bank 1: black (0), white (4), electric blue (8).
-PANEL_X0,PANEL_X1=16,144
+PANEL_X0,PANEL_X1=8,144
 PANEL_Y0,PANEL_Y1=64,168
 CHOICES=('CHROMATIC VORTEX','NEON AURORA','SPRITE STORM','CHROMA REACTOR','PSG SOUND')
 LABEL_YS=(69,81,93,105,117)
