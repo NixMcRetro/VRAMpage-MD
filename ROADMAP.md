@@ -1,5 +1,16 @@
 # VRAMpage MD roadmap
 
+## Authorized Region Selection — Development Source
+
+The user approved the [region selection plan](docs/REGION-PROFILES-PLAN.md).
+Expose the runtime's region modes with NTSC-U unchanged by default, stage choices
+until Load ROM/Clean Restart, and use native cadence/viewport in display and
+exports. CPU Reset retains the active region and checkpoint. The normal core
+remains fixed NTSC-U; physical VA profiles and #73 await board evidence. This is
+a bounded feature-freeze exception, with actual-WASM/browser tests, independent
+specialist review, all required CI/CodeQL and verified main CI before integration.
+No version bump, public artifact replacement or McRetro.net deployment.
+
 ## Authorized RGB Encoder Inputs — Development Source
 
 The user's instruction to continue independently authorizes one bounded RGB

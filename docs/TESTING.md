@@ -1,3 +1,26 @@
+# Region Selection Development Checks
+
+`node tests/test_region_profile_wasm.cjs RUNTIME/genplus.js NORMAL/genplus.js`
+checks all five requests, Auto Europe/Japan, invalid request refusal, staged
+changes, software-visible region bits, native clocks/cadence/262-or-313 lines,
+224/240-line and interlaced viewport reporting, bounded finite nonzero PCM,
+changing RAM and exact default NTSC-U framebuffer/PCM/RAM parity with the normal
+core. The normal profile retains its existing binary hash gates and has no
+region API. The runtime installer includes matching C/header/API source.
+
+`python tests/browser_logic.py -k region` covers staging, accepted/rejected
+loads, CPU Reset/checkpoints, held-input release, native scheduling and viewport,
+unavailable observations and exports. `python tests/browser_core.py -k region`
+uses an original video/tone cartridge with the actual runtime, including PAL
+240-line bottom pixels, every selection, software-visible region, full audio
+bounds, pending/effective export identity and exactly eight native pulse frames.
+Framebuffer tests cover raw byte equality and bounds at 256/320 pixels and
+224/240/448/480 lines; legacy comparison metadata stays Unknown.
+
+These checks are in the existing source/browser/package CI paths. They do not
+establish commercial-game compatibility, audible acceptance or physical VA
+profiles. Cross-browser evidence comes from the required provisioned CI jobs.
+
 # Dependency Maintenance
 
 [Dependabot](../.github/dependabot.yml) checks GitHub Actions and the browser-test

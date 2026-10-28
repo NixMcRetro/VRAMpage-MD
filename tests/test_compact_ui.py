@@ -21,7 +21,7 @@ class CompactWorkbenchTests(unittest.TestCase):
         # v0.1.4 uses measured space after controls, not a fixed viewport share.
         self.assertIn('--window-display-height', CSS)
         self.assertIn('section.height - frame.height', JS)
-        self.assertIn('calc(100vh * 10 / 7)', CSS)
+        self.assertIn('calc(100vh * var(--picture-ratio, 1.4285714285714286))', CSS)
     def test_clean_restart_is_a_real_reset(self):
         self.assertIn('id="resetBtn"',HTML)
         self.assertIn('Clean Restart', HTML)
@@ -52,8 +52,8 @@ class CompactWorkbenchTests(unittest.TestCase):
         self.assertIn('id="clearLogBtn"', HTML)
     def test_fullscreen_does_not_resize_native_pixels(self):
         self.assertIn('document.fullscreenElement === displayViewport', JS)
-        self.assertIn('canvas.width = GAME_WIDTH', JS)
-        self.assertIn('canvas.height = GAME_HEIGHT', JS)
+        self.assertIn('canvas.width = videoWidth', JS)
+        self.assertIn('canvas.height = videoHeight', JS)
         self.assertIn('window.addEventListener(\'resize\'', JS)
 
 if __name__ == '__main__':

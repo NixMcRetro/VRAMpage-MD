@@ -1,11 +1,12 @@
 # Region Selection and Hardware Profiles
 
-Status: feasibility/design review, 28 October 2026 (Sydney). No implementation,
-new build, release or website deployment is included in this checkpoint.
+Status: implemented in development source, 28 October 2026 (Sydney).
+Integration requires the verification gates below. Existing releases and the
+hosted app are unchanged; physical VA profiles remain research.
 
-## Recommended First Slice
+## Runtime Region Selection
 
-Add a runtime-core Region selector while keeping the current NTSC-U default.
+The runtime-core Region selector keeps the current NTSC-U default.
 Choices: NTSC-U, NTSC-J, PAL (Europe), Auto, and Japan PAL (a core-supported
 mode, not a verified motherboard profile). Keep country identity, video standard
 and clock coherent. Record requested and effective settings separately.
@@ -19,7 +20,7 @@ audio and discards the checkpoint through the existing lifecycle.
 VA-specific profiles remain an evidence table until their mappings are verified.
 The region selector must not claim a physical VA revision or solve issue #73.
 
-## Verified Source Capabilities and Current Gaps
+## Source Basis and Integration
 
 - Upstream pin `6090aff9e9b2f578cd28882bd4571d2e35b1d674`,
   `src/main/c/core/loadrom.c`: region_detect 1/2/3/4 selects USA, Europe,
@@ -29,13 +30,16 @@ The region selector must not claim a physical VA revision or solve issue #73.
   cartridge, then initializes audio and the system. A pre-start config setter
   alone would be overwritten. Store the requested choice separately and consume
   it after defaults, before load_rom; validate unsupported values atomically.
-- [Current patcher](../scripts/patch_core.py) forces USA region, NTSC VDP and
-  NTSC oscillator. No public region API currently exists. Source support does
-  not establish behavior of the currently compiled application.
-- [Frontend](../site/app.js) schedules 59.92274 frames/second and creates a fixed
-  320x224 destination. [Framebuffer adapter](../site/framebuffer.js) also assumes
-  224 rows. Timing, display geometry, labels and status must use native state.
-  PAL does not imply 240 visible lines; observe viewport and display mode.
+- The [patcher](../scripts/patch_core.py) preserves the normal core's USA/NTSC
+  overrides. Runtime-only [region state](../scripts/region_profile_runtime.c)
+  consumes the staged request after defaults and publishes observations after
+  successful startup. Its [API shim](../scripts/region_profile_api.js) accepts
+  exact integer IDs 0–4 and distinguishes unloaded state from observations.
+- The [frontend](../site/app.js) uses observed cadence and viewport; the
+  [framebuffer adapter](../site/framebuffer.js) validates variable geometry while
+  preserving default missing-line recovery. PAL does not imply 240 visible
+  lines; the VDP's active mode controls the viewport. Interlace is reported with
+  native rendered height; double-resolution output remains disabled in this core.
 - Native PAL/NTSC use 313/262 lines. Derive cadence from native timing rather
   than hardcoding 50/60. Verify returned audio sample counts and full buffer
   bounds at 44.1 kHz; the wrapper's 2048-sample allocation needs explicit checks.
@@ -83,7 +87,9 @@ HDL in [VRAM research](VRAM-TIMING-RESEARCH.md) can support comparisons without
 establishing an original PCB trace map. Do not infer a VA revision from a ROM's
 region or expose unverified profiles as physically accurate simulations.
 
-Independent Luna High feasibility review checked native startup, region overrides,
-timing and runtime guards. No code was changed and no build or runtime test was
-run for this design. Native capability and the integration plan still require the
-acceptance evidence above before any new region is described as supported.
+Independent Luna High feasibility and implementation reviews checked startup,
+region overrides, timing and runtime guards. Actual-WASM and browser cartridges
+exercise software-visible regions, nonzero pixels/PCM/RAM and default parity;
+see [Testing](TESTING.md#region-selection-development-checks). The queue/status
+checkpoint records final CI and integration evidence. This does not establish
+gameplay compatibility or analogue/electrical accuracy.

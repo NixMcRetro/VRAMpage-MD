@@ -34,6 +34,7 @@ def stage_source(vendor: Path, target: Path):
              "work_ram_fault.c", "work_ram_fault.h", "work_ram_runtime.c", "work_ram_runtime.h",
              "z80_ram_bridge_runtime.c", "z80_ram_bridge_runtime.h", "z80_ram_bridge_core.h", "z80_ram_bridge_api.js",
              "psg_data_fault.h", "psg_data_fault_core.c", "psg_data_fault_runtime.c",
+             "region_profile_runtime.c", "region_profile_runtime.h",
              "fm_data_fault.h", "fm_data_fault_core.c", "fm_data_fault_runtime.c", "fm_data_fault_api.js")
     for name in names:
         shutil.copy2(ROOT / "scripts" / name, helpers / name)
@@ -44,6 +45,7 @@ def stage_source(vendor: Path, target: Path):
         "src/main/c/wasm/vram_transaction_runtime.h", "src/main/c/wasm/psg_data_fault_core.c",
         "src/main/c/wasm/psg_data_fault_runtime.c", "src/main/c/core/sound/psg.c",
         "src/main/c/wasm/fm_data_fault_core.c", "src/main/c/wasm/fm_data_fault_runtime.c",
+        "src/main/c/wasm/region_profile_runtime.c", "src/main/c/wasm/region_profile_runtime.h",
         "src/main/c/core/sound/sound.c", "src/main/c/core/fm_data_fault.h",
         "src/main/c/core/vdp_render.h",
         "src/main/c/core/vdp_render.c", "src/main/c/core/vram_transaction_render.h",
