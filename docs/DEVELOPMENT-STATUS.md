@@ -1,23 +1,45 @@
 # Development status and continuation checkpoint
 
-## Supplied Manual Evidence — 28 October 2026 (Sydney)
+## Supplied Manual Evidence Verified — 28 October 2026 (Sydney)
 
-The user authorized working with the supplied Sega developer/service manuals
-and MiSTer HDL. The [evidence review](SEGA-MANUAL-EVIDENCE.md) records visually
-checked errata, a qualified NEC PAL VA6.5 RAM map, Model 2 memory/encoder
-variations and fresh pinned HDL cross-checks. Three oversized PDFs
-remain uninspected because the materializer limit and proxy block their downloads;
-the report names these files without inferring their content from filenames.
+[PR #91](https://github.com/NixMcRetro/VRAMpage-MD/pull/91) merged as
+`32970b1b90298ab86442cd2599c1fa5ae7bc886c`. Its tree
+`0297a06e41838df0d227cfdb7bb03f41ed4d7aca` matches tested head
+`dbac84ea050d5d5338076de76e356bd846205e4e`. All seven required
+[PR checks, attempt 2](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40664579934/attempts/2)
+and [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40666531795)
+passed. Four CodeQL analyses passed on both
+[PR](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40664574169) and
+[main](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40666531571).
+The active ruleset was satisfied without bypass.
 
-Commit `dea1685` adds literal actual-WASM Auto/header-mask checks from Sega
-Bulletin #31; these pass using the unchanged verified runtime and normal core.
-Production code, native artifacts, VERSION, releases and McRetro.net are unchanged.
-Independent review and the required PR/main CI/CodeQL remain integration gates.
+The [evidence report](SEGA-MANUAL-EVIDENCE.md) records visually checked Sega
+errata, a qualified NEC PAL VA6.5 Work RAM map, Model 2 memory/encoder differences
+and fresh pinned MiSTer source cross-checks. Existing WASM region coverage now
+includes literal ASCII header masks 1/2/4/8/F, software-visible version bits and
+native timing. Independent Luna High review of final head found no remaining
+blockers. Local source/sanitizer/Node/C checks and the expanded WASM test pass;
+unchanged native/browser coverage was also rebuilt and run by required CI.
 
-Keep #73 open: the supplied PAL VA6.5 reference does not prove the selected
-NTSC Model 1 VA6's fitted devices or routing. Do not implement a cosmetic VA
-selector or repeat completed region/recovery/RAM work. Next: complete this bounded
-review/integration and retain exact source/page and GitHub evidence.
+The first PR package job failed an unchanged audio probe's minimum lead assertion:
+-0.0116099773 seconds versus -0.005. The focused test passed locally; one retry
+of the unchanged job passed, and main passed on its first attempt. The probe
+scans PCM before sampling the audio clock; no production cause was established.
+No assertion or production code was changed to obtain a pass. Retain the first
+failure and investigate if it recurs rather than assuming a cause or relaxing it.
+
+All 18 public release records/assets, VERSION and production source are unchanged;
+McRetro.net was not modified or deployed. The [development package](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40666531795/artifacts/12806900372)
+identifies the verified main commit. No scans, ROMs or HDL were copied into Git.
+Local material and logs remain under `/workspace/scratch/manual-evidence/`.
+
+Three oversized PDFs remain uninspected through the attachment/proxy limits;
+the report names them without inferring their content. #73 remains open because
+PAL VA6.5 evidence does not establish the requested NTSC Model 1 VA6 board.
+Next: use concrete new board evidence or compatibility feedback; do not repeat
+completed research or add an unverified physical VA selector. Demo-cart PR #90
+is separate work and was left untouched. This final checkpoint is on
+`maintenance/manual-evidence-delivery` without another trivial source CI cycle.
 
 ## Region Selection Verified — 28 October 2026 (Sydney)
 
