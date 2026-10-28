@@ -8,6 +8,9 @@ download; its BUILD-INFO.json identifies the exact commit.
 
 ## Changes Since Public v0.5.0
 
+- **Work RAM Data Lines:** runtime D0–D15 cuts cover both byte lanes in the
+  existing Address/Data chip view. Masks replace address faults or byte-local
+  bridges and retain existing recovery rules. [Reference, API and limits](WORK-RAM-DATA.md).
 - **Z80 RAM Write:** an off-by-default write-address bridge in the sound CPU's
   8 KiB RAM. It changes future eligible stores without changing native bus
   ownership or read/fetch decoding. Corrupted RAM or instructions can persist
@@ -16,8 +19,8 @@ download; its BUILD-INFO.json identifies the exact commit.
   display pixels independently of memory/audio faults. Raw Emulator Output
   bypasses the effect. This uses explicit black-termination/equal-impedance
   assumptions with byte-code voltage proxies. [Model and lifecycle](RGB-ENCODER-INPUTS.md).
-- **Saved Settings and Observations:** configuration v4 includes both domains
-  and imports v1/v2/v3 with missing newer contacts off. Six-domain disconnect,
+- **Saved Settings and Observations:** configuration v5 includes data masks and both
+  newer domains, and imports v1–v4 with missing contacts off. Six-domain disconnect,
   checkpoints and comparison include them. Missing VRAM runtime metadata now
   compares Unknown rather than reporting a display fallback as observed data.
 - **Usability:** the VRAM Reconnect All label no longer advertises the obsolete
