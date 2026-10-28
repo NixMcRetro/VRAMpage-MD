@@ -1091,9 +1091,23 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
     start_anchor = '    system_reset();\n}'
     old_start_hook = '    system_reset();\n    work_ram_logic_start();\n}'
     previous_runtime_start_hook = '    system_reset();\n    work_ram_logic_start();\n    bend_reset();\n}'
-    start_hook = '    system_reset();\n    work_ram_logic_start();\n#ifdef VRAM_TX_RUNTIME\n    z80_ram_bridge_start();\n#endif\n    bend_reset();\n}'
+    prior_runtime_start_hook = ('    system_reset();\n    work_ram_logic_start();\n'
+                                '#ifdef VRAM_TX_RUNTIME\n    z80_ram_bridge_start();\n#endif\n'
+                                '    bend_reset();\n}')
+    marked_prior_start_hook = ('    system_reset();\n    work_ram_logic_start();\n'
+                               '#ifdef VRAM_TX_RUNTIME\n    z80_ram_bridge_start();\n#endif\n'
+                               '    bend_reset();\n#ifdef VRAM_TX_RUNTIME\n'
+                               '    region_profile_mark_loaded();\n#endif\n}')
+    start_hook = ('    system_reset();\n    work_ram_logic_start();\n'
+                  '#ifdef VRAM_TX_RUNTIME\n    z80_ram_bridge_start();\n#endif\n'
+                  '    bend_reset();\n#ifdef VRAM_TX_RUNTIME\n'
+                  '    region_profile_mark_loaded();\n#endif\n}')
     if wasm.count(start_hook) == 0:
-        if wasm.count(previous_runtime_start_hook) == 1:
+        if wasm.count(marked_prior_start_hook) == 1:
+            wasm = wasm.replace(marked_prior_start_hook, start_hook, 1)
+        elif wasm.count(prior_runtime_start_hook) == 1:
+            wasm = wasm.replace(prior_runtime_start_hook, start_hook, 1)
+        elif wasm.count(previous_runtime_start_hook) == 1:
             wasm = wasm.replace(previous_runtime_start_hook, start_hook, 1)
         else:
             anchor = old_start_hook if old_start_hook in wasm else start_anchor
@@ -1114,18 +1128,6 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
         wasm = wasm.replace(defaults_anchor, runtime_defaults_hook, 1)
     elif wasm.count(runtime_defaults_hook) != 1:
         raise SystemExit('Region profile default hook is ambiguous.')
-
-    init_anchor = '    bend_reset();\n}'
-    runtime_init_hook = ('    bend_reset();\n'
-                         '#ifdef VRAM_TX_RUNTIME\n'
-                         '    region_profile_mark_loaded();\n'
-                         '#endif\n}')
-    if wasm.count(runtime_init_hook) == 0:
-        if wasm.count(init_anchor) != 1:
-            raise SystemExit('Expected audio/system init anchor missing or ambiguous.')
-        wasm = wasm.replace(init_anchor, runtime_init_hook, 1)
-    elif wasm.count(runtime_init_hook) != 1:
-        raise SystemExit('Region profile loaded hook is ambiguous.')
 
     tick_hook = '    system_frame_gen(0);\n    bend_after_frame();\n'
     tick_replacement = '    system_frame_gen(0);\n    work_ram_logic_tick();\n    bend_after_frame();\n'
