@@ -973,6 +973,27 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.keyboard.up('Digit1');self.page.keyboard.up('Shift')
         self.assertEqual(self.page.evaluate('mockCore.logic.writeInhibit'),2)
 
+    def test_write_inhibit_untracked_or_mismatched_state_cannot_be_saved_or_applied(self):
+        self.page.close();self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        self.page.evaluate('mockCore.core._set_logic_write_inhibit(3)')
+        self.page.locator('#circuitConfigDownload').click()
+        expect(self.page.locator('#circuitConfigStatus')).to_contain_text('no file was created')
+        self.stage_circuit_file(self.circuit_configuration(psg=[0,7]))
+        before=self.page.evaluate('[mockCore.logic.setterCalls.length,mockCore.psg.calls.length,mockCore.vramModel.calls.length]')
+        self.page.locator('#circuitConfigApply').click()
+        self.assertEqual(self.page.evaluate('[mockCore.logic.setterCalls.length,mockCore.psg.calls.length,mockCore.vramModel.calls.length]'),before)
+        expect(self.page.locator('#circuitConfigStatus')).to_contain_text('differs from the app state')
+        self.page.locator('#disconnectAllFaultsBtn').click()
+        self.assertEqual(self.page.evaluate('mockCore.logic.writeInhibit'),0)
+        expect(self.page.locator('#disconnectAllFaultsStatus')).to_contain_text('RAM: cleared')
+        self.page.locator('#ramChipSignals').select_option('3')
+        self.page.evaluate('mockCore.invalidWriteInhibitState=0')
+        self.page.locator('[data-chip-line]').nth(0).click()
+        expect(self.page.locator('#pauseBtn')).to_have_text('Resume')
+        expect(self.page.locator('#logicStatus')).to_contain_text('could not be confirmed')
+        self.assertEqual(self.page.evaluate('mockCore.logic.writeInhibit'),1)
+
     def test_write_inhibit_checkpoint_reset_restore_and_clean_restart(self):
         self.page.close();self.page=self.checkpoint_page()
         self.page.locator('#saveCheckpointBtn').click()
