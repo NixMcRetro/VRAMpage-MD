@@ -1,6 +1,16 @@
 # VRAMpage MD roadmap
 
-## Current Hardware Follow-Up and Demo Cart
+## Current Work RAM Data Lines — 29 October 2026
+
+Implement [runtime data-line cuts](docs/WORK-RAM-DATA.md) across D0–D7 and
+D8–D15, reusing the Work RAM chip, direction controls, byte-local bridges,
+configuration and recovery lifecycle. Use the documented PAL Model 1 VA6.5
+two-device circuit as the reference. Exact NTSC VA6 verification in #73 is
+optional research, not a development blocker. Add another physical model choice
+only when evidence supports a meaningful implemented difference. Preserve
+normal/fallback binaries, all public releases and McRetro.net.
+
+## Completed Hardware Follow-Up and Demo Cart
 
 PR #90 delivers the original Demo Cart and staged auto-load as development work;
 full art/audio/scene/fault review is deferred until around v0.6.0. No release or
@@ -8,7 +18,8 @@ website deployment is implied. The [updated hardware evidence](docs/SEGA-MANUAL-
 now reviews all three replacement PDFs and the supplied ConsoleMods pages.
 Their Model II identities and unresolved source conflicts do not establish the
 NTSC Model 1 VA6 map; #73 remains open. Physical profiles still need matching
-board, device and routing evidence. Revisit candidate/release work after this slice.
+board, device and routing evidence. These limits do not block the bounded digital
+data-line model above.
 
 ## Supplied Hardware References — 28 October 2026
 

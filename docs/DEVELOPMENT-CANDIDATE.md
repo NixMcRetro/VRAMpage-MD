@@ -66,5 +66,6 @@ existing public releases. Website deployment is a separate repository/action.
 
 Composite/sync/mono encoder faults and physical VRAM timing are deferred models.
 [NTSC VA6 device mapping](VA6-RAM-VALIDATION.md) still needs matching board evidence;
-the chip diagram remains conceptual. No new hardware-fault model is implied by
-this candidate.
+the chip diagram remains conceptual and that exact-board work is optional.
+Development-source [Work RAM data cuts](WORK-RAM-DATA.md) now use the documented
+PAL two-byte reference, with the same digital/electrical limits.

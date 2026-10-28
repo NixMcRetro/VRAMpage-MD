@@ -84,7 +84,10 @@ The region selector must not claim a physical VA revision or solve issue #73.
 pinout and PAL VA6.5 reference. NTSC VA6 part/package markings, byte lanes and
 address/control routing remain unverified. Other boards and the pinned MiSTer
 HDL in [VRAM research](VRAM-TIMING-RESEARCH.md) can support comparisons without
-establishing an original PCB trace map. Do not infer a VA revision from a ROM's
+establishing an original PCB trace map. The documented PAL two-device circuit
+is the accepted [Work RAM data-line reference](WORK-RAM-DATA.md); exact NTSC
+VA6 verification is optional follow-up. Defer a physical model selector until
+a second evidenced model has meaningful implemented differences. Do not infer a VA revision from a ROM's
 region or expose unverified profiles as physically accurate simulations.
 
 Independent Luna High feasibility and implementation reviews checked startup,

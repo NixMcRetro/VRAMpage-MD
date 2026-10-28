@@ -11,7 +11,7 @@ the data legs. Any combination across both bytes can be forced low. **Reconnect
 All D Lines** removes the mask; previously corrupted writes remain in memory.
 **Address Lines** restores the existing address view without changing the fault.
 Only one Work RAM address mask, data mask or bridge pair is active at a time.
-**Bridge Two Lines** uses the existing low-dominant bridge, restricted to either
+**Bridge Pair** uses the existing low-dominant bridge, restricted to either
 D0–D7 or D8–D15; cross-byte bridges are rejected without changing the fault.
 
 The 68000 bus is big-endian: an even byte accesses D8–D15; an odd byte accesses
