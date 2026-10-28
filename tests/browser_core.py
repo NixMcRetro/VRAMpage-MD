@@ -74,6 +74,54 @@ def original_z80_store_cartridge():
 
 
 class ActualCoreBrowserTests(unittest.TestCase):
+    def test_bundled_demo_boots_renders_and_respects_manual_override(self):
+        # Use the actual compiled WASM core, never a mock or a synthetic screenshot.
+        rom = OPTIONS.site_root / 'demo/VRAMpage-MD-Demo-Cart-v0.1.bin'
+        self.assertTrue(rom.is_file(), 'The original homebrew Demo Cart must be in the built site')
+        handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
+        with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            try:
+                with sync_playwright() as p:
+                    kwargs = {'executable_path': OPTIONS.executable} if OPTIONS.executable else {}
+                    browser = getattr(p, OPTIONS.browser).launch(**kwargs)
+                    try:
+                        page = browser.new_page(viewport={'width': 1366, 'height': 768})
+                        errors = []
+                        page.on('pageerror', lambda error: errors.append(str(error)))
+                        core_js = (OPTIONS.site_root / 'core/genplus.js').read_text()
+                        core_js += '\\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\\n'
+                        page.route('**/core/genplus.js', lambda route: route.fulfill(
+                            content_type='text/javascript', body=core_js))
+                        page.goto(f'http://127.0.0.1:{server.server_port}/')
+                        expect(page.locator('#romName')).to_have_text('VRAMPAGE MD DEMO CART')
+                        expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+                        page.wait_for_function('window.testCore?._get_logic_frame()>12')
+                        screen = page.locator('#screen').evaluate('''canvas => {
+                            const pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+                            const colours=new Set();
+                            for(let y=0;y<canvas.height;y+=4)for(let x=0;x<canvas.width;x+=4){
+                                let i=(y*canvas.width+x)*4;
+                                colours.add(pixels[i]+','+pixels[i+1]+','+pixels[i+2]);
+                            }
+                            return {width:canvas.width,height:canvas.height,uniqueColours:colours.size};
+                        }''')
+                        self.assertEqual((screen['width'], screen['height']), (320,224))
+                        self.assertGreater(screen['uniqueColours'], 4,
+                                           f'Original Demo Cart rendered a blank or uniform image: {screen}')
+                        self.assertEqual(page.locator('#soundBtn').inner_text(), 'Enable Sound')
+                        page.locator('#romFile').set_input_files({
+                            'name':'user-choice.bin','mimeType':'application/octet-stream',
+                            'buffer':original_cartridge()})
+                        expect(page.locator('#romName')).to_have_text('USER-CHOICE.BIN')
+                        page.locator('#resetBtn').click()
+                        expect(page.locator('#romName')).to_have_text('USER-CHOICE.BIN')
+                        self.assertEqual(errors, [])
+                    finally:
+                        browser.close()
+            finally:
+                server.shutdown()
+
     def test_region_selection_uses_native_timing_video_audio_and_lifecycle(self):
         handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
         with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:
