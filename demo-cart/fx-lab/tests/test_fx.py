@@ -183,6 +183,19 @@ class TestROM(unittest.TestCase):
     for name in ('title','vortex','aurora','sprites','colour','audio'):
      p=R.asm.labels['map_'+name]
      self.assertEqual(len(ROM[p:p+4096]),4096)
+ def test_selector_has_exactly_one_bright_cursor(self):
+    # The first title was decorated with a fixed cyan arrow at x=8..15.
+    # The leftmost column of the menu panel now clears that original tile.
+    self.assertEqual(R.PANEL_X0,8)
+    for ty in range(8,16):
+        tile=R.title_cells[ty*40+1]&0x7ff
+        self.assertEqual(R.ALL_PATTERNS[tile*32:(tile+1)*32],bytes(32))
+    # Hardware arrow uses palette 0 index 6 (bright cyan), not the dark
+    # blue index 8 in bank 1. No original portrait/logo tiles are mutated.
+    self.assertEqual(set(n for byte in R.UI_PATTERNS[-32:]
+                         for n in (byte>>4,byte&15)),{0,6})
+    self.assertEqual(R.ALL_PATTERNS[:len(R.PATTERNS)],R.PATTERNS)
+
  def test_chroma_reactor_hscroll_wrap_has_no_blank_columns(self):
     # Cell-scroll excursions can expose Plane A columns beyond the visible 40.
     chroma=R.full_map(R.colour_cells, fill_edges=True)
