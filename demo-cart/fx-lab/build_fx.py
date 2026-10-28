@@ -20,8 +20,22 @@ with zipfile.ZipFile(BASE_KIT) as archive:
     CRAM = archive.read('demo-cart/assets/title_cram.bin')
     TITLE_FONT_SOURCE = archive.read('demo-cart/polish_title.py').decode('utf-8')
 assert len(PATTERNS) % 32 == 0 and len(TILEMAP) == 40*28*2 and len(CRAM) == 128
+# Extract only font literals from the reviewed source without executing that script.
+def decode_font_literal(node):
+    if isinstance(node,ast.Constant) and isinstance(node.value,(str,int)):
+        return node.value
+    if isinstance(node,ast.List):
+        return [decode_font_literal(item) for item in node.elts]
+    if isinstance(node,ast.Dict):
+        return {decode_font_literal(key):decode_font_literal(value)
+                for key,value in zip(node.keys,node.values)}
+    if isinstance(node,ast.BinOp) and isinstance(node.op,ast.Mult):
+        left=decode_font_literal(node.left);right=decode_font_literal(node.right)
+        if isinstance(left,list) and isinstance(right,int) and 0<=right<=8:
+            return left*right
+    raise ValueError('Unsupported glyph literal in the pinned source kit')
 font_ast=ast.parse(TITLE_FONT_SOURCE)
-FONT=next(eval(compile(ast.Expression(stmt.value),"<trusted-font>","eval"),{"__builtins__":{}},{}) for stmt in font_ast.body if isinstance(stmt,ast.Assign) and
+FONT=next(decode_font_literal(stmt.value) for stmt in font_ast.body if isinstance(stmt,ast.Assign) and
           any(isinstance(t,ast.Name) and t.id=='FONT' for t in stmt.targets))
 pattern_count = len(PATTERNS)//32
 assert all((int.from_bytes(TILEMAP[i:i+2],'big') & 0x7ff) < pattern_count for i in range(0,len(TILEMAP),2))
