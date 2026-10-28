@@ -71,6 +71,22 @@ that distinction in hardware documentation without inferring dynamic refresh
 faults from the existing digital model. Z80 sound RAM and cartridge save RAM
 are separate domains, regardless of similarly named memory technologies.
 
+## Supplied Service Manual Follow-Up — 28 October 2026
+
+The user's PAL-G service scans now provide a directly inspected reference:
+Part 2 PDF p. 11 is marked PAL VA6.5 and identifies NEC µPD42832C-15 at
+IC2/IC3, separate VD0–VD7/VD8–VD15 lanes, CPU VA1–VA15 to device A0–A14,
+and shared `/RAS0`/`/NOE` with `/LWR`/`/UWR` write enables. Part 1 p. 65
+supplies the matching NEC pseudo-static RAM package diagram. See the
+[source inventory and qualified map](SEGA-MANUAL-EVIDENCE.md#verified-pal-va65-reference-topology).
+This strengthens the PAL reference without substituting that population for the
+target NTSC VA6 or making the earlier conditional Hitachi map universal.
+
+The same supplied manual includes VA4 and VA6.5 sheets; its cover's Rev. A
+does not identify every PCB as one revision. The Model 2 supplement documents
+separate memory-package changes. The diagram remains conceptual and #73 remains
+open; no new physical profile or electrical behavior is implemented.
+
 ## What Still Establishes Completion of #73
 
 1. Identify an NTSC Model 1 VA6 board by readable silkscreen/board number and

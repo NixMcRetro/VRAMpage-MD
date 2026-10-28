@@ -1,5 +1,10 @@
 # Changelog
 
+## Hardware Evidence — Supplied Sega Manuals
+
+- Record Sega developer errata, a qualified NEC Work RAM map for PAL VA6.5, Model 2 memory/encoder differences and fresh pinned MiSTer comparisons. Keep the NTSC VA6 mapping in #73 unverified.
+- Extend the existing actual-WASM region test with documented ASCII hardware-enable masks and software-visible identity checks. Preserve production code, binaries, versions, release assets and website deployment.
+
 ## Development Source — Region Selection
 
 - Add staged runtime region choices with NTSC-U as the default. Load ROM/Clean Restart applies the choice; CPU Reset retains the active region and checkpoint.

@@ -56,6 +56,12 @@ inspectable images; no independent visual verification of those scans is claimed
 No board, waveform or listening measurement was performed. A Fujitsu pin-level
 model still needs its own complete manufacturer sheet and matching circuit.
 
+The [28 October service-manual follow-up](SEGA-MANUAL-EVIDENCE.md) adds visual
+inspection of the supplied PAL-G Part 2 p. 18 CXA1145P/M block/pin diagram and
+Model 2 Version 1 supplement p. 4 encoder-variant table. This supports the
+separate RGB/composite/sync/audio branches and variant distinctions above;
+it adds no analogue fault measurements or new composite/receiver model.
+
 ## Signals Worth Investigating
 
 Sony pin facts below come from source 1. The last column is a hypothesis requiring

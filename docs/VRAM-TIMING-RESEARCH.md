@@ -119,6 +119,13 @@ expected images merely until a new renderer agrees with itself.
 
 ## Decision and Unresolved Claims
 
+The [28 October manual follow-up](SEGA-MANUAL-EVIDENCE.md) adds visually inspected
+Sega access/reset errata, service-memory topology differences and a fresh pinned
+MiSTer source check. It corroborates logical odd-word byte ordering and separates
+FPGA counter totals from independently documented oscillator values. It supplies
+no measured transfer/tap waveform or new physical timing oracle; the bounded
+fixtures and deferred timing-model decision below remain applicable.
+
 Complete the research follow-up with this source inventory and test plan;
 defer a new physical/raster model. The independently useful next step, if
 implementation is selected later, is a bounded developer trace of existing
