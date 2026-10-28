@@ -1,28 +1,47 @@
 # Development status and continuation checkpoint
 
-## Region Selection Implementation — 28 October 2026 (Sydney)
+## Region Selection Verified — 28 October 2026 (Sydney)
 
-The user approved the [runtime region plan](REGION-PROFILES-PLAN.md). Implementation
-through `e176a4b` adds staged Auto/NTSC-U/NTSC-J/PAL Europe/Japan PAL selection,
-with NTSC-U unchanged by default. Native cadence, viewport and effective machine
-identity drive display, exports and comparison. CPU Reset retains the active
-region and checkpoint; Load ROM/Clean Restart applies the request and clears the
-checkpoint through the existing lifecycle. Circuit files remain fault-only.
-The normal/fallback core remains fixed NTSC-U with its existing hash gates.
+[PR #89](https://github.com/NixMcRetro/VRAMpage-MD/pull/89) merged as
+`ef88ae17067c256da9c9e4fc61c2592e1e53135d`; its tree
+`76ba18d15ef81eb5036b997114f9224de597a891` exactly matches tested head
+`1eb3091ea73b4a2695a0c13173e974d4feba892f`. All seven required
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40654392270)
+and [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40657588413)
+passed, including Chromium/Firefox/WebKit interface and packaged actual-core
+coverage. All four CodeQL analyses passed on both the
+[PR](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40654387164) and
+[main](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40657588967).
+The active main ruleset was satisfied without bypass. No PR remains open.
 
-Luna High authored the native runtime and independently reviewed implementation
-through `95ac5d8`, with no blockers. Actual-WASM original cartridges verify
-software-visible region, nonzero video/PCM/RAM, clock/cadence/viewport and exact
-default parity. Local Chromium actual-core11/11 (including 128-cycle mixed-fault
-endurance), layout7/7 and focused region6/6 pass. Full source/logic, fresh
-actual-WASM builds, final staging review and required GitHub CI/CodeQL remain
-integration gates; final outcomes will replace this pending checkpoint.
+Development source now stages Auto/NTSC-U/NTSC-J/PAL Europe/Japan PAL choices,
+with NTSC-U unchanged by default. Load ROM/Clean Restart applies the request;
+CPU Reset retains the active region and checkpoint. Native cadence and viewport
+drive display and requested/effective machine identity in exports/comparison.
+Circuit files remain fault-only. The normal core has no region API and retains
+its exact existing JS/WASM hashes. See [the region guide](REGION-PROFILES-PLAN.md).
 
-No VERSION change, public release replacement or McRetro.net deployment.
-Physical VA profiles and #73 remain unverified. Do not repeat completed security,
-Actions, RAM research or recovery work. Next: finish these integration gates,
-merge only the tested current head under the active main ruleset, then verify
-main CI and record exact PR/commit/build links.
+Luna High authored the native runtime; independent Luna High reviews through
+`e176a4b` found no blockers. Local source/sanitizer checks pass (114 Python tests
+reported; two build-dependent classes handled separately), fresh actual-WASM
+build/profile tests2/2, Chromium interface145/145, actual-core11/11,
+transaction3/3 and layout7/7. Original cartridges exercise software-visible
+region bits, nonzero video/PCM/RAM, native clock/geometry/audio bounds, default
+parity, held-input release, checkpoints and exact eight-native-frame pulses.
+The existing 128-cycle mixed-fault workload also passes unchanged.
+
+[Download the development browser build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40657588413/artifacts/12803320191)
+(artifact12803320191; expires 27 November 2026). It includes matching source and
+build information for the verified main commit. No VERSION change or public
+release replacement; all18 release records and asset identities are unchanged.
+McRetro.net was not modified or deployed. Physical VA profiles, #73's matching
+board map, commercial-game compatibility and audible acceptance remain unverified.
+
+Next: review the development build with available cartridges and concrete
+compatibility feedback. Do not repeat completed security/Actions/RAM/recovery
+work or infer physical profiles from a region choice. This final delivery
+checkpoint is on `maintenance/region-delivery`, avoiding another trivial
+source CI cycle; the implementation and all tests are already on verified main.
 
 ## Actions Upgrades Verified — 28 October 2026 (Sydney)
 
