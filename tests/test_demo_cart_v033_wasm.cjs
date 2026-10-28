@@ -125,6 +125,17 @@ async function machine(region, rom) {
   captures.push(manual.capture('ntsc-selector-1'));
   manual.press('down');
   captures.push(manual.capture('ntsc-selector-2'));
+  // v0.3.2 had a fixed cyan arrow behind a second moving blue SAT cursor.
+  // Once the cursor reaches item 3, item 1's old arrow area must be empty.
+  {
+    const frame = visiblePixels(manual.core);
+    let stray = 0;
+    for (let y = 69; y < 77; y++) for (let x = 11; x < 19; x++) {
+      const p = (y * WIDTH + x) * 4;
+      if (frame[p] + frame[p+1] + frame[p+2] > 35) stray++;
+    }
+    assert.equal(stray, 0, 'Obsolete first-row arrow must not coexist with moving selector');
+  }
   manual.press('A');
   manual.run(25);
   const sprite1 = manual.capture('ntsc-sprite-storm-early');
