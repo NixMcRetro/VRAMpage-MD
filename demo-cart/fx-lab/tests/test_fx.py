@@ -9,14 +9,14 @@ import hashlib,struct,sys,unittest,json
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import build_fx
 R=build_fx
-ROM=(R.OUT/'VRAMpage-MD-FX-Lab-v0.2.bin').read_bytes()
+ROM=(R.OUT/'VRAMpage-MD-FX-Lab-v0.3-Selector.bin').read_bytes()
 
 class CPU:
-    def __init__(self,pal=False,start_at=None):
-        self.d=[0]*8;self.a=[0]*8;self.z=False
+    def __init__(self,pal=False,start_at=None,inputs=None):
+        self.d=[0]*8;self.a=[0]*8;self.z=False;self.n=False
         self.pc=int.from_bytes(ROM[4:8],'big');self.a[7]=int.from_bytes(ROM[0:4],'big')
         self.stack=[];self.commands=[];self.psg=[];self.region=0xC1 if pal else 0x81
-        self.pad_th=0x40;self.ready_start=start_at;self.frames=0;self.frame_scenes={};self.scene='boot'
+        self.pad_th=0x40;self.ready_start=start_at;self.inputs=sorted(inputs or []);self.frames=0;self.frame_scenes={};self.scene='boot';self.cursor_choices=[];self.enters=[]
         self.vram=bytearray(65536);self.cram=bytearray(128);self.vsram=bytearray(80)
         self.port='vram';self.addr=0;self.in_vblank=False;self.autoinc=2;self.hscroll_mode=0
         self.tmss=0;self.display=False;self.stepcount=0;self.scroll_addresses={}
@@ -28,7 +28,12 @@ class CPU:
     def signed(self,v):return v-65536 if v&0x8000 else v
     def memread(self,addr,size):
         if addr==0xA10001:return self.region
-        if addr==0xA10003:return 0xDF if self.ready_start is not None and self.frames>=self.ready_start else 0xFF
+        if addr==0xA10003:
+            mask=0
+            if self.ready_start is not None and self.frames>=self.ready_start:mask|=0x80
+            for frame,buttons in self.inputs:
+                if self.frames>=frame:mask=buttons
+            return 0xFF ^ ((mask&0x3f) if self.pad_th else ((mask>>2)&0x30))
         if addr==0xC00004:
             self.in_vblank=not self.in_vblank
             return 8 if self.in_vblank else 0
@@ -70,6 +75,9 @@ class CPU:
         op_pc=self.pc;op=self.w();self.stepcount+=1
         if op_pc in self.scene_targets:
             self.scene=self.scene_targets[op_pc]
+            self.enters.append((self.scene,self.frames))
+        if op_pc==R.asm.labels['draw_cursor']:
+            self.cursor_choices.append((self.frames,self.d[7]))
         if op==0x46FC:self.w();return
         if op==0x4E75:
             self.pc=self.stack.pop();return
@@ -77,10 +85,10 @@ class CPU:
             self.a[(op>>9)&7]=self.l();return
         if op&0xF100==0x7000:
             reg=(op>>9)&7;v=op&255;self.d[reg]=v-256 if v>=128 else v;return
-        if op&0xFF00 in (0x6000,0x6100,0x6600,0x6700) and (op&0xff)==0:
+        if op&0xFF00 in (0x6000,0x6100,0x6600,0x6700,0x6A00) and (op&0xff)==0:
             disp_pos=self.pc;ofs=self.signed(self.w());target=disp_pos+ofs
             if op&0xFF00==0x6100:self.stack.append(self.pc)
-            if op&0xFF00 in (0x6000,0x6100) or (op&0xFF00==0x6600 and not self.z) or (op&0xFF00==0x6700 and self.z):self.pc=target
+            if op&0xFF00 in (0x6000,0x6100) or (op&0xFF00==0x6600 and not self.z) or (op&0xFF00==0x6700 and self.z) or (op&0xFF00==0x6A00 and not self.n):self.pc=target
             return
         if op&0xFFF8==0x51C8:
             reg=op&7;disp_pos=self.pc;ofs=self.signed(self.w())
@@ -113,12 +121,44 @@ class CPU:
             elif (op&0xFFF8)==0x0240:self.d[r]&=imm;self.z=(self.d[r]&65535)==0
             else:self.d[r]&=(imm|0xFFFFFF00);self.z=(self.d[r]&255)==0
             return
+        if op&0xFFF8==0x0C40:
+            r=op&7;value=self.w();self.z=(self.d[r]&65535)==value;return
+        if op&0xFFF8==0x0A00:
+            r=op&7;val=self.w();self.d[r]=(self.d[r]&~255)|((self.d[r]^val)&255);self.z=(self.d[r]&255)==0;return
+        if op&0xFFF8==0x4A40:
+            r=op&7;self.z=(self.d[r]&65535)==0;self.n=bool(self.d[r]&0x8000);return
         if op&0xFFF8==0x4A00:
             self.z=(self.d[op&7]&255)==0;return
+        if op&0xF1F8==0xD040:
+            dest=(op>>9)&7;src=op&7
+            self.d[dest]=(self.d[dest]&0xFFFF0000)|((self.d[dest]+self.d[src])&65535);return
+        if op&0xF1F8 in (0x8000,0xB100,0xC000):
+            dest=(op>>9)&7 if (op&0xF1F8)!=0xB100 else op&7
+            src=op&7 if (op&0xF1F8)!=0xB100 else (op>>9)&7
+            if (op&0xF1F8)==0x8000:out=(self.d[dest]|self.d[src])&255
+            elif (op&0xF1F8)==0xB100:out=(self.d[dest]^self.d[src])&255
+            else:out=(self.d[dest]&self.d[src])&255
+            self.d[dest]=(self.d[dest]&~255)|out;self.z=(out==0);return
+        if op&0xF1F8==0xE148:
+            r=op&7;count=(op>>9)&7 or 8
+            self.d[r]=(self.d[r]&~65535)|((self.d[r]<<count)&65535)
+            self.z=(self.d[r]&65535)==0;return
+        if op&0xF1F8==0x5140:
+            r=op&7;count=(op>>9)&7 or 8
+            self.d[r]=(self.d[r]&0xFFFF0000)|((self.d[r]-count)&65535);return
         if op&0xF1F8==0x5040:
             r=op&7;count=(op>>9)&7 or 8
             self.d[r]=(self.d[r]+count)&65535;return
         raise AssertionError(f'Unsupported instruction {op:04X} at {op_pc:06X} after {self.stepcount} steps')
+    def run_until(self,predicate,max_steps=5000000):
+        while self.stepcount<max_steps:
+            if predicate(self):return
+            if self.pc==R.asm.labels['wait_vblank']:
+                self.frames+=1
+                self.frame_scenes[self.scene]=self.frame_scenes.get(self.scene,0)+1
+            self.step()
+        raise AssertionError('Predicate did not become true in execution budget')
+
     def run(self,max_steps=5000000):
         while self.stepcount<max_steps:
             if self.pc==R.asm.labels['wait_vblank']:
@@ -138,7 +178,7 @@ class TestROM(unittest.TestCase):
     self.assertEqual(sum(struct.unpack_from('>H',ROM,i)[0] for i in range(0x200,len(ROM),2))&65535,struct.unpack_from('>H',ROM,0x18E)[0])
     self.assertEqual(len(ROM)%2,0)
  def test_vdp_assets(self):
-    self.assertLess((R.FX_BASE+R.FX_TILE_COUNT)*32,0xC000)
+    self.assertLess((R.ARROW_ID+1)*32,0xC000)
     self.assertEqual(len(R.CRAM),4*16*2)
     for name in ('title','vortex','aurora','sprites','colour','audio'):
      p=R.asm.labels['map_'+name]
@@ -171,7 +211,7 @@ class TestROM(unittest.TestCase):
     self.assertEqual(c.hscroll_mode,0)
  def test_fx_rom_tables_and_palettes_obey_vdp_constraints(self):
     self.assertEqual(R.PHASES,96)
-    self.assertLess((R.FX_BASE+R.FX_TILE_COUNT)*32,0xC000)
+    self.assertLess((R.ARROW_ID+1)*32,0xC000)
     self.assertLess(0xF800+30*32,0xFC00)
     for name in ('vortex','aurora'):
         self.assertEqual(len(R.FX_PALETTES[name]),R.PHASES*128)
@@ -191,7 +231,11 @@ class TestROM(unittest.TestCase):
                 self.assertLessEqual(abs(((a>>shift)&7)-((b>>shift)&7)),2)
  def test_approved_portrait_tiles_are_byte_identical(self):
     self.assertEqual(ROM[R.asm.labels['patterns']:R.asm.labels['patterns']+len(R.PATTERNS)],R.PATTERNS)
-    self.assertEqual(R.TILEMAP, b''.join(struct.pack('>H', x) for x in R.title_cells))
+    for idx,original in enumerate(R.BASE_TITLE_CELLS):
+        tx,ty=idx%40,idx//40
+        if not any(x0<=tx*8<x1 and y0<=ty*8<y1 for x0,y0,x1,y1 in R.UI_BLOCKS):
+            self.assertEqual(R.title_cells[idx],original)
+    self.assertEqual(ROM[R.asm.labels['patterns']+len(R.PATTERNS):R.asm.labels['patterns']+len(R.PATTERNS)+32],bytes(32))
     self.assertEqual(ROM[R.asm.labels['map_title']:R.asm.labels['map_title']+4096],R.full_map(R.title_cells))
  def test_pal_main_sequence(self):
     c=CPU(pal=True);c.run()
@@ -199,8 +243,40 @@ class TestROM(unittest.TestCase):
     self.assertEqual(c.frame_scenes['vortex'],600)
     self.assertEqual(c.frame_scenes['aurora'],600)
  def test_start_skips_intro(self):
-    c=CPU(start_at=5);c.run()
+    c=CPU(inputs=[(5,0x80),(8,0)]);c.run_until(lambda c:len(c.enters)>1)
     self.assertEqual(c.frame_scenes['title'],5)
-    self.assertEqual(c.frame_scenes['vortex'],1)
+    self.assertEqual(c.enters[1][0],'vortex')
+
+ def test_dpad_navigation_and_abcs_launch(self):
+     # Highlight next with Down, next again with Right, then A opens sprite scene.
+     c=CPU(inputs=[(2,0x02),(4,0),(6,0x08),(8,0),(10,0x40),(12,0)])
+     c.run_until(lambda c:len(c.enters)>1)
+     self.assertIn((2,1),c.cursor_choices)
+     self.assertIn((6,2),c.cursor_choices)
+     self.assertEqual(c.enters[1][0],'sprites')
+     self.assertLess(c.enters[1][1],40)
+     self.assertEqual(c.frame_scenes.get('sprites',0),0)
+
+ def test_buttons_and_wrap_no_repeat(self):
+     # UP wraps from item 0 to item 4, hold for several frames must not repeat.
+     c=CPU(inputs=[(3,0x01),(9,0),(12,0x10),(14,0)])
+     c.run_until(lambda c:len(c.enters)>1)
+     self.assertEqual(c.cursor_choices[:2],[(0,0),(3,4)])
+     self.assertEqual(c.enters[1][0],'audio')
+
+ def test_B_and_C_launch_selections(self):
+     for button in (0x10,0x20):
+         with self.subTest(button=button):
+             c=CPU(inputs=[(5,button),(8,0)])
+             c.run_until(lambda c:len(c.enters)>1)
+             self.assertEqual(c.enters[1][0],'vortex')
+             self.assertLess(c.enters[1][1],20)
+
+ def test_start_returns_to_menu_without_relaunching_when_held(self):
+     c=CPU(inputs=[(3,0x80),(6,0),(20,0x80),(31,0)])
+     c.run_until(lambda c:len(c.cursor_choices)>1)
+     self.assertGreaterEqual(len(c.cursor_choices),2)
+     self.assertEqual(c.enters[1][0],'vortex')
+     self.assertTrue(any(kind=='title' and at>=20 for kind,at in c.enters))
 
 if __name__=='__main__': unittest.main(verbosity=2)
