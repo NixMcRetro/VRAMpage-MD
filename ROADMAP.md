@@ -1,5 +1,15 @@
 # VRAMpage MD roadmap
 
+## Current Hardware Follow-Up and Demo Cart
+
+PR #90 delivers the original Demo Cart and staged auto-load as development work;
+full art/audio/scene/fault review is deferred until around v0.6.0. No release or
+website deployment is implied. The [updated hardware evidence](docs/SEGA-MANUAL-EVIDENCE.md)
+now reviews all three replacement PDFs and the supplied ConsoleMods pages.
+Their Model II identities and unresolved source conflicts do not establish the
+NTSC Model 1 VA6 map; #73 remains open. Physical profiles still need matching
+board, device and routing evidence. Revisit candidate/release work after this slice.
+
 ## Supplied Hardware References — 28 October 2026
 
 The [Sega manual evidence review](docs/SEGA-MANUAL-EVIDENCE.md) records useful

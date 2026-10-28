@@ -3,7 +3,9 @@
 Reviewed 28 October 2026 (Sydney), following the user's supplied
 [developer manuals](https://drive.google.com/drive/folders/1-XWN7PGSdV5H35pLC5LPiCSL_io_RxOL)
 and [service manuals](https://drive.google.com/drive/folders/1jikMIvCjwZz3_FjufmXA6ea_Xr9TJ50z).
-This adds source evidence and a regression test, not a new physical fault model.
+This records source evidence and a regression test, not a new physical fault model.
+The replacement-PDF and ConsoleMods follow-up below supersedes the earlier
+large-file access limit; each board remains qualified by its printed identity.
 The app, native binaries, VERSION, released downloads and McRetro.net are unchanged.
 
 ## Results That Can Be Used Now
@@ -99,6 +101,56 @@ before adding a VA selector: one device with separate byte write enables is
 not physically the same contact layout as two separate byte-wide devices.
 No new selector or per-package fault behavior is introduced here.
 
+## Replacement Service Manuals — Large-File Blocker Resolved
+
+The updated copies download successfully. Page inventories and selected cover,
+parts-list, schematic and board areas were visually reviewed; OCR was used for
+navigation. This is not exhaustive validation of all 47 scanned pages. Source
+links below identify the replacements, not the inaccessible earlier file IDs.
+
+| Updated Source | PDF Page / Printed Page | Verified Finding |
+| --- | --- | --- |
+| [“Mega Drive VA0” A4 Part 1](https://drive.google.com/file/d/1s89s7aPbBQ9tXZqx_1k062KgkrbbeIZ8/view), 29 pages, 15,847,842 bytes | 1–3 / cover, 2–3; 19 / 29 | The cover is **Genesis II / Mega Drive II**, PAL-B/I/G and RGB, No. 001, June 1993. The parts list gives Model II IC2/IC3 alternatives including HM65256BLFP-10, TC51832-family and LH59P832N devices, with regional remarks. These are service options, not one universal fitted population or a Model 1 VA0/VA6 list. |
+| [“Mega Drive VA0” A3 Part 2](https://drive.google.com/file/d/144W1-ZLIUabp8q9TVwa7Wvd3ZtuPNApg/view), 10 pages, 18,188,400 bytes | 1–2 / 7–8; 6 / 14 | Board legend **PC BD MD2 VA0 PAL**. The schematic labels two µPD42832-15 Work RAM devices; the reference map below preserves its lanes and control labels. OSC1 lists NTSC/PAL 53.693175/53.203424 MHz, corroborating the existing constants without identifying the target VA6. |
+| [Gen2 / MD2 VA1 A3 Part 2](https://drive.google.com/file/d/1QFSptjQ4nUQzpb4Z6_f7P4qws4Rb0LT0/view), 8 pages, 16,089,181 bytes | 1 / 3–4; 6 / 15–16; 8 / 19–20 | Board legend **PC BD MD2 VA1 PAL**. The difference table replaces IC2 options with LH5P1632N, LC331632M, HM651632DFP or TC511632FL and removes IC3; it also replaces the two VRAM devices with one. Printed p. 20 has the conflicting heading/diagram described below. This is Model II revision evidence. |
+
+### Model II VA0 Schematic Reference
+
+These are **logical CPU signals and device pins on the specified schematic**,
+not evidence of the fitted chips or traces on an NTSC Model 1 VA6. In particular,
+retain the different printed output-enable labels rather than importing the
+older PAL VA6.5 map into this sheet.
+
+| Signal | IC2 | IC3 |
+| --- | --- | --- |
+| Data lane | D0–D7 → VD0–VD7 | D0–D7 → VD8–VD15 |
+| Address relationship | VA1–VA15 → A0–A14 | Same |
+| Device `/CE`, pin 20 | `RAS0` | `RAS0` |
+| Device `/OE`, pin 22 | `NOE` | `EOE`, as printed |
+| Device `/WE`, pin 27 | `LWR` | `UWR` |
+
+The IC3 `EOE` label is transcribed from this scan, not silently normalized to
+`NOE`. This selected-area review does not resolve the complete ASIC/net naming.
+No control-line fault or physical profile follows from the reference table.
+
+### Apparent VA1 Page Association Inconsistency
+
+The supplied VA1 **PDF p. 8, printed p. 20** is headed IC2, 315-0810,
+LH5P1632N-15 SOP40P. Its drawing instead shows SC/SE, serial I/O, RAS/CAS and a
+256 × 256 × 8 array with a serial-access memory (SAM) block. That diagram does
+not substantiate the Work RAM pin map implied by its heading. The difference
+table on printed p. 3 is separately readable; do not derive IC2 capacity, lanes
+or pins from p. 20 without a correctly matched primary specification. The cause
+of the heading/diagram mismatch is not established by the supplied scan.
+
+Source-file SHA-256 values of the updated copies:
+
+```text
+Model II VA0 A4: 71b87a823d87dc43e4e447a13d92dc01a061a39c3d6d0dc0526faf1f16eb359c
+Model II VA0 A3: f5687c98d870153f4ab3971342e16fbfacf7895f20fb27e1a7b4a7b639db700b
+Model II VA1 A3: b6bf3403608a3ecd20cf2415c5bc2e7a4acf5e70518cae394a541fcbcd0f1165
+```
+
 ## MiSTer Cross-Checks and Their Limits
 
 Independent specialist review fetched the exact
@@ -115,15 +167,37 @@ for the main architecture comparison.
 | [system.sv:346–402](https://github.com/MiSTer-devel/Genesis_MiSTer/blob/adc0c42cfb1fa5d484cc8566767f7d68982bc44a/rtl/system.sv#L346-L402) | Four byte-wide RAM banks, logical lane selection and registered acknowledgement. | These are FPGA storage banks, not proof of a real board's package count or pin permutation. |
 | [vdp.vhd:3522–3544](https://github.com/MiSTer-devel/Genesis_MiSTer/blob/adc0c42cfb1fa5d484cc8566767f7d68982bc44a/rtl/vdp.vhd#L3522-L3544) | VBUS DMA feeds the FIFO; fill/copy use distinct states. | No HDL simulation or measured hardware trace was performed. Fast FIFO/turbo settings must be recorded in a future comparison. |
 
+## ConsoleMods Reference Review
+
+All nine supplied pages were read. Wiki prose is a community lead; linked Sega
+manuals and manufacturer sheets provide separate primary evidence. No website
+board photographs or audio recordings were inspected or measured in this pass.
+The Zenith schematic opened, but the returned screenshot did not expose an image;
+no visual schematic verification is claimed.
+
+| Page | Useful Lead | Boundary |
+| --- | --- | --- |
+| [Technical Documentation](https://consolemods.org/wiki/Genesis:Technical_Documentation) | Direct links to Sega PAL Model 1 and Model 2 VA0/VA1/VA3 manuals. The linked documents open successfully: 107/39/23/13 PDF pages respectively. | The Model 1 manual identifies PAL-G VA4/VA6.5, not NTSC VA6. The Model 2 documents must not be relabelled Model 1 because both use VA revision numbers. |
+| [Video Output Notes](https://consolemods.org/wiki/Genesis:Video_Output_Notes) | Encoder families and the distinction between RGB, composite, Y/C, sync and mono-buffer paths. Links directly to Sony/Fujitsu/Samsung manufacturer sheets. | Hardware output quality is not reproduced by changing RGB pixels alone. Its Model 1 CSYNC connector number conflicts with the connector table below. |
+| [Audio Output Comparison](https://consolemods.org/wiki/Genesis:Audio_Output_Comparison) | Captures are labelled by board revision and mono/headphone route, FM chip and amplifier. The page reports Tascam US-1x2 capture equipment and notes some recapped boards. | No audio files were downloaded, listened to or measured. These captures are comparison leads, not calibrated fault or transfer-function data; no recording is redistributed. |
+| [Connector Pinouts](https://consolemods.org/wiki/Genesis:Connector_Pinouts) | Names console-side orientation, cartridge bus signals and separate Model 1/Model 2 AV layouts. | Connector numbering differs from chip pins and CPU signal names. The Model 1 table assigns CSYNC to 6 and Blue to 7, whereas Video Output Notes says CSYNC 7; Zenith Fix also has a DIN pin-7 caption. Resolve against the matching primary drawing before using any disputed number. |
+| [Region Information](https://consolemods.org/wiki/Genesis:Region_Information) | Separates language selection, video frequency and mechanical cartridge fit. | Keep region selection separate from physical board/ASIC identity. Do not infer that every ASIC implements both rates correctly or extend the already-merged region API on this evidence alone. |
+| [ASIC Information](https://consolemods.org/wiki/Genesis:ASIC_Information) | Lists FC1004 variants with absent/defective 50 Hz support, Toshiba parts with different integration/pinouts and later GOAC consolidation. | Record exact part suffix, not just a VA label. These community compatibility claims are not newly reproduced measurements or automatic emulator profiles. |
+| [Toshiba ASIC Pinout](https://consolemods.org/wiki/Genesis:Toshiba_ASIC_Pinout) | Explicitly partial table for Model 2 VA2/VA2.3 315-5685/315-5786; distinguishes CPU, Z80 and VRAM buses, controls and region inputs. | It is not a Model 1 VA6 map and marks many pins unknown. Do not transfer this table to FC1004 or discrete Model 1 devices. |
+| [315-5685 Information](https://consolemods.org/wiki/Genesis:315-5685_Information) | Reports raster/shadow-highlight discrepancies and contrasts 315-5786. | Potential future renderer fixtures need original distinguishable patterns and independent measured output. No chip quirk is implemented or claimed reproduced here. |
+| [Zenith Fix](https://consolemods.org/wiki/Genesis:Zenith_Fix) | Describes a receiver-compatibility change on Model 1 VA6 that modifies the VDP-to-encoder CSYNC path; links a schematic. | Motivates a separate timing/receiver model, not a CPU/RAM fault. The prose/captions are leads; schematic image and board photos were not visually inspectable through the returned tool payload. |
+
+The linked [Sony CXA1145P/M manufacturer scan](https://consolemods.org/wiki/images/3/3d/CXA1145.pdf) opens as a 15-page PDF. Its text identifies RGB inputs 2/3/4, mode input 7, mono audio buffer 8/9, CSYNC input/output 10/11 and B/G/R outputs 21/22/23. This corroborates the existing encoder report and the previously visually inspected supplied PAL-G block diagram; it does not resolve console DIN numbering. No new encoder model or pin table is needed.
+
+[Motherboard Differences](https://consolemods.org/wiki/Genesis:Motherboard_Differences) remains a valuable identification index. It reports North American board 171-5963-10 for both VA6 and VA6.5; EXT population and exact ASIC/part markings are therefore additional identifiers. JP5/JP6/JP7 RAM enable jumpers are leads to inspect, not newly verified target nets. Matching NTSC VA6 RAM markings, lanes and routing remain unestablished. Keep #73 open.
+
 ## Limits and Next Bounded Work
 
-Three PDFs were inventoried but could not be locally inspected:
-`Sega Mega Drive VA0 1 of 2 A4.pdf` (45,189,030 bytes), its A3 Part 2
-(53,639,842 bytes), and `Sega Gen2 & MD2 Supp VA1 2 of 2 A3.pdf`
-(51,204,289 bytes). The attachment materializer has a 32 MiB limit; the
-connector's text extraction was empty and the cloud proxy refused its streamed
-download host (403). Do not claim their contents or a VA0 identity from filenames.
-The available smaller PDFs and GIF pages above were inspected successfully.
+The three formerly oversized PDFs were replaced by accessible copies on
+28 October 2026. All three now download and open; their contents and limitations
+are recorded in the replacement-manual follow-up above. The historical download
+failure is resolved, not a continuing research blocker. The remaining #73 blocker
+is target-specific NTSC Model 1 VA6 evidence.
 
 No new production defect was established. Preserve existing transaction/byte-lane,
 Z80 ownership, recovery and region behavior. The new mask cases extend the existing

@@ -21,7 +21,7 @@ and experimental; older standalone-model descriptions are historical records.
 
 | Document | Purpose |
 | --- | --- |
-| [Sega Manual and MiSTer Evidence](SEGA-MANUAL-EVIDENCE.md) | Primary errata, qualified PAL RAM map, board differences and header-mask tests |
+| [Sega Manual and MiSTer Evidence](SEGA-MANUAL-EVIDENCE.md) | Primary errata, qualified PAL/Model II RAM maps, ConsoleMods leads and source conflicts |
 | [Release history](RELEASE-HISTORY.md) | Canonical historical versions and current runnable downloads |
 | [Release presentation](RELEASE-CURATION.md) | Manage release titles and notes without changing tags or binaries |
 | [Changelog](../CHANGELOG.md) | Versioned changes and verification limits |

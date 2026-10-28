@@ -1,5 +1,9 @@
 # Changelog
 
+## Hardware Evidence — Replacement Manuals and ConsoleMods
+
+- Review the three accessible replacement PDFs as Model II VA0/VA1 references, preserving exact source/page identities and an apparent Work RAM/serial-VRAM diagram mismatch. Index the supplied ConsoleMods leads and conflicting connector numbering; keep the target NTSC Model 1 VA6 mapping unverified. No emulator behavior, release or website changes.
+
 ## Demo Cart — Development Merge Authorized
 
 - Correct the staging helper's review list to match its `vrampage-md` destination. Record the authorized development merge and defer full Demo Cart acceptance until around v0.6.0; preserve its original assets, published releases and separate website approval.

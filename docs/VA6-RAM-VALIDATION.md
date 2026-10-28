@@ -87,6 +87,23 @@ does not identify every PCB as one revision. The Model 2 supplement documents
 separate memory-package changes. The diagram remains conceptual and #73 remains
 open; no new physical profile or electrical behavior is implemented.
 
+## Replacement Manuals and ConsoleMods Follow-Up
+
+The three formerly oversized PDFs are now accessible and reviewed in the
+[manual evidence report](SEGA-MANUAL-EVIDENCE.md#replacement-service-manuals--large-file-blocker-resolved).
+Their printed identities are Model II VA0/VA1; they establish useful memory
+package/lane differences without identifying the target NTSC Model 1 VA6.
+The VA1 scan's apparent Work RAM heading/serial-VRAM diagram mismatch is retained
+as uncertainty, not used as a device pin map.
+
+The [ConsoleMods reference review](SEGA-MANUAL-EVIDENCE.md#consolemods-reference-review)
+adds identification leads and distinguishes wiki prose from linked primary
+manuals. Its motherboard inventory reports the same North American board number
+for VA6 and VA6.5, so a number alone cannot settle the revision. RAM markings,
+package orientation, byte lanes and matching routing remain necessary. Website
+board photos were not inspected in this pass; no target continuity measurement
+or verified NTSC VA6 schematic was obtained. Keep #73 open and the UI conceptual.
+
 ## What Still Establishes Completion of #73
 
 1. Identify an NTSC Model 1 VA6 board by readable silkscreen/board number and
