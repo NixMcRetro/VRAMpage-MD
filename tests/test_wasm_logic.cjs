@@ -33,7 +33,7 @@ const getWord = (c,a) => new DataView(c.HEAPU8.buffer).getUint16(c._get_logic_ra
 const putWord = (c,a,v) => new DataView(c.HEAPU8.buffer).setUint16(c._get_logic_ram_ref()+a,v,true);
 const getByte = (c,a) => c.HEAPU8[c._get_logic_ram_ref()+(a^1)];
 
-async function create(words, config, init) {
+async function create(words, config, init, dataMaskConfig) {
   const c = await factory({locateFile:n=>path.join(path.dirname(coreFile),n)});
   c._init();
   assert.equal(typeof c._set_logic_fault, 'function', 'Rebuild the logic-capable core');
@@ -42,6 +42,7 @@ async function create(words, config, init) {
   c._start();
   if(init) init(c);
   if(config) assert.equal(c._set_logic_fault(...config),0);
+  if(dataMaskConfig) assert.equal(c._set_logic_data_mask(...dataMaskConfig),0);
   const input=new Float32Array(c.HEAPF32.buffer,c._get_input_buffer_ref(),32);
   input.fill(0);c._wasm_input_update();c._tick();c._sound();
   assert.equal(c._get_logic_frame(),1);
@@ -63,6 +64,38 @@ async function create(words, config, init) {
   assert.equal(c._get_logic_reads(),0);assert.equal(c._get_logic_writes(),0);
   assert.equal(c._get_logic_write_trace_state(),0,'trace is disabled by default');tests++;
   assert.equal(c._get_logic_cpu_flags(),1);tests++;
+
+  // Independent byte lanes affect byte, word and both halves of longword CPU stores.
+  c=await create([
+    ...wordWrite(0xff1000,0xffff),...byteWrite(0xff1002,0xff),
+    ...byteWrite(0xff1003,0xff),...longWrite(0xff1004,0xffffffff),
+    ...wordWrite(0xe01008,0xffff),...stop
+  ],null,null,[0x8085,2]);
+  assert.equal(c._get_logic_data_mask(),0x8085);
+  assert.equal(getWord(c,0x1000),0x7f7a);
+  assert.equal(getWord(c,0x1002),0x7f7a);
+  assert.equal(getWord(c,0x1004),0x7f7a);assert.equal(getWord(c,0x1006),0x7f7a);
+  assert.equal(getWord(c,0x1008),0x7f7a,'E0 and FF Work RAM windows share the same lane fault');
+  assert.equal(c._get_logic_writes(),6);
+  assert.equal(c._set_logic_fault(1,1,0,1),0);
+  assert.equal(c._get_logic_data_mask(),0,'legacy address configuration replaces the data mask');
+  tests++;
+
+  // Read-only cuts project CPU data while preserving backing RAM and writes.
+  c=await create([
+    0x3039,0x00ff,0x1000,0x33c0,0x00ff,0x1010,...stop
+  ],null,core=>putWord(core,0x1000,0xffff),[0x8085,1]);
+  assert.equal(getWord(c,0x1000),0xffff);
+  assert.equal(getWord(c,0x1010),0x7f7a);
+  assert.equal(c._get_logic_reads(),1);assert.equal(c._get_logic_writes(),0);
+  assert.equal(c._set_logic_data_mask(0x10000,1),5);
+  assert.equal(c._get_logic_data_mask(),0x8085,'invalid native range leaves the active mask unchanged');
+  assert.equal(c._recover_logic_cpu(1),0);
+  assert.equal(c._get_logic_data_mask(),0,'CPU recovery disconnects the data mask');
+  assert.equal(c._set_logic_data_mask(0x0080,3),0);
+  c._start();
+  assert.equal(c._get_logic_data_mask(),0,'Clean Restart disconnects the data mask');
+  tests++;
 
   c=await create([
     ...wordWrite(0xff1000,0xabcd),...wordWrite(0xff1002,0x1234),
@@ -114,6 +147,17 @@ async function create(words, config, init) {
     assert.equal(getWord(c,0x1000),2);
     if(fault)assert.ok(c._get_logic_reads()>0);tests++;
   }
+  c=await create([
+    ...wordWrite(0xff1000,0x0002),...wordWrite(0xc00004,0x8114),
+    ...wordWrite(0xc00004,0x8f02),...wordWrite(0xc00004,0x9301),
+    ...wordWrite(0xc00004,0x9400),...wordWrite(0xc00004,0x9500),
+    ...wordWrite(0xc00004,0x9688),...wordWrite(0xc00004,0x977f),
+    ...longWrite(0xc00004,0x40000080),...longWrite(0xc00004,0),
+    0x3039,0x00c0,0x0000,0x33c0,0x00ff,0x1010,...stop
+  ],null,null,[0x0002,1]);
+  assert.equal(getWord(c,0x1010),0,'VDP DMA reads the configured Work RAM data lane');
+  assert.equal(getWord(c,0x1000),2,'read-side DMA fault preserves Work RAM');
+  assert.ok(c._get_logic_reads()>0);tests++;
   // A fresh cartridge load clears the fault, counters, and frame metadata.
   c._start();assert.equal(c._get_logic_reads(),0);assert.equal(c._get_logic_writes(),0);
   assert.equal(c._get_logic_frame(),0);assert.equal(c._get_logic_activation_frame(),0);tests++;

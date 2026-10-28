@@ -1,5 +1,11 @@
 # Changelog
 
+## Development Source — Work RAM Data Lines
+
+- Add runtime-only D0–D15 cuts across independent byte lanes, sharing the compact Address/Data signal view and existing fault lifecycle. Address cuts, data cuts and byte-local bridges replace one another.
+- Save data masks in circuit schema 5, retain versions 1–4 imports, and export observed masks/reference identity with unavailable legacy state marked Unknown.
+- Use the documented PAL Model 1 VA6.5 topology as a bounded reference; keep exact NTSC VA6 validation optional and defer additional physical-model choices until evidenced differences exist.
+
 ## Hardware Evidence — Replacement Manuals and ConsoleMods
 
 - Review the three accessible replacement PDFs as Model II VA0/VA1 references, preserving exact source/page identities and an apparent Work RAM/serial-VRAM diagram mismatch. Index the supplied ConsoleMods leads and conflicting connector numbering; keep the target NTSC Model 1 VA6 mapping unverified. No emulator behavior, release or website changes.

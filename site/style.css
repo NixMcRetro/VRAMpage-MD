@@ -361,6 +361,10 @@ footer { padding-top:9px; font-size:10px; }
 .chip-card h2 small { color:var(--muted); font:10px ui-monospace,SFMono-Regular,Consolas,monospace; }
 .chip-compact-control { white-space:nowrap; display:flex; align-items:center; justify-content:space-between; gap:4px; margin:3px 0; color:var(--muted); font-size:10px; }
 .chip-compact-control select { min-width:0; max-width:72%; padding:3px 4px; border:1px solid var(--rule); border-radius:2px; background:var(--surface); color:var(--ink); font:10px ui-monospace,SFMono-Regular,Consolas,monospace; }
+.chip-card[data-keyboard-chip="WRAM"] { padding-block:6px; }
+.chip-card[data-keyboard-chip="WRAM"] h2 { margin-bottom:0; }
+.ram-chip-options { display:grid; grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr); gap:4px; }
+.ram-chip-options select { min-width:0; width:100%; height:18px; padding:0 2px; border:1px solid var(--rule); border-radius:2px; background:var(--surface); color:var(--ink); font:10px ui-monospace,SFMono-Regular,Consolas,monospace; }
 .chip-workbench .pin-grid, .chip-workbench .ram-chip, .data-chip {
   display:grid; grid-template-columns:38px minmax(48px,1fr) 38px; gap:0; padding:0;
   position:relative; isolation:isolate; width:100%; max-width:100%; margin:3px auto;

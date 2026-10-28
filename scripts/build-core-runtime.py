@@ -41,6 +41,7 @@ HELPER_FILES = (
     "work_ram_fault.h",
     "work_ram_runtime.c",
     "work_ram_runtime.h",
+    "work_ram_data_mask_api.js",
     "session_checkpoint_runtime.c",
     "session_checkpoint_patch.py",
     "region_profile_runtime.c",
@@ -157,6 +158,7 @@ def patch_cmake(cmake: Path) -> None:
         'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/psg_data_fault_api.js")',
         'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/fm_data_fault_api.js")',
         'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/z80_ram_bridge_api.js")',
+        'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/work_ram_data_mask_api.js")',
         'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/region_profile_api.js")',
     )
     if any(flag in text for flag in flags):

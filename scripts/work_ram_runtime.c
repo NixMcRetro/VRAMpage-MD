@@ -21,6 +21,10 @@ static uint32_t logic_write_budget;
 static uint32_t logic_pulse_state;
 static uint16_t logic_address_mask;
 static work_ram_fault_access logic_mask_access;
+#ifdef VRAM_TX_RUNTIME
+static uint16_t logic_data_mask;
+static work_ram_fault_access logic_data_mask_access;
+#endif
 static int logic_write_trace_enabled;
 static uint32_t logic_write_trace_state;
 static uint32_t logic_write_trace_cpu_address;
@@ -68,6 +72,10 @@ static void changed_write(void)
     if (logic_pulse_state == WORK_RAM_PULSE_ARMED && --logic_write_budget == 0) {
         /* Release before the next bus access, including a longword's second half. */
         logic_config = work_ram_fault_clear();
+#ifdef VRAM_TX_RUNTIME
+        logic_data_mask = 0;
+        logic_data_mask_access = WORK_RAM_FAULT_APPLY_NONE;
+#endif
         logic_pulse_state = WORK_RAM_PULSE_EXHAUSTED;
     }
 }
@@ -77,7 +85,12 @@ static int operation_applies(work_ram_fault_access operation)
     return (logic_config.kind != WORK_RAM_FAULT_NONE &&
         (logic_config.access == WORK_RAM_FAULT_APPLY_BOTH || logic_config.access == operation)) ||
         (logic_address_mask != 0 &&
-         (logic_mask_access == WORK_RAM_FAULT_APPLY_BOTH || logic_mask_access == operation));
+         (logic_mask_access == WORK_RAM_FAULT_APPLY_BOTH || logic_mask_access == operation))
+#ifdef VRAM_TX_RUNTIME
+        || (logic_data_mask != 0 &&
+         (logic_data_mask_access == WORK_RAM_FAULT_APPLY_BOTH || logic_data_mask_access == operation))
+#endif
+        ;
 }
 
 int work_ram_logic_address(uint32_t address)
@@ -148,6 +161,11 @@ uint8_t work_ram_logic_read8(uint32_t address)
                                     WORK_RAM_FAULT_APPLY_READ,
                                     &projected) != WORK_RAM_FAULT_OK)
         return value;
+#ifdef VRAM_TX_RUNTIME
+    if (logic_data_mask && (logic_data_mask_access == WORK_RAM_FAULT_APPLY_BOTH ||
+                            logic_data_mask_access == WORK_RAM_FAULT_APPLY_READ))
+        projected &= (uint8_t)~((offset & 1u) ? logic_data_mask : (logic_data_mask >> 8));
+#endif
     if (offset != original || projected != value)
         logic_reads++;
     return projected;
@@ -164,6 +182,11 @@ uint16_t work_ram_logic_read16(uint32_t address)
                                     WORK_RAM_FAULT_APPLY_READ,
                                     &projected) != WORK_RAM_FAULT_OK)
         return value;
+#ifdef VRAM_TX_RUNTIME
+    if (logic_data_mask && (logic_data_mask_access == WORK_RAM_FAULT_APPLY_BOTH ||
+                            logic_data_mask_access == WORK_RAM_FAULT_APPLY_READ))
+        projected &= (uint16_t)~logic_data_mask;
+#endif
     if (((uint32_t)word << 1) != original || projected != value)
         logic_reads++;
     return projected;
@@ -181,6 +204,11 @@ void work_ram_logic_write8(uint32_t address, uint8_t value)
         native_write_byte(address & 0xffffu, value);
         return;
     }
+#ifdef VRAM_TX_RUNTIME
+    if (logic_data_mask && (logic_data_mask_access == WORK_RAM_FAULT_APPLY_BOTH ||
+                            logic_data_mask_access == WORK_RAM_FAULT_APPLY_WRITE))
+        projected &= (uint8_t)~((offset & 1u) ? logic_data_mask : (logic_data_mask >> 8));
+#endif
     if (offset != original || projected != value) {
         uint32_t reason = (offset != original ? WORK_RAM_TRACE_REASON_ADDRESS : 0u) |
                           (projected != value ? WORK_RAM_TRACE_REASON_DATA : 0u);
@@ -203,6 +231,11 @@ void work_ram_logic_write16(uint32_t address, uint16_t value)
         *(uint16_t *)(work_ram + (address & 0xffffu)) = value;
         return;
     }
+#ifdef VRAM_TX_RUNTIME
+    if (logic_data_mask && (logic_data_mask_access == WORK_RAM_FAULT_APPLY_BOTH ||
+                            logic_data_mask_access == WORK_RAM_FAULT_APPLY_WRITE))
+        projected &= (uint16_t)~logic_data_mask;
+#endif
     if (((uint32_t)word << 1) != original || projected != value) {
         uint32_t mapped = (uint32_t)word << 1;
         uint32_t reason = (mapped != original ? WORK_RAM_TRACE_REASON_ADDRESS : 0u) |
@@ -249,6 +282,10 @@ WORK_RAM_KEEPALIVE int set_logic_fault(int kind, int access,
     logic_write_budget = 0;
     logic_address_mask = 0;
     logic_mask_access = WORK_RAM_FAULT_APPLY_NONE;
+#ifdef VRAM_TX_RUNTIME
+    logic_data_mask = 0;
+    logic_data_mask_access = WORK_RAM_FAULT_APPLY_NONE;
+#endif
     logic_config = candidate;
     if (candidate.kind != WORK_RAM_FAULT_NONE) {
         logic_reads = 0;
@@ -318,6 +355,32 @@ WORK_RAM_KEEPALIVE uint32_t get_logic_address_mask(void)
     return logic_address_mask;
 }
 
+#ifdef VRAM_TX_RUNTIME
+WORK_RAM_KEEPALIVE int set_logic_data_mask_c(double mask, double access)
+{
+    if (mask != mask || access != access || mask < 0.0 || mask > 65535.0 ||
+        mask != (int)mask || access < WORK_RAM_FAULT_APPLY_READ ||
+        access > WORK_RAM_FAULT_APPLY_BOTH || access != (int)access)
+        return WORK_RAM_FAULT_INVALID_CONFIG;
+    set_logic_fault(WORK_RAM_FAULT_NONE, 0, 0, 0);
+    if (mask != 0) {
+        logic_data_mask = (uint16_t)mask;
+        logic_data_mask_access = (work_ram_fault_access)access;
+        logic_reads = 0;
+        logic_writes = 0;
+        logic_activation_frame = logic_frame;
+        reset_write_trace_record();
+        logic_pulse_state = WORK_RAM_PULSE_NONE;
+    }
+    return WORK_RAM_FAULT_OK;
+}
+
+WORK_RAM_KEEPALIVE uint32_t get_logic_data_mask_c(void)
+{
+    return logic_data_mask;
+}
+#endif
+
 extern int set_z80_ram_bridge_c(double, double, double);
 
 WORK_RAM_KEEPALIVE int recover_logic_cpu(int mode)
@@ -367,6 +430,10 @@ void work_ram_logic_start(void)
     logic_config = work_ram_fault_clear();
     logic_address_mask = 0;
     logic_mask_access = WORK_RAM_FAULT_APPLY_NONE;
+#ifdef VRAM_TX_RUNTIME
+    logic_data_mask = 0;
+    logic_data_mask_access = WORK_RAM_FAULT_APPLY_NONE;
+#endif
     logic_reads = 0;
     logic_writes = 0;
     logic_frame = 0;

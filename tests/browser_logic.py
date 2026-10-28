@@ -54,7 +54,7 @@ class BrowserLogicTests(unittest.TestCase):
             context.close()
         self.assertEqual(self.errors, [], "Uncaught application errors")
 
-    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False, manual_frames=False, session_checkpoint=False, automatic_recovery=False, legacy_z80_ram=False, region_core=False, demo_rom=False, stalled_demo=False):
+    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False, manual_frames=False, session_checkpoint=False, automatic_recovery=False, legacy_z80_ram=False, region_core=False, demo_rom=False, stalled_demo=False, legacy_ram_data=False):
         context = self.browser.new_context(
             viewport={"width": 1366, "height": 768},
             color_scheme="light",
@@ -62,6 +62,8 @@ class BrowserLogicTests(unittest.TestCase):
         )
         self.contexts.append(context)
         page = context.new_page()
+        if legacy_ram_data:
+            page.add_init_script("window.__legacyRamDataCore = true;")
         if region_core:
             page.add_init_script("window.__regionCore = true;")
         if legacy_z80_ram:
@@ -712,6 +714,145 @@ class BrowserLogicTests(unittest.TestCase):
         expect(legacy.locator("#logicStatus")).to_have_text("Rebuild core for logic faults")
         expect(legacy.locator("#pauseBtn")).to_have_text("Pause")
 
+    def test_ram_data_masks_span_both_bytes_and_replace_address_faults(self):
+        self.page.locator('#ramChipSignals').select_option('2')
+        pins=self.page.locator('[data-chip-line]')
+        self.assertEqual(pins.count(),16)
+        expect(pins.nth(15)).to_be_disabled()
+        self.load_rom()
+        expect(self.page.locator('#ramChipSignals')).to_have_value('1')
+        self.page.locator('#ramChipSignals').select_option('2')
+        self.page.locator('#logicAccess').select_option('2')
+        for line in (0,8,15): pins.nth(line).click()
+        self.assertEqual(self.page.evaluate('[mockCore.logic.dataMask,mockCore.logic.addressMask]'),[0x8101,0])
+        self.assertEqual(self.page.evaluate('mockCore.logic.dataMaskCalls.at(-1)'),[0x8101,2])
+        pins.nth(8).focus()
+        self.page.keyboard.press('Space')
+        self.assertEqual(self.page.evaluate('mockCore.logic.dataMask'),0x8001)
+        expect(pins.nth(0)).to_have_attribute('aria-pressed','true')
+        expect(pins.nth(15)).to_have_attribute('aria-pressed','true')
+        payload=self.export_payload()
+        self.assertEqual(payload['logicFault']['lines'],['D0','D15'])
+        self.assertEqual(payload['logic']['dataMask'],0x8001)
+        self.assertTrue(payload['logic']['dataMaskAvailable'])
+        self.assertEqual(payload['logic']['referenceProfile'],'model1-pal-va65-two-byte-v1')
+        calls=self.page.evaluate('mockCore.logic.setterCalls.length')
+        self.page.locator('#ramChipSignals').select_option('1')
+        self.assertEqual(self.page.evaluate('mockCore.logic.setterCalls.length'),calls)
+        pins.nth(4).click()
+        self.assertEqual(self.page.evaluate('[mockCore.logic.dataMask,mockCore.logic.addressMask]'),[0,16])
+        self.page.locator('#ramChipSignals').select_option('2')
+        pins.nth(9).click()
+        self.assertEqual(self.page.evaluate('[mockCore.logic.dataMask,mockCore.logic.addressMask]'),[512,0])
+        for width,height in [(1366,768),(390,844),(844,390)]:
+            self.page.set_viewport_size({'width':width,'height':height})
+            self.assertLessEqual(self.page.evaluate('document.documentElement.scrollWidth'),width)
+        self.page.locator('#chipRestoreBtn').click()
+        self.assertEqual(self.page.evaluate('mockCore.logic.dataMask'),0)
+
+    def test_ram_data_bridge_rejects_cross_byte_pair_and_replaces_mask(self):
+        self.load_rom()
+        self.page.locator('#ramChipSignals').select_option('2')
+        pins=self.page.locator('[data-chip-line]')
+        pins.nth(15).click()
+        self.page.locator('#ramLegAction').select_option('bridge')
+        calls=self.page.evaluate('mockCore.logic.setterCalls.length')
+        pins.nth(7).click();pins.nth(8).click()
+        self.assertEqual(self.page.evaluate('mockCore.logic.setterCalls.length'),calls)
+        self.assertEqual(self.page.evaluate('mockCore.logic.dataMask'),0x8000)
+        expect(self.page.locator('#logicStatus')).to_contain_text('Data pairs must stay within')
+        pins.nth(1).click();pins.nth(7).click()
+        self.assertEqual(self.page.evaluate('mockCore.logic.dataMask'),0)
+        self.assertEqual(self.page.evaluate('mockCore.logic.setterCalls.at(-1)'),[2,1,1,7])
+
+    def test_ram_data_mask_configuration_roundtrip_and_legacy_preflight(self):
+        self.page.close();self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        self.page.locator('#ramChipSignals').select_option('2')
+        self.page.locator('#logicAccess').select_option('3')
+        for line in (1,14): self.page.locator('[data-chip-line]').nth(line).click()
+        with self.page.expect_download() as info:
+            self.page.locator('#circuitConfigDownload').click()
+        saved=json.loads(Path(info.value.path()).read_text())
+        self.assertEqual(saved['schemaVersion'],5)
+        self.assertEqual(saved['configuration']['ram'],{'type':'data-mask','mask':0x4002,'access':3})
+        self.page.locator('#disconnectAllFaultsBtn').click()
+        self.stage_circuit_file(saved)
+        self.page.locator('#circuitConfigApply').click()
+        self.assertEqual(self.page.evaluate('mockCore.logic.dataMask'),0x4002)
+        expect(self.page.locator('#ramChipSignals')).to_have_value('2')
+        legacy=self.new_page(circuit_config=True,legacy_ram_data=True)
+        self.load_rom(legacy)
+        self.stage_circuit_file(saved,legacy)
+        before=legacy.evaluate('[mockCore.logic.setterCalls.length,mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]')
+        legacy.locator('#circuitConfigApply').click()
+        self.assertEqual(legacy.evaluate('[mockCore.logic.setterCalls.length,mockCore.vramModel.calls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]'),before)
+        expect(legacy.locator('#circuitConfigStatus')).to_contain_text('cannot apply or verify')
+        legacy.locator('#ramChipSignals').select_option('2')
+        expect(legacy.locator('[data-chip-line]').nth(0)).to_be_disabled()
+        legacy.locator('#ramLegAction').select_option('bridge')
+        legacy.locator('[data-chip-line]').nth(8).click()
+        legacy.locator('[data-chip-line]').nth(15).click()
+        self.assertEqual(legacy.evaluate('mockCore.logic.setterCalls.at(-1)'),[2,1,8,15])
+        self.assertIsNone(self.export_payload_for(legacy)['logic']['dataMask'])
+
+    def test_ram_data_mask_rejection_restores_previous_vram(self):
+        self.page.close();self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        self.page.locator('#pinGrid .pin').nth(2).click()
+        before=self.page.evaluate('mockCore.vramModel.mask')
+        self.assertNotEqual(before,0)
+        self.page.locator('#ramChipSignals').select_option('2')
+        self.page.evaluate('mockCore.rejectDataMask=true')
+        self.page.locator('[data-chip-line]').nth(8).click()
+        self.assertEqual(self.page.evaluate('mockCore.logic.dataMask'),0)
+        self.assertEqual(self.page.evaluate('mockCore.vramModel.mask'),before)
+        expect(self.page.locator('#logicStatus')).to_contain_text('previous VRAM configuration restored')
+
+    def test_ram_data_mask_partial_failure_and_unknown_readback_pause(self):
+        self.load_rom()
+        self.page.locator('#ramChipSignals').select_option('2')
+        self.page.evaluate('mockCore.throwDataMaskAfter=true')
+        self.page.locator('[data-chip-line]').nth(9).click()
+        self.assertEqual(self.page.evaluate('mockCore.logic.dataMask'),512)
+        expect(self.page.locator('#pauseBtn')).to_have_text('Resume')
+        expect(self.page.locator('#logicStatus')).to_contain_text('outcome is unknown')
+        self.page.evaluate('mockCore.throwDataMaskAfter=false')
+        self.page.locator('#disconnectAllFaultsBtn').click()
+        self.assertEqual(self.page.evaluate('mockCore.logic.dataMask'),0)
+        self.page.evaluate('mockCore.throwDataMaskState=true')
+        self.page.locator('[data-chip-line]').nth(0).click()
+        expect(self.page.locator('#logicStatus')).to_contain_text('could not be confirmed')
+        self.assertIsNone(self.export_payload()['logic']['dataMask'])
+        self.page.locator('#circuitConfigDownload').click()
+        expect(self.page.locator('#circuitConfigStatus')).to_contain_text('no file was created')
+        self.page.locator('#disconnectAllFaultsBtn').click()
+        expect(self.page.locator('#pauseBtn')).to_have_text('Resume')
+        expect(self.page.locator('#disconnectAllFaultsStatus')).to_contain_text('RAM: clear failed')
+        self.assertEqual(self.page.evaluate('mockCore.logic.dataMask'),0)
+
+    def test_ram_data_mask_restores_after_temporary_address_shortcut_and_cpu_reset(self):
+        self.page.close();self.page=self.new_page(session_checkpoint=True,circuit_config=True)
+        self.load_rom()
+        self.page.locator('#saveCheckpointBtn').click()
+        self.page.locator('#ramChipSignals').select_option('2')
+        self.page.locator('[data-chip-line]').nth(12).click()
+        self.page.locator('#screen').click()
+        self.page.keyboard.press('Digit0')
+        self.page.keyboard.down('Shift');self.page.keyboard.down('Digit1')
+        self.assertEqual(self.page.evaluate('mockCore.logic.dataMask'),0)
+        self.page.keyboard.up('Digit1');self.page.keyboard.up('Shift')
+        self.assertEqual(self.page.evaluate('mockCore.logic.dataMask'),4096)
+        saves=self.page.evaluate('mockCore.checkpoint.saves')
+        self.page.locator('#saveCheckpointBtn').click()
+        self.assertEqual(self.page.evaluate('mockCore.checkpoint.saves'),saves)
+        self.page.locator('#psgChip .pin').nth(1).click()
+        self.page.locator('#psgChip .pin').nth(2).click()
+        self.page.locator('#logicCpuResetBtn').click()
+        self.assertEqual(self.page.evaluate('mockCore.logic.dataMask'),0)
+        self.assertTrue(self.page.evaluate('mockCore.psg.configured'))
+        expect(self.page.locator('#restoreCheckpointBtn')).to_be_enabled()
+
     def test_configuration_validation_and_cross_lane_rejection(self):
         self.load_rom()
         self.page.locator("#logicKind").select_option("2")
@@ -881,7 +1022,7 @@ class BrowserLogicTests(unittest.TestCase):
         with self.page.expect_download() as download:
             self.page.locator("#circuitConfigDownload").click()
         saved=json.loads(Path(download.value.path()).read_text())
-        self.assertEqual(saved["schemaVersion"],4)
+        self.assertEqual(saved["schemaVersion"],5)
         self.assertEqual(saved["configuration"]["z80Ram"],{"pair":[2,11]})
         self.stage_circuit_file(saved)
         calls=self.page.evaluate("mockCore.z80Ram.calls.length")
@@ -998,7 +1139,7 @@ class BrowserLogicTests(unittest.TestCase):
         with page.expect_download() as download:
             page.locator('#circuitConfigDownload').click()
         saved=json.loads(Path(download.value.path()).read_text())
-        self.assertEqual(saved['schemaVersion'],4)
+        self.assertEqual(saved['schemaVersion'],5)
         self.assertEqual(saved['configuration']['rgbEncoder'],{'cutMask':2,'pair':[1,2]})
         legacy_v3=json.loads(json.dumps(saved))
         legacy_v3['schemaVersion']=3
@@ -1571,7 +1712,7 @@ class BrowserLogicTests(unittest.TestCase):
         with self.page.expect_download() as info:
             self.page.locator("#circuitConfigDownload").click()
         saved = json.loads(Path(info.value.path()).read_text())
-        self.assertEqual(saved, {**payload,"schemaVersion":4,
+        self.assertEqual(saved, {**payload,"schemaVersion":5,
             "configuration":{**payload["configuration"],"z80Ram":{"pair":None},
                 "rgbEncoder":{"cutMask":0,"pair":None}}})
         self.assertEqual(set(saved), {"format", "schemaVersion", "configuration"})
@@ -1771,7 +1912,7 @@ class BrowserLogicTests(unittest.TestCase):
         with self.page.expect_download() as info:
             self.page.locator('#circuitConfigDownload').click()
         saved=json.loads(Path(info.value.path()).read_text())
-        self.assertEqual(saved['schemaVersion'],4)
+        self.assertEqual(saved['schemaVersion'],5)
         self.assertEqual(saved['configuration']['psg'],{'pair':None,'dataMask':129})
         self.assertEqual(saved['configuration']['fm'],{'pair':None,'dataMask':8})
         experiment=self.export_payload()

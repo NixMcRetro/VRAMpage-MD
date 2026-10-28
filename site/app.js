@@ -1123,30 +1123,52 @@
       typeof emulator?._get_logic_address_mask === 'function';
   }
 
+  function dataMaskApiReady() {
+    return typeof emulator?._set_logic_data_mask==='function' &&
+      typeof emulator?._get_logic_data_mask==='function';
+  }
+
+  function currentRamDataMask() {
+    if (!dataMaskApiReady()) return null;
+    try {
+      const mask=emulator._get_logic_data_mask();
+      return Number.isInteger(mask) && mask>=0 && mask<=0xffff ? mask : null;
+    } catch (_) { return null; }
+  }
+
+  function trackedRamDataMask() {
+    return logicActive && activeRamConfiguration?.type==='data-mask' ? activeRamConfiguration.mask : 0;
+  }
+
   function refreshChipControls() {
-    const ready=started && addressMaskApiReady();
+    const kind=Number($('ramChipSignals').value), data=kind===2;
+    const ready=started && ($('ramLegAction').value==='bridge' ? logicApiReady()
+      : data ? dataMaskApiReady() : addressMaskApiReady());
+    const mask=data?trackedRamDataMask():logicAddressMask;
+    const pair=logicActive && activeRamConfiguration?.type==='line-pair' && activeRamConfiguration.kind===kind
+      ? activeRamConfiguration : null;
     for (const button of document.querySelectorAll('[data-chip-line]')) {
-      const line=Number(button.dataset.chipLine), forced=!!(logicAddressMask & (1<<line));
-      const bridged=logicActive && activeRamConfiguration?.type==='line-pair' && activeRamConfiguration.kind===1 &&
-        [activeRamConfiguration.a,activeRamConfiguration.b].includes(line);
-      const pending=ramSelectedPin===line;
+      const line=Number(button.dataset.chipLine), forced=!!(mask & (1<<line));
+      const bridged=!!pair && [pair.a,pair.b].includes(line), pending=ramSelectedPin===line;
+      const name=logicLineName(kind,line);
       button.disabled=!ready;
       button.classList.toggle('cut',forced);
       button.classList.toggle('bridged',bridged);
       button.classList.toggle('selected',pending);
       button.querySelector('.chip-cut').textContent=forced?'×':bridged?'↔':'×';
       button.setAttribute('aria-pressed',String(forced||bridged||pending));
-      button.setAttribute('aria-label',`A${line+1}: ${forced?'forced low; reconnect':bridged?'bridged; select another leg action to change':'connected'}`);
+      button.setAttribute('aria-label',`${name}: ${forced?'forced low; reconnect':bridged?'bridged; select another leg action to change':'connected'}`);
     }
-    $('chipRestoreBtn').disabled=!ready || (logicAddressMask===0 && !(logicActive && activeRamConfiguration?.type==='line-pair' && activeRamConfiguration.kind===1));
+    $('chipRestoreBtn').disabled=!started || !logicApiReady() || (!mask && !pair);
+    $('chipRestoreBtn').textContent=data?'Reconnect All D Lines':'Reconnect All A Lines';
     $('ramLegAction').disabled=!started || !logicApiReady();
-    $('ramChipState').textContent=logicAddressMask
-      ? `${Array.from({length:15},(_,i)=>i).filter(i=>logicAddressMask&(1<<i)).map(i=>`A${i+1}`).join(', ')} forced low`
-      : logicActive && activeRamConfiguration?.type==='line-pair' && activeRamConfiguration.kind===1
-        ? `A${activeRamConfiguration.a+1} ↔ A${activeRamConfiguration.b+1} bridge`
-        : logicActive && activeRamConfiguration?.type==='line-pair' && activeRamConfiguration.kind===2
-          ? `Data bridge D${activeRamConfiguration.a} ↔ D${activeRamConfiguration.b} active; see RAM settings.`
-          : 'Address lines are connected.';
+    $('ramChipState').textContent=mask
+      ? `${Array.from({length:data?16:15},(_,i)=>i).filter(i=>mask&(1<<i)).map(i=>logicLineName(kind,i)).join(', ')} forced low`
+      : pair ? data ? `Data bridge D${pair.a} ↔ D${pair.b} active`
+        : `${logicLineName(kind,pair.a)} ↔ ${logicLineName(kind,pair.b)} bridge`
+      : logicActive ? 'A fault is active in the other signal view.'
+      : data && !dataMaskApiReady() && started ? 'Data cuts require an updated runtime core; byte-local bridges remain available.'
+      : `${data?'Data':'Address'} lines are connected.`;
   }
 
   function chipTransitionSnapshot() {
@@ -1159,62 +1181,77 @@
     logicAddressMask=mask;
   }
 
-  function applyAddressMask(mask, accessOverride=undefined) {
+  function applyRamMask(mask, accessOverride=undefined, type='address-mask') {
     resetCpuRecoveryObservation();
-    if (!started || !addressMaskApiReady()) return false;
+    const data=type==='data-mask', label=data?'data':'address';
+    if (!started || !(data?dataMaskApiReady():addressMaskApiReady())) return false;
     const access=Number(accessOverride===undefined ? $('logicAccess').value : accessOverride);
-    if (!Number.isInteger(mask) || mask<0 || mask>0x7fff ||
+    if (!Number.isInteger(mask) || mask<0 || mask>(data?0xffff:0x7fff) ||
         !Number.isInteger(access) || access<1 || access>3) {
-      setLogicStatus('Invalid RAM address mask; no fault was applied.');
+      setLogicStatus(`Invalid RAM ${label} mask; no fault was applied.`);
       return false;
     }
     const event=chipTransitionSnapshot();
-    if (mask===0) {
-      if (!disconnectLogic()) return false;
-      return true;
-    }
+    if (mask===0) return disconnectLogic();
     const handoff=prepareVramForRamFault('VRAM fault cleared before RAM fault activation');
     if (!handoff.ok) return false;
-    const status=emulator._set_logic_address_mask(mask,access);
+    let status;
+    try {
+      status=data ? emulator._set_logic_data_mask(mask,access) : emulator._set_logic_address_mask(mask,access);
+    } catch (error) {
+      logicActive=true;activeRamConfiguration={type,mask,access};
+      if (!paused) pauseToggle();
+      setLogicStatus(`RAM ${label} setter outcome is unknown (${error.message}); emulation paused. Disconnect before continuing.`);
+      return false;
+    }
     if (status!==0) {
-      const rollback=restoreVramAfterRamReject(handoff.snapshot,'restored after RAM address-line rejection');
-      recordRamHandoffRejection(handoff.snapshot,'RAM address-line setter rejected after VRAM clear',status,rollback);
+      const rollback=restoreVramAfterRamReject(handoff.snapshot,`restored after RAM ${label}-line rejection`);
+      recordRamHandoffRejection(handoff.snapshot,`RAM ${label}-line setter rejected after VRAM clear`,status,rollback);
       setLogicStatus(rollback.ok
-        ? `Address-line setting rejected (status ${status}); previous VRAM configuration restored.`
-        : `Address-line setting rejected (status ${status}); VRAM configuration restore failed.`);
-      stamp(rollback.ok
-        ? `RAM address-line request rejected (status ${status}); previous VRAM configuration restored.`
-        : `RAM address-line request rejected (status ${status}); VRAM restore also failed.`);
+        ? `${data?'Data':'Address'}-line setting rejected (status ${status}); previous VRAM configuration restored.`
+        : `${data?'Data':'Address'}-line setting rejected (status ${status}); VRAM configuration restore failed.`);
+      stamp(`RAM ${label}-line request rejected: core status ${status}; ${rollback.ok?'previous VRAM configuration restored':'VRAM restore also failed'}.`);
       return false;
     }
     abandonKeyboardHold('WRAM');
     ownedAddressHold=null;
-    cancelPulse('replaced by address-line switches');
-    recordAddressMask(mask,access,'address line toggled',event); logicActive=true; logicStatsRetained=false;
-    activeRamConfiguration={type:'address-mask',mask,access};
-    const lines=Array.from({length:15},(_,i)=>i).filter(i=>mask & (1<<i)).map(i=>`A${i+1}`);
+    cancelPulse(`replaced by ${label}-line switches`);
+    recordAddressMask(data?0:mask,data?0:access,`${label} line toggled`,event);
+    logicActive=true;logicStatsRetained=false;
+    activeRamConfiguration={type,mask,access};
+    const lines=Array.from({length:data?16:15},(_,i)=>i).filter(i=>mask & (1<<i)).map(i=>logicLineName(data?2:1,i));
     const accessLabel=['','read','write','read + write'][access];
-    lastLogicExperiment={kind:'address-stuck-low',access:accessLabel,lines,addressMask:mask,
+    lastLogicExperiment={kind:`${label}-stuck-low`,access:accessLabel,lines,
+      [data?'dataMask':'addressMask']:mask,
       activationFrame:Number(emulator._get_logic_activation_frame()),resetState:logicResetState,
       currentFrame:event.frame,readCount:0,writeCount:0,cpuFlags:Number(emulator._get_logic_cpu_flags())};
+    if (dataMaskApiReady() && currentRamDataMask()!==(data?mask:0)) {
+      if (!paused) pauseToggle();
+      setLogicStatus('RAM data mask could not be confirmed; emulation paused. Disconnect before continuing.');
+      return false;
+    }
     setLogicStatus(`${lines.join(', ')} forced low on ${accessLabel}. Click crossed wires to reconnect; stored writes persist.`);
-    stamp(`Address lines forced low: ${lines.join(', ')} (${accessLabel})`);
+    stamp(`${data?'Data':'Address'} lines forced low: ${lines.join(', ')} (${accessLabel})`);
     return true;
   }
 
-  function setupAddressChip() {
-    for (let line=0;line<15;line++) {
+  function renderRamChip() {
+    const kind=Number($('ramChipSignals').value), data=kind===2;
+    $('ramChip').querySelectorAll('[data-chip-line]').forEach(button=>button.remove());
+    $('ramChip').setAttribute('aria-label',`Conceptual SRAM (Work RAM) ${data?'data':'address'} lines`);
+    $('ramChip').querySelector('small').textContent=data?'D0–D7 / D8–D15':'A1–A15';
+    for (let line=0;line<(data?16:15);line++) {
       const button=document.createElement('button');
       button.type='button';button.className='chip-pin';button.dataset.chipLine=String(line);
       button.style.gridColumn=line<8?'1':'3';button.style.gridRow=String(line<8?line+1:line-7);
-      const label=document.createElement('span');label.className='chip-signal';label.textContent=`A${line+1}`;
+      const label=document.createElement('span');label.className='chip-signal';label.textContent=logicLineName(kind,line);
       const wire=document.createElement('span');wire.className='chip-wire';wire.setAttribute('aria-hidden','true');
       const cut=document.createElement('span');cut.className='chip-cut';cut.textContent='×';wire.append(cut);
       button.append(...(line<8?[wire,label]:[label,wire]));
       button.addEventListener('click',()=>{
         if ($('ramLegAction').value==='cut') {
           ramSelectedPin=null;
-          applyAddressMask(logicAddressMask ^ (1<<line));
+          applyRamMask((data?trackedRamDataMask():logicAddressMask) ^ (1<<line),undefined,data?'data-mask':'address-mask');
           refreshChipControls();
           return;
         }
@@ -1222,19 +1259,29 @@
         else if (ramSelectedPin===line) ramSelectedPin=null;
         else {
           const first=ramSelectedPin;ramSelectedPin=null;
-          $('logicKind').value='1';configureLogicLines();
+          $('logicKind').value=String(kind);configureLogicLines();
           $('logicLineA').value=String(first);$('logicLineB').value=String(line);
-          applyLogicFault(null,{kind:1,access:Number($('logicAccess').value),a:first,b:line});
+          applyLogicFault(null,{kind,access:Number($('logicAccess').value),a:first,b:line});
         }
         refreshChipControls();
       });
       $('ramChip').append(button);
     }
+    refreshChipControls();
+  }
+
+  function setupAddressChip() {
+    renderRamChip();
     $('chipRestoreBtn').addEventListener('click',()=>{
       ramSelectedPin=null;
-      if (logicAddressMask) applyAddressMask(0);
-      else if (logicActive && activeRamConfiguration?.type==='line-pair' && activeRamConfiguration.kind===1) disconnectLogic();
+      const kind=Number($('ramChipSignals').value);
+      if ((kind===1 && logicAddressMask) || (kind===2 && trackedRamDataMask()) ||
+          (logicActive && activeRamConfiguration?.type==='line-pair' && activeRamConfiguration.kind===kind)) disconnectLogic();
       refreshChipControls();
+    });
+    $('ramChipSignals').addEventListener('change',()=>{
+      ramSelectedPin=null;
+      $('logicKind').value=$('ramChipSignals').value;configureLogicLines();renderRamChip();
     });
     $('ramLegAction').addEventListener('change',()=>{ramSelectedPin=null;refreshChipControls();});
   }
@@ -1654,6 +1701,11 @@
       if (!silent) setLogicStatus(`Core could not disconnect the logic fault (status ${status}).`);
       return false;
     }
+    if (dataMaskApiReady() && currentRamDataMask()!==0) {
+      if (!paused) pauseToggle();
+      setLogicStatus('RAM data-mask clear could not be confirmed; emulation paused.');
+      return false;
+    }
     abandonKeyboardHold('WRAM');
     ownedAddressHold=null;
     cancelPulse(pulseReason);
@@ -1837,7 +1889,9 @@
     let pulseArmed=false, pulseStateUnknown=false;
     try { pulseArmed=typeof emulator._get_logic_pulse_state==='function' && Number(emulator._get_logic_pulse_state())===1; }
     catch (_) { pulseStateUnknown=true; }
-    if (!logicActive && !pendingPulse && !pulseArmed && !pulseStateUnknown) note('RAM','already off','no tracked RAM fault');
+    const dataMaskBefore=currentRamDataMask();
+    const dataMaskUnknown=dataMaskApiReady() && dataMaskBefore===null;
+    if (!logicActive && !pendingPulse && !pulseArmed && !pulseStateUnknown && !dataMaskBefore && !dataMaskUnknown) note('RAM','already off','no tracked RAM fault');
     else {
       try {
         let cleared;
@@ -1854,9 +1908,10 @@
             pulseAfterKnown=true;
           }
         } catch (_) { /* A telemetry failure cannot undo the clear attempt. */ }
-        const verifiedClear=cleared&&!logicActive&&pulseAfterKnown&&!pulseAfter;
+        const dataMaskAfterKnown=!dataMaskApiReady() || currentRamDataMask()===0;
+        const verifiedClear=cleared&&!logicActive&&pulseAfterKnown&&!pulseAfter&&dataMaskAfterKnown;
         const ramResult=verifiedClear?'cleared':cleared
-          ? (pulseAfter?'clear accepted; pulse remains armed':'clear accepted; pulse state unknown')
+          ? (!dataMaskAfterKnown?'clear accepted; data-mask state unverified':pulseAfter?'clear accepted; pulse remains armed':'clear accepted; pulse state unknown')
           : 'clear failed';
         note('RAM',ramResult,cleared
           ? `no tracked RAM fault; core clear accepted${pulseAfter?'; core pulse remains armed while paused':!pulseAfterKnown?'; core pulse state unverified':''}`
@@ -2208,7 +2263,8 @@
 
   function resetLogicSelection() {
     $('logicKind').value='1'; $('logicAccess').value='1';
-    configureLogicLines();
+    $('ramChipSignals').value='1';ramSelectedPin=null;
+    configureLogicLines();renderRamChip();
   }
 
   function circuitPulseIsArmed() {
@@ -2225,6 +2281,8 @@
     if (circuitPulseIsArmed()) throw new Error('Wait for or cancel the active RAM pulse before saving a configuration.');
     if (logicActive && !activeRamConfiguration)
       throw new Error('The active RAM fault settings are unavailable; no file was created.');
+    if (dataMaskApiReady() && currentRamDataMask()!==trackedRamDataMask())
+      throw new Error('RAM data-mask state is unavailable or differs from the app state; no file was created.');
     let psg={pair:null,dataMask:0}, fm={pair:null,dataMask:0}, z80Ram={pair:null};
     if (z80RamApiPresent()) {
       const state=currentZ80RamState();
@@ -2265,8 +2323,8 @@
     const vram=c.vram.pair?`VRAM AD${c.vram.pair[0]}↔AD${c.vram.pair[1]}`
       :c.vram.mask?`VRAM mask 0x${c.vram.mask.toString(16).toUpperCase()}`:'VRAM identity';
     const model=c.vram.modelId===2?'transaction':'frame projection';
-    const ram=!c.ram?'RAM off':c.ram.type==='address-mask'
-      ?`RAM address mask 0x${c.ram.mask.toString(16).toUpperCase()}, access ${c.ram.access}`
+    const ram=!c.ram?'RAM off':['address-mask','data-mask'].includes(c.ram.type)
+      ?`RAM ${c.ram.type==='data-mask'?'data':'address'} mask 0x${c.ram.mask.toString(16).toUpperCase()}, access ${c.ram.access}`
       :`RAM ${c.ram.kind===1?'address':'data'} pair ${c.ram.a}↔${c.ram.b}, access ${c.ram.access}`;
     const audio=(name,target)=>target.pair?`${name} D${target.pair[0]}↔D${target.pair[1]}`
       :target.dataMask?`${name} ${maskLineNames(target.dataMask)} low`:`${name} off`;
@@ -2313,7 +2371,7 @@
     const blob=new Blob([JSON.stringify(config,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob);
     const link=document.createElement('a');
-    link.href=url; link.download='vram-page-md-circuit-v4.json';
+    link.href=url; link.download='vram-page-md-circuit-v5.json';
     document.body.append(link); link.click(); link.remove();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
     $('circuitConfigStatus').textContent='Circuit configuration downloaded. ROM and execution history are not included.';
@@ -2365,6 +2423,8 @@
     if (c.ram && !logicApiReady()) return 'This core cannot safely apply and clear the requested RAM model.';
     if (c.ram?.type==='address-mask' && !addressMaskApiReady())
       return 'This core cannot apply the requested RAM address-mask model.';
+    if (c.ram?.type==='data-mask' && (!dataMaskApiReady() || currentRamDataMask()===null))
+      return 'This core cannot apply or verify the requested RAM data-mask model.';
     for (const [name,target,ready,getState] of [
       ['PSG',c.psg,psgDataApiReady,currentPsgDataState],
       ['FM',c.fm,fmDataApiReady,currentFmDataState]
@@ -2395,7 +2455,8 @@
     $('vramModel').value=String(c.vram.modelId);
     $('vramMode').value=c.vram.pair?'bridge':'disconnect';
     if (c.ram) {
-      $('logicKind').value=String(c.ram.type==='address-mask'?1:c.ram.kind);
+      $('logicKind').value=String(c.ram.type==='address-mask'?1:c.ram.type==='data-mask'?2:c.ram.kind);
+      $('ramChipSignals').value=$('logicKind').value;renderRamChip();
       $('logicAccess').value=String(c.ram.access); configureLogicLines();
       if (c.ram.type==='line-pair') {
         $('logicLineA').value=String(c.ram.a); $('logicLineB').value=String(c.ram.b);
@@ -2479,7 +2540,7 @@
     const applyRamTarget=()=>{
       if (!changeRam) return true;
       if (!c.ram) return disconnectLogic({silent:true});
-      if (c.ram.type==='address-mask') return applyAddressMask(c.ram.mask,c.ram.access);
+      if (['address-mask','data-mask'].includes(c.ram.type)) return applyRamMask(c.ram.mask,c.ram.access,c.ram.type);
       return applyLogicFault(null,{kind:c.ram.kind,access:c.ram.access,a:c.ram.a,b:c.ram.b});
     };
     let currentDomain='configuration';
@@ -2625,6 +2686,7 @@
     try { romSha256=await (exportIdentity?.hashPromise ?? Promise.resolve(null)); } catch (_) { /* Hashing failure never blocks emulation. */ }
     if (exportIdentity!==romIdentity) throw new Error('ROM changed while preparing export; download canceled.');
     if (!started || !emulator) throw new Error('Cartridge activation is uncertain; restart the last accepted cartridge before exporting.');
+    const ramDataMask=currentRamDataMask();
     const currentFrame=logicApiReady() ? Number(emulator._get_logic_frame()) || 0 : 0;
     const coreReads=logicApiReady() ? Number(emulator._get_logic_reads()) || 0 : 0;
     const coreWrites=logicApiReady() ? Number(emulator._get_logic_writes()) || 0 : 0;
@@ -2663,7 +2725,9 @@
       resetState:logicResetState,
       currentFrame,readCount:reads,writeCount:writes,
       cpuFlags:logicApiReady() ? Number(emulator._get_logic_cpu_flags()) || 0 : null,
-      logic:{schemaVersion:1,modelVersion:'work-ram-transaction-v1',available:logicApiReady(),active:logicActive,
+      logic:{schemaVersion:dataMaskApiReady()?2:1,modelVersion:dataMaskApiReady()?'work-ram-transaction-v2':'work-ram-transaction-v1',
+        referenceProfile:'model1-pal-va65-two-byte-v1',dataMaskAvailable:ramDataMask!==null,
+        dataMask:ramDataMask,available:logicApiReady(),active:logicActive,
         fault:lastLogicExperiment ? {...lastLogicExperiment} : null,
         readCount:reads,writeCount:writes,currentFrame,
         cpuFlags:logicApiReady() ? Number(emulator._get_logic_cpu_flags()) || 0 : null},
@@ -2878,8 +2942,8 @@
         const expectedOwner=held.code.startsWith('Digit')?'numeric':'keyboard';
         if (ownedAddressHold && (ownedAddressHold.type!==expectedOwner || ownedAddressHold.code!==held.code || ownedAddressHold.key!==`${held.pair[0]},${held.pair[1]}`)) return;
         if (!applyKeyboardMutation(()=>disconnectLogic())) throw new Error('core refused RAM disconnect');
-        if (held.restore && !applyKeyboardMutation(()=>held.restore.type==='address-mask'
-          ? applyAddressMask(held.restore.mask,held.restore.access)
+        if (held.restore && !applyKeyboardMutation(()=>['address-mask','data-mask'].includes(held.restore.type)
+          ? applyRamMask(held.restore.mask,held.restore.access,held.restore.type)
           : applyLogicFault(null,held.restore))) throw new Error('core rejected the prior RAM fault restoration');
         return;
       }
@@ -3433,6 +3497,7 @@
     configureLogicLines();
     $('logicKind').addEventListener('change',()=>{
       configureLogicLines();
+      ramSelectedPin=null;$('ramChipSignals').value=$('logicKind').value;renderRamChip();
       setLogicStatus('Configuration changed; apply it to activate a fault.');
     });
     for (const id of ['logicAccess','logicLineA','logicLineB'])

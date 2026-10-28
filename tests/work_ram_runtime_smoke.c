@@ -6,6 +6,16 @@
 
 uint8_t work_ram[WORK_RAM_FAULT_MEMORY_BYTES];
 
+#ifdef VRAM_TX_RUNTIME
+int set_z80_ram_bridge_c(double enabled, double line_a, double line_b)
+{
+    (void)enabled;
+    (void)line_a;
+    (void)line_b;
+    return WORK_RAM_FAULT_OK;
+}
+#endif
+
 static void put_native_word(uint32_t offset, uint16_t value)
 {
     *(uint16_t *)(work_ram + offset) = value;
@@ -18,6 +28,43 @@ int main(void)
     assert(get_logic_ram_ref() == (uintptr_t)work_ram);
     assert(get_logic_frame() == 0 && get_logic_reads() == 0 && get_logic_writes() == 0);
     assert(get_logic_write_trace_state() == WORK_RAM_TRACE_EMPTY);
+#ifdef VRAM_TX_RUNTIME
+    assert(get_logic_data_mask_c() == 0);
+    assert(set_logic_write_trace_enabled(1) == WORK_RAM_FAULT_OK);
+    assert(set_logic_data_mask_c(0x8085, WORK_RAM_FAULT_APPLY_WRITE) == WORK_RAM_FAULT_OK);
+    assert(get_logic_data_mask_c() == 0x8085);
+    assert(!work_ram_logic_applies(WORK_RAM_FAULT_APPLY_READ));
+    assert(work_ram_logic_applies(WORK_RAM_FAULT_APPLY_WRITE));
+    work_ram_logic_write16(0xe00020u, 0xffffu);
+    assert(*(uint16_t *)(work_ram + 0x20) == 0x7f7au);
+    assert(get_logic_writes() == 1);
+    assert(get_logic_write_trace_reason() == WORK_RAM_TRACE_REASON_DATA);
+    assert(work_ram_logic_read16(0xe00020u) == 0x7f7au);
+    assert(get_logic_reads() == 0);
+    assert(set_logic_data_mask_c(0x0101, WORK_RAM_FAULT_APPLY_READ) == WORK_RAM_FAULT_OK);
+    assert(get_logic_data_mask_c() == 0x0101);
+    assert(work_ram_logic_read16(0xe00020u) == 0x7e7au);
+    assert(get_logic_reads() == 1);
+    work_ram_logic_write8(0xe00020u, 0xffu);
+    work_ram_logic_write8(0xe00021u, 0xffu);
+    assert(work_ram[0x21] == 0xffu && work_ram[0x20] == 0xffu);
+    assert(set_logic_data_mask_c(-1, WORK_RAM_FAULT_APPLY_WRITE) == WORK_RAM_FAULT_INVALID_CONFIG);
+    assert(set_logic_data_mask_c(0x10000, WORK_RAM_FAULT_APPLY_WRITE) == WORK_RAM_FAULT_INVALID_CONFIG);
+    assert(set_logic_data_mask_c(1.5, WORK_RAM_FAULT_APPLY_WRITE) == WORK_RAM_FAULT_INVALID_CONFIG);
+    assert(set_logic_data_mask_c(1, 0) == WORK_RAM_FAULT_INVALID_CONFIG);
+    assert(get_logic_data_mask_c() == 0x0101);
+    assert(set_logic_fault(WORK_RAM_FAULT_ADDRESS, WORK_RAM_FAULT_APPLY_READ, 0, 1) == WORK_RAM_FAULT_OK);
+    assert(get_logic_data_mask_c() == 0);
+    assert(set_logic_data_mask_c(0x00ff, WORK_RAM_FAULT_APPLY_BOTH) == WORK_RAM_FAULT_OK);
+    assert(set_logic_address_mask(1, WORK_RAM_FAULT_APPLY_READ) == WORK_RAM_FAULT_OK);
+    assert(get_logic_data_mask_c() == 0);
+    assert(set_logic_data_mask_c(0x0080, WORK_RAM_FAULT_APPLY_BOTH) == WORK_RAM_FAULT_OK);
+    assert(recover_logic_cpu(1) == WORK_RAM_FAULT_OK);
+    assert(get_logic_data_mask_c() == 0);
+    assert(set_logic_data_mask_c(0xffff, WORK_RAM_FAULT_APPLY_BOTH) == WORK_RAM_FAULT_OK);
+    assert(set_logic_data_mask_c(0, WORK_RAM_FAULT_APPLY_WRITE) == WORK_RAM_FAULT_OK);
+    assert(get_logic_data_mask_c() == 0);
+#endif
     assert(set_logic_write_trace_enabled(2) == WORK_RAM_FAULT_INVALID_CONFIG);
     assert(set_logic_write_trace_enabled(1) == WORK_RAM_FAULT_OK);
     assert(set_logic_fault(WORK_RAM_FAULT_ADDRESS, WORK_RAM_FAULT_APPLY_WRITE,

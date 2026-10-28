@@ -56,6 +56,13 @@ uint32_t get_logic_pulse_state(void);
  * forced low, never a floating analogue input. Bit 0 selects CPU A1. */
 int set_logic_address_mask(int mask, int access);
 uint32_t get_logic_address_mask(void);
+#ifdef VRAM_TX_RUNTIME
+/* Independently force selected D0..D7 and D8..D15 Work RAM data lines low.
+ * mask bits 0..7 are lower lane D0..D7; bits 8..15 are upper lane D8..D15.
+ * This replaces the active Work RAM address/data fault configuration. */
+int set_logic_data_mask_c(double mask, double access);
+uint32_t get_logic_data_mask_c(void);
+#endif
 uint32_t get_logic_reads(void);
 uint32_t get_logic_writes(void);
 uint32_t get_logic_frame(void);

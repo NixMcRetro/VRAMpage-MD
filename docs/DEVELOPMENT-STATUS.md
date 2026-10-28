@@ -1,5 +1,43 @@
 # Development status and continuation checkpoint
 
+## Work RAM Data Lines — Integration Checkpoint, 29 October 2026 (Sydney)
+
+Development source adds runtime-only D0–D15 cut masks, independently
+selectable across both byte lanes, using the documented PAL Model 1 VA6.5
+two-device circuit as its reference. The existing Work RAM panel switches
+between Address and Data;  same-byte bridges reuse the existing
+engine. Address masks, data masks and bridge pairs replace one another.
+See [scope and acceptance](WORK-RAM-DATA.md).
+
+Exact NTSC VA6 population/routing in [#73](https://github.com/NixMcRetro/VRAMpage-MD/issues/73)
+is now optional follow-up, not a development gate. User-supplied PAL/USA board
+photos support two-device populations but do not establish every trace or
+part pinout. Add a physical model selector only when another evidenced model
+has meaningful implemented differences; region selection remains separate.
+
+Started from verified main `8733a5594a243a48c5fd9cd6d80760106ee99dad`
+([seven required jobs](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40697665333),
+[four CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40697664612)).
+Implementation through `987b9a0` passed independent Luna High review, including
+native byte-lane semantics, strict API validation, lifecycle, packaging and
+schema-5 imports of versions 1–4. Local source/sanitizer/Node/C checks pass
+(115 Python tests reported; two build-dependent classes skipped in that command).
+The actual-WASM production profile test separately passes CPU byte/word/longword,
+DMA/mirror/recovery cases and exact normal-core hash checks. Chromium interface
+153/153, actual-core 12/12 (including 128 mixed-fault cycles), transaction 3/3
+and layout 7/7 pass. LeakSanitizer is disabled locally because it aborts under
+container ptrace; ASan/UBSan remain enabled and CI retains its normal settings.
+
+Integration still requires all required PR checks and CodeQL, then verified main
+CI; consult the PR and final delivery checkpoint for those results. Runtime JS
+hash is `8443dbcda84eec872b6f262d14deb4dc54c768bbd0cf38d6f2277399b3339450`;
+WASM is `a7f7175ad6511082e882ce53beb6a430918f12b526c65514ac91444775bc0682`.
+Normal/fallback hashes remain unchanged. No VERSION bump, public release or
+website deployment. Preserve all releases and original Demo Cart assets;
+PRs #93/#94 are separate work. Next: use concrete cartridge feedback for the
+candidate, and add physical-model choices only when another evidenced model
+has meaningful implemented differences. Exact NTSC mapping remains optional.
+
 ## Demo Cart Merged; Hardware Follow-Up — 28 October 2026 (Sydney)
 
 [PR #90](https://github.com/NixMcRetro/VRAMpage-MD/pull/90) merged as

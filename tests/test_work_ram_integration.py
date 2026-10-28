@@ -20,7 +20,7 @@ class WorkRamIntegration(unittest.TestCase):
             subprocess.run(
                 [
                     "cc", "-std=c11", "-O2", "-Wall", "-Wextra", "-Werror",
-                    "-DLSB_FIRST", "-DWORK_RAM_RUNTIME_TEST", "-Iscripts",
+                    "-DLSB_FIRST", "-DWORK_RAM_RUNTIME_TEST", "-DVRAM_TX_RUNTIME", "-Iscripts",
                     "scripts/work_ram_fault.c", "scripts/work_ram_runtime.c",
                     "tests/work_ram_runtime_smoke.c", "-o", str(executable),
                 ],
@@ -36,7 +36,7 @@ class WorkRamIntegration(unittest.TestCase):
                 [
                     "cc", "-std=c11", "-O1", "-g", "-Wall", "-Wextra", "-Werror",
                     "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
-                    "-DLSB_FIRST", "-DWORK_RAM_RUNTIME_TEST", "-Iscripts",
+                    "-DLSB_FIRST", "-DWORK_RAM_RUNTIME_TEST", "-DVRAM_TX_RUNTIME", "-Iscripts",
                     "scripts/work_ram_fault.c", "scripts/work_ram_runtime.c",
                     "tests/work_ram_runtime_smoke.c", "-o", str(executable),
                 ],

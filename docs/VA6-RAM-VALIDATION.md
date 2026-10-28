@@ -1,6 +1,8 @@
 # VA6 Work RAM Device Validation
 
-**Status: partial desk research, target NTSC VA6 mapping unverified.**
+**Status: optional physical follow-up; target NTSC VA6 mapping unverified.**
+The documented PAL Model 1 VA6.5 circuit is sufficient for the bounded
+[data-line model](WORK-RAM-DATA.md); this issue no longer blocks development.
 Follow-up to [#73](https://github.com/NixMcRetro/VRAMpage-MD/issues/73),
 27 October 2026 (Sydney). Keep the public chip diagram conceptual. The bounded
 RAM experiment and its evidence remain complete and unchanged.
@@ -119,8 +121,12 @@ or verified NTSC VA6 schematic was obtained. Keep #73 open and the UI conceptual
    electrical limits. Do not rewrite immutable experiment results or imply
    that a digital bridge predicts short-circuit voltages or refresh behavior.
 
-No target-board photographs, continuity measurements or verified NTSC VA6
-schematic were supplied or obtained in this research. This issue remains open.
+The user subsequently supplied PAL and USA Model 1 board photographs. The PAL
+photo shows two Motorola MCM51L832ASP10 devices; the USA photo shows two Hitachi
+HM65256B-family devices. These support two byte-wide RAM populations, without
+proving exact suffixes, every trace, a Motorola manufacturer pinout or an NTSC
+VA6 lane/designator map. No continuity measurements or verified NTSC VA6
+schematic were obtained. This issue remains open as optional research.
 The component and PAL-reference work above can be reused when matching primary
 board evidence becomes available; no further user testing is needed for the
 completed Z80/VRAM research reports.

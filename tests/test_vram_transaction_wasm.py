@@ -32,6 +32,7 @@ def stage_source(vendor: Path, target: Path):
              "vram_transaction.h", "vram_transaction_core.h", "vram_transaction_runtime.h",
              "vram_transaction_render.h",
              "work_ram_fault.c", "work_ram_fault.h", "work_ram_runtime.c", "work_ram_runtime.h",
+             "work_ram_data_mask_api.js",
              "z80_ram_bridge_runtime.c", "z80_ram_bridge_runtime.h", "z80_ram_bridge_core.h", "z80_ram_bridge_api.js",
              "psg_data_fault.h", "psg_data_fault_core.c", "psg_data_fault_runtime.c",
              "region_profile_runtime.c", "region_profile_runtime.h",
@@ -108,6 +109,8 @@ def build(staged: Path, diagnostic: bool, alt_renderer: bool = False, runtime: b
         flags.insert(0, f'add_compile_flags(LD "--pre-js={fm_api_js}")')
         z80_api_js = ROOT / "scripts/z80_ram_bridge_api.js"
         flags.insert(0, f'add_compile_flags(LD "--pre-js={z80_api_js}")')
+        work_ram_api_js = ROOT / "scripts/work_ram_data_mask_api.js"
+        flags.insert(0, f'add_compile_flags(LD "--pre-js={work_ram_api_js}")')
     if ym3438:
         config = staged / "src/main/c/wasm/config.c"
         config_text = config.read_text()
@@ -376,6 +379,7 @@ class VramTransactionWasm(unittest.TestCase):
         self.assertTrue((bundle / "scripts/fm_data_fault_runtime.c").is_file())
         self.assertTrue((bundle / "scripts/z80_ram_bridge_runtime.c").is_file())
         self.assertTrue((bundle / "scripts/z80_ram_bridge_api.js").is_file())
+        self.assertTrue((bundle / "scripts/work_ram_data_mask_api.js").is_file())
         self.assertTrue((bundle / "scripts/build-core-runtime.py").is_file())
         self.assertTrue((bundle / "scripts/session_checkpoint_runtime.c").is_file())
         self.assertTrue((bundle / "scripts/session_checkpoint_patch.py").is_file())
@@ -391,6 +395,7 @@ class VramTransactionWasm(unittest.TestCase):
         self.assertIn("--pre-js=${CMAKE_SOURCE_DIR}/../scripts/psg_data_fault_api.js", cmake)
         self.assertIn("--pre-js=${CMAKE_SOURCE_DIR}/../scripts/fm_data_fault_api.js", cmake)
         self.assertIn("--pre-js=${CMAKE_SOURCE_DIR}/../scripts/z80_ram_bridge_api.js", cmake)
+        self.assertIn("--pre-js=${CMAKE_SOURCE_DIR}/../scripts/work_ram_data_mask_api.js", cmake)
         command(["node", str(fixture / "tests/test_runtime_build_profile.cjs"),
                  str(runtime_paths[0])], cwd=fixture)
         command(["node", str(fixture / "tests/test_session_checkpoint_runtime.cjs"),
@@ -401,6 +406,8 @@ class VramTransactionWasm(unittest.TestCase):
                  str(runtime_paths[0]), str(normal_paths[0])], cwd=fixture)
         command(["node", str(fixture / "tests/test_z80_ram_bridge_runtime.cjs"),
                  str(runtime_paths[0]), str(normal_paths[0])], cwd=fixture)
+        command(["node", str(fixture / "tests/test_wasm_logic.cjs"),
+                 str(runtime_paths[0])], cwd=fixture)
         command(["node", str(fixture / "tests/test_fm_data_runtime.cjs"),
                  str(runtime_paths[0]), str(normal_paths[0])], cwd=fixture)
         command(["node", str(fixture / "tests/test_fm_data_runtime.cjs"),

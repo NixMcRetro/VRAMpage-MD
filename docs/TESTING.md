@@ -1,5 +1,12 @@
 # Demo Cart Actual-Core Fixtures (Draft PR #90)
 
+The development [Work RAM data-line slice](WORK-RAM-DATA.md) adds native and
+actual-WASM assertions for independent byte lanes, word/longword stores, DMA,
+mirrors, read/write direction, counters/trace, validation and replacement/clear.
+Browser regressions cover the compact Address/Data view, schema-5 round-trips,
+legacy preflight, uncertain native outcomes and checkpoint/reset/sound retention.
+The normal-core hash comparison remains mandatory.
+
 `tests/browser_core.py` keeps the default built-in Demo Cart test on a fresh
 browser session: it must auto-load the real original ROM, render non-uniform
 native pixels, leave sound disabled until consent, and respect manual replacement
