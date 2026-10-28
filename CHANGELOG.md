@@ -1,5 +1,9 @@
 # Changelog
 
+## Development Maintenance — Actions
+
+- Upgrade setup-node, checkout, upload-artifact and setup-python to v7 and download-artifact to v8. Preserve explicit toolchain versions and archived artifacts; verify all seven PR/main checks after each individual integration.
+
 ## Development Maintenance — Dependency Updates
 
 - Schedule weekly GitHub Actions and browser-test dependency updates; group compatible Action updates and retain separate major-version reviews and the existing CI gates.

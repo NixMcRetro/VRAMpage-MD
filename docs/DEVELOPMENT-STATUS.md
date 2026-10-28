@@ -1,5 +1,44 @@
 # Development status and continuation checkpoint
 
+## Actions Upgrades Verified — 28 October 2026 (Sydney)
+
+The five requested major Actions updates are merged individually. Each branch
+was tested with current main; all seven required PR checks and all seven
+post-merge main checks passed for each upgrade. Each merged tree matched its
+tested head. Final main is `b4b3f90ddc4acef5d40147244df3071fb0cd6300`.
+
+| PR | Upgrade | Tested Head | PR CI | Main CI |
+| --- | --- | --- | --- | --- |
+| [#84](https://github.com/NixMcRetro/VRAMpage-MD/pull/84) | setup-node 4 → 7 | `bacadfbf6566460c587246a3661b38beda5c283e` | [40635690666](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40635690666) | [40636320206](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40636320206) |
+| [#85](https://github.com/NixMcRetro/VRAMpage-MD/pull/85) | download-artifact 4 → 8 | `9c33b628f75f26bd8bf9c5ad676751efc7832bcf` | [40637060996](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40637060996) | [40637794655](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40637794655) |
+| [#86](https://github.com/NixMcRetro/VRAMpage-MD/pull/86) | checkout 4 → 7 | `87f0795f8373b46173c222e9f5b1c4bd02c01c38` | [40638008106](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40638008106) | [40638693076](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40638693076) |
+| [#87](https://github.com/NixMcRetro/VRAMpage-MD/pull/87) | upload-artifact 4 → 7 | `cdb357023d1804f187a92a82d7704404076ff9a6` | [40639413882](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40639413882) | [40640071248](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40640071248) |
+| [#88](https://github.com/NixMcRetro/VRAMpage-MD/pull/88) | setup-python 5 → 7 | `4f91c22a4130229ad0d9cbe3faa01bab924dbe1c` | [40640721423](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40640721423) | [40641311776](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40641311776) |
+
+Independent GPT-6 Luna High review inspected exact diffs, release/migration
+notes and upstream action metadata. No compatibility or permission blocker was
+found. Explicit Node 22, Python 3.12, Ubuntu 24.04, artifact names/paths/retention
+and archived-upload semantics remain unchanged. The final snapshot changes only
+four workflow files; application code, emulator pins and VERSION are unchanged.
+
+All 18 release records and attached asset identities match the preserved
+post-curation snapshot. Release-writing workflows were reviewed but not run.
+McRetro.net was not accessed or modified during this VRAMpage-only task. No PRs
+remain open at this checkpoint. #73 still needs matching board evidence.
+
+Two automatic approval reviews used stale pending-package evidence and blocked
+an attempted continuation/merge. Fresh explicit API evidence showed all seven
+jobs complete successfully; the authorised retries then proceeded. No check was
+bypassed or weakened. The final CLI watcher lost annotation access (401), while
+CI continued; connected GitHub API monitoring verified final success. Logs,
+merge identities and release comparison are under `/workspace/scratch/actions-upgrades/`.
+
+Next: concrete stability feedback or the development candidate/release decision;
+do not repeat finished experiments or create another infrastructure-only sequence.
+This final checkpoint is on `maintenance/actions-delivery` without another
+trivial documentation-only CI cycle.
+
+
 ## Dependency Maintenance Scope — 28 October 2026 (Sydney)
 
 The user authorised useful fixes while GitHub security-alert access is being
