@@ -1,5 +1,21 @@
 # Development work queue
 
+## Next Feature Review — Region Selection, 28 October 2026 (Sydney)
+
+The user asked to examine the next feature after security setup. The
+[region/profile design](REGION-PROFILES-PLAN.md) recommends staged runtime-only
+region selection first, retaining NTSC-U by default. Native source supports
+other regions, but the current app/core API does not expose them and the UI uses
+fixed NTSC cadence/geometry. Applying a staged choice uses Load ROM/Clean Restart;
+CPU Reset retains active machine settings. Physical VA profiles remain research.
+
+Independent Luna High feasibility review checked the native startup/config path
+and runtime-only guard strategy. This checkpoint contains design/documentation
+only: no emulator edits, builds, runtime tests, VERSION changes or deployment.
+Next implementation must satisfy the documented oracles and active main ruleset;
+issue #73's target-board mapping remains unverified. Preserve previous completed
+stability, recovery, dependency and Actions work below.
+
 ## Actions Upgrades Verified — 28 October 2026 (Sydney)
 
 The five requested major Actions updates are merged individually. Each branch

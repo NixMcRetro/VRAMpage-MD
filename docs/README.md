@@ -25,6 +25,7 @@ and experimental; older standalone-model descriptions are historical records.
 | [Release presentation](RELEASE-CURATION.md) | Manage release titles and notes without changing tags or binaries |
 | [Changelog](../CHANGELOG.md) | Versioned changes and verification limits |
 | [Development candidate](DEVELOPMENT-CANDIDATE.md) | Draft changes since public v0.5.0, focused native-browser review and publication handoff |
+| [Region and hardware profile plan](REGION-PROFILES-PLAN.md) | Region-selection feasibility, native lifecycle, acceptance gates and board-evidence limits |
 | [Versioning](VERSIONING.md) | Current source version and historical identifier mapping |
 | [Run locally](RUNNING-LOCALLY.md) | Windows, macOS and Linux browser-package launch instructions |
 | [v0.5.0 release notes](RELEASE-NOTES-v0.5.0.md) | Release changes, distribution and verification limits |
