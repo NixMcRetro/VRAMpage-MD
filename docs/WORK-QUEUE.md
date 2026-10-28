@@ -1,11 +1,61 @@
 # Development work queue
 
+## Work RAM Data Lines Verified — 28 October 2026 (UTC)
+
+[PR #96](https://github.com/NixMcRetro/VRAMpage-MD/pull/96) merged as
+`9b29a5b9380ed4fe760f41015d15c51c53674e1e`. Its tree
+`2762496ef1845d3cf24a466608149594e1977430` exactly matches independently reviewed
+and tested head `dd9c6517c064f1d1642dec1e7b6d3a27f12d0e60`.
+All seven required [PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40711351771)
+and [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40773753902)
+passed. All four CodeQL analyses passed on both
+[PR](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40711342830) and
+[main](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40773753398).
+The active main ruleset was satisfied without bypass.
+
+Development source supports D0–D15 cut masks across both Work RAM bytes through
+the compact Address/Data and Read/Write controls. Data masks, address masks and
+legacy same-byte bridges replace one another. Native byte/word/longword, DMA,
+mirror and recovery checks pass; schema 5 retains version 1–4 imports and legacy
+cores retain their existing controls. CPU Reset clears data faults while
+preserving sound state and the checkpoint; full restart discards the checkpoint.
+See [semantics and evidence limits](WORK-RAM-DATA.md).
+
+Luna High authored the native slice; independent Luna High review approved the
+implementation, test deltas and final CSS correction. Local source/sanitizer,
+actual-WASM and Chromium interface 153/153, actual-core 12/12 (including 128 mixed
+cycles), transaction 3/3 and layout 7/7 checks pass. CI additionally verifies
+Chromium/Firefox/WebKit interfaces and the extracted runtime/fallback package.
+The first PR run caught a fractional WebKit viewport overflow; reducing Work RAM
+card padding by 4px fixed it without shrinking pins or weakening assertions.
+Normal/fallback hashes are unchanged. Local LeakSanitizer was disabled for the
+container's ptrace limitation; ASan/UBSan and CI's normal sanitizer settings pass.
+
+[Download the verified development browser build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40773753902/artifacts/12853073313)
+(artifact 12853073313; expires 27 November 2026). It includes the built runtime,
+normal fallback, matching source and build metadata for the verified main commit.
+VERSION remains 0.5.0; all 18 public releases are retained. Original Demo Cart
+assets, McRetro.net and separate Demo Cart PRs #93/#94/#95 were not modified.
+No release or deployment was performed.
+
+[#73](https://github.com/NixMcRetro/VRAMpage-MD/issues/73) now explicitly records
+optional exact NTSC VA6 validation. The documented PAL Model 1 VA6.5 two-byte
+circuit is the accepted bounded reference. Physical floating-input voltages,
+contention/refresh behavior and commercial-cartridge outcomes are unverified;
+these deterministic digital cuts do not claim electrical accuracy.
+
+Next: use concrete cartridge feedback for candidate review; add another physical
+model option only when evidence supports a meaningful implemented difference.
+Do not repeat completed RAM/region/recovery/security work or take over the separate
+Demo Cart changes. This final checkpoint is on `maintenance/work-ram-data-delivery`
+to avoid another trivial source-CI cycle; implementation and tests are on main.
+
 ## Work RAM Data Lines — Integration Checkpoint, 29 October 2026 (Sydney)
 
 Development source adds runtime-only D0–D15 cut masks, independently
 selectable across both byte lanes, using the documented PAL Model 1 VA6.5
 two-device circuit as its reference. The existing Work RAM panel switches
-between Address and Data;  same-byte bridges reuse the existing
+between Address and Data; same-byte bridges reuse the existing
 engine. Address masks, data masks and bridge pairs replace one another.
 See [scope and acceptance](WORK-RAM-DATA.md).
 
