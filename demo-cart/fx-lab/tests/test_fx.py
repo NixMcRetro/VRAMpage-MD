@@ -9,7 +9,7 @@ import hashlib,struct,sys,unittest,json
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import build_fx
 R=build_fx
-ROM=(R.OUT/'VRAMpage-MD-FX-Lab-v0.3.1-Fixed.bin').read_bytes()
+ROM=(R.OUT/'VRAMpage-MD-FX-Lab-v0.3.2-Demoscene.bin').read_bytes()
 
 class CPU:
     def __init__(self,pal=False,start_at=None,inputs=None):
@@ -178,7 +178,7 @@ class TestROM(unittest.TestCase):
     self.assertEqual(sum(struct.unpack_from('>H',ROM,i)[0] for i in range(0x200,len(ROM),2))&65535,struct.unpack_from('>H',ROM,0x18E)[0])
     self.assertEqual(len(ROM)%2,0)
  def test_vdp_assets(self):
-    self.assertLess((R.ARROW_ID+1)*32,0xC000)
+    self.assertLess(len(R.ALL_PATTERNS),0xC000)
     self.assertEqual(len(R.CRAM),4*16*2)
     for name in ('title','vortex','aurora','sprites','colour','audio'):
      p=R.asm.labels['map_'+name]
@@ -203,7 +203,7 @@ class TestROM(unittest.TestCase):
  def test_fx_scroll_writes_are_cell_aligned_and_bounded(self):
     c=CPU();c.run()
     expected=[0xF800+i*32 for i in range(30)]
-    for name in ('vortex','aurora'):
+    for name in ('vortex','aurora','colour'):
         self.assertEqual(c.scroll_addresses[name][:30],expected)
         self.assertEqual(c.scroll_addresses[name][30:60],expected)
         self.assertTrue(all(0xF800 <= addr <= 0xFBA0 for addr in c.scroll_addresses[name]))
@@ -211,7 +211,7 @@ class TestROM(unittest.TestCase):
     self.assertEqual(c.hscroll_mode,0)
  def test_fx_rom_tables_and_palettes_obey_vdp_constraints(self):
     self.assertEqual(R.PHASES,96)
-    self.assertLess((R.ARROW_ID+1)*32,0xC000)
+    self.assertLess(len(R.ALL_PATTERNS),0xC000)
     self.assertLess(0xF800+30*32,0xFC00)
     for name in ('vortex','aurora'):
         self.assertEqual(len(R.FX_PALETTES[name]),R.PHASES*128)
@@ -249,7 +249,63 @@ class TestROM(unittest.TestCase):
  def test_static_effect_palettes_are_loaded_at_scene_start(self):
     c=CPU()
     c.run_until(lambda c:c.scene=='sprites' and c.pc==R.asm.labels['run_sprites']+4)
-    self.assertEqual(c.cram,R.FX_PALETTES['aurora'][:128])
+    self.assertEqual(c.cram,R.SPRITE_PALETTES[:128])
+
+ def test_sprite_storm_is_real_linked_sprites_with_two_phase_banks(self):
+    self.assertEqual(R.SPRITE_COUNT,20)
+    self.assertEqual(len(R.SPRITE_SAT_FRAMES),96*20*8)
+    self.assertEqual(len(R.SPRITE_PATTERNS),16*32)
+    for phase in (0,17,48,95):
+        raw=R.sprite_sat(phase)
+        for i in range(R.SPRITE_COUNT):
+            y,link,attr,x=struct.unpack_from('>4H',raw,i*8)
+            self.assertEqual(link>>8,5) # 2x2 Mega Drive sprite size
+            self.assertEqual(link&0x7f,(i+1 if i<R.SPRITE_COUNT-1 else 0))
+            self.assertTrue(0x80<=y<=0x80+224)
+            self.assertTrue(0x80<=x<=0x80+320)
+            self.assertIn((attr>>13)&3,(2,3))
+            self.assertLess((attr&0x7ff)+3,R.SPRITE_TILE_BASE+R.SPRITE_TILE_COUNT)
+    self.assertNotEqual(R.sprite_sat(0),R.sprite_sat(17))
+    c=CPU(inputs=[(2,0x02),(4,0),(6,0x02),(8,0),(10,0x40),(11,0)])
+    # Manual launch of item 3: at each frame SAT and CRAM must update.
+    c.run_until(lambda c:c.scene=='sprites' and c.frame_scenes.get('sprites',0)>=3 and c.pc==R.asm.labels['tick_sprites'])
+    self.assertEqual(c.vram[0xF400:0xF400+R.SPRITE_COUNT*8],R.sprite_sat(2))
+    self.assertEqual(c.cram,R.sprite_palette(2))
+    self.assertTrue(any(scene=='sprites' and kind=='cram' for scene,kind,at in c.commands))
+    # The title and sprite tile bytes were both genuinely uploaded.
+    self.assertEqual(c.vram[R.SPRITE_TILE_BASE*32:(R.SPRITE_TILE_BASE+16)*32],R.SPRITE_PATTERNS)
+
+ def test_chroma_reactor_updates_all_four_cram_banks_and_hscroll(self):
+    self.assertEqual(len(R.COLOUR_PALETTES),96*128)
+    self.assertEqual(len(R.COLOUR_SCROLLS),96*60)
+    for phase in (0,12,24,48,72,95):
+        pal=R.colour_palette(phase)
+        self.assertEqual(len(pal),128)
+        self.assertTrue(all((struct.unpack_from('>H',pal,j)[0]&0x111)==0 for j in range(0,128,2)))
+    self.assertGreater(sum(a!=b for a,b in zip(R.colour_palette(0),R.colour_palette(36))),50)
+    # A genuine 96-frame cycle must join smoothly, without a hard colour pop.
+    for curve in (R.colour_palette,R.sprite_palette):
+        start=struct.unpack('>64H',curve(0));end=struct.unpack('>64H',curve(95))
+        for a,b in zip(start,end):
+            for shift in (1,5,9):
+                self.assertLessEqual(abs(((a>>shift)&7)-((b>>shift)&7)),2)
+    c=CPU(inputs=[(2,0x02),(4,0),(6,0x02),(8,0),(10,0x02),(12,0),(14,0x40),(16,0)])
+    c.run_until(lambda c:c.scene=='colour' and c.frame_scenes.get('colour',0)>=4 and c.pc==R.asm.labels['tick_colour'])
+    self.assertEqual(c.cram,R.colour_palette(3))
+    self.assertEqual(c.scroll_addresses['colour'][:30],[0xF800+i*32 for i in range(30)])
+    self.assertEqual(c.vram[0xF800:0xF802],R.colour_scroll(3)[:2])
+    self.assertEqual(c.hscroll_mode,2)
+    c.run_until(lambda c:c.scene=='title' and len(c.enters)>2 and c.pc==R.asm.labels['menu_tick'])
+    self.assertEqual(c.hscroll_mode,0)
+    self.assertEqual(c.autoinc,2)
+
+ def test_patterns_fit_vram_and_original_scenes_remain_identical(self):
+    self.assertEqual(R.ALL_PATTERNS[:len(R.PATTERNS)],R.PATTERNS)
+    self.assertEqual(R.ALL_PATTERNS[-len(R.SPRITE_PATTERNS):],R.SPRITE_PATTERNS)
+    self.assertLessEqual(len(R.ALL_PATTERNS),0xC000)
+    for name in ('title','vortex','aurora'):
+        self.assertEqual(ROM[R.asm.labels['map_'+name]:R.asm.labels['map_'+name]+4096],
+                         R.full_map(R.title_cells) if name=='title' else struct.pack('>2048H',*(R.VORTEX_MAP if name=='vortex' else R.AURORA_MAP)))
 
  def test_approved_portrait_tiles_are_byte_identical(self):
     self.assertEqual(ROM[R.asm.labels['patterns']:R.asm.labels['patterns']+len(R.PATTERNS)],R.PATTERNS)
