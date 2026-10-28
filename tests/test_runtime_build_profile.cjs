@@ -53,6 +53,15 @@ function installMode5Rom(core) {
   assert.equal(typeof core._get_logic_data_mask, 'function');
   assert.equal(typeof core._get_logic_data_mask_c, 'undefined');
   assert.equal(core._get_logic_data_mask(), 0);
+  assert.equal(typeof core._set_logic_write_inhibit, 'function');
+  assert.equal(typeof core._set_logic_write_inhibit_c, 'undefined');
+  assert.equal(typeof core._get_logic_write_inhibit, 'function');
+  assert.equal(typeof core._get_logic_write_inhibit_c, 'undefined');
+  assert.equal(core._get_logic_write_inhibit(), 0);
+  assert.equal(core._set_logic_write_inhibit(4), 5);
+  assert.equal(core._set_logic_write_inhibit(1.5), 5);
+  assert.equal(core._set_logic_write_inhibit(), 5);
+  assert.equal(core._get_logic_write_inhibit(), 0, 'invalid inhibit requests preserve state');
   assert.equal(core._set_logic_data_mask(0x10000, 1), 5);
   assert.equal(core._set_logic_data_mask(1.5, 1), 5);
   assert.equal(core._set_logic_data_mask(1, 4), 5);

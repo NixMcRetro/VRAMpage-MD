@@ -25,7 +25,8 @@ enum {
     WORK_RAM_TRACE_IN_PROGRESS = 1,
     WORK_RAM_TRACE_COMPLETED = 2,
     WORK_RAM_TRACE_REASON_ADDRESS = 1,
-    WORK_RAM_TRACE_REASON_DATA = 2
+    WORK_RAM_TRACE_REASON_DATA = 2,
+    WORK_RAM_TRACE_REASON_CONTROL = 4
 };
 int set_logic_write_trace_enabled(int enabled);
 uint32_t get_logic_write_trace_state(void);
@@ -62,6 +63,10 @@ uint32_t get_logic_address_mask(void);
  * This replaces the active Work RAM address/data fault configuration. */
 int set_logic_data_mask_c(double mask, double access);
 uint32_t get_logic_data_mask_c(void);
+/* Write inhibit mask: bit 0 suppresses odd/lower-byte stores, bit 1 suppresses
+ * even/upper-byte stores. The selected active-low write signal is held inactive. */
+int set_logic_write_inhibit_c(double mask);
+uint32_t get_logic_write_inhibit_c(void);
 #endif
 uint32_t get_logic_reads(void);
 uint32_t get_logic_writes(void);

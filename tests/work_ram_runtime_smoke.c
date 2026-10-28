@@ -64,6 +64,42 @@ int main(void)
     assert(set_logic_data_mask_c(0xffff, WORK_RAM_FAULT_APPLY_BOTH) == WORK_RAM_FAULT_OK);
     assert(set_logic_data_mask_c(0, WORK_RAM_FAULT_APPLY_WRITE) == WORK_RAM_FAULT_OK);
     assert(get_logic_data_mask_c() == 0);
+
+    /* Write inhibit retains old lane bytes, reports control reason, and a
+     * no-op retained result neither counts nor traces. */
+    put_native_word(0x0040, 0xaabb);
+    assert(set_logic_write_inhibit_c(1) == WORK_RAM_FAULT_OK);
+    assert(get_logic_write_inhibit_c() == 1);
+    assert(set_logic_write_trace_enabled(1) == WORK_RAM_FAULT_OK);
+    work_ram_logic_write16(0xe00040, 0x1122);
+    assert(*(uint16_t *)(work_ram + 0x40) == 0x11bb);
+    assert(get_logic_writes() == 1);
+    assert(get_logic_write_trace_state() == WORK_RAM_TRACE_COMPLETED);
+    assert(get_logic_write_trace_reason() == WORK_RAM_TRACE_REASON_CONTROL);
+    assert(set_logic_write_trace_enabled(1) == WORK_RAM_FAULT_OK);
+    work_ram_logic_write16(0xe00040, 0x11bb);
+    assert(*(uint16_t *)(work_ram + 0x40) == 0x11bb);
+    assert(get_logic_writes() == 1 && get_logic_write_trace_state() == WORK_RAM_TRACE_EMPTY);
+    assert(set_logic_write_inhibit_c(2) == WORK_RAM_FAULT_OK);
+    put_native_word(0x0040, 0xaabb);
+    work_ram_logic_write16(0xe00040, 0x1122);
+    assert(*(uint16_t *)(work_ram + 0x40) == 0xaa22);
+    assert(set_logic_write_inhibit_c(3) == WORK_RAM_FAULT_OK);
+    put_native_word(0x0040, 0xaabb);
+    work_ram_logic_write16(0xe00040, 0x1122);
+    assert(*(uint16_t *)(work_ram + 0x40) == 0xaabb);
+    assert(set_logic_write_inhibit_c(4) == WORK_RAM_FAULT_INVALID_CONFIG);
+    assert(set_logic_write_inhibit_c(1.5) == WORK_RAM_FAULT_INVALID_CONFIG);
+    assert(get_logic_write_inhibit_c() == 3);
+    work_ram_logic_write8(0xe00040, 0x11); /* even byte is upper: retained */
+    assert(work_ram[0x41] == 0xaa);
+    work_ram_logic_write8(0xe00041, 0x22); /* odd byte is lower: retained */
+    assert(work_ram[0x40] == 0xbb);
+    assert(set_logic_data_mask_c(1, WORK_RAM_FAULT_APPLY_WRITE) == WORK_RAM_FAULT_OK);
+    assert(get_logic_write_inhibit_c() == 0);
+    assert(set_logic_write_inhibit_c(1) == WORK_RAM_FAULT_OK);
+    assert(recover_logic_cpu(1) == WORK_RAM_FAULT_OK);
+    assert(get_logic_write_inhibit_c() == 0);
 #endif
     assert(set_logic_write_trace_enabled(2) == WORK_RAM_FAULT_INVALID_CONFIG);
     assert(set_logic_write_trace_enabled(1) == WORK_RAM_FAULT_OK);

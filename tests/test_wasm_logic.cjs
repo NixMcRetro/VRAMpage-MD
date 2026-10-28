@@ -33,7 +33,7 @@ const getWord = (c,a) => new DataView(c.HEAPU8.buffer).getUint16(c._get_logic_ra
 const putWord = (c,a,v) => new DataView(c.HEAPU8.buffer).setUint16(c._get_logic_ram_ref()+a,v,true);
 const getByte = (c,a) => c.HEAPU8[c._get_logic_ram_ref()+(a^1)];
 
-async function create(words, config, init, dataMaskConfig) {
+async function create(words, config, init, dataMaskConfig, inhibitMask) {
   const c = await factory({locateFile:n=>path.join(path.dirname(coreFile),n)});
   c._init();
   assert.equal(typeof c._set_logic_fault, 'function', 'Rebuild the logic-capable core');
@@ -43,6 +43,7 @@ async function create(words, config, init, dataMaskConfig) {
   if(init) init(c);
   if(config) assert.equal(c._set_logic_fault(...config),0);
   if(dataMaskConfig) assert.equal(c._set_logic_data_mask(...dataMaskConfig),0);
+  if(inhibitMask !== undefined) assert.equal(c._set_logic_write_inhibit(inhibitMask),0);
   const input=new Float32Array(c.HEAPF32.buffer,c._get_input_buffer_ref(),32);
   input.fill(0);c._wasm_input_update();c._tick();c._sound();
   assert.equal(c._get_logic_frame(),1);
@@ -64,6 +65,31 @@ async function create(words, config, init, dataMaskConfig) {
   assert.equal(c._get_logic_reads(),0);assert.equal(c._get_logic_writes(),0);
   assert.equal(c._get_logic_write_trace_state(),0,'trace is disabled by default');tests++;
   assert.equal(c._get_logic_cpu_flags(),1);tests++;
+
+  // Real CPU stores retain prior bytes on selected lanes; reads stay ordinary.
+  c=await create([
+    ...wordWrite(0xff1000,0x1122),...wordWrite(0xff1002,0x1122),
+    ...longWrite(0xff1004,0x11223344),...byteWrite(0xff1008,0x11),
+    0x3039,0x00ff,0x1000,0x33c0,0x00ff,0x1010,...stop
+  ],null,core=>{putWord(core,0x1000,0xaabb);putWord(core,0x1002,0xaabb);
+    putWord(core,0x1004,0xaabb);putWord(core,0x1006,0xccdd);putWord(core,0x1008,0xaabb);},null,1);
+  assert.equal(c._get_logic_write_inhibit(),1);
+  assert.equal(getWord(c,0x1000),0x11bb);
+  assert.equal(getWord(c,0x1002),0x11bb);
+  assert.equal(getWord(c,0x1004),0x11bb);assert.equal(getWord(c,0x1006),0x33dd);
+  assert.equal(getByte(c,0x1008),0xaa,'even byte address selects inhibited upper lane');
+  assert.equal(getWord(c,0x1010),0xaabb,'CPU reads return stored bytes unchanged');
+  assert.equal(c._get_logic_reads(),0);
+  assert.equal(c._set_logic_write_inhibit(4),5);
+  assert.equal(c._set_logic_write_inhibit(1.5),5);
+  assert.equal(c._set_logic_write_inhibit(),5);
+  assert.equal(c._get_logic_write_inhibit(),1,'invalid or malformed calls preserve active inhibit');
+  assert.equal(c._set_logic_fault(1,1,0,1),0);
+  assert.equal(c._get_logic_write_inhibit(),0,'accepted legacy fault replaces inhibit');
+  assert.equal(c._set_logic_write_inhibit(3),0);
+  assert.equal(c._recover_logic_cpu(1),0);
+  assert.equal(c._get_logic_write_inhibit(),0,'CPU recovery clears inhibit');
+  tests++;
 
   // Independent byte lanes affect byte, word and both halves of longword CPU stores.
   c=await create([
