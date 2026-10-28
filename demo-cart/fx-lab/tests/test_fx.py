@@ -9,7 +9,7 @@ import hashlib,struct,sys,unittest,json
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import build_fx
 R=build_fx
-ROM=(R.OUT/'VRAMpage-MD-FX-Lab-v0.3.4-Demoscene.bin').read_bytes()
+ROM=(R.OUT/'VRAMpage-MD-FX-Lab-v0.3.5-Demoscene.bin').read_bytes()
 
 class CPU:
     def __init__(self,pal=False,start_at=None,inputs=None):
@@ -112,7 +112,7 @@ class CPU:
         if op&0xF1F8==0x3000:
             dest=(op>>9)&7;src=op&7
             self.d[dest]=(self.d[dest]&0xFFFF0000)|(self.d[src]&65535);return
-        if op in (0x329A,0x329E):
+        if op&0xFFF8==0x3298:
             source=op&7;p=self.a[source];v=self.rw(p);self.a[source]+=2
             self.memwrite(self.a[1],2,v);return
         if op&0xFFF8 in (0x0240,0x0200,0x0640):
@@ -322,6 +322,47 @@ class TestROM(unittest.TestCase):
     # The title and sprite tile bytes were both genuinely uploaded.
     self.assertEqual(c.vram[R.SPRITE_TILE_BASE*32:(R.SPRITE_TILE_BASE+16)*32],R.SPRITE_PATTERNS)
 
+ def test_bend_tables_are_hardware_bounded_and_original_art_is_intact(self):
+    self.assertEqual(R.BEND_LEVELS,3)
+    self.assertEqual(R.BEND_SCROLL_ROWS,12)
+    self.assertEqual(len(set(R.BEND_PALETTES.values())),3)
+    self.assertEqual(len(set(R.BEND_SCROLLS.values())),3)
+    for level in (1,2,3):
+        pal=struct.unpack('>16H',R.BEND_PALETTES[level])
+        scroll=struct.unpack('>12H',R.BEND_SCROLLS[level])
+        self.assertEqual(pal[0],0)
+        self.assertTrue(all((word&0x111)==0 for word in pal))
+        self.assertTrue(all(min(v,1024-v)<=48 for v in scroll))
+    self.assertEqual(R.ALL_PATTERNS[:len(R.PATTERNS)],R.PATTERNS)
+    self.assertEqual(ROM[R.asm.labels['map_title']:R.asm.labels['map_title']+4096],
+                     R.full_map(R.title_cells))
+
+ def test_chroma_input_changes_actual_vdp_stream_and_resets_cleanly(self):
+    # D-pad chooses fourth scene; native A bends, B resets, C maxes.
+    c=CPU(inputs=[(2,2),(4,0),(6,2),(8,0),(10,2),(12,0),
+                  (14,0x40),(16,0),(65,0x40),(67,0),
+                  (85,0x10),(87,0),(105,0x20),(107,0)])
+    c.run_until(lambda c:c.scene=='colour' and c.frames>=80
+                and c.pc==R.asm.labels['tick_colour'])
+    self.assertEqual(c.d[5],1)
+    self.assertEqual(bytes(c.cram[32:64]),R.BEND_PALETTES[1])
+    self.assertEqual([struct.unpack_from('>H',c.vram,0xF800+i*32)[0]
+                      for i in range(12)],list(struct.unpack('>12H',R.BEND_SCROLLS[1])))
+    c.run_until(lambda c:c.scene=='colour' and c.frames>=98
+                and c.pc==R.asm.labels['tick_colour'])
+    self.assertEqual(c.d[5],0)
+    self.assertNotEqual(bytes(c.cram[32:64]),R.BEND_PALETTES[1])
+    c.run_until(lambda c:c.scene=='colour' and c.frames>=125
+                and c.pc==R.asm.labels['tick_colour'])
+    self.assertEqual(c.d[5],3)
+    self.assertEqual(bytes(c.cram[32:64]),R.BEND_PALETTES[3])
+    self.assertEqual(c.autoinc,2)
+    # Unchanged automatic show: no unsolicited input and no bend overlays.
+    auto=CPU()
+    auto.run_until(lambda c:c.scene=='colour' and c.frame_scenes.get('colour',0)>=10
+                   and c.pc==R.asm.labels['tick_colour'])
+    self.assertEqual(auto.d[5],0)
+    self.assertNotIn(('colour','cram',32),auto.commands)
  def test_chroma_reactor_updates_all_four_cram_banks_and_hscroll(self):
     self.assertEqual(len(R.COLOUR_PALETTES),96*128)
     self.assertEqual(len(R.COLOUR_SCROLLS),96*60)

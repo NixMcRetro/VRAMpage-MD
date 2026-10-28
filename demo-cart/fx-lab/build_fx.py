@@ -329,6 +329,39 @@ def colour_scroll(frame):
         words.append(offset & 0x3FF)
     return struct.pack('>30H',*words)
 
+# v0.3.5 interactive VDP bending. Three authored, bounded hardware states
+# adjust one 16-colour CRAM bank and the first 12 HScroll cell entries.
+# No fake framebuffer shader, random RAM corruption or extra graphics tiles.
+BEND_LEVELS=3
+BEND_SCROLL_ROWS=12
+
+def bend_palette(level):
+    assert 1 <= level <= BEND_LEVELS
+    hues=(0.57,0.89,0.26)
+    entries=[0]
+    for shade in range(1,16):
+        hue=(hues[level-1]+0.01*shade/15)%1
+        saturation=(0.68,0.91,1.0)[level-1]
+        val=min(1,(0.17+0.83*shade/15)*(0.90+0.03*level))
+        entries.append(genesis_colour(*colorsys.hsv_to_rgb(hue,saturation,val)))
+    return struct.pack('>16H',*entries)
+
+def bend_scroll(level):
+    assert 1 <= level <= BEND_LEVELS
+    rows=[]
+    for row in range(BEND_SCROLL_ROWS):
+        offset=round((9+level*7)*math.sin(row*1.17+level*1.3)
+                     +level*3*((row%3)-1))
+        assert -48 <= offset <= 48
+        rows.append(offset & 0x3FF)
+    return struct.pack('>'+str(BEND_SCROLL_ROWS)+'H',*rows)
+
+BEND_PALETTES={level:bend_palette(level) for level in range(1,BEND_LEVELS+1)}
+BEND_SCROLLS={level:bend_scroll(level) for level in range(1,BEND_LEVELS+1)}
+assert all(len(table)==32 for table in BEND_PALETTES.values())
+assert all(len(table)==BEND_SCROLL_ROWS*2 for table in BEND_SCROLLS.values())
+assert len(set(BEND_PALETTES.values()))==BEND_LEVELS
+assert len(set(BEND_SCROLLS.values()))==BEND_LEVELS
 SPRITE_PATTERNS=make_sprite_patterns()
 SPRITE_PALETTES=b''.join(sprite_palette(frame) for frame in range(SPRITE_PHASES))
 COLOUR_PALETTES=b''.join(colour_palette(frame) for frame in range(PHASES))
@@ -649,7 +682,7 @@ asm.label('start_colour')
 asm.movea_ref(2,'scroll_colour')
 asm.movea_ref(6,'palframes_colour')
 asm.movew_imm_d(4,PHASES-1)
-asm.moveq(5,0)
+asm.moveq(5,0) # Scene-local bend level: 0 clean, 1..3 increasingly distorted
 asm.label('tick_colour')
 asm.bsr('wait_vblank')
 # Horizontal one-cell scrolling uses HScroll table with 32-byte autoincrement.
@@ -662,18 +695,60 @@ asm.movew_imm_ai(0,0x8F02)
 asm.movel_imm_ai(0,0xC0000000)
 asm.movew_imm_d(0,63)
 asm.bsr('copy_words_a6')
+asm.bsr('apply_colour_bend')
 asm.dbra(4,'colour_phase_done')
 asm.movea_ref(2,'scroll_colour')
 asm.movea_ref(6,'palframes_colour')
 asm.movew_imm_d(4,PHASES-1)
 asm.label('colour_phase_done')
-asm.addq(5,1)
 asm.bsr('poll_buttons')
-asm.andiw(2,0x0080)
-asm.bne('scene_end_colour')
+# START always exits. B restores unmodified CRAM/HScroll on the next frame.
+asm.movew_d_d(2,1);asm.andiw(1,0x0080);asm.bne('scene_end_colour')
+asm.movew_d_d(2,1);asm.andiw(1,0x0010);asm.bne('colour_bend_reset')
+# C invokes the most pronounced deliberate VDP distortion.
+asm.movew_d_d(2,1);asm.andiw(1,0x0020);asm.bne('colour_bend_max')
+# A advances one level. A fourth press returns to the original effect.
+asm.movew_d_d(2,1);asm.andiw(1,0x0040);asm.beq('colour_bend_continue')
+asm.addq(5,1)
+asm.cmpiw(5,BEND_LEVELS+1);asm.bne('colour_bend_continue')
+asm.moveq(5,0)
+asm.bra('colour_bend_continue')
+asm.label('colour_bend_reset');asm.moveq(5,0);asm.bra('colour_bend_continue')
+asm.label('colour_bend_max');asm.moveq(5,BEND_LEVELS)
+asm.label('colour_bend_continue')
 asm.dbra(6,'tick_colour')
 asm.label('scene_end_colour')
 asm.rts()
+
+asm.label('apply_colour_bend')
+asm.tstw(5);asm.beq('bend_done')
+# A4 was used only to initialise the controller direction register.
+# Its pointer may safely be reused as our small VDP source stream.
+for level in range(1,BEND_LEVELS+1):
+    asm.cmpiw(5,level);asm.beq('bend_palette_'+str(level))
+asm.bra('bend_done')
+for level in range(1,BEND_LEVELS+1):
+    asm.label('bend_palette_'+str(level))
+    asm.movea_ref(4,'palette_bend_'+str(level))
+    asm.bra('bend_palette_apply')
+asm.label('bend_palette_apply')
+# One 16-colour bank only; base palette cycling remains visible elsewhere.
+asm.movel_imm_ai(0,0xC0200000) # CRAM byte address $20, bank 1
+asm.movew_imm_d(0,15);asm.bsr('copy_words_a4')
+# Rewrite just the first 12 line-scroll cells; rows 12-29 still animate.
+for level in range(1,BEND_LEVELS+1):
+    asm.cmpiw(5,level);asm.beq('bend_scroll_'+str(level))
+asm.bra('bend_done')
+for level in range(1,BEND_LEVELS+1):
+    asm.label('bend_scroll_'+str(level))
+    asm.movea_ref(4,'scroll_bend_'+str(level))
+    asm.bra('bend_scroll_apply')
+asm.label('bend_scroll_apply')
+asm.movew_imm_ai(0,0x8F20) # HScroll stride: 32 bytes per cell
+asm.movel_imm_ai(0,0x78000003) # VRAM HScroll table at $F800
+asm.movew_imm_d(0,BEND_SCROLL_ROWS-1);asm.bsr('copy_words_a4')
+asm.movew_imm_ai(0,0x8F02) # Restore ordinary VRAM autoincrement
+asm.label('bend_done');asm.rts()
 
 asm.label('run_audio')
 asm.bsr('load_audio')
@@ -776,6 +851,10 @@ asm.label('copy_a6_loop')
 asm.movew_a_post_ai(6,1)
 asm.dbra(0,'copy_a6_loop');asm.rts()
 
+asm.label('copy_words_a4')
+asm.label('copy_a4_loop')
+asm.movew_a_post_ai(4,1)
+asm.dbra(0,'copy_a4_loop');asm.rts()
 asm.label('sound_on')
 # Original PSG tone, volume low. FM is intentionally not claimed in this first version.
 asm.moveb_imm_ai(5,0x8A);asm.moveb_imm_ai(5,0x14)
@@ -798,6 +877,9 @@ asm.append('palframes_sprites',SPRITE_PALETTES)
 asm.append('scroll_colour',COLOUR_SCROLLS)
 asm.append('palframes_colour',COLOUR_PALETTES)
 
+for level in range(1,BEND_LEVELS+1):
+    asm.append('palette_bend_'+str(level),BEND_PALETTES[level])
+    asm.append('scroll_bend_'+str(level),BEND_SCROLLS[level])
 rom=asm.final()
 # Header is installed only after byte offsets/branches are fixed.
 def put(start,stop,text):
@@ -805,8 +887,8 @@ def put(start,stop,text):
     rom[start:stop]=b.ljust(stop-start,b' ')
 put(0x100,0x110,'SEGA MEGA DRIVE')
 put(0x110,0x120,'(C) MCRETRO 2026')
-put(0x120,0x150,'VRAMPAGE MD FX LAB V0.3.4 DEMOSCENE')
-put(0x150,0x180,'VRAMPAGE MD FX LAB V0.3.4 DEMOSCENE')
+put(0x120,0x150,'VRAMPAGE MD FX LAB V0.3.5 DEMOSCENE')
+put(0x150,0x180,'VRAMPAGE MD FX LAB V0.3.5 DEMOSCENE')
 put(0x180,0x18E,'GM 00000000-00')
 put(0x190,0x1A0,'J               ')
 rom[0x1A0:0x1A8]=struct.pack('>II',0,len(rom)-1)
@@ -816,7 +898,7 @@ if len(rom)%2:rom+=b'\x00'
 rom[0x1A4:0x1A8]=struct.pack('>I',len(rom)-1)
 checksum=sum(struct.unpack_from('>H',rom,i)[0] for i in range(0x200,len(rom),2))&0xFFFF
 rom[0x18E:0x190]=struct.pack('>H',checksum)
-(OUT/'VRAMpage-MD-FX-Lab-v0.3.4-Demoscene.bin').write_bytes(rom)
+(OUT/'VRAMpage-MD-FX-Lab-v0.3.5-Demoscene.bin').write_bytes(rom)
 report={
  'romSize':len(rom),'checksum':f'{checksum:04X}',
  'sha256':hashlib.sha256(rom).hexdigest(), 'baseKitSHA256':APPROVED_KIT_SHA256,
@@ -829,7 +911,10 @@ report={
  'paletteWordsPerFrame':64,'tileMaps':['title','vortex','aurora','sprites','colour','audio'],
  'titleSecondsNTSC':round(10*59.92),'titleSecondsPAL':500,
  'loopScenes':['title','vortex','aurora','sprites','colour','audio'],
- 'menuChoices':list(CHOICES),'input':{'up':'previous','left':'previous','down':'next','right':'next','start':'launch or return','A':'launch','B':'launch','C':'launch'},
+ 'menuChoices':list(CHOICES),
+ 'interactiveBend':{'scene':'colour','buttons':{'A':'cycle 0,1,2,3','B':'clean reset','C':'maximum','START':'return to menu'},
+  'levels':BEND_LEVELS,'cramBank':1,'cramWordsPerFrame':16,'hscrollRows':BEND_SCROLL_ROWS,
+  'hscrollWordsPerFrame':BEND_SCROLL_ROWS,'attractMode':'unmodified unless a player intervenes'},'input':{'up':'previous','left':'previous','down':'next','right':'next','start':'launch or return','A':'launch','B':'launch','C':'launch'},
  'autoAttractIdleNTSCFrames':600,'autoAttractIdlePALFrames':500,
  'cursorTile':ARROW_ID,'uiPatternTiles':len(extra_patterns),
  'assetSHA256':{'title_patterns.bin':hashlib.sha256(PATTERNS).hexdigest(),

@@ -1,6 +1,6 @@
 /* Run the exact experimental Demo Cart inside compiled Genesis Plus GX WASM.
  * This is a runtime probe, not a replacement for human visual acceptance.
- * Usage: node tests/test_demo_cart_v034_wasm.cjs site/core/genplus.js
+ * Usage: node tests/test_demo_cart_v035_wasm.cjs site/core/genplus.js
  */
 'use strict';
 const assert = require('node:assert/strict');
@@ -11,13 +11,13 @@ const zlib = require('node:zlib');
 
 const root = path.resolve(__dirname, '..');
 const coreFile = path.resolve(process.argv[2] || 'site/core/genplus.js');
-const romFile = path.join(root, 'demo-cart/fx-lab/build/VRAMpage-MD-FX-Lab-v0.3.4-Demoscene.bin');
+const romFile = path.join(root, 'demo-cart/fx-lab/build/VRAMpage-MD-FX-Lab-v0.3.5-Demoscene.bin');
 const reportFile = path.join(root, 'demo-cart/fx-lab/build/rom_report.json');
-const output = path.join(root, 'artifacts/demo-cart-v034-genplus');
+const output = path.join(root, 'artifacts/demo-cart-v035-genplus');
 const WIDTH = 320, HEIGHT = 224, PITCH = 640;
-const PREVIOUS_SHA = '5be306c35e7342101eea7079f74fe8ed3db4591253e17f5c67fd6e8740458c0e';
-// Pin the new v0.3.4 digest after the first real Genesis Plus GX build report is inspected.
-const EXPECTED_SHA = 'ba276ed3aa7d6876684c60a7c49a6cf2febddfec8f94867cd85db8b0181f72e1';
+const PREVIOUS_SHA = 'ba276ed3aa7d6876684c60a7c49a6cf2febddfec8f94867cd85db8b0181f72e1';
+// Pin the new v0.3.5 digest after the first real Genesis Plus GX build report is inspected.
+const EXPECTED_SHA = null; // Pin after Genesis Plus GX has rebuilt the candidate.
 
 function crc32(bytes) {
   let crc = 0xffffffff;
@@ -110,9 +110,9 @@ async function machine(region, rom) {
   const rom = fs.readFileSync(romFile);
   const report = JSON.parse(fs.readFileSync(reportFile, 'utf8'));
   const sha = crypto.createHash('sha256').update(rom).digest('hex');
-  assert.equal(rom.length, 150170, 'Test only the exact v0.3.4 build, never a stale ROM');
-  assert.notEqual(sha, PREVIOUS_SHA, 'v0.3.4 must not reproduce the broken v0.3.2 map');
-  assert.equal(sha, EXPECTED_SHA, 'Exact reviewed v0.3.4 binary must be loaded');
+  assert.ok(rom.length>150170 && rom.length<512*1024, 'Bounded original v0.3.5 candidate ROM');
+  assert.notEqual(sha, PREVIOUS_SHA, 'v0.3.5 must not reproduce the broken v0.3.2 map');
+  if (EXPECTED_SHA) assert.equal(sha, EXPECTED_SHA, 'Exact reviewed ROM digest');
   assert.equal(report.sha256, sha);
   assert.equal(report.romSize, rom.length);
   const captures = [];
@@ -167,6 +167,40 @@ async function machine(region, rom) {
   assert.notEqual(sprite1.rgbaSHA256, chroma1.rgbaSHA256,
     'Sprite Storm and Chroma Reactor must display different native frames');
 
+  // Hardware-driven, player-controlled bending must differ from identical
+  // unmodified frames, and B must restore the clean VDP output exactly.
+  const bent = await machine(1,rom), untouched = await machine(1,rom);
+  function openReactor(m) {
+    m.run(15);
+    m.press('down');m.press('down');m.press('down');
+    m.press('A');m.run(30);
+  }
+  openReactor(bent);openReactor(untouched);
+  const cleanA=bent.capture('ntsc-interactive-clean');
+  const cleanB=untouched.capture('ntsc-interactive-reference');
+  assert.equal(cleanA.rgbaSHA256,cleanB.rgbaSHA256,
+    'Identical inputs should render identical baseline images');
+  captures.push(cleanA);
+  bent.press('A');untouched.run(3);bent.run(7);untouched.run(7);
+  const level1=bent.capture('ntsc-interactive-bend-level-1');
+  const ref1=untouched.capture('ntsc-interactive-unbent-1');
+  assert.notEqual(level1.rgbaSHA256,ref1.rgbaSHA256,
+    'A must visibly bend real hardware pixels, not a browser overlay');
+  captures.push(level1);
+  bent.press('B');untouched.run(3);bent.run(7);untouched.run(7);
+  const recovered=bent.capture('ntsc-interactive-clean-restored');
+  const refRestored=untouched.capture('ntsc-interactive-unbent-restored');
+  assert.equal(recovered.rgbaSHA256,refRestored.rgbaSHA256,
+    'B must restore actual CRAM/HScroll output to identical clean rendering');
+  captures.push(recovered);
+  bent.press('C');untouched.run(3);bent.run(7);untouched.run(7);
+  const maximum=bent.capture('ntsc-interactive-max-bend');
+  const maxReference=untouched.capture('ntsc-interactive-unbent-max-reference');
+  assert.notEqual(maximum.rgbaSHA256,maxReference.rgbaSHA256,
+    'C must apply maximum native distortion');
+  assert.notEqual(maximum.rgbaSHA256,level1.rgbaSHA256,
+    'Maximum bend must differ from entry-level bend');
+  captures.push(maximum);
   // Continuous attract loop under both 60 Hz-class NTSC and 50 Hz PAL.
   for (const [region, label, moments] of [
     [1, 'ntsc', [['title',15], ['vortex',650], ['aurora',1390],
@@ -192,9 +226,9 @@ async function machine(region, rom) {
 
   const result = {romSize:rom.length, romSHA256:sha,
     engine:'real compiled Genesis Plus GX WebAssembly', regions:['NTSC-U','PAL'],
-    scope:'Native framebuffer, input and attract-loop smoke; visual design review remains manual',
+    scope:'Actual 68000-driven A/B/C CRAM and HScroll bending, clean restoration, NTSC/PAL attract loop; visual review remains manual',
     captures};
   fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify(result, null, 2)+'\n');
-  console.log('PASS actual Genesis Plus GX v0.3.4 ROM test; frames saved: ' + captures.length);
+  console.log('PASS actual Genesis Plus GX v0.3.5 ROM test; frames saved: ' + captures.length);
   console.log(JSON.stringify(result, null, 2));
 })().catch(error => { console.error(error); process.exitCode = 1; });
