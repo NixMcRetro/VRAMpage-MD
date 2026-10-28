@@ -813,10 +813,11 @@ class BrowserLogicTests(unittest.TestCase):
         expect(self.page.locator('#circuitConfigStatus')).to_contain_text('no file was created')
         self.page.locator('#disconnectAllFaultsBtn').click()
         expect(self.page.locator('#pauseBtn')).to_have_text('Resume')
-        expect(self.page.locator('#disconnectAllFaultsStatus')).to_contain_text('unverified')
+        expect(self.page.locator('#disconnectAllFaultsStatus')).to_contain_text('RAM: clear failed')
+        self.assertEqual(self.page.evaluate('mockCore.logic.dataMask'),0)
 
     def test_ram_data_mask_restores_after_temporary_address_shortcut_and_cpu_reset(self):
-        self.page.close();self.page=self.new_page(session_checkpoint=True)
+        self.page.close();self.page=self.new_page(session_checkpoint=True,circuit_config=True)
         self.load_rom()
         self.page.locator('#saveCheckpointBtn').click()
         self.page.locator('#ramChipSignals').select_option('2')

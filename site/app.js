@@ -1164,7 +1164,8 @@
     $('ramLegAction').disabled=!started || !logicApiReady();
     $('ramChipState').textContent=mask
       ? `${Array.from({length:data?16:15},(_,i)=>i).filter(i=>mask&(1<<i)).map(i=>logicLineName(kind,i)).join(', ')} forced low`
-      : pair ? `${logicLineName(kind,pair.a)} ↔ ${logicLineName(kind,pair.b)} bridge`
+      : pair ? data ? `Data bridge D${pair.a} ↔ D${pair.b} active`
+        : `${logicLineName(kind,pair.a)} ↔ ${logicLineName(kind,pair.b)} bridge`
       : logicActive ? 'A fault is active in the other signal view.'
       : data && !dataMaskApiReady() && started ? 'Data cuts require an updated runtime core; byte-local bridges remain available.'
       : `${data?'Data':'Address'} lines are connected.`;
@@ -2262,7 +2263,8 @@
 
   function resetLogicSelection() {
     $('logicKind').value='1'; $('logicAccess').value='1';
-    configureLogicLines();
+    $('ramChipSignals').value='1';ramSelectedPin=null;
+    configureLogicLines();renderRamChip();
   }
 
   function circuitPulseIsArmed() {
