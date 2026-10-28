@@ -1,6 +1,6 @@
 # Development work queue
 
-## Work RAM Write Inhibit — In Progress, 28 October 2026 (UTC)
+## Work RAM Write Inhibit — Integration Checkpoint, 28 October 2026 (UTC)
 
 Authorized bounded follow-up to the reviewed [write-enable research](WORK-RAM-WRITE-ENABLE-RESEARCH.md).
 Start from verified main `9b29a5b9380ed4fe760f41015d15c51c53674e1e`
@@ -11,14 +11,29 @@ configuration/export, lifecycle and measurable acceptance. Lower/Upper inactive-
 write enables retain old bytes and replace existing RAM faults; there is no new
 motherboard selector or pulse engine. FM selection remains research only.
 
-Native/API changes and literal CPU/banked-Z80 actual-WASM tests are integrated;
-six focused UI regressions and schema/comparison tests pass. Root caught an
-unguarded normal-profile reference before CI, fixed it in `7d93422`, and added
-normal/runtime strict compilation to the shared native regression. Independent
-Luna High review verified the correction with fresh normal and runtime C smokes.
-Fresh runtime rebuild, full applicable suites and final PR/main CI remain gates;
-previous cached normal hashes are not represented as a new build verification.
-No VERSION, public release, Demo Cart or McRetro.net change is authorized here.
+Native/API changes and literal CPU/banked-Z80 actual-WASM tests are integrated.
+Independent Luna High review approved source/test deltas through `a6cdb30`.
+Root caught unguarded normal-profile references before CI, fixed them in
+`7d93422`, and added normal/runtime strict compilation to the shared regression;
+the independent reviewer freshly compiled and ran both profiles successfully.
+
+Local source/sanitizer/Node/C checks pass (115 Python tests reported, two
+build-dependent classes skipped there). The rebuilt runtime passes 33 actual-WASM
+CPU/Z80 cases and the production factory/API assertions. Chromium interface
+159/159 plus one new focused orphan-state case, actual-core 12/12 (including
+128 mixed-fault cycles), transaction 3/3 and layout 7/7 pass. LeakSanitizer is
+disabled locally for container ptrace; ASan/UBSan and normal CI settings remain.
+
+Rebuilt runtime JS SHA-256 is
+`e8da1c28303fd3900f35c032ce01802c76d1d041dc8a0d6cd57bdc97ee3af4d0`;
+WASM is `8fa2fa0fe6a47890c948ed39a7f095980d9ffde7d4405a88ce07a5f34b8814b7`.
+Fresh normal-WASM hash checks and all required PR checks/CodeQL, then verified
+main CI, remain integration gates. Cached prior normal hashes are not presented
+as a new build verification. VERSION/public v0.5.0, all releases, Demo Cart assets
+and McRetro.net remain unchanged. Carry the already reviewed RAM/FM research and
+standalone FM characterization probe with this implementation; no FM selector
+or other runtime feature is added. Next bounded task after delivery is the
+separate staged-MAME-model/replay proof, not another motherboard catalogue.
 
 ## Next Fault Research — 28 October 2026 (UTC)
 

@@ -59,8 +59,9 @@ Version 1 files with nullable audio pairs, version 2 files with audio masks
 and version 3 files with a Z80 RAM pair
 remain importable and are normalized without modifying the original file.
 Versions 1/2 import with Z80 RAM off; versions 1–3 import with RGB
-off. Version 4 files retain their RGB settings. All four older versions remain
-importable; none can encode a data mask. Version 5 data-mask files also import unchanged; new downloads use version 6.
+off. Version 4 files retain their RGB settings. Versions 1–4 cannot encode RAM
+data masks; version 5 can. All five older schemas remain importable, while new
+downloads use version 6.
 Older applications reject the newer schema rather than silently losing its settings.
 
 For example, this version 6 file selects a frame-model VRAM bridge, two
