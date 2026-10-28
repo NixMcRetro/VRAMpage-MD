@@ -27,7 +27,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Validate release notes and source-commit manifest
         run: python3 scripts/curate_releases.py --check
       - name: Check original release assets and update existing titles/notes
