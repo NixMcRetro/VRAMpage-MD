@@ -54,7 +54,7 @@ class BrowserLogicTests(unittest.TestCase):
             context.close()
         self.assertEqual(self.errors, [], "Uncaught application errors")
 
-    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False, manual_frames=False, session_checkpoint=False, automatic_recovery=False, legacy_z80_ram=False):
+    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False, manual_frames=False, session_checkpoint=False, automatic_recovery=False, legacy_z80_ram=False, region_core=False):
         context = self.browser.new_context(
             viewport={"width": 1366, "height": 768},
             color_scheme="light",
@@ -62,6 +62,8 @@ class BrowserLogicTests(unittest.TestCase):
         )
         self.contexts.append(context)
         page = context.new_page()
+        if region_core:
+            page.add_init_script("window.__regionCore = true;")
         if legacy_z80_ram:
             page.add_init_script("window.__legacyZ80RamCore = true;")
         if session_checkpoint:
@@ -166,6 +168,74 @@ class BrowserLogicTests(unittest.TestCase):
         # The checkpoint controls live in the advanced panel.
         page.locator("#saveCheckpointBtn").evaluate("el=>{for(let p=el.parentElement;p;p=p.parentElement)if(p.tagName==='DETAILS')p.open=true;}")
         return page
+
+    def test_region_selection_is_staged_and_applies_on_restart(self):
+        page=self.new_page(region_core=True,manual_frames=True,session_checkpoint=True,circuit_config=True)
+        expect(page.locator('#regionSelect')).to_be_enabled()
+        page.locator('#romFile').set_input_files({'name':'region.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
+        page.evaluate('stepTestFrame();stepTestFrame()')
+        expect(page.locator('#machineSummary')).to_contain_text('NTSC-U')
+        page.locator('#saveCheckpointBtn').evaluate("el=>{for(let p=el.parentElement;p;p=p.parentElement)if(p.tagName==='DETAILS')p.open=true;}")
+        page.locator('#saveCheckpointBtn').click()
+        starts=page.evaluate('mockCore.starts');ticks=page.evaluate('mockCore.ticks')
+        page.locator('#regionSelect').select_option('2')
+        expect(page.locator('#regionStatus')).to_contain_text('Pending')
+        expect(page.locator('#machineSummary')).to_contain_text('NTSC-U')
+        self.assertEqual(page.evaluate('mockCore.starts'),starts)
+        self.assertEqual(page.evaluate('mockCore.ticks'),ticks)
+        expect(page.locator('#restoreCheckpointBtn')).to_be_enabled()
+        page.locator('#logicCpuResetBtn').click()
+        expect(page.locator('#machineSummary')).to_contain_text('NTSC-U')
+        expect(page.locator('#restoreCheckpointBtn')).to_be_enabled()
+        page.locator('#resetBtn').click()
+        expect(page.locator('#machineSummary')).to_contain_text('PAL (Europe)')
+        expect(page.locator('#regionStatus')).to_contain_text('Active')
+        expect(page.locator('#restoreCheckpointBtn')).to_be_disabled()
+        self.assertEqual(page.evaluate("[document.getElementById('screen').width,document.getElementById('screen').height]"),[320,240])
+        page.evaluate('stepTestFrame();stepTestFrame()')
+        self.assertEqual(page.evaluate('mockCore.region.linesPerFrame'),313)
+
+    def test_region_unavailable_legacy_and_rejected_change(self):
+        expect(self.page.locator('#regionSelect')).to_be_disabled()
+        expect(self.page.locator('#regionStatus')).to_contain_text('Unavailable')
+        page=self.new_page(region_core=True)
+        page.evaluate('mockCore.rejectRegion=true')
+        page.locator('#regionSelect').select_option('2')
+        expect(page.locator('#regionSelect')).to_have_value('1')
+        expect(page.locator('#regionStatus')).to_contain_text('refused')
+        self.assertEqual(page.evaluate('mockCore.region.requestedRegion'),1)
+        page.evaluate('mockCore.rejectRegion=false')
+        page.locator('#regionSelect').select_option('3')
+        self.load_rom(page)
+        expect(page.locator('#machineSummary')).to_contain_text('NTSC-J')
+
+    def test_region_native_cadence_and_viewport(self):
+        for region,fps in [('1',59.92274),('2',49.701459)]:
+            page=self.new_page(region_core=True,manual_frames=True)
+            page.locator('#regionSelect').select_option(region)
+            page.locator('#romFile').set_input_files({'name':'timing.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
+            page.evaluate('testTime=performance.now();for(let i=0;i<61;i++)stepTestFrame()')
+            self.assertEqual(page.evaluate('mockCore.ticks'),int(60*17*fps/1000))
+            expect(page.locator('#fpsIndicator')).to_contain_text(f'{fps:.2f} TARGET')
+        for width,height in [(256,224),(320,240),(320,480)]:
+            page.evaluate('([w,h])=>{mockCore.region.width=w;mockCore.region.height=h;mockCore.region.interlaced=h>240;stepTestFrame();stepTestFrame();}',[width,height])
+            for viewport in [{'width':1366,'height':768},{'width':390,'height':844}]:
+                page.set_viewport_size(viewport)
+                page.evaluate('stepTestFrame();stepTestFrame()')
+                shape=page.locator('#screen').evaluate('(el)=>{const r=el.getBoundingClientRect();return [el.width,el.height,r.width/r.height,document.documentElement.scrollWidth>innerWidth];}')
+                self.assertEqual(shape[:2],[width,height])
+                self.assertAlmostEqual(shape[2],width/height,delta=0.003)
+                self.assertFalse(shape[3])
+
+    def test_region_auto_and_missing_observation(self):
+        page=self.new_page(region_core=True)
+        page.locator('#regionSelect').select_option('0')
+        self.load_rom(page)
+        expect(page.locator('#machineSummary')).to_contain_text('PAL (Europe)')
+        expect(page.locator('#regionSelect')).to_have_value('0')
+        page.evaluate('mockCore.throwRegionState=true')
+        expect(page.locator('#regionStatus')).to_contain_text('Unavailable')
+        expect(page.locator('#regionSelect')).to_be_disabled()
 
     def test_checkpoint_save_restore_no_ticks_and_immediate_saved_image(self):
         page=self.checkpoint_page()

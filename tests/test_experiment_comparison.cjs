@@ -83,3 +83,12 @@ z80B.z80RamFault.bridgeB=13;
 assert.equal(compare(z80A,z80B).find(row=>row.label==='Z80 RAM Bridge B').status,'unknown');
 z80B.z80RamFault.available=false;
 assert.equal(compare(z80A,z80B).find(row=>row.label==='Z80 RAM Recorded Writes').status,'unknown');
+const regionA={rom:{name:'region'},machine:{schemaVersion:1,available:true,regionCode:128,pal:false,
+ masterClock:53693175,frameRate:59.92274,linesPerFrame:262,width:320,height:224,interlaced:false}};
+const regionB={...regionA,machine:{...regionA.machine,regionCode:192,pal:true,linesPerFrame:313,frameRate:49.701459,height:240}};
+assert.equal(compare(regionA,regionA).find(x=>x.label==='Effective Region').status,'match');
+assert.equal(compare(regionA,regionB).find(x=>x.label==='Effective Region').status,'mismatch');
+assert.equal(compare(regionA,{rom:{name:'legacy'}}).find(x=>x.label==='Frame Rate').status,'unknown');
+assert.equal(compare(regionA,{...regionA,machine:{...regionA.machine,available:false}}).find(x=>x.label==='PAL Timing').status,'unknown');
+assert.equal(compare(regionA,{...regionA,machine:{...regionA.machine,height:true}}).find(x=>x.label==='Video Height').status,'unknown');
+console.log('Machine-region comparison observations passed.');

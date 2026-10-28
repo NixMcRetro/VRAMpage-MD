@@ -3,12 +3,14 @@
 // No third-party JS, fonts, CDN, telemetry, or ROM downloads.
 (() => {
   const $ = id => document.getElementById(id);
-  // WASM stores a 320x224 Sonic picture inside a 640x480 framebuffer.
+  // The native viewport is stored inside a 640x480 framebuffer.
   // Use native pixels with no scanline or smoothing effects.
   const SCREEN_WIDTH = 640, SCREEN_HEIGHT = 480;
   const GAME_WIDTH = 320, GAME_HEIGHT = 224;
   const NTSC_FPS = 59.92274;
-  const FRAME_MS = 1000 / NTSC_FPS;
+  let frameMs = 1000 / NTSC_FPS, targetFps=NTSC_FPS;
+  let videoWidth=GAME_WIDTH, videoHeight=GAME_HEIGHT;
+  let requestedRegion=1, activeRegionRequest=1;
   const AUDIO_RATE = 44100;
   const PRESETS = [[0,1], [0,2], [1,3], [2,4], [3,5], [4,6], [5,7], [6,7]];
   const QUICK_RAM_PAIRS = Array.from({length:5},(_,i)=>Array.from({length:4-i},(_,j)=>[i+10,i+11+j])).flat();
@@ -18,7 +20,7 @@
   const displayViewport = $('displayViewport');
   const ctx = canvas.getContext('2d', {alpha: false});
   ctx.imageSmoothingEnabled = false;
-  const imageData = ctx.createImageData(GAME_WIDTH, GAME_HEIGHT);
+  let imageData = ctx.createImageData(GAME_WIDTH, GAME_HEIGHT);
   const frameAdapter = window.VRAMpageFrame;
   if (!frameAdapter) throw new Error("Missing framebuffer.js: display adapter could not load");
   const rgbEncoderApi=window.VRAMpageRgbEncoder;
@@ -69,6 +71,77 @@
   const APPLICATION_VERSION = '0.5.0';
   let buildInfo = {status:'unavailable',applicationVersion:APPLICATION_VERSION,sourceCommit:null};
   loadBuildInfo().then(info=>{buildInfo=info;});
+
+  const REGION_NAMES=['Auto (ROM Header)','NTSC-U','PAL (Europe)','NTSC-J','Japan PAL (Core Mode)'];
+  const EFFECTIVE_REGION_NAMES={0:'NTSC-J',64:'Japan PAL',128:'NTSC-U',192:'PAL (Europe)'};
+  function regionApiReady() {
+    return typeof emulator?._set_region_request==='function' && typeof emulator?._get_region_state==='function';
+  }
+  function readRegionState() {
+    if (!regionApiReady()) return null;
+    try {
+      const s=emulator._get_region_state();
+      if (!s || s.schemaVersion!==1 || s.available!==true || typeof s.loaded!=='boolean' ||
+          !Number.isInteger(s.requestedRegion) || s.requestedRegion<0 || s.requestedRegion>4) return null;
+      if (s.loaded && (![0,64,128,192].includes(s.regionCode) || typeof s.pal!=='boolean' ||
+          !Number.isFinite(s.masterClock)||s.masterClock<1000000||s.masterClock>100000000 ||
+          !Number.isFinite(s.frameRate)||s.frameRate<40||s.frameRate>70 ||
+          s.linesPerFrame!==(s.pal?313:262) || !Number.isInteger(s.width)||s.width<1||s.width>640 ||
+          !Number.isInteger(s.height)||s.height<1||s.height>480 || typeof s.interlaced!=='boolean')) return null;
+      return {schemaVersion:1,available:true,loaded:s.loaded,requestedRegion:s.requestedRegion,
+        regionCode:s.loaded?s.regionCode:null,pal:s.loaded?s.pal:null,
+        masterClock:s.loaded?s.masterClock:null,frameRate:s.loaded?s.frameRate:null,
+        linesPerFrame:s.loaded?s.linesPerFrame:null,width:s.loaded?s.width:null,
+        height:s.loaded?s.height:null,interlaced:s.loaded?s.interlaced:null};
+    } catch (_) {return null;}
+  }
+  function machineObservation() {
+    const s=readRegionState();
+    return {schemaVersion:1,available:!!(started&&s?.loaded),requestedRegion,
+      activeRequestedRegion:started?activeRegionRequest:null,
+      reason:!regionApiReady()?'api-unavailable':!s||started&&!s.loaded?'state-unavailable':!started?'no-cartridge':'none',
+      regionCode:started?s?.regionCode??null:null,pal:started?s?.pal??null:null,
+      masterClock:started?s?.masterClock??null:null,frameRate:started?s?.frameRate??null:null,
+      linesPerFrame:started?s?.linesPerFrame??null:null,width:started?s?.width??null:null,
+      height:started?s?.height??null:null,interlaced:started?s?.interlaced??null:null};
+  }
+  function setRegionText(id,text) { if($(id).textContent!==text)$(id).textContent=text; }
+  function refreshRegionState(requireLoaded=false) {
+    const supported=regionApiReady(),s=readRegionState();
+    if (requireLoaded && supported && !s?.loaded) throw new Error('Core region state is unavailable after cartridge activation.');
+    if(s)requestedRegion=s.requestedRegion;
+    $('regionSelect').disabled=!supported||!s;
+    $('regionSelect').value=String(requestedRegion);
+    if (s?.loaded) {
+      targetFps=s.frameRate;frameMs=1000/targetFps;
+      if (videoWidth!==s.width || videoHeight!==s.height) {
+        videoWidth=s.width;videoHeight=s.height;
+        canvas.width=videoWidth;canvas.height=videoHeight;ctx.imageSmoothingEnabled=false;
+        imageData=ctx.createImageData(videoWidth,videoHeight);
+        displayViewport.style.setProperty('--picture-ratio',String(videoWidth/videoHeight));
+        scheduleDisplayRefresh();
+      }
+      setRegionText('machineSummary',`MODEL 1 · ${EFFECTIVE_REGION_NAMES[s.regionCode]} · ${targetFps.toFixed(2)} Hz`);
+      setRegionText('machineFooter',`${s.pal?'PAL':'NTSC'} Hardware Mode / Automatic Missing-Line Recovery`);
+    }
+    setRegionText('regionStatus',!supported?'Region Selection Unavailable · Fixed NTSC-U Core':!s?'Region State Unavailable':
+      !started?`${REGION_NAMES[requestedRegion]} · Applied on ROM Load`:
+      requestedRegion!==activeRegionRequest?`${REGION_NAMES[requestedRegion]} Pending · Use Clean Restart`:
+      `${EFFECTIVE_REGION_NAMES[s.regionCode]} Active · ${videoWidth} × ${videoHeight}`);
+  }
+  function stageRegion() {
+    const value=$('regionSelect').value;
+    try {
+      if (!regionApiReady() || !/^[0-4]$/.test(value)) throw new Error('Region selection is unavailable or invalid.');
+      const choice=Number(value),status=emulator._set_region_request(choice);
+      if(status!==0)throw new Error(`Region request refused (status ${status}).`);
+      requestedRegion=choice;
+      refreshRegionState();
+    } catch(error) {
+      $('regionSelect').value=String(requestedRegion);
+      $('regionStatus').textContent=error.message;
+    }
+  }
 
   function rgbEncoderSummary(config=rgbEncoderPlan.configuration) {
     const cuts=['R','G','B'].filter((_,channel)=>config.cutMask&(1<<channel));
@@ -2566,6 +2639,7 @@
       ? {...runtimeVramState.lastFrameCounts} : null;
     const data={
       schemaVersion:1,
+      machine:machineObservation(),
       build:{...buildInfo},
       modelVersion:'0.5.0-experimental',
       vramFault:{kind:vramAddressMask?'address-stuck-low':actualPair()?'address-bridge':'none',
@@ -2940,7 +3014,8 @@
     // Display recovery fills only systematically missing, fully blank source
     // scanlines. It never changes the emulator's memory or signal simulation.
     const raw = $('rawVideoToggle').checked;
-    const result = frameAdapter.copyActiveFrame(frameView, imageData.data, {raw});
+    refreshRegionState();
+    const result = frameAdapter.copyActiveFrame(frameView, imageData.data, {raw,width:videoWidth,height:videoHeight});
     if (!raw) rgbEncoderPlan.apply(imageData.data);
     ctx.putImageData(imageData, 0, 0);
     const nativeStatus = raw ? 'Video: raw core pixels' : result.repairedRows
@@ -2986,13 +3061,13 @@
     accumulated += Math.min(100,time-lastFrame);
     lastFrame = time;
     let done=0;
-    while (accumulated>=FRAME_MS && done<3 && started && !paused && !document.hidden) {
-      renderFrame(); accumulated-=FRAME_MS; done++;
+    while (accumulated>=frameMs && done<3 && started && !paused && !document.hidden) {
+      renderFrame(); accumulated-=frameMs; done++;
     }
     if (done===3) accumulated=0;
     if (time-measuredAt>=1000) {
       const fps=Math.round(frames*1000/(time-measuredAt));
-      $('fpsIndicator').textContent=`${fps} FPS / 59.92 TARGET`;
+      $('fpsIndicator').textContent=`${fps} FPS / ${targetFps.toFixed(2)} TARGET`;
       resetStats();
     }
   }
@@ -3054,6 +3129,8 @@
       momentary=null; momentaryRestorePair=null; momentaryRestoreMask=0;
       coreMutated=true; // _start can mutate native state before it throws.
       emulator._start();
+      refreshRegionState(true);
+      activeRegionRequest=requestedRegion;
       if (typeof emulator._set_vram_short !== 'function')
         throw new Error('Core missing _set_vram_short. You must build the patched core (not the upstream prebuilt WASM).');
       frameView=null;
@@ -3099,7 +3176,8 @@
       romIdentity={bytes,name,hashPromise};
       resetCpuRecoveryObservation();
       updateLogicControls();
-      stamp(`Cartridge inserted: ${name} (forced NTSC-U)`);
+      refreshRegionState();
+      stamp(`Cartridge inserted: ${name} (${regionApiReady()?EFFECTIVE_REGION_NAMES[readRegionState()?.regionCode]??'Region Unknown':'fixed NTSC-U'})`);
     } catch (error) {
       if (coreMutated) {
         started=false;
@@ -3226,7 +3304,8 @@
       if (!logicApiAvailable) logicStatusMessage='Rebuild core for logic faults';
       updateLogicControls();
       message('INSERT YOUR CARTRIDGE','Choose a Sonic the Hedgehog ROM stored on your computer. The file is loaded only in this browser.');
-      stamp('NTSC-U core loaded; ready for local ROM.');
+      refreshRegionState();
+      stamp('Core loaded; ready for local ROM.');
     } catch(e) {
       emulator=null;
       message('CORE INITIALISATION FAILED',e.message);
@@ -3252,8 +3331,8 @@
     // Firefox can retain a stale canvas backing/compositor surface after a
     // fullscreen transition. Reset only the fixed-size canvas and repaint
     // the last emulated frame; emulator state and ROM remain untouched.
-    canvas.width = GAME_WIDTH;
-    canvas.height = GAME_HEIGHT;
+    canvas.width = videoWidth;
+    canvas.height = videoHeight;
     ctx.imageSmoothingEnabled = false;
     if (started) {
       ensureWasmViews();
@@ -3338,6 +3417,7 @@
     });
     $('saveCheckpointBtn').addEventListener('click',saveCheckpoint);
     $('restoreCheckpointBtn').addEventListener('click',restoreCheckpoint);
+    $('regionSelect').addEventListener('change',stageRegion);
     $('armCpuRecoveryBtn').addEventListener('click',()=>{
       cpuRecoveryEnabled=!cpuRecoveryEnabled;resetCpuRecoveryObservation();updateLogicControls();
     });

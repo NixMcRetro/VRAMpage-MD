@@ -71,3 +71,18 @@ function field(parity, chosenPixels = WIDTH) {
   assert.ok(result.repairedRows>=100);
 }
 console.log('Framebuffer recovery: seven tests passed.');
+// Active geometry uses native pitch and cannot overwrite source or destination bounds.
+for (const [width,height] of [[256,224],[320,240],[320,448],[320,480]]) {
+  const src=new Uint8Array(PITCH*480), out=new Uint8ClampedArray(width*height*4);
+  for(let y=0;y<height;y++)for(let x=0;x<width;x++) {
+    const i=y*PITCH+x*4;src[i]=17+x%201;src[i+1]=y%251;src[i+3]=255;
+  }
+  const before=src.slice();
+  assert.equal(copyActiveFrame(src,out,{width,height,raw:true}).repairedRows,0);
+  for(let y=0;y<height;y++)assert.deepEqual(new Uint8Array(out.buffer,y*width*4,width*4),src.slice(y*PITCH,y*PITCH+width*4));
+  assert.deepEqual(src,before);
+  assert.throws(()=>copyActiveFrame(src,out.subarray(4),{width,height}),/small/);
+}
+for(const geometry of [{width:641},{height:481},{width:0},{height:1.5},{width:'320'}])
+  assert.throws(()=>copyActiveFrame(field(0),dest(),geometry),/dimensions/);
+console.log('Active framebuffer geometry/bounds passed.');
