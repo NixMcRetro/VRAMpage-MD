@@ -1,6 +1,6 @@
 # Work RAM Write-Enable Research
 
-Research only, 28 October 2026 (UTC). Based on verified main
+Original research checkpoint, 28 October 2026 (UTC). Based on verified main
 `9b29a5b9380ed4fe760f41015d15c51c53674e1e`; no application, native API,
 configuration version, release or website changes accompany this report.
 
@@ -55,8 +55,9 @@ would have these results under the proposed model:
 | Both | `$AABB` | Neither byte store accepted |
 
 By comparison, the existing write data mask `$00FF` produces `$1100`, and
-`$FF00` produces `$0022`. These are derived acceptance examples, **not executed
-write-inhibit emulator tests**: that feature does not exist yet.
+`$FF00` produces `$0022`. These were derived acceptance examples at the research checkpoint. The later
+[development implementation](WORK-RAM-WRITE-INHIBIT.md) executes their native
+and actual-WASM acceptance probes.
 
 An even byte store uses the upper lane; an odd byte store uses the lower lane.
 A longword remains two sequential word transactions, each applying the mask
@@ -125,6 +126,9 @@ specialist review before merge. Do not use commercial-game recovery or physical
 electrical accuracy as inferred acceptance results.
 
 ## Decision
+
+The user subsequently authorized the [bounded implementation](WORK-RAM-WRITE-INHIBIT.md).
+The proposal below records its original research decision.
 
 **Ready for a bounded implementation proposal; no further motherboard catalogue
 or user measurement is needed for the stated digital contract.** Physical open

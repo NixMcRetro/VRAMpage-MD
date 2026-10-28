@@ -1,5 +1,14 @@
 # VRAMpage MD roadmap
 
+## Authorized Work RAM Write Inhibit — Development Source
+
+The user approved the [bounded write-inhibit contract](docs/WORK-RAM-WRITE-INHIBIT.md).
+Reuse native Work RAM byte/word hooks and compact chip view to inhibit lower,
+upper or both byte stores. Preserve existing fault replacement, recovery,
+checkpoint and normal/fallback behavior. Require literal native/sanitizer and
+actual-WASM CPU/Z80 evidence, independent review, three-browser/package CI and
+verified main. No version bump, release, website deployment or FM selector.
+
 ## Next Bounded Research — 28 October 2026 (UTC)
 
 The [write-enable report](docs/WORK-RAM-WRITE-ENABLE-RESEARCH.md) recommends

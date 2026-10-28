@@ -1,5 +1,25 @@
 # Development status and continuation checkpoint
 
+## Work RAM Write Inhibit — In Progress, 28 October 2026 (UTC)
+
+Authorized bounded follow-up to the reviewed [write-enable research](WORK-RAM-WRITE-ENABLE-RESEARCH.md).
+Start from verified main `9b29a5b9380ed4fe760f41015d15c51c53674e1e`
+([main CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40773753902),
+[CodeQL](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40773753398)).
+The [implementation guide](WORK-RAM-WRITE-INHIBIT.md) defines runtime/API, UI,
+configuration/export, lifecycle and measurable acceptance. Lower/Upper inactive-high
+write enables retain old bytes and replace existing RAM faults; there is no new
+motherboard selector or pulse engine. FM selection remains research only.
+
+Native/API changes and literal CPU/banked-Z80 actual-WASM tests are integrated;
+six focused UI regressions and schema/comparison tests pass. Root caught an
+unguarded normal-profile reference before CI, fixed it in `7d93422`, and added
+normal/runtime strict compilation to the shared native regression. Independent
+Luna High review verified the correction with fresh normal and runtime C smokes.
+Fresh runtime rebuild, full applicable suites and final PR/main CI remain gates;
+previous cached normal hashes are not represented as a new build verification.
+No VERSION, public release, Demo Cart or McRetro.net change is authorized here.
+
 ## Next Fault Research — 28 October 2026 (UTC)
 
 Research branch `research/ram-enables-fm-variants` starts from verified main

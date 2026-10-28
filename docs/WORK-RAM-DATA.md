@@ -11,7 +11,8 @@ Choose **Data** under **SRAM (Work RAM)**, select **Read**, **Write** or
 the data legs. Any combination across both bytes can be forced low. **Reconnect
 All D Lines** removes the mask; previously corrupted writes remain in memory.
 **Address** restores the existing address view without changing the fault.
-Only one Work RAM address mask, data mask or bridge pair is active at a time.
+Only one Work RAM address mask, data mask, bridge pair or
+[write-inhibit mask](WORK-RAM-WRITE-INHIBIT.md) is active at a time.
 **Bridge Pair** uses the existing low-dominant bridge, restricted to either
 D0–D7 or D8–D15; cross-byte bridges are rejected without changing the fault.
 
@@ -27,7 +28,7 @@ The optional runtime API is `_set_logic_data_mask(mask, access)` and
 clears. Invalid calls preserve the previous configuration. Existing accepted RAM
 setters clear a data mask. Disconnect, CPU Reset, Force Resume and Clean Restart
 reuse their established lifecycle; CPU Reset preserves the checkpoint and sound
-state. Circuit schema 5 saves stable masks and imports versions 1–4. Exports
+state. Circuit schema 6 saves stable masks and imports versions 1–5. Exports
 include the observed mask and `model1-pal-va65-two-byte-v1` reference identity;
 unavailable legacy observations compare as Unknown.
 

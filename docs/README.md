@@ -39,6 +39,7 @@ and experimental; older standalone-model descriptions are historical records.
 | [Logic bending](LOGIC-BENDING.md) | v0.2 work-RAM model, runtime scope and known limits |
 | [Work RAM Write-Enable Research](WORK-RAM-WRITE-ENABLE-RESEARCH.md) | Proposed byte-write inhibition, active-low polarity and literal acceptance criteria |
 | [FM Engine and Output-Model Research](FM-VARIANTS-RESEARCH.md) | Native model probe, engine/model distinction and checkpoint constraints |
+| [Work RAM Write Inhibit](WORK-RAM-WRITE-INHIBIT.md) | Optional lower/upper byte-store suppression, lifecycle and recorded state |
 | [Work RAM Data Lines](WORK-RAM-DATA.md) | Runtime byte-lane cuts, compact controls, lifecycle and evidence boundary |
 | [Byte transactions](WORK-RAM-BYTES.md) | Standalone byte-lane rules and regression coverage |
 | [Renderer diagnostic](VRAM-RENDER-DIAGNOSTIC.md) | Mode 5 read inventory, visible/cache acceptance and performance gates |
