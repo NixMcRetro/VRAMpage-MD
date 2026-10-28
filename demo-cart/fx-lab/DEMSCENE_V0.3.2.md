@@ -6,13 +6,13 @@ This is an incremental demoscene upgrade to the tested-by-interpreter v0.3.1 bas
 
 ## Improvements
 
-**03: Sprite Storm (formerly Sprite Motion)**
+**03: Sprite Storm (renamed from Sprite Motion in the selector)**
 
 - Twenty genuine Sega Mega Drive VDP sprites, each 16 x 16 pixels (2 x 2 tiles), with correct SAT chaining, hardware sprite coordinates, priority, and palette assignments.
 - Four distinct original sprite shapes, arranged in two counter-rotating formations, updated through one 96-frame ROM-side SAT stream. The background is made from procedural tiles, never from fragments of the captain's portrait or logo.
 - Animated warm and cyan highlights with the two higher CRAM banks; 64 CRAM entries updated each frame.
 
-**04: Chroma Reactor (formerly Colour Lab)**
+**04: Chroma Reactor (renamed from Colour Lab in the selector)**
 
 - Four full 16-entry hardware palettes smoothly cycle through a closed 96-frame hue rotation, instead of writing just one colour slot.
 - Thirty 8-pixel-high horizontal-scroll bands are updated with authentic one-cell VDP scroll mode. Each frame writes 30 HScroll words and 64 CRAM words, not an impossible full-screen RGB framebuffer.
@@ -26,8 +26,8 @@ Both scenes remain about eight seconds per run (PAL: 400 VBlanks, NTSC: 479 VBla
 |---|---|
 | Video | 320 x 224 H40, 8 x 8, 4bpp |
 | CRAM | Four banks of sixteen entries, one transparent entry per bank for sprite use |
-| Total pattern tiles | 1,282, exactly 41,024 bytes |
-| Pattern VRAM | $0000 to $A03F, below Plane A at $C000 |
+| Total pattern tiles | 1,284, exactly 41,088 bytes |
+| Pattern VRAM | $0000 to $A07F, below Plane A at $C000 |
 | Plane A | $C000, 64 x 32 tilemap |
 | Plane B | $E000 |
 | Sprite SAT | $F400, 20 x 8-byte entries per animation frame |
