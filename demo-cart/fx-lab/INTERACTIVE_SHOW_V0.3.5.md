@@ -26,6 +26,10 @@ When a bend level is nonzero, the routine applies two small, bounded hardware ov
 
 This pilot adds no sprites, tiles, framebuffer overlays, random faults, Z80 code or FM claims. It uses the existing polling-only 68000 builder. Future polished production work will need a proper music engine, independent scene scheduler, VBlank/DMA budget tests, and optional H-INT effects, rather than continuously expanding a single monolithic generator.
 
+## Verified Native ROM Checkpoint
+
+The deterministic v0.3.5 cartridge is **150,564 bytes**, SHA-256 `89faaace638c1ccae7062e96cef02d5350059488a35acb372f1e4b5d4dec277f`. The real Genesis Plus GX WASM smoke under NTSC-U and PAL succeeded. Its interactive test compares a player-controlled machine against an untouched one at matching native frames and asserts distinct A/C framebuffer pixels and **exact frame equality after B**. The run captured native 320 x 224 PNGs, including clean, mild, maximum, and reset states. Rebuilds are now pinned to this length and digest.
+
 ## Evidence and Release Boundary
 
 - Preserve the pinned v0.1 title patterns, exact captain portrait/logo data and original title map.
