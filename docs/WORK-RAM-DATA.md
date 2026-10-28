@@ -6,10 +6,11 @@ VD0–VD7 and IC3 VD8–VD15. See the [primary-source map](SEGA-MANUAL-EVIDENCE.
 This is sufficient for a useful digital model; exact NTSC VA6 validation in
 [#73](https://github.com/NixMcRetro/VRAMpage-MD/issues/73) is optional follow-up.
 
-Choose **Data Lines** under **SRAM (Work RAM)**, select **Access**, then click
+Choose **Data** under **SRAM (Work RAM)**, select **Read**, **Write** or
+**Read + Write**, then click
 the data legs. Any combination across both bytes can be forced low. **Reconnect
 All D Lines** removes the mask; previously corrupted writes remain in memory.
-**Address Lines** restores the existing address view without changing the fault.
+**Address** restores the existing address view without changing the fault.
 Only one Work RAM address mask, data mask or bridge pair is active at a time.
 **Bridge Pair** uses the existing low-dominant bridge, restricted to either
 D0–D7 or D8–D15; cross-byte bridges are rejected without changing the fault.

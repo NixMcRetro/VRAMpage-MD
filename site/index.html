@@ -82,13 +82,11 @@
             <p id="vramModelStatus" class="chip-state" role="status" aria-live="polite">Frame projection is the default model.</p>
           </section>
           <section class="chip-card" data-keyboard-chip="WRAM" aria-label="SRAM (Work RAM) chip">
-            <h2>SRAM (Work RAM) <small>Logical Address and Data Lines</small></h2>
-            <label class="chip-compact-control">Signals
-              <select id="ramChipSignals"><option value="1">Address Lines</option><option value="2">Data Lines</option></select>
-            </label>
-            <label class="chip-compact-control">Access
-              <select id="logicAccess"><option value="1">Read</option><option value="2">Write</option><option value="3">Read + Write</option></select>
-            </label>
+            <h2>SRAM (Work RAM)</h2>
+            <div class="ram-chip-options">
+              <select id="ramChipSignals" aria-label="Work RAM Signals" title="Work RAM Signals"><option value="1">Address</option><option value="2">Data</option></select>
+              <select id="logicAccess" aria-label="Work RAM Access" title="Apply to Reads, Writes or Both"><option value="1">Read</option><option value="2">Write</option><option value="3">Read + Write</option></select>
+            </div>
             <label class="chip-compact-control">Leg Action
               <select id="ramLegAction"><option value="cut">Cut / Reconnect</option><option value="bridge">Bridge Pair</option></select>
             </label>
