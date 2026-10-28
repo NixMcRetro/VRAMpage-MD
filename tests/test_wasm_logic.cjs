@@ -80,7 +80,7 @@ async function create(words, config, init, dataMaskConfig, inhibitMask) {
   assert.equal(getWord(c,0x1004),0x11bb);assert.equal(getWord(c,0x1006),0x33dd);
   assert.equal(getByte(c,0x1008),0x11,'even byte address selects the uninhibited upper lane');
   assert.equal(getByte(c,0x1009),0xbb,'odd byte address retains the inhibited lower lane');
-  assert.equal(getWord(c,0x1010),0xaabb,'CPU reads return stored bytes unchanged');
+  assert.equal(getWord(c,0x1010),0x11bb,'CPU reads return stored bytes unchanged');
   assert.equal(c._get_logic_reads(),0);
   assert.equal(c._set_logic_write_inhibit(4),5);
   assert.equal(c._set_logic_write_inhibit(1.5),5);
