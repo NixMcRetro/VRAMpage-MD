@@ -1,5 +1,9 @@
 # Changelog
 
+## Development Maintenance — Playwright
+
+- Update the optional browser-test dependency to Playwright 1.64.1; verify matching browsers and extracted packages across the full PR/main CI suites.
+
 ## Development Maintenance — Dependency Updates
 
 - Schedule weekly GitHub Actions and browser-test dependency updates; group compatible Action updates and retain separate major-version reviews and the existing CI gates.

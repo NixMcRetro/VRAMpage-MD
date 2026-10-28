@@ -1,5 +1,26 @@
 # Development status and continuation checkpoint
 
+## Playwright Update Verified — 28 October 2026 (Sydney)
+
+[PR #83](https://github.com/NixMcRetro/VRAMpage-MD/pull/83) updates the optional
+browser-test pin from Playwright 1.62.0 to 1.64.1. Merge
+`542b66ee8ecf646cec1723313b2957eb382d1792` exactly matches tested head
+`a3f07ae36be34070cc8cd9b7b4c6badb436e087d`. All seven
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40593501826)
+and all seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40634781813)
+passed, including fresh browser binaries and extracted-package checks.
+Independent reference/workflow review found no blockers; it did not repeat tests
+or inspect the PR object locally. The coordinator verified the exact one-line
+GitHub diff and merged tree. Cache keys already hash the requirement file, and
+all browser jobs install matching binaries. No additional pins required edits.
+
+Application code, native core pins, VERSION, existing release artifacts and
+McRetro.net were not changed by this update. Major Actions PRs #84–#88 remain
+separate migration/review tasks. The tested website maintenance branch remains
+unmerged with its previously recorded access blocker. Private security alerts
+and archived npm findings remain unresolved. Do not repeat completed emulator
+experiments. This final checkpoint is on `maintenance/playwright-delivery`.
+
 ## Dependency Maintenance Scope — 28 October 2026 (Sydney)
 
 The user authorised useful fixes while GitHub security-alert access is being
