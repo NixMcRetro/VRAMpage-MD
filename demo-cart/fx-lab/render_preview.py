@@ -11,16 +11,17 @@ from PIL import Image,ImageDraw,ImageFont
 import build_fx as B
 
 OUT=Path(__file__).resolve().parent/'build'
-PALETTES={'title':B.CRAM}
+PALETTES={'title':B.CRAM,'sprites':B.FX_PALETTES['aurora'][:128], 'colour':B.FX_PALETTES['vortex'][:128], 'audio':B.FX_PALETTES['aurora'][:128]}
 PALETTES.update({n:B.FX_PALETTES[n][:128] for n in ('vortex','aurora')})
-PATTERNS=B.PATTERNS+b'\0'*32+b'\x00\x0F'*16+B.FX_PATTERNS+B.UI_PATTERNS
-MAPS={'title':B.full_map(B.title_cells),'vortex':struct.pack('>2048H',*B.VORTEX_MAP),'aurora':struct.pack('>2048H',*B.AURORA_MAP)}
+PATTERNS=B.ALL_PATTERNS
+MAPS={'title':B.full_map(B.title_cells),'vortex':struct.pack('>2048H',*B.VORTEX_MAP),'aurora':struct.pack('>2048H',*B.AURORA_MAP),
+      'sprites':B.full_map(B.sprite_cells),'colour':B.full_map(B.colour_cells),'audio':B.full_map(B.audio_cells)}
 
 def rgb(c):
     return (((c>>1)&7)*36,((c>>5)&7)*36,((c>>9)&7)*36)
 
 def palette(kind,frame):
-    content=B.CRAM if kind=='title' else B.fx_palette(kind,frame)
+    content=B.CRAM if kind=='title' else B.fx_palette(kind if kind in ('vortex','aurora') else 'vortex' if kind=='colour' else 'aurora',frame)
     return [rgb(struct.unpack_from('>H',content,i)[0]) for i in range(0,128,2)]
 
 def render(kind,frame=0):
@@ -49,13 +50,13 @@ def render(kind,frame=0):
                 v=byte>>4 if col%2==0 else byte&15
                 if v:result.putpixel((11+col,69+row),colours[16+v])
         return result
-    scroll=struct.unpack('>30H',B.fx_scroll(kind,frame))
+    scroll=struct.unpack('>30H',B.fx_scroll(kind,frame)) if kind in ('vortex','aurora') else (0,)*30
     out=Image.new('RGB',(320,224))
     outpix=out.load()
     for y in range(224):
         k=scroll[y//8]
         if k>=512:k-=1024
-        vy=(y+frame)%256
+        vy=(y+frame)%256 if kind in ('vortex','aurora') else y
         for x in range(320):
             # Positive VDP scroll shifts fetched source in opposing direction.
             sx=(x-k)%512
@@ -63,7 +64,7 @@ def render(kind,frame=0):
     return out
 
 def make():
-    for name in ('title','vortex','aurora'):
+    for name in ('title','vortex','aurora','sprites','colour','audio'):
         im=render(name,0)
         im.save(OUT/f'{name}_320x224.png')
         im.resize((1280,896),Image.Resampling.NEAREST).save(OUT/f'{name}_4x_nearest.png')
