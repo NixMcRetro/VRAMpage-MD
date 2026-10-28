@@ -7,12 +7,12 @@ const path = require('node:path');
 const coreFile = path.resolve(process.argv[2] || 'site/core/genplus.js');
 const factory = require(coreFile);
 
-function cartridge(words) {
+function cartridge(words, codeStart=0x200) {
   const rom = new Uint8Array(0x10000);
   const view = new DataView(rom.buffer);
   for (let offset = 0; offset < 0x100; offset += 4) view.setUint32(offset, 0x300);
   view.setUint32(0, 0xffff00);
-  view.setUint32(4, 0x200);
+  view.setUint32(4, codeStart);
   rom.set(Buffer.from('SEGA MEGA DRIVE '), 0x100);
   rom.set(Buffer.from('VRAMPAGE ORIGINAL MEMORY TEST'), 0x120);
   view.setUint32(0x1a0, 0);
@@ -20,10 +20,25 @@ function cartridge(words) {
   view.setUint32(0x1a8, 0xff0000);
   view.setUint32(0x1ac, 0xffffff);
   rom[0x1f0] = 'U'.charCodeAt(0);
-  words.forEach((word, i) => view.setUint16(0x200 + 2 * i, word));
+  words.forEach((word, i) => view.setUint16(codeStart + 2 * i, word));
   // Exception handler stops without rescuing or masking the failing test.
   [0x4e72, 0x2700, 0x60fe].forEach((word, i) => view.setUint16(0x300 + 2 * i, word));
   return rom;
+}
+function bankedZ80StoreCartridge() {
+  const z80=[];
+  const ldImmediateStore=(address,value)=>z80.push(0x3e,value,0x32,address&0xff,address>>>8);
+  // The Z80 shifts bank-register bits into bit 23; LSB-first serial value 510
+  // maps its 15-bit window to $FF0000. Stores at $9000/$9001 then hit $FF1000/1.
+  for(const bit of [0,1,1,1,1,1,1,1,1]) ldImmediateStore(0x6000,bit);
+  ldImmediateStore(0x1234,0x77); // local 8 KiB Z80 RAM must remain independent
+  ldImmediateStore(0x9000,0x55);
+  ldImmediateStore(0x9001,0x66);
+  z80.push(0x76);
+  const words=[...wordWrite(0xa11100,0x0100),...wordWrite(0xa11200,0x0100)];
+  for(let i=0;i<z80.length;i++) words.push(...byteWrite(0xa00000+i,z80[i]));
+  words.push(...wordWrite(0xa11100,0),0x60fe);
+  return cartridge(words,0x2000);
 }
 const wordWrite = (a,v) => [0x33fc,v,a>>>16,a&0xffff];
 const byteWrite = (a,v) => [0x13fc,v,a>>>16,a&0xffff];
@@ -92,6 +107,29 @@ async function create(words, config, init, dataMaskConfig, inhibitMask) {
   assert.equal(c._recover_logic_cpu(1),0);
   assert.equal(c._get_logic_write_inhibit(),0,'CPU recovery clears inhibit');
   tests++;
+
+  // Real Z80 code uses its serial bank register to store through the $FFxxxx
+  // Work RAM window, while a separate store remains in local Z80 sound RAM.
+  const z80rom=bankedZ80StoreCartridge();
+  c=await factory({locateFile:n=>path.join(path.dirname(coreFile),n)});c._init();
+  c.HEAPU8.set(z80rom,c._get_rom_buffer_ref(z80rom.length));c._start();
+  putWord(c,0x1000,0xaabb);putWord(c,0x1002,0xccdd);
+  assert.equal(c._set_logic_write_inhibit(0),0);
+  c._wasm_input_update();c._tick();c._sound();
+  assert.equal(getWord(c,0x1000),0x5566,'baseline banked Z80 stores both selected bytes');
+  assert.equal(c.HEAPU8[c._get_z80_ram_ref()+0x1234],0x77,'Z80 local RAM receives its independent marker');
+  tests++;
+  for(const [mask,expected,affected] of [[1,0x55bb,1],[2,0xaa66,1],[3,0xaabb,2]]) {
+    c=await factory({locateFile:n=>path.join(path.dirname(coreFile),n)});c._init();
+    c.HEAPU8.set(z80rom,c._get_rom_buffer_ref(z80rom.length));c._start();
+    putWord(c,0x1000,0xaabb);putWord(c,0x1002,0xccdd);
+    assert.equal(c._set_logic_write_inhibit(mask),0);
+    c._wasm_input_update();c._tick();c._sound();
+    assert.equal(getWord(c,0x1000),expected,`banked Z80 write honors inhibit mask ${mask}`);
+    assert.equal(c._get_logic_writes(),affected,`one affected transaction per retained Z80 byte for mask ${mask}`);
+    assert.equal(c.HEAPU8[c._get_z80_ram_ref()+0x1234],0x77,'local Z80 RAM remains outside Work RAM inhibit');
+    tests++;
+  }
 
   // Independent byte lanes affect byte, word and both halves of longword CPU stores.
   c=await create([
