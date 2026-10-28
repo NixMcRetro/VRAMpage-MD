@@ -100,3 +100,10 @@ assert.equal(compare(dataRecord(1),{}).find(row=>row.label==='RAM Data Mask').st
 assert.equal(compare(dataRecord(1),{logic:{dataMaskAvailable:false,dataMask:0}}).find(row=>row.label==='RAM Data Mask').status,'unknown');
 assert.equal(compare(dataRecord(1),dataRecord(1)).find(row=>row.label==='RAM Recorded Data Mask').status,'match');
 assert.equal(compare(dataRecord(1),{}).find(row=>row.label==='RAM Reference Profile').status,'unknown');
+
+const inhibitRecord=mask=>({...dataRecord(0),logic:{...dataRecord(0).logic,writeInhibitAvailable:true,writeInhibitMask:mask,
+  fault:{kind:'write-inhibit',access:'write',lines:['/LWR'],writeInhibitMask:mask}}});
+assert.equal(compare(inhibitRecord(1),inhibitRecord(2)).find(r=>r.label==='RAM Write Inhibit Mask').status,'mismatch');
+assert.equal(compare(inhibitRecord(1),inhibitRecord(1)).find(r=>r.label==='RAM Recorded Lines / Pair').status,'match');
+assert.equal(compare(inhibitRecord(1),dataRecord(0)).find(r=>r.label==='RAM Write Inhibit Mask').status,'unknown');
+assert.equal(compare(inhibitRecord(1),{...inhibitRecord(1),logic:{writeInhibitAvailable:false,writeInhibitMask:0}}).find(r=>r.label==='RAM Write Inhibit Mask').status,'unknown');
