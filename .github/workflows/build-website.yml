@@ -74,12 +74,17 @@ jobs:
           python3 demo-cart/fx-lab/build_fx.py
           python3 -m unittest discover -s demo-cart/fx-lab/tests -v
           node tests/test_demo_cart_v034_wasm.cjs site/core/genplus.js
+          test -s artifacts/demo-cart-v034-genplus/result.json
+          test -s demo-cart/fx-lab/build/VRAMpage-MD-FX-Lab-v0.3.4-Demoscene.bin
       - name: Save genuine v0.3.4 emulator framebuffer captures
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: demo-cart-v034-genplus-frames
-          path: artifacts/demo-cart-v034-genplus/
+          name: demo-cart-v034-review
+          path: |
+            artifacts/demo-cart-v034-genplus/
+            demo-cart/fx-lab/build/VRAMpage-MD-FX-Lab-v0.3.4-Demoscene.bin
+            demo-cart/fx-lab/build/rom_report.json
           if-no-files-found: error
           retention-days: 14
       - name: Verify isolated RAM diagnostics with synthetic CPU tests

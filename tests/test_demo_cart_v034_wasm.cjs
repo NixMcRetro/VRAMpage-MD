@@ -17,7 +17,7 @@ const output = path.join(root, 'artifacts/demo-cart-v034-genplus');
 const WIDTH = 320, HEIGHT = 224, PITCH = 640;
 const PREVIOUS_SHA = '5be306c35e7342101eea7079f74fe8ed3db4591253e17f5c67fd6e8740458c0e';
 // Pin the new v0.3.4 digest after the first real Genesis Plus GX build report is inspected.
-const EXPECTED_SHA = null;
+const EXPECTED_SHA = 'ba276ed3aa7d6876684c60a7c49a6cf2febddfec8f94867cd85db8b0181f72e1';
 
 function crc32(bytes) {
   let crc = 0xffffffff;
@@ -112,7 +112,7 @@ async function machine(region, rom) {
   const sha = crypto.createHash('sha256').update(rom).digest('hex');
   assert.equal(rom.length, 150170, 'Test only the exact v0.3.4 build, never a stale ROM');
   assert.notEqual(sha, PREVIOUS_SHA, 'v0.3.4 must not reproduce the broken v0.3.2 map');
-  if (EXPECTED_SHA) assert.equal(sha, EXPECTED_SHA);
+  assert.equal(sha, EXPECTED_SHA, 'Exact reviewed v0.3.4 binary must be loaded');
   assert.equal(report.sha256, sha);
   assert.equal(report.romSize, rom.length);
   const captures = [];
