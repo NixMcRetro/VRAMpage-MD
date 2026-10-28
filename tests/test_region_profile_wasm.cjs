@@ -83,6 +83,18 @@ function tickToViewport(core) {
     assert.equal(state.interlaced, false);
     const frequency = item.pal ? 53203424 / (3420 * 313) : 53693175 / (3420 * 262);
     assert.ok(Math.abs(state.frameRate - frequency) < 1e-9);
+    if (item.id === 0) {
+      const active = {regionCode:state.regionCode,pal:state.pal,masterClock:state.masterClock,
+        frameRate:state.frameRate,linesPerFrame:state.linesPerFrame,width:state.width,height:state.height,
+        interlaced:state.interlaced};
+      assert.equal(core._set_region_request(1), 0);
+      const staged = core._get_region_state();
+      assert.equal(staged.requestedRegion, 1);
+      assert.deepEqual({regionCode:staged.regionCode,pal:staged.pal,masterClock:staged.masterClock,
+        frameRate:staged.frameRate,linesPerFrame:staged.linesPerFrame,width:staged.width,
+        height:staged.height,interlaced:staged.interlaced}, active,
+      'staging a valid selection does not change the live effective machine');
+    }
     tickToViewport(core);
     assert.equal(core._get_region_state().width, 256, 'active Mode 5 width follows the native viewport');
     assert.equal(core._get_region_state().height, 224, 'PAL and NTSC can both render 224 active lines');
