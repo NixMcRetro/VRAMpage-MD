@@ -1413,7 +1413,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         with page.expect_download() as info:page.locator('#logicExperimentBtn').click()
                         payload=json.loads(Path(info.value.path()).read_text())
                         self.assertEqual(payload['checkpointSegment'],1)
-                        self.assertEqual([event['outcome'] for event in payload['checkpointEvents']],['saved','restored'])
+                        self.assertEqual([event['outcome'] for event in payload['checkpointEvents']],['saved','refused','restored'])
                         page.locator('#resetBtn').click()
                         expect(page.locator('#restoreCheckpointBtn')).to_be_disabled()
                         self.assertEqual(errors,[])
