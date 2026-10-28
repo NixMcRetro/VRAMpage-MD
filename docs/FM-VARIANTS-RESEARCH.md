@@ -85,8 +85,8 @@ To reproduce after obtaining the project's pinned vendor checkout:
 
 ```sh
 mkdir -p build/fm-mode-research
- git -C vendor/wasm-genplus show 6090aff9e9b2f578cd28882bd4571d2e35b1d674:src/main/c/core/sound/ym3438.c > build/fm-mode-research/ym3438.c
- git -C vendor/wasm-genplus show 6090aff9e9b2f578cd28882bd4571d2e35b1d674:src/main/c/core/sound/ym3438.h > build/fm-mode-research/ym3438.h
+git -C vendor/wasm-genplus show 6090aff9e9b2f578cd28882bd4571d2e35b1d674:src/main/c/core/sound/ym3438.c > build/fm-mode-research/ym3438.c
+git -C vendor/wasm-genplus show 6090aff9e9b2f578cd28882bd4571d2e35b1d674:src/main/c/core/sound/ym3438.h > build/fm-mode-research/ym3438.h
 cc -std=c11 -Wall -Wextra -Werror -pedantic -DHAVE_YM3438_CORE \
   -Ibuild/fm-mode-research build/fm-mode-research/ym3438.c \
   tests/fm_output_mode_probe.c -o build/fm-mode-research/probe

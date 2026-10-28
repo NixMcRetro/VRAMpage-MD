@@ -1,5 +1,45 @@
 # Development status and continuation checkpoint
 
+## Next Fault Research — 28 October 2026 (UTC)
+
+Research branch `research/ram-enables-fm-variants` starts from verified main
+`9b29a5b9380ed4fe760f41015d15c51c53674e1e` ([PR #96](https://github.com/NixMcRetro/VRAMpage-MD/pull/96),
+[seven main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40773753902),
+[four main CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40773753398)).
+It carries research reports and a standalone native characterization probe;
+application/native runtime behavior and existing interfaces are unchanged.
+
+1. [Work RAM Write Enables](WORK-RAM-WRITE-ENABLE-RESEARCH.md): use the accepted
+   PAL two-byte reference. Inhibit means holding active-low `/WE` high; a floating
+   cut or forcing low is not the same contract. Keep old upper/lower bytes on
+   selected stores, reuse existing hooks and clear/recovery rules, and validate
+   literal bytes/counters/checkpoints before any implementation.
+2. [FM Models and Engines](FM-VARIANTS-RESEARCH.md): distinguish MAME/Nuked backend
+   selection from digital output models and board filters. Native mode-2/3 DAC
+   probes show real differences in core outputs, without proving final sound.
+   Nuked lacks checkpoint support; MAME model choice is also absent from the
+   snapshot. A staged Discrete/Integrated choice needs immutable active-model
+   lifetime plus actual-WASM replay proof before exposure.
+
+The standalone FM probe passes strict C11 and ASan/UBSan with identical summaries
+(SHA-256 `98bd338cec8355256efd054ab3d507a4d4f69cb7fa2be897f8a5c3eb307c77ef`).
+It verifies accepted register/pan programming and literal midpoint outputs.
+LeakSanitizer is disabled locally for the known ptrace limitation. This research
+is not a new WASM or browser test run; main's previous verified evidence is reused.
+Independent Luna High review of reports/probe through `8ce5350` found no blockers;
+the coordinator separately inspected the pinned source and reran the strengthened
+native probe. A second specialist verified source citations, observed outputs and
+checkpoint invariants. Relative documentation links and whitespace checks pass.
+No PR was opened or main changed for this research-only checkpoint.
+
+Next bounded implementation candidate: write-only RAM inhibit controls, without
+another board catalogue. FM model staging/replay is second. Composite burst/sync
+and physical VRAM timing retain the specific receiver/ordering evidence gaps
+already documented; do not repeat those broad inventories. Exact NTSC #73 remains
+optional. No release, deployment, Demo Cart work or new runtime feature is part of
+this research checkpoint. Keep the reports on the research branch for the next
+implementation slice instead of opening a trivial documentation-only PR.
+
 ## Work RAM Data Lines — Integration Checkpoint, 29 October 2026 (Sydney)
 
 Development source adds runtime-only D0–D15 cut masks, independently
