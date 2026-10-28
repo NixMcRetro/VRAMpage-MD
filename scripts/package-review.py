@@ -2,6 +2,7 @@
 """Create a ROM-free local review ZIP from a built VRAMpage MD checkout."""
 
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -48,6 +49,14 @@ REQUIRED_FILES = (
 )
 BUILD_INFO_PATHS = {"BUILD-INFO.json", "site/build-info.json"}
 NATIVE_BLITTER_MARKER = b"VRAMpage MD: native RGBA output blitter"
+# Narrow, content-addressed exception for this project's original homebrew cartridge.
+# Other game ROMs and nested archives remain prohibited.
+APPROVED_DEMO = {
+    "site/demo/VRAMpage-MD-Demo-Cart-v0.1.bin":
+        "93b9fc72a428657c012fb4325bc1382b69b9d3c9d0af4a4dc312732789dfe0d4",
+    "demo-cart/VRAMpage-MD-Demo-Cart-v0.1-Source-Kit.zip":
+        "fb073ee201ce73072c83a569742a644c2f8c7816e102ffd55ce723154bd67403",
+}
 
 
 class BundleError(Exception):
@@ -121,11 +130,19 @@ def _collect_paths(output_path):
             continue
         if _is_secret_path(relative):
             raise BundleError(f"Refusing to package a file that may contain a user secret: {relative}")
+        data = source.read_bytes()
+        expected = APPROVED_DEMO.get(relative)
+        if expected is not None:
+            if hashlib.sha256(data).hexdigest() != expected:
+                raise BundleError(f"Original Demo Cart asset has an unexpected checksum: {relative}")
+            if relative.endswith(".bin") and (len(data) < 0x200 or data[0x100:0x104] != b"SEGA"):
+                raise BundleError(f"Original Demo Cart has an invalid Mega Drive header: {relative}")
+            selected.append((relative, source, data))
+            continue
         if PurePosixPath(relative).suffix.lower() in ROM_SUFFIXES:
             raise BundleError(f"Refusing to package a game ROM or disc image: {relative}")
         if PurePosixPath(relative).suffix.lower() in ARCHIVE_SUFFIXES:
             raise BundleError(f"Refusing to package an opaque nested archive: {relative}")
-        data = source.read_bytes()
         if len(data) >= 0x104 and data[0x100:0x104] == b"SEGA":
             raise BundleError(f"Refusing to package a Mega Drive ROM signature: {relative}")
         selected.append((relative, source, data))
