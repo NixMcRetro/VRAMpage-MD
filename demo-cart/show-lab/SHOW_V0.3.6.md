@@ -16,6 +16,9 @@ idle menu and then runs for 180 seconds.
 | Chroma Reactor | 40 seconds |
 | Finale (Original Portrait and Logo Reprise) | 25 seconds |
 
+The 68000 requests the Z80 bus, asserts then deasserts the Z80/YM2612
+shared reset line, and keeps bus ownership while programming the FM chip.
+
 An original 720-event 120-BPM score provides three YM2612 voices and PSG
 percussion, driven by 68000 writes at the real VBlank boundary. PAL and NTSC
 advance four events per second with fractional timing handled in the PAL

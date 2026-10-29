@@ -503,9 +503,12 @@ asm.beq('tmss_done')
 asm.movea(2,0xA14000)
 asm.movel_imm_ai(2,0x53454741)
 asm.label('tmss_done')
-# Request and halt the Z80 while the 68000 drives YM2612.
+# Request the Z80 bus, briefly reset the FM chip, then DEASSERT reset.
+# The YM2612 shares the Z80 reset line: leaving $A11200 at zero mutes FM.
+# Z80 remains stopped by BUSREQ while the 68000 performs YM writes.
 asm.movea(4,0xA11100);asm.movew_imm_ai(4,0x0100)
 asm.movea(4,0xA11200);asm.movew_imm_ai(4,0)
+asm.movew_imm_ai(4,0x0100)
 asm.bsr('setup_vdp')
 asm.bsr('load_pattern')
 asm.bsr('load_palettes')
