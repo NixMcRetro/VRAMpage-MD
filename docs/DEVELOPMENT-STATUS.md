@@ -1,15 +1,24 @@
-## Active FM Output Model Proof — 29 October 2026
+## FM Output Model Proof — Integration Checkpoint, 29 October 2026
 
-The owner authorized independent work after the completed v0.5.1 release. Start
-from verified main `bc7369c943f1f7cda5167632077235b7630ad41b`; use an isolated
-feature branch and the [FM proof contract](FM-MODEL-PROOF.md). Reuse the current
-MAME backend and checkpoint/staged-region machinery. Prove Discrete/Integrated
-PCM, DAC/status, CPU/Z80 fault routing, default parity and fixed-model checkpoint
-replay. This slice adds no public selector, version change or deployment.
+The isolated MAME Discrete/Integrated proof is implemented and independently
+reviewed. Actual-WASM tests establish default PCM/pixel/Work RAM/status parity,
+native DAC and status-port differences, literal CPU/banked-Z80 fault counters
+with PSG isolation, and fixed-model checkpoint/CPU Reset/restore/restart replay.
+See the [contract and observations](FM-MODEL-PROOF.md). Production app controls,
+core build inputs/defaults, VERSION and approved cartridges remain unchanged.
 
-Keep the production binary hashes and default behavior unchanged. Never promote
-experimental Demo Cart drafts without owner acceptance; v0.3.5 remains
-the manifest-approved default. Optional NTSC VA6 issue #73 does not block this work.
+The full local source/sanitizer suite passes; the two environment-dependent
+classes skipped locally remain covered by pinned CI. Both FM regressions and
+11 checkpoint groups pass. Independent source rebuilding reproduces proof
+JS/WASM byte for byte, with all 266 source inventory hashes and notices intact.
+Require all seven protected checks and CodeQL on the final PR head before merge,
+then verify main CI. No proof binaries are uploaded.
+
+Next eligible feature is a small staged FM Output Model selector using this
+proven lifetime and export/comparison identity; it is separate from this proof.
+Experimental Demo Cart drafts still require owner acceptance; v0.3.5 remains the
+manifest-approved default. Optional NTSC VA6 issue #73 does not block this work.
+No new release or website deployment is authorized.
 
 ## Completed v0.5.1 Release and Website — 29 October 2026
 

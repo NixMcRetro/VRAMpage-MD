@@ -1,10 +1,10 @@
 ## Development Proof — FM Output Models
 
-- Define actual-WASM acceptance for MAME Discrete/Integrated output, chip-local
-  fault routing and fixed-model save/reset/restore/restart behavior.
+- Verify MAME Discrete/Integrated native PCM, DAC/status, chip-local CPU/Z80
+  fault routing and fixed-model save/reset/restore/restart in an isolated WASM proof.
 - Keep the proof isolated from public controls and production defaults; preserve
-  v0.5.1, its approved cartridges and the website. Implementation evidence follows
-  the bounded proof's actual test results.
+  v0.5.1, its approved cartridges and the website. Retain matching proof source
+  and notices; independently verify exact rebuilding and checkpoint replay.
 
 ## v0.5.1 — Lightweight Website Packaging
 

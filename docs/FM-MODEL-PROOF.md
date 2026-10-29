@@ -107,8 +107,9 @@ validate. The full local source suite passes (23 cartridge tests, 148 general
 tests with two environment-dependent classes skipped, plus JS/native checks).
 ASan/UBSan remain enabled; only local LeakSanitizer is disabled for the container
 ptrace limitation. Required CI supplies the pinned build/browser environment.
-Independent specialist review and final protected-main CI/CodeQL are integration
-gates; these local results alone do not authorize a release or deployment.
+Independent Luna High specialist review approved the bounded proof after rerunning
+its actual-WASM, checkpoint and existing FM tests. Final protected-main CI/CodeQL
+remain integration gates; these results do not authorize a release or deployment.
 
 ## Following Integration
 
