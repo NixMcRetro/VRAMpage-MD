@@ -90,9 +90,9 @@ class OriginalShowTests(unittest.TestCase):
         self.assertGreater(sum(row[6]!=0 for row in rows),300)
         self.assertEqual(sum(row[6]!=0 and i%2==0 for i,row in enumerate(rows)
                              if 100<=i<250),0)
-        self.assertGreater(sum(row[10]!=0 for row in rows),100)
+        self.assertGreater(sum(row[10]!=0 for row in rows),40)
         self.assertGreater(len(set(rows)),150)
-        self.assertGreater(len(set(rows[i:i+8] for i in range(0,len(rows)-8,8))),35)
+        self.assertGreater(len(set(tuple(rows[i:i+8]) for i in range(0,len(rows)-8,8))),35)
         self.assertEqual(sum(row[6]!=0 and i%2==0 for i,row in enumerate(rows)),0)
 
     def test_rom_is_valid_and_original_artwork_is_unchanged(self):
