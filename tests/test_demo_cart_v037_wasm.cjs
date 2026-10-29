@@ -11,9 +11,9 @@ const zlib = require('node:zlib');
 
 const root = path.resolve(__dirname, '..');
 const coreFile = path.resolve(process.argv[2] || 'site/core/genplus.js');
-const romFile = path.join(root, 'demo-cart/show-lab/build/VRAMpage-MD-Demo-Cart-v0.3.6-Show.bin');
+const romFile = path.join(root, 'demo-cart/show-lab/build/VRAMpage-MD-Demo-Cart-v0.3.7-Show.bin');
 const reportFile = path.join(root, 'demo-cart/show-lab/build/rom_report.json');
-const output = path.join(root, 'artifacts/demo-cart-v036-genplus');
+const output = path.join(root, 'artifacts/demo-cart-v037-genplus');
 const WIDTH = 320, HEIGHT = 224, PITCH = 640;
 const PREVIOUS_SHA = 'ba276ed3aa7d6876684c60a7c49a6cf2febddfec8f94867cd85db8b0181f72e1';
 // Pin the new v0.3.5 digest after the first real Genesis Plus GX build report is inspected.
@@ -106,14 +106,58 @@ async function machine(region, rom) {
 }
 
 
+/* Record genuine stereo output from Genesis Plus GX, without altering the ROM
+ * or substituting a generated soundtrack. Keep each scene separately reviewable.
+ */
+function recordSceneAudio(machine, label, frames, fps) {
+  const core=machine.core;
+  const left=new Float32Array(core.HEAPF32.buffer,core._get_web_audio_l_ref(),2048);
+  const right=new Float32Array(core.HEAPF32.buffer,core._get_web_audio_r_ref(),2048);
+  const blocks=[];
+  let dataBytes=0, peak=0;
+  const firstFrame=core._get_logic_frame();
+  for(let i=0;i<frames;i++) {
+    const count=machine.frame();
+    const block=Buffer.alloc(count*4);
+    for(let j=0;j<count;j++) {
+      const l=left[j], r=right[j];
+      assert.ok(Number.isFinite(l) && Number.isFinite(r),
+        'Non-finite native audio in '+label);
+      peak=Math.max(peak,Math.abs(l),Math.abs(r));
+      block.writeInt16LE(Math.max(-32768,Math.min(32767,Math.round(l*32767))),j*4);
+      block.writeInt16LE(Math.max(-32768,Math.min(32767,Math.round(r*32767))),j*4+2);
+    }
+    blocks.push(block);
+    dataBytes+=block.length;
+  }
+  assert.ok(dataBytes>0 && peak>0.0001,'Native scene audio missing: '+label);
+  const wav=Buffer.alloc(44+dataBytes);
+  wav.write('RIFF',0,'ascii');wav.writeUInt32LE(wav.length-8,4);
+  wav.write('WAVE',8,'ascii');wav.write('fmt ',12,'ascii');
+  wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);
+  wav.writeUInt16LE(2,22);wav.writeUInt32LE(44100,24);
+  wav.writeUInt32LE(44100*4,28);wav.writeUInt16LE(4,32);
+  wav.writeUInt16LE(16,34);wav.write('data',36,'ascii');
+  wav.writeUInt32LE(dataBytes,40);
+  let at=44;
+  for(const block of blocks) {block.copy(wav,at);at+=block.length;}
+  fs.writeFileSync(path.join(output,label+'.wav'),wav);
+  return {label, region:label.startsWith('ntsc')?'NTSC':'PAL',
+    firstNativeFrame:firstFrame,lastNativeFrame:core._get_logic_frame(),
+    durationSeconds:frames/fps, stereoSampleFrames:dataBytes/4,
+    peak,sha256:crypto.createHash('sha256').update(wav).digest('hex')};
+}
+
+
 (async () => {
   fs.mkdirSync(output,{recursive:true});
   const rom=fs.readFileSync(romFile);
   const report=JSON.parse(fs.readFileSync(reportFile,'utf8'));
   assert.equal(report.music.lengthSeconds,180);
-  assert.equal(report.music.steps,720);
+  assert.equal(report.music.steps,900);
+  assert.equal(report.music.tempoBPM,150);
   assert.equal(report.sha256,crypto.createHash('sha256').update(rom).digest('hex'));
-  const captures=[];
+  const captures=[], audioClips=[];
   for (const [region,fps,idle,label] of [[1,60,600,'ntsc'],[2,50,500,'pal']]) {
     const m=await machine(region,rom);
     m.run(15);
@@ -143,46 +187,38 @@ async function machine(region, rom) {
     assert.ok(audibleSamples>0,'YM2612/PSG score must generate non-silent native audio samples');
     // Capture original FM/PSG output directly from the WASM native audio
     // buffers, not a browser overlay or synthetic/offline soundtrack.
-    const right=new Float32Array(m.core.HEAPF32.buffer,m.core._get_web_audio_r_ref(),2048);
-    const clipFrames=4*fps, pcm=[];
-    for(let i=0;i<clipFrames;i++){
-      const count=m.frame();
-      for(let j=0;j<count;j++){
-        pcm.push(Math.max(-32768,Math.min(32767,Math.round(left[j]*32767))));
-        pcm.push(Math.max(-32768,Math.min(32767,Math.round(right[j]*32767))));
-      }
-    }
-    const riff=Buffer.alloc(44+pcm.length*2);
-    riff.write('RIFF',0,'ascii');riff.writeUInt32LE(riff.length-8,4);
-    riff.write('WAVE',8,'ascii');riff.write('fmt ',12,'ascii');
-    riff.writeUInt32LE(16,16);riff.writeUInt16LE(1,20);
-    riff.writeUInt16LE(2,22);riff.writeUInt32LE(44100,24);
-    riff.writeUInt32LE(44100*4,28);riff.writeUInt16LE(4,32);
-    riff.writeUInt16LE(16,34);riff.write('data',36,'ascii');
-    riff.writeUInt32LE(pcm.length*2,40);
-    for(let j=0;j<pcm.length;j++)riff.writeInt16LE(pcm[j],44+j*2);
-    fs.writeFileSync(path.join(output,label+'-original-score.wav'),riff);
+    // Fourteen seconds covers a complete scene chord cycle, rather than
+    // the old four-second opening that did not allow meaningful listening.
+    const clipFrames=14*fps;
+    audioClips.push(recordSceneAudio(m,label+'-original-score',clipFrames,fps));
     m.run(20*fps+20-clipFrames);
     captures.push(m.capture(label+'-vortex'));
-    m.run(30*fps+20);
+    audioClips.push(recordSceneAudio(m,label+'-chromatic-vortex',clipFrames,fps));
+    m.run(30*fps+20-clipFrames);
     captures.push(m.capture(label+'-aurora'));
-    m.run(30*fps+20);
+    audioClips.push(recordSceneAudio(m,label+'-neon-aurora',clipFrames,fps));
+    m.run(30*fps+20-clipFrames);
     captures.push(m.capture(label+'-sprites'));
-    m.run(35*fps+20);
+    audioClips.push(recordSceneAudio(m,label+'-sprite-storm',clipFrames,fps));
+    m.run(35*fps+20-clipFrames);
     captures.push(m.capture(label+'-reactor'));
+    audioClips.push(recordSceneAudio(m,label+'-chroma-reactor',clipFrames,fps));
     m.press('C');m.run(8);
     captures.push(m.capture(label+'-interactive-max'));
     m.press('B');m.run(8);
     captures.push(m.capture(label+'-interactive-restored'));
-    m.run(40*fps-25);
+    m.run(40*fps-25-clipFrames);
     captures.push(m.capture(label+'-finale'));
+    audioClips.push(recordSceneAudio(m,label+'-finale',clipFrames,fps));
     assert.ok(m.core._get_logic_frame()>160*fps,
       'Show must advance through the 160-second scene boundary on real WASM');
   }
+  assert.equal(audioClips.length,12,'Six separate native score excerpts in each region');
+  assert.ok(audioClips.every(x=>x.durationSeconds===14 && x.stereoSampleFrames>0));
   const ntsc=captures.filter(x=>x.region===1);
   assert.ok(new Set(ntsc.map(x=>x.rgbaSHA256)).size>=5,
     'Six-scene native show must show visually distinct stages');
   fs.writeFileSync(path.join(output,'show_report.json'),
-    JSON.stringify({romSHA256:report.sha256,music:report.music,captures},null,2));
+    JSON.stringify({romSHA256:report.sha256,music:report.music,captures,audioClips},null,2));
   console.log('Original 180-second Mega Drive show verified in native NTSC/PAL WASM');
 })().catch(err=>{console.error(err);process.exitCode=1;});
