@@ -27,6 +27,19 @@ not invent an observed model. The native/API state must distinguish requested
 from effective identity and uninitialized/unsupported states. Strict validation
 belongs at the JS facade and native boundary. Do not expose unchecked setters.
 
+## Using the Control
+
+Choose Discrete or Integrated, then use Clean Restart to apply the pending
+choice. Loading another cartridge also applies it. The active model stays visible
+while a different choice is pending. Returning the select to the active choice
+cancels the pending difference without rebooting.
+
+CPU Reset preserves current sound-chip state and the active output model. It
+does not apply a pending choice or discard the saved checkpoint. Clean Restart
+does both as part of its existing full reboot. No sound is changed merely by
+opening or changing the select, and the ordinary FM fault controls still operate
+on the selected chip's incoming data.
+
 ## Exports and Comparison
 
 Include versioned requested/effective model and backend identity in machine
