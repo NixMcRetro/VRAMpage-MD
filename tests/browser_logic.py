@@ -238,6 +238,9 @@ class BrowserLogicTests(unittest.TestCase):
         local=page.locator('#cartridgeChooser button[data-cartridge="local"]')
         choices=page.locator('.cartridge-choices')
         expect(choices).to_be_hidden()
+        # Keep interception enabled between rapid keyboard activations.
+        choosers=[]
+        page.on('filechooser',lambda chooser:choosers.append(chooser))
         page.evaluate("""() => {
           window.cartridgeActivations=[];
           document.querySelector('[data-cartridge="local"]').addEventListener('click',event=>
@@ -266,6 +269,7 @@ class BrowserLogicTests(unittest.TestCase):
             choose_cartridge(page,'local')
         chooser.value.set_files({'name':'after-cancel.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
         expect(page.locator('#romName')).to_have_text('AFTER-CANCEL.BIN')
+        self.assertEqual(len(choosers),4)
 
     def test_cartridge_chooser_escape_outside_and_keyboard_do_not_control_emulator(self):
         page=self.page
