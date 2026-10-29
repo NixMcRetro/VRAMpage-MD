@@ -2,6 +2,8 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+python3 -m unittest discover -s demo-cart/show-lab/tests -v
+node --check tests/test_demo_cart_v036_wasm.cjs
 python3 scripts/build-demo-cart.py
 python3 -m unittest discover -s demo-cart/fx-lab/tests -v
 node --check tests/test_demo_cart_v035_wasm.cjs
