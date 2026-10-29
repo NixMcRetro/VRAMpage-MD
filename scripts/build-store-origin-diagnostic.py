@@ -20,6 +20,7 @@ PATCH_CORE_HELPERS = (
     "psg_data_fault.h", "psg_data_fault_core.c", "psg_data_fault_runtime.c",
     "fm_data_fault.h", "fm_data_fault_core.c", "fm_data_fault_runtime.c",
     "region_profile_runtime.c", "region_profile_runtime.h",
+    "fm_output_model_runtime.c", "fm_output_model_runtime.h",
 )
 
 
