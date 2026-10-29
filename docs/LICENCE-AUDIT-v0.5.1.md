@@ -28,7 +28,7 @@ A complete, version-matched source ZIP attached to the corresponding GitHub rele
 
 The LGPL components add separate obligations. LGPL 2.1 section 6(a) expressly permits accompanying an executable with the complete machine-readable library source **and** the complete machine-readable source and data/utility programs for the “work that uses the Library,” so the user can modify the library and relink the executable ([licence, lines 278–325](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/ntsc/license.txt#L278-L325)). On this build, a complete app source package plus modified library sources, exact compile/link flags, scripts and reproducible Emscripten/CMake build is a plausible §6(a) route; the candidate archive extracted from `7a28b7a` was independently rebuilt with Emscripten 4.0.23 and both output hashes match exactly (see the [rebuild and footprint record](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md)). This is technical evidence for the complete-source/relink route, not resolution of every licence interpretation. Section 6 also requires prominent notice that the Library is used, a copy of the LGPL, and preserves reverse-engineering permission for debugging modifications ([same licence, lines 275–284](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/src/main/c/core/ntsc/license.txt#L275-L284)). Do not describe object files as categorically mandatory where the complete-source §6(a) route is used; ensure the package actually contains every required source, input and utility needed to modify and relink the final executable. The package builder should preserve the complete LGPL text already present at `src/main/c/core/ntsc/license.txt` and all component notices.
 
-The core's non-commercial condition warrants an owner decision on the proposed host/activity. Whether ordinary site advertising, analytics, sponsorship or other monetization makes this distribution a “commercial product or activity” is not resolved by the source wording or this audit. This report makes no finding that McRetro.net violates that condition. The installed Emscripten 4.0.23 `LICENSE` describes the tool as dual MIT / University of Illinois-NCSA licensed and says third-party compiler subdirectory code is not used by default; this audit makes no GPL-exception claim and has not traced every emitted runtime fragment to its toolchain notice. Retain applicable Emscripten/runtime notices with the package after checking the actual generated JS. ROM and trademark rights are outside these component licences, and no third-party game ROM is part of this audit.
+The core's non-commercial condition warrants an owner decision on the proposed host/activity. Whether ordinary site advertising, analytics, sponsorship or other monetization makes this distribution a “commercial product or activity” is not resolved by the source wording or this audit. This report makes no finding that McRetro.net violates that condition. The installed Emscripten 4.0.23 `LICENSE` describes the tool as dual MIT / University of Illinois-NCSA licensed and says third-party compiler subdirectory code is not used by default; this audit makes no blanket GPL-exception claim; the actual link trace and retained standard-runtime notices below supplement that compiler-level notice. Retain applicable Emscripten/runtime notices with the package after checking the actual generated JS. ROM and trademark rights are outside these component licences, and no third-party game ROM is part of this audit.
 
 **Limit.** This is a factual source/build inventory and conservative packaging recommendation, not legal advice. Obtain qualified legal review for the non-commercial hosting interpretation and the LGPL linked-WASM delivery question before treating those points as cleared.
 
@@ -58,3 +58,25 @@ remain available with the corresponding runtime. It does not resolve the
 other interpretation questions above. The pinned Emscripten licence text is
 preserved in `licences/EMSCRIPTEN-LICENSE.txt`; the compiler/system-component
 exception is not used to omit the emulator or application source.
+
+## Actual Standard-Library Link Trace
+
+The same approved object files and link flags were relinked with `-Wl,--trace`
+into a separate scratch directory. Both output hashes stayed identical. The
+linker selected members of `libc.a`, `libc_optz.a`, `libstubs.a`, `libdlmalloc.a`
+and `libcompiler_rt.a`. This confirms standard runtime code is in the binary,
+even though compiler source itself need not be bundled under the core's system
+component exception. Notice-retention duties are separate from that exception.
+
+The package therefore also preserves musl's complete COPYRIGHT/MIT file, the
+LLVM compiler-rt Apache2/LLVM-exception licence, original leading notices from
+the selected musl math sources (including Sun/Arm terms), and dlmalloc's public
+domain attribution. The complete source ZIP and HTML notices page both carry
+these texts. This does not retroactively apply LGPL/GPL or commercial permission
+to the separately licensed emulator. The installed source corresponds to
+Emscripten4.0.23; canonical source examples are
+[`musl/COPYRIGHT`](https://github.com/emscripten-core/emscripten/blob/4.0.23/system/lib/libc/musl/COPYRIGHT),
+[`compiler-rt/LICENSE.TXT`](https://github.com/emscripten-core/emscripten/blob/4.0.23/system/lib/compiler-rt/LICENSE.TXT)
+and [`dlmalloc.c`](https://github.com/emscripten-core/emscripten/blob/4.0.23/system/lib/dlmalloc.c).
+The trace and selected-notice inventory are retained with local verification
+evidence under `/workspace/scratch/lightweight-v051/toolchain-link-audit`.

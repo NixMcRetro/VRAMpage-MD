@@ -29,6 +29,10 @@ EMSCRIPTEN = "4.0.23"
 MAX_SOURCE_ARCHIVE_SIZE = 32 * 1024 * 1024
 MAX_SOURCE_ARCHIVE_EXPANDED_SIZE = 64 * 1024 * 1024
 MAX_SOURCE_ARCHIVE_FILES = 4000
+TOOLCHAIN_NOTICES = (
+    "licences/EMSCRIPTEN-LICENSE.txt", "licences/MUSL-COPYRIGHT.txt",
+    "licences/LLVM-COMPILER-RT-LICENSE.txt", "licences/LINKED-SYSTEM-NOTICES.txt",
+)
 SOURCE_LINK = '<a href="source-and-licences.html">Source Code &amp; Licences</a>'
 SOURCE_INSTRUCTIONS = (
     "From the extracted source ZIP, activate Emscripten 4.0.23 and run:\n\n"
@@ -160,6 +164,7 @@ def _source_paths(root: Path, manifest: dict) -> list[str]:
         "site/cartridges.json", "site/framebuffer.js", "site/rgb-encoder.js",
         "site/circuit-config.js", "site/experiment-comparison.js",
     }
+    paths.update(TOOLCHAIN_NOTICES)
     from cartridges import source_paths
     paths.update(source_paths(manifest))
     paths.update(asset["path"] for asset in manifest["preservedAssets"]
@@ -260,6 +265,11 @@ def _source_archive(root: Path, paths: list[str], version: str, commit: str,
     return source_info
 
 
+def _toolchain_notices(root: Path) -> bytes:
+    return b"\n\n".join(name.encode() + b"\n" + _safe_file(root, name).read_bytes()
+                           for name in TOOLCHAIN_NOTICES)
+
+
 def _render_source_page(version: str, archive_name: str, archive_hash: str,
                         notices: bytes, emscripten_license: bytes, lgpl_text: bytes) -> bytes:
     notices_html = html.escape(notices.decode("utf-8"))
@@ -285,7 +295,7 @@ def _render_source_page(version: str, archive_name: str, archive_hash: str,
 <p>Release source commit and binary hashes are recorded in <code>SOURCE-INFO.json</code> at the ZIP root.</p>
 <details><summary>Full third-party notices</summary><pre>{notices_html}</pre></details>
 <details><summary>Full LGPL 2.1 text</summary><pre>{lgpl_html}</pre></details>
-<details><summary>Emscripten licence text</summary><pre>{emscripten_html}</pre></details>
+<details><summary>Toolchain and linked system-library notices</summary><pre>{emscripten_html}</pre></details>
 <p><a href="index.html">Return to VRAMpage MD</a></p></main></body></html>\n''').encode()
 
 
@@ -344,7 +354,7 @@ def verify_source_archive(archive: bytes | bytearray | memoryview | Path | str,
                 raise BundleError("SOURCE-INFO.json has invalid version, commit, toolchain or core metadata.")
             required = {
                 "project/VERSION", "project/THIRD-PARTY-NOTICES.md",
-                "project/licences/EMSCRIPTEN-LICENSE.txt", "emulator/BUILDING.txt",
+                *("project/" + name for name in TOOLCHAIN_NOTICES), "emulator/BUILDING.txt",
                 "emulator/THIRD-PARTY-NOTICES.md", "emulator/PROFILE-THIRD-PARTY-NOTICES.md",
                 "emulator/scripts/patch_core.py", "emulator/scripts/session_checkpoint_patch.py",
                 "emulator/wasm-genplus/CMakeLists.txt",
@@ -402,7 +412,7 @@ def build(root: Path, dest: Path) -> dict:
     _building, runtime_notices, lgpl_text, core_hashes = _profile(root)
     notices = (b"Project notices\n\n" + _safe_file(root, "THIRD-PARTY-NOTICES.md").read_bytes()
                + b"\n\nRuntime profile notices\n\n" + runtime_notices)
-    emscripten_license = _safe_file(root, "licences/EMSCRIPTEN-LICENSE.txt").read_bytes()
+    emscripten_license = _toolchain_notices(root)
     source_paths_list = _source_paths(root, manifest)
     footer = _safe_file(root, "site/index.html").read_text(encoding="utf-8")
     if footer.count("<footer>") != 1 or "Source Code &amp; Licences" in footer:
@@ -524,7 +534,7 @@ def verify_website(dest: Path, root: Path) -> None:
         _building, runtime_notices, lgpl_text, expected_runtime = _profile(root)
         notices = (b"Project notices\n\n" + _safe_file(root, "THIRD-PARTY-NOTICES.md").read_bytes()
                    + b"\n\nRuntime profile notices\n\n" + runtime_notices)
-        emscripten_license = _safe_file(root, "licences/EMSCRIPTEN-LICENSE.txt").read_bytes()
+        emscripten_license = _toolchain_notices(root)
         archive_sha = _sha((dest / archive_rel).read_bytes())
         archive_name = PurePosixPath(archive_rel).name
         if (archive_name != f"VRAMpage-MD-v{version}-corresponding-source.zip"

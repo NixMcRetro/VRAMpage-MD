@@ -199,3 +199,20 @@ The corresponding-source package supports modification and rebuilding of the
 whole application and its LGPL libraries. Nothing in this project's packaging
 policy prohibits reverse engineering for debugging modifications to those
 libraries; applicable upstream conditions continue to apply.
+
+## Linked Standard Runtime Components
+
+A linker trace of the exact Emscripten4.0.23 core selected objects from
+`libc.a`, `libc_optz.a`, `libstubs.a`, `libdlmalloc.a` and `libcompiler_rt.a`.
+The relinked JS/WASM hashes are unchanged. These are distinct from the
+non-commercial emulator terms:
+
+- [musl copyright and MIT terms](licences/MUSL-COPYRIGHT.txt), including its
+  component attribution and exceptions.
+- [LLVM compiler-rt licence and exceptions](licences/LLVM-COMPILER-RT-LICENSE.txt).
+- [Selected system-file notices](licences/LINKED-SYSTEM-NOTICES.txt), retaining
+  Sun/Arm/other original math notices and dlmalloc's public-domain attribution.
+
+Full Emscripten notices remain above. These runtime notices accompany the core
+in the source ZIP and the Source Code & Licences page; no source-hosting or
+non-commercial permission is inferred from their permissive terms.

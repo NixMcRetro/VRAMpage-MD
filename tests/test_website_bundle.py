@@ -9,7 +9,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-from website_bundle import BundleError, build, verify_source_archive, verify_website  # noqa: E402
+from website_bundle import BundleError, TOOLCHAIN_NOTICES, build, verify_source_archive, verify_website  # noqa: E402
 from cartridges import CartridgeError  # noqa: E402
 
 
@@ -23,7 +23,7 @@ def _put(root, relative, data):
     return path
 
 
-def _fixture(tmp_path, *, licence=True, symlink=False, missing_source=False):
+def _fixture(tmp_path, *, licence=True, symlink=False, missing_source=False, missing_toolchain=False):
     root = tmp_path / "source"
     root.mkdir()
     _put(root, "VERSION", "0.5.1\n")
@@ -40,6 +40,9 @@ def _fixture(tmp_path, *, licence=True, symlink=False, missing_source=False):
     _put(root, "docs/LICENCE-AUDIT-v0.5.1.md", "Licence audit.\n")
     _put(root, "THIRD-PARTY-NOTICES.md", "Project notices.\n")
     _put(root, "licences/EMSCRIPTEN-LICENSE.txt", "Emscripten dual MIT and NCSA.\n")
+    for name in TOOLCHAIN_NOTICES:
+        if name != "licences/EMSCRIPTEN-LICENSE.txt" and not (missing_toolchain and "LLVM" in name):
+            _put(root, name, "Retained toolchain notice.\n")
     _put(root, "site/index.html", "<!doctype html><body><footer>VRAMpage</footer></body>\n")
     _put(root, "site/core/genplus.js", b"// wasm glue fixture\n")
     _put(root, "site/core/genplus.wasm", b"\0asm\x01\0\0\0")
@@ -193,6 +196,13 @@ class WebsiteBundleTests(unittest.TestCase):
     with self.assertRaisesRegex(BundleError, "Invalid corresponding-source archive"):
         verify_source_archive(b"not a zip")
 
+
+  def test_missing_linked_runtime_notice_fails_before_destination_creation(self):
+    root = _fixture(self.tmp_path, missing_toolchain=True)
+    dest = self.tmp_path / "dest"
+    with self.assertRaisesRegex(BundleError, "LLVM-COMPILER-RT"):
+        build(root, dest)
+    self.assertFalse(dest.exists())
 
   def test_missing_lgpl_text_fails_before_destination_creation(self):
     tmp_path = self.tmp_path
