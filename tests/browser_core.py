@@ -1513,6 +1513,95 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     finally:browser.close()
             finally:server.shutdown()
 
+    def test_rejected_async_rom_read_preserves_pending_fm_region_and_checkpoint(self):
+        handler=partial(SimpleHTTPRequestHandler,directory=OPTIONS.site_root)
+        with ThreadingHTTPServer(('127.0.0.1',0),handler) as server:
+            threading.Thread(target=server.serve_forever,daemon=True).start()
+            try:
+                with sync_playwright() as p:
+                    kwargs={'executable_path':OPTIONS.executable} if OPTIONS.executable else {}
+                    browser=getattr(p,OPTIONS.browser).launch(**kwargs)
+                    try:
+                        page=new_manual_startup_page(browser)
+                        errors=[]
+                        page.on('pageerror',lambda error:errors.append(str(error)))
+                        rom_requests=[]
+                        page.on('request',lambda request:rom_requests.append(request.url))
+                        core_js=(OPTIONS.site_root/'core/genplus.js').read_text()
+                        core_js+='\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c;return c;});\n'
+                        page.route('**/core/genplus.js',lambda route:route.fulfill(content_type='text/javascript',body=core_js))
+                        page.route('**/core/genplus.wasm',lambda route:route.fulfill(content_type='application/wasm',path=str(OPTIONS.site_root/'core/genplus.wasm')))
+                        page.goto(f'http://127.0.0.1:{server.server_port}/')
+                        page.locator('#romFile').set_input_files({'name':'fm-read-recovery.bin','mimeType':'application/octet-stream','buffer':original_cartridge()})
+                        expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+                        page.locator('#pauseBtn').click()
+                        page.locator('#logicExperiment > summary').click()
+                        page.locator('#saveCheckpointBtn').click()
+                        expect(page.locator('#checkpointStatus')).to_contain_text('Saved Frame')
+                        page.evaluate('''() => {
+                          const native=File.prototype.arrayBuffer;
+                          window.pendingReads={};
+                          File.prototype.arrayBuffer=function(){
+                            if(!['stale-fm-read.bin','rejected-fm-read.bin'].includes(this.name))return native.call(this);
+                            return new Promise((resolve,reject)=>window.pendingReads[this.name]={resolve,reject});
+                          };
+                        }''')
+                        page.locator('#fmOutputModelSelect').select_option('1')
+                        page.locator('#regionSelect').select_option('2')
+                        page.locator('#romFile').set_input_files({'name':'stale-fm-read.bin','mimeType':'application/octet-stream','buffer':original_cartridge()})
+                        page.wait_for_function("window.pendingReads['stale-fm-read.bin']")
+                        page.locator('#romFile').set_input_files({'name':'rejected-fm-read.bin','mimeType':'application/octet-stream','buffer':original_cartridge()})
+                        page.wait_for_function("window.pendingReads['rejected-fm-read.bin']")
+                        page.evaluate("window.pendingReads['rejected-fm-read.bin'].reject(new Error('latest synthetic asynchronous ROM read rejection'))")
+                        expect(page.locator('#experimentLog')).to_contain_text('latest synthetic asynchronous ROM read rejection')
+                        page.evaluate("window.pendingReads['stale-fm-read.bin'].reject(new Error('stale synthetic asynchronous ROM read rejection'))")
+                        page.wait_for_timeout(50)
+                        log=page.locator('#experimentLog').inner_text()
+                        self.assertNotIn('stale synthetic asynchronous ROM read rejection',log,
+                                         'a stale asynchronous rejection cannot overwrite or append to the current selection result')
+                        expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+                        expect(page.locator('#pauseBtn')).to_have_text('Resume')
+                        expect(page.locator('#romName')).to_have_text('FM-READ-RECOVERY.BIN')
+                        state=page.evaluate('''() => ({
+                          fm:testCore._get_fm_output_model_state(), region:testCore._get_region_state(),
+                          checkpointReady:testCore._get_session_checkpoint_ready()
+                        })''')
+                        self.assertEqual(state['fm']['effectiveModel'],'discrete')
+                        self.assertEqual(state['fm']['requestedModel'],'integrated')
+                        self.assertEqual((state['region']['regionCode'],state['region']['requestedRegion']), (0x80,2))
+                        self.assertEqual(state['checkpointReady'],1)
+                        replay=page.evaluate('''() => {
+                          window.captureSavedContinuation=()=>{
+                            testCore._tick();const count=testCore._sound();
+                            const hash=(bytes)=>{let h=2166136261;for(const b of bytes)h=Math.imul(h^b,16777619);return h>>>0;};
+                            const frame=testCore._get_frame_buffer_ref(),pixels=testCore.HEAPU8.subarray(frame,frame+640*480*4);
+                            const left=testCore._get_web_audio_l_ref(),right=testCore._get_web_audio_r_ref();
+                            const pcm=new Uint8Array(count*8);pcm.set(new Uint8Array(testCore.HEAPF32.buffer,left,count*4));
+                            pcm.set(new Uint8Array(testCore.HEAPF32.buffer,right,count*4),count*4);
+                            const samples=new Float32Array(pcm.buffer);
+                            return {pixels:hash(pixels),pcm:hash(pcm),count,finite:Array.from(samples).every(Number.isFinite),
+                              nonzero:samples.some(sample=>Math.abs(sample)>0.0001)};
+                          };
+                          return captureSavedContinuation();
+                        }''')
+                        self.assertGreater(replay['count'],0)
+                        self.assertTrue(replay['finite'])
+                        self.assertTrue(replay['nonzero'],'the original synthetic PSG tone must produce native PCM')
+                        page.locator('#restoreCheckpointBtn').click()
+                        expect(page.locator('#checkpointStatus')).to_contain_text('Restored Frame')
+                        self.assertEqual(page.evaluate('testCore._get_session_checkpoint_ready()'),1)
+                        self.assertEqual(page.evaluate('captureSavedContinuation()'),replay,
+                                         'the preserved checkpoint replays the same video and stereo PCM after restore')
+                        page.locator('#resetBtn').click()
+                        self.assertEqual(page.evaluate('testCore._get_fm_output_model_state().effectiveModel'),'integrated')
+                        self.assertEqual(page.evaluate('testCore._get_region_state().regionCode'),0xc0)
+                        self.assertEqual(page.evaluate('testCore._get_session_checkpoint_ready()'),0)
+                        self.assertFalse(any('stale-fm-read.bin' in url or 'rejected-fm-read.bin' in url for url in rom_requests),
+                                         'local ROM reads remain in the browser and are never uploaded')
+                        self.assertEqual(errors,[])
+                    finally:browser.close()
+            finally:server.shutdown()
+
     def test_ordered_recovery_defaults_on_and_observes_real_halt_and_stop(self):
         handler=partial(SimpleHTTPRequestHandler,directory=OPTIONS.site_root)
         with ThreadingHTTPServer(('127.0.0.1',0),handler) as server:
