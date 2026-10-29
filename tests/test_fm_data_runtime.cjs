@@ -13,7 +13,7 @@ function locate(file) {
   return {locateFile: name => path.join(path.dirname(file), name)};
 }
 
-function fmToneCartridge() {
+function fmToneCartridge(dacByte) {
   const rom = new Uint8Array(0x10000);
   const view = new DataView(rom.buffer);
   for (let offset = 0; offset < 0x100; offset += 4) view.setUint32(offset, 0x300);
@@ -41,11 +41,18 @@ function fmToneCartridge() {
   word(0x00a11200, 0x0100); // Release the Z80 reset while BUSREQ is held.
   fastByte(0x00a04000, 0x22);
   fastByte(0x00a04001, 0x00);
+  if (dacByte !== undefined) {
+    fastByte(0x00a04000, 0x2b); fastByte(0x00a04001, 0x80);
+    fastByte(0x00a04000, 0x2a); fastByte(0x00a04001, dacByte);
+    fastByte(0x00a04000, 0xb6); fastByte(0x00a04001, 0xc0);
+  }
   // Record immediate and delayed FM status reads in work RAM to check that
   // the input wrapper preserves the core's busy/status timing.
   words.push(0x1039, 0x00a0, 0x4000, 0x13c0, 0x00ff, 0x0100);
+  words.push(0x1039, 0x00a0, 0x4002, 0x13c0, 0x00ff, 0x0102);
   for (let i = 0; i < 400; i++) words.push(0x4e71);
   words.push(0x1039, 0x00a0, 0x4000, 0x13c0, 0x00ff, 0x0101);
+  words.push(0x1039, 0x00a0, 0x4002, 0x13c0, 0x00ff, 0x0103);
   reg(0x22, 0x00); // LFO off
   reg(0x27, 0x00); // normal channel mode
   for (const offset of [0, 4, 8, 12]) {
@@ -246,9 +253,10 @@ async function testZ80FmAndPsg(runtimePath, normalPath) {
   console.log('Z80 shared FM/PSG writes match normal while off and transform independently or together.');
 }
 
-async function createCore(file, rom) {
+async function createCore(file, rom, beforeStart) {
   const core = await require(file)(locate(file));
   core._init();
+  if (beforeStart) beforeStart(core);
   core.HEAPU8.set(rom, core._get_rom_buffer_ref(rom.length));
   core._start();
   new Float32Array(core.HEAPF32.buffer, core._get_input_buffer_ref(), 32).fill(0);
@@ -272,6 +280,12 @@ function fmStatusProbe(core) {
   const base = core._get_logic_ram_ref() >>> 0;
   // The 68K work RAM byte lanes are word-swapped in the exported heap view.
   return [core.HEAPU8[base + 0x101], core.HEAPU8[base + 0x100]];
+}
+
+function fmStatusPorts(core) {
+  const base = core._get_logic_ram_ref() >>> 0;
+  return [core.HEAPU8[base + 0x101], core.HEAPU8[base + 0x100],
+    core.HEAPU8[base + 0x103], core.HEAPU8[base + 0x102]];
 }
 
 function fmZ80ResetMarker(core) {
@@ -457,4 +471,6 @@ async function main() {
   console.log(`Synthetic 68K FM writes matched ${variant === 'ym3438' ? 'normal YM3438' : 'normal MAME'} output while off, changed output while active, and reset cleanly.`);
 }
 
-main().catch(error => { console.error(error); process.exitCode = 1; });
+if (require.main === module) main().catch(error => { console.error(error); process.exitCode = 1; });
+
+module.exports = {fmToneCartridge, z80FmAndPsgCartridge, createCore, nextAudio, fmStatusProbe, fmStatusPorts};
