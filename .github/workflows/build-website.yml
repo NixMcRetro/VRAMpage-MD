@@ -65,9 +65,12 @@ jobs:
           test -f site/source/runtime-profile/BUILDING.txt
           test -f site/source/runtime-profile/source/scripts/vram_transaction_api.js
           test -f site/source/runtime-profile/source/scripts/region_profile_api.js
+          test -f site/source/runtime-profile/source/scripts/fm_output_model_runtime.c
+          test -f site/source/runtime-profile/source/scripts/fm_output_model_runtime.h
+          test -f site/source/runtime-profile/source/scripts/fm_output_model_api.js
           node tests/test_musashi_notice_wasm.cjs site/core/genplus.wasm \
             site/source/runtime-profile/source/wasm-genplus/src/main/c/core/m68k/m68k.h \
-            8fa2fa0fe6a47890c948ed39a7f095980d9ffde7d4405a88ce07a5f34b8814b7
+            3c73c7933fe841a48f7bc50494da2613194aca17443e7c9380947559147b03d9
           node tests/test_runtime_build_profile.cjs site/core/genplus.js
           node tests/test_region_profile_wasm.cjs site/core/genplus.js "$RUNNER_TEMP/normal-core/genplus.js"
           node tests/test_session_checkpoint_runtime.cjs site/core/genplus.js "$RUNNER_TEMP/normal-core/genplus.js"
