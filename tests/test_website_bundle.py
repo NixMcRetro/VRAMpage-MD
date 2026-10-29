@@ -169,10 +169,10 @@ class WebsiteBundleTests(unittest.TestCase):
     assert result["files"] == len(first)
     assert "legacy-v0.1.bin" not in {p.relative_to(one).as_posix() for p in one.rglob("*") if p.is_file()}
     assert "Source Code &amp; Licences" in (one / "index.html").read_text()
-    assert "planned; not yet published or verified" in (one / "source-and-licences.html").read_text()
+    build_info = json.loads((one / "build-info.json").read_text())
+    assert f'https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v{build_info["version"]}/VRAMpage-MD-v{build_info["version"]}-corresponding-source.zip' in (one / "source-and-licences.html").read_text()
     page = (one / "source-and-licences.html").read_text()
     assert "Full LGPL 2.1 Text" in page and "GNU LESSER GENERAL PUBLIC LICENSE" in page
-    build_info = json.loads((one / "build-info.json").read_text())
     assert build_info["application_version"] == "0.5.1" and build_info["package_format"] == 1
     archive = next((one / "source").glob("*.zip"))
     with zipfile.ZipFile(archive) as zf:

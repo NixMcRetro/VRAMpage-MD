@@ -286,7 +286,7 @@ def _render_source_page(version: str, archive_name: str, archive_hash: str,
 <body><main class="source-page"><h1>Source Code &amp; Licences</h1>
 <p>Corresponding source for VRAMpage MD v{version}, including the modified WebAssembly core and component notices.</p>
 <p><a href="source/{archive_name}">Download Corresponding Source ZIP</a> (SHA-256: <code>{archive_hash}</code>).</p>
-<p>GitHub source mirror: planned; not yet published or verified.</p>
+<p><a href="https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v{version}/{archive_name}">GitHub Release Source Mirror</a>. The same source ZIP remains available above on this host.</p>
 <section aria-labelledby="licence-summary"><h2 id="licence-summary">Distribution and User Rights</h2>
 <p><strong>Non-commercial condition:</strong> the included Genesis Plus GX and Nuked OPN2 terms restrict redistribution to non-commercial products or activities. This page does not determine whether advertising or other site activity is commercial.</p>
 <p><strong>LGPL 2.1 components:</strong> blip_buf and MD/SMS NTSC code are distributed under the GNU Lesser General Public License version 2.1 or later. The ZIP contains their complete source and the full LGPL text. Under section 6(a), recipients may modify the library and rebuild/relink the executable from the included application source, build scripts and data. The licence also preserves reverse engineering for debugging modifications. See <code>emulator/wasm-genplus/src/main/c/core/ntsc/license.txt</code> and the blip_buf source header.</p>
