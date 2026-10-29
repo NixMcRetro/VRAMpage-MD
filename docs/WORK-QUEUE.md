@@ -1,36 +1,33 @@
-## v0.5.1 Release and Website Update — 29 October 2026
+## Active FM Output Model Proof — 29 October 2026
 
-The owner approved proceeding with release and deployment, superseding the
-proposal-only hold, and confirmed **non-commercial hobby hosting with no
-monetization**. Preserve public v0.5.0 and older release assets.
+The owner authorized independent work after the completed v0.5.1 release. Start
+from verified main `bc7369c943f1f7cda5167632077235b7630ad41b`; use an isolated
+feature branch and the [FM proof contract](FM-MODEL-PROOF.md). Reuse the current
+MAME backend and checkpoint/staged-region machinery. Prove Discrete/Integrated
+PCM, DAC/status, CPU/Z80 fault routing, default parity and fixed-model checkpoint
+replay. This slice adds no public selector, version change or deployment.
 
-PR #102 prepares the 17-file website package with one complete corresponding-
-source ZIP, matching GitHub source mirror, approved Demo Cart/Colour Test,
-notices and checksums. The same-origin ZIP remains mandatory; GitHub-only
-source delivery is outside this decision. All native executable sections and
-emulator controls stay unchanged; a deterministic custom WASM section preserves
-Musashi's exact notice inside the binary. Source rebuilds reproduce that output.
+Keep the production binary hashes and default behavior unchanged. Never promote
+experimental Demo Cart PRs101/103/104/105 without owner acceptance; v0.3.5 remains
+the manifest-approved default. Optional NTSC VA6 issue73 does not block this work.
 
-The [licence audit](LICENCE-AUDIT-v0.5.1.md) records the GX project-wide default
-grant for the legacy FM code, binary/source notice measures, LGPL rebuild route
-and owner-confirmed hosting context. A change to monetization or source delivery
-requires reassessment; there is no generic outside-legal-review prerequisite.
+## Completed v0.5.1 Release and Website — 29 October 2026
 
-Require independent review, all seven protected PR/main checks and four CodeQL
-analyses before publishing v0.5.1. Publish and verify the exact corresponding-
-source ZIP and checksums. Then update only `homepages/vrampage-md/` through a
-separate McRetro.net PR, retaining the source ZIP on the same origin. Website
-checks must validate the manifest-approved ROMs, reject unknown/altered files,
-and compare all 17 files byte for byte after Jekyll. Merge only after its build
-passes, then verify deployment and live runtime/source links.
+[Source PR102](https://github.com/NixMcRetro/VRAMpage-MD/pull/102) merged as
+`bc7369c943f1f7cda5167632077235b7630ad41b`. All seven PR/main checks and four
+CodeQL analyses passed. [v0.5.1](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.5.1)
+was published after release workflow40841450977 attempt2 and exact rebuilding
+of the downloaded source archive. Its source SHA-256 is
+`47d93c3b5c97892bd8ffe8c278dca431d82acdf4779cec60b0c9b9111208e8bf`.
 
-The original same-runtime full-source baseline was 526 files /17,349,861 bytes;
-notice-complete review candidate was 17 files /3,144,524 bytes (about3.00MiB).
-Metadata/source revisions change compressed bytes slightly. The older website
-actually had13files/1,518,565bytes; the reduction is against full-source staging,
-not a claim that hundreds of currently hosted files are removed. No Git-history
-or build-time savings are asserted. Final commit/check/artifact identities belong
-in the PR and release evidence, not self-referential generated source.
+[Website PR12](https://github.com/NixMcRetro/mcretro.net/pull/12) merged as
+`c3ead06c63ca2a2e967c85524b7c28f27b3349c5`. Main deployment40846544059 verified
+all17live files and WASM MIME at https://mcretro.net/homepages/vrampage-md/.
+The package is17files/3,152,701bytes (~3.01MiB), including one complete source
+ZIP. Same-origin source remains mandatory; the matching GitHub release is a
+mirror. Non-commercial hosting was explicitly confirmed. All18older releases
+and their asset identities/digests remain unchanged. This release/deployment
+authorization is completed, not standing permission for another publication.
 
 ## Built-In Cartridge Selector — Integration Checkpoint, 29 October 2026 (UTC)
 

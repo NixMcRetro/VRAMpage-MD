@@ -1,11 +1,21 @@
-## v0.5.1 — Approved Release and Lightweight Website
+## Active FM Output Model Proof
 
-The owner approved the release/website workflow and confirmed non-commercial
-hosting. Complete notice-bearing binary/source verification, independent review,
-protected PR/main checks and CodeQL; then publish the matching browser/source
-ZIPs and update McRetro.net through its own tested PR. Keep the same-origin
-source archive. Preserve earlier release assets and unrelated website content.
-[Deployment](docs/LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md).
+The owner authorized the next independent slice after v0.5.1 delivery. Prove
+MAME Discrete/Integrated output and fixed-model checkpoint/reset/replay using
+actual WASM before a public selector. Preserve production defaults/hashes,
+VERSION, approved cartridges, releases and the live site. Reuse the
+[existing research](docs/FM-VARIANTS-RESEARCH.md) and
+[acceptance contract](docs/FM-MODEL-PROOF.md); do not repeat completed RAM work.
+
+## Completed v0.5.1 Release and Lightweight Website
+
+[PR102](https://github.com/NixMcRetro/VRAMpage-MD/pull/102) and
+[website PR12](https://github.com/NixMcRetro/mcretro.net/pull/12) are merged.
+v0.5.1 is published and live, with one complete same-origin source ZIP, matching
+GitHub source mirror, literal Musashi notice in WASM and verified non-commercial
+hosting. PR/main/release/site/CodeQL and all17live file checks passed; earlier
+releases and unrelated website content remain unchanged. Future publication or
+hosting changes require separate approval.
 
 ## Built-In Cartridge Selection
 

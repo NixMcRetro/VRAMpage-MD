@@ -1,3 +1,11 @@
+## Development Proof — FM Output Models
+
+- Define actual-WASM acceptance for MAME Discrete/Integrated output, chip-local
+  fault routing and fixed-model save/reset/restore/restart behavior.
+- Keep the proof isolated from public controls and production defaults; preserve
+  v0.5.1, its approved cartridges and the website. Implementation evidence follows
+  the bounded proof's actual test results.
+
 ## v0.5.1 — Lightweight Website Packaging
 
 - Prepare a runtime-only website layout with approved original cartridges and
