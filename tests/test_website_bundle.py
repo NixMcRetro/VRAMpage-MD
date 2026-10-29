@@ -169,7 +169,7 @@ class WebsiteBundleTests(unittest.TestCase):
     assert "Source Code &amp; Licences" in (one / "index.html").read_text()
     assert "planned; not yet published or verified" in (one / "source-and-licences.html").read_text()
     page = (one / "source-and-licences.html").read_text()
-    assert "Full LGPL 2.1 text" in page and "GNU LESSER GENERAL PUBLIC LICENSE" in page
+    assert "Full LGPL 2.1 Text" in page and "GNU LESSER GENERAL PUBLIC LICENSE" in page
     build_info = json.loads((one / "build-info.json").read_text())
     assert build_info["application_version"] == "0.5.1" and build_info["package_format"] == 1
     archive = next((one / "source").glob("*.zip"))
