@@ -61,6 +61,8 @@ class A68:
     def movel_imm_ai(self,reg,value):self.w(0x20BC+(reg<<9));self.l(value)
     def moveb_imm_ai(self,reg,value):self.w(0x10BC+(reg<<9));self.w(value)
     def moveb_d_ai(self,dr,ar):self.w(0x1080+(ar<<9)+dr)
+    def moveb_d_abs(self,dr,addr):self.w(0x13C0+dr);self.l(addr)
+    def moveb_abs_d(self,addr,dr):self.w(0x1039+(dr<<9));self.l(addr)
     def movew_d_d(self,src,dest):self.w(0x3000+(dest<<9)+src)
     def addiw(self,reg,imm):self.w(0x0640+reg);self.w(imm)
     def movew_d_ai(self,dr,ar):self.w(0x3080+(ar<<9)+dr)
@@ -501,6 +503,9 @@ asm.beq('tmss_done')
 asm.movea(2,0xA14000)
 asm.movel_imm_ai(2,0x53454741)
 asm.label('tmss_done')
+# Request and halt the Z80 while the 68000 drives YM2612.
+asm.movea(4,0xA11100);asm.movew_imm_ai(4,0x0100)
+asm.movea(4,0xA11200);asm.movew_imm_ai(4,0)
 asm.bsr('setup_vdp')
 asm.bsr('load_pattern')
 asm.bsr('load_palettes')
@@ -637,6 +642,7 @@ asm.bsr('poll_buttons')
 asm.andiw(2,0x0080)
 asm.bne('scene_abort_vortex')
 asm.dbra(6,'tick_vortex')
+asm.bra('scene_end_vortex')
 asm.label('scene_abort_vortex')
 asm.movea(4,0xFF0006);asm.movew_imm_ai(4,0)
 asm.label('scene_end_vortex')
@@ -678,6 +684,7 @@ asm.bsr('poll_buttons')
 asm.andiw(2,0x0080)
 asm.bne('scene_abort_aurora')
 asm.dbra(6,'tick_aurora')
+asm.bra('scene_end_aurora')
 asm.label('scene_abort_aurora')
 asm.movea(4,0xFF0006);asm.movew_imm_ai(4,0)
 asm.label('scene_end_aurora')
@@ -716,6 +723,7 @@ asm.bsr('poll_buttons')
 asm.andiw(2,0x0080)
 asm.bne('scene_abort_sprites')
 asm.dbra(6,'tick_sprites')
+asm.bra('scene_end_sprites')
 asm.label('scene_abort_sprites')
 asm.movea(4,0xFF0006);asm.movew_imm_ai(4,0)
 asm.label('scene_end_sprites')
@@ -769,6 +777,7 @@ asm.label('colour_bend_reset');asm.moveq(5,0);asm.bra('colour_bend_continue')
 asm.label('colour_bend_max');asm.moveq(5,BEND_LEVELS)
 asm.label('colour_bend_continue')
 asm.dbra(6,'tick_colour')
+asm.bra('scene_end_colour')
 asm.label('scene_abort_colour')
 asm.movea(4,0xFF0006);asm.movew_imm_ai(4,0)
 asm.label('scene_end_colour')
@@ -835,6 +844,7 @@ asm.label('wait_leave')
 asm.movew_ai_d(0,1);asm.andiw(1,8);asm.bne('wait_leave')
 asm.label('wait_enter')
 asm.movew_ai_d(0,1);asm.andiw(1,8);asm.beq('wait_enter')
+asm.bsr('music_tick')
 asm.rts()
 
 asm.label('setup_vdp')
@@ -960,6 +970,91 @@ asm.andiw(2,0x80);asm.bne('finale_end')
 asm.dbra(6,'finale_loop')
 asm.label('finale_end');asm.rts()
 
+# Original three-channel FM and PSG tracker, advanced by the same VBlank as
+# the scene scheduler. No browser audio file, sample ROM or copyrighted song.
+asm.label('ym_write')
+asm.moveb_d_abs(0,0xA04000)
+asm.moveb_d_abs(1,0xA04001)
+asm.label('ym_busy')
+asm.moveb_abs_d(0xA04000,0)
+asm.andib(0,0x80)
+asm.bne('ym_busy')
+asm.rts()
+def ym_reg(reg,value):
+    asm.moveq(0,reg);asm.moveq(1,value);asm.bsr('ym_write')
+
+asm.label('music_start')
+for reg,value in ((0x22,0),(0x27,0),(0x2B,0)):
+    ym_reg(reg,value)
+for ch in range(3):
+    ym_reg(0xB0+ch,7 if ch==2 else 4)
+    ym_reg(0xB4+ch,0xC0)
+    for slot in (0,4,8,12):
+        ym_reg(0x30+slot+ch,1 if ch!=1 else 2)
+        ym_reg(0x40+slot+ch,(0x0B,0x14,0x21)[ch] if slot==12 else 0x31)
+        ym_reg(0x50+slot+ch,0x1F)
+        ym_reg(0x60+slot+ch,0x08+ch)
+        ym_reg(0x70+slot+ch,0x07)
+        ym_reg(0x80+slot+ch,0x26)
+for address,value in ((0xFF0000,0),(0xFF0002,0),(0xFF0006,1)):
+    asm.movea(4,address);asm.movew_imm_ai(4,value)
+asm.movea(4,0xA10001);asm.moveb_ai_d(4,0);asm.andib(0,0x40)
+asm.beq('music_region_ntsc')
+asm.movea(4,0xFF0008);asm.movew_imm_ai(4,50)
+asm.bra('music_first_note')
+asm.label('music_region_ntsc')
+asm.movea(4,0xFF0008);asm.movew_imm_ai(4,60)
+asm.label('music_first_note');asm.bsr('music_event');asm.rts()
+
+asm.label('music_stop')
+asm.movea(4,0xFF0006);asm.movew_imm_ai(4,0)
+for ch in range(3):
+    ym_reg(0x28,ch)
+for volume in (0x9F,0xBF,0xDF,0xFF):
+    asm.moveb_imm_ai(5,volume)
+asm.rts()
+
+asm.label('music_tick')
+asm.movea(4,0xFF0006);asm.movew_ai_d(4,0);asm.tstw(0)
+asm.beq('music_tick_end')
+asm.movea(4,0xFF0000);asm.movew_ai_d(4,0);asm.addq(0,4)
+asm.movea(4,0xFF0008);asm.movew_ai_d(4,1)
+asm.w(0xB041) # CMP.W D1,D0
+asm.branch(0x6D00,'music_tick_store') # BLT
+asm.w(0x9041) # SUB.W D1,D0, preserving PAL's fractional pulse timing
+asm.movea(4,0xFF0000);asm.movew_d_ai(0,4)
+asm.bsr('music_event')
+asm.label('music_tick_end');asm.rts()
+asm.label('music_tick_store')
+asm.movea(4,0xFF0000);asm.movew_d_ai(0,4);asm.rts()
+
+asm.label('music_event')
+asm.movea(4,0xFF0002);asm.movew_ai_d(4,0)
+asm.cmpiw(0,SHOW_STEPS);asm.beq('music_event_end')
+asm.addq(0,1);asm.movew_d_ai(0,4)
+asm.subq(0,1);asm.lslw(0,3)
+asm.movea_ref(4,'show_music')
+asm.w(0xD8C0) # ADDA.W D0,A4, eight-byte tracker events
+for ch in range(3):
+    ym_reg(0x28,ch)
+    asm.w(0x121C) # MOVE.B (A4)+,D1
+    asm.w(0x141C) # MOVE.B (A4)+,D2
+    asm.tstb(1);asm.beq('music_rest_'+str(ch))
+    asm.moveq(0,0xA4+ch);asm.bsr('ym_write')
+    asm.movew_d_d(2,1)
+    asm.moveq(0,0xA0+ch);asm.bsr('ym_write')
+    ym_reg(0x28,0xF0+ch)
+    asm.label('music_rest_'+str(ch))
+asm.w(0x141C) # PSG kick flag
+asm.tstb(2);asm.beq('music_no_kick')
+asm.moveb_imm_ai(5,0xE7)
+asm.moveb_imm_ai(5,0xF1)
+asm.bra('music_kick_end')
+asm.label('music_no_kick');asm.moveb_imm_ai(5,0xFF)
+asm.label('music_kick_end')
+asm.w(0x141C) # Authored transition accent marker
+asm.label('music_event_end');asm.rts()
+
 asm.append('show_music',SHOW_MUSIC)
 asm.append('patterns',ALL_PATTERNS) # Keep approved title tiles; append menu and arrow tiles
 asm.append('cram',CRAM)
@@ -1026,9 +1121,11 @@ report={
                 'title_cram.bin':hashlib.sha256(CRAM).hexdigest()},
  'labelOffsets':{n:hex(addr) for n,addr in asm.labels.items() if n in
                  ['start','whole_demo','poll_buttons','run_vortex','run_aurora','patterns','cram','map_title','scroll_vortex','scroll_aurora']},
- 'restrictions':['Rom build and source-based previews are not proof of emulator boot',
+ 'restrictions':['Experiment only; v0.3.5 remains approved default',
+                 'Original FM/PSG arrangement awaits listening and hardware budget review',
+                 'Rom build and source-based previews are not proof of emulator boot',
                  'Intended hardware scrolling and CRAM writes require Genesis Plus GX validation',
                  'Historical public v0.5.0 unchanged; future builds may autoload this verified original cartridge',
-                 'FM and Z80 not included in this prototype']}
+                 '68000 drives YM2612 while Z80 stays halted in this experimental candidate']}
 (OUT/'rom_report.json').write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps({k:report[k] for k in ['romSize','checksum','sha256','patternTiles','loopScenes']},indent=2))
