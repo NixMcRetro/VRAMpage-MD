@@ -50,3 +50,6 @@ SONIC.MD
 *.before-vrampage-v0.1
 *.log
 .DS_Store
+
+# Reproducible original cartridge reports and generated artwork previews
+/demo-cart/fx-lab/build/

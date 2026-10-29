@@ -42,7 +42,9 @@ class CartridgeManifestTests(unittest.TestCase):
 
     def test_malformed_approval_identity_and_build_metadata_fail(self):
         changes = [
-            ('id', 'demo'), ('approved', False), ('size', True), ('size', 0),
+            ('id', 'demo'), ('id', '2027-demo'), ('id', '-demo'),
+            ('path', 'demo/sub/cart.bin'), ('size', 511), ('size', 4194305),
+            ('approved', False), ('size', True), ('size', 0),
             ('sha256', '0' * 63), ('version', ''), ('displayName', ''),
             ('source', '../build.py'), ('regions', []), ('license', {}),
             ('build', {'method': 'sh', 'output': 'demo-cart/colour-test/test.bin'}),
@@ -181,6 +183,17 @@ class CartridgeManifestTests(unittest.TestCase):
             self.fixture(root)
             outside.mkdir()
             (outside / 'private.txt').write_text('private')
+            git_dir=root/'site/.git';git_dir.mkdir()
+            (git_dir/'config').write_text('url=https://credential@example.invalid/repo.git')
+            with self.assertRaises(CartridgeError):
+                stage_site(Path(directory)/'static',root)
+            self.assertFalse((Path(directory)/'static').exists())
+            shutil.rmtree(git_dir)
+            parent=Path(directory)/'linked-parent'
+            parent.symlink_to(outside,target_is_directory=True)
+            with self.assertRaises(CartridgeError):
+                stage_site(parent/'staged',root)
+            self.assertFalse((outside/'staged').exists())
             (root / 'site/leak').symlink_to(outside, target_is_directory=True)
             with self.assertRaises(CartridgeError):
                 stage_site(Path(directory) / 'static', root)

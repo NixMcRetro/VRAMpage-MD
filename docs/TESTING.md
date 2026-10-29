@@ -1,3 +1,25 @@
+# Manifest-Approved Cartridge Checks
+
+`bash scripts/test.sh` builds every approved cartridge and runs manifest, source,
+packaging and SHA-256 fallback tests. Negative cases cover altered/missing/unknown
+ROMs, approval/path/size errors, secrets, source/destination symlinks and static
+metadata leaks. Complete ZIP/static fixtures rebuild their included sources and
+verify exact approved bytes. No assertion is bypassed for new built-ins.
+
+`node tests/test_bundled_cartridges_wasm.cjs site/core/genplus.js` executes every
+manifest entry in actual Genesis Plus GX under NTSC-U and PAL, checking approval
+hashes, completed frames, original pixels, finite bounded PCM and Work RAM
+progress. The existing detailed v0.3.5 controller/VDP/recovery test remains.
+
+`python tests/browser_logic.py -k cartridge` tests selector switching, session
+preferences, the local file picker, rejection/recovery and delayed core,
+manifest, file, fetch and hash races. The actual-core default test also selects
+both built-ins, restarts under PAL and serves a relative subdirectory while
+requiring all requests to be local GETs. Existing full layout, controller,
+audio, fault, checkpoint and transaction suites remain mandatory in CI and
+extracted browser packages. See [cartridge release gates](BUILT-IN-CARTRIDGES.md).
+These are emulator results, not a physical-console or human listening review.
+
 # Work RAM Write Inhibit Checks
 
 Native Work RAM integration now compiles both normal and optional runtime

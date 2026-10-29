@@ -68,13 +68,14 @@ def validate_manifest(manifest):
             raise CartridgeError('Invalid cartridge entry')
         _identity(entry)
         cartridge_id = entry.get('id')
-        if (not isinstance(cartridge_id, str) or not re.fullmatch(r'[a-z0-9-]+', cartridge_id)
+        if (not isinstance(cartridge_id, str) or not re.fullmatch(r'[a-z][a-z0-9-]*', cartridge_id)
                 or cartridge_id in ids or entry.get('approved') is not True
                 or any(not isinstance(entry.get(key), str) or not entry[key].strip()
                        for key in ('displayName', 'version'))):
             raise CartridgeError('Each cartridge needs a unique ID, version, name and explicit approval')
         ids.add(cartridge_id)
-        if not entry['path'].startswith('demo/') or not entry['path'].endswith('.bin'):
+        if (not re.fullmatch(r'demo/[A-Za-z0-9][A-Za-z0-9._-]*\.bin', entry['path'])
+                or not 512 <= entry['size'] <= 4*1024*1024):
             raise CartridgeError('Approved cartridge paths must be demo/*.bin')
         source, build = safe_path(entry.get('source')), entry.get('build')
         if (not source.startswith('demo-cart/') or not source.endswith('.py')
@@ -138,7 +139,7 @@ def approved_assets(manifest):
 def is_secret_path(relative):
     path = PurePosixPath(relative)
     name = path.name.lower()
-    return (any(part.lower() in {'.aws', '.ssh', 'secrets', 'credentials'} for part in path.parts)
+    return (any(part.lower() in {'.git', '.aws', '.ssh', 'secrets', 'credentials'} for part in path.parts)
             or name == '.env' or name.startswith('.env.')
             or name in SECRET_NAMES or path.suffix.lower() in SECRET_SUFFIXES)
 
@@ -217,7 +218,8 @@ def build_cartridges(root=ROOT):
 
 def stage_site(destination, root=ROOT):
     root, destination = Path(root), Path(destination)
-    if destination.is_symlink() or destination.resolve().is_relative_to((root / 'site').resolve()):
+    if (any(part.is_symlink() for part in (destination, *destination.parents))
+            or destination.resolve().is_relative_to((root / 'site').resolve())):
         raise CartridgeError('Static destination must be separate from site/ and not a symlink')
     manifest = verify_site(root)
     assets = approved_assets(manifest)
