@@ -450,17 +450,31 @@ assert len(SPRITE_SAT_FRAMES)==SPRITE_PHASES*SPRITE_COUNT*8
 assert len(ALL_PATTERNS)<0xC000, 'Tile upload must not overlap Plane A'
 assert all((word&0x7FF)>=FX_BASE for scene in (tile_cells,colour_cells,sprite_cells,audio_cells) for word in scene)
 
-# A fully original 120 BPM composition, using FM-frequency events.
-# Four eighth-note events per second. Each event is eight bytes:
-# [lead hi/lo, bass hi/lo, pad hi/lo, PSG kick, transition accent].
+# Original, deliberately upbeat, 150-BPM Mega Drive arcade/demo score.
+# Five eighth-note tracker events per second, all written by 68000 to FM/PSG.
+# Event layout: [lead hi/lo, bass hi/lo, harmony hi/lo, percussion, accent].
 SHOW_SCENES=(('Captain Intro',20),('Chromatic Vortex',30),
  ('Neon Aurora',30),('Sprite Storm',35),
  ('Chroma Reactor',40),('Finale',25))
-SHOW_STEPS=4*sum(seconds for _,seconds in SHOW_SCENES)
-assert SHOW_STEPS==720
-SHOW_MOTIF=(0,2,4,2,3,2,1,0,4,3,2,1,0,2,3,4)
-SHOW_SCALES=((0,3,5,7,10),(0,2,3,7,8),(0,3,5,8,10),
-             (0,2,5,7,10),(0,3,6,7,10),(0,3,5,7,10))
+SHOW_BPM=150
+SHOW_EVENTS_PER_SECOND=5
+SHOW_STEPS=SHOW_EVENTS_PER_SECOND*sum(duration for _,duration in SHOW_SCENES)
+assert SHOW_STEPS==900
+# Every scene uses a bright major or pentatonic scale; no minor-key passages.
+SHOW_SCALES=(
+ (0,2,4,5,7,9,11),   # Title: sunny C major
+ (0,2,4,5,7,9,11),   # Vortex: adventurous D major
+ (0,2,4,5,7,9,11),   # Aurora: sparkling F major
+ (0,2,4,5,7,9,11),   # Sprite Storm: punchy G major
+ (0,2,4,5,7,9,11),   # Chroma Reactor: playful E major
+ (0,2,4,5,7,9,11),   # Finale: bright C-major return
+)
+# I-V-IV-V by scene, returning strongly to the tonic at each finale phrase.
+SHOW_CHORDS=((48,55,53,55),(50,57,55,57),(53,60,58,60),
+             (55,62,60,62),(52,59,57,59),(48,55,53,55))
+# Ascending hooks, octave peaks and answering phrases instead of falling lines.
+SHOW_HOOK=(0,2,4,5,6,5,4,2, 3,4,6,5,4,2,1,0)
+SHOW_RESPONSE=(0,2,3,4,5,6,5,4, 2,3,5,6,4,3,2,0)
 def show_pitch(note,block):
     hz=440*2**((note-69)/12)
     fnum=round(hz*2**(20-block)/(7670454/144))
@@ -469,17 +483,32 @@ def show_pitch(note,block):
 def show_compose():
     song=[]
     boundaries=[0]
-    for _,duration in SHOW_SCENES: boundaries.append(boundaries[-1]+4*duration)
+    for _,duration in SHOW_SCENES:
+        boundaries.append(boundaries[-1]+SHOW_EVENTS_PER_SECOND*duration)
     for step in range(SHOW_STEPS):
-        scene=next(i for i in range(6) if boundaries[i]<=step<boundaries[i+1])
+        scene=next(i for i in range(len(SHOW_SCENES))
+                   if boundaries[i]<=step<boundaries[i+1])
         local=step-boundaries[scene]
-        root=(48,53,46,51)[(step//16)%4]
+        bar=local//16
+        root=SHOW_CHORDS[scene][bar%4]
         scale=SHOW_SCALES[scene]
-        lead=show_pitch(root+12+scale[SHOW_MOTIF[(local//2)%16]%5],4) if local%2==0 else (0,0)
-        bass=show_pitch(root-12+(7 if local%8>=4 else 0),3) if local%2==0 else (0,0)
-        pad=show_pitch(root+12+scale[(local//8)%5],4) if local%4==0 else (0,0)
-        song.append(bytes((*lead,*bass,*pad,int(local%4==0),int(local%16==0))))
-    assert len(song)==720 and all(len(row)==8 for row in song)
+        motif=(SHOW_HOOK if (bar//2+scene)%2==0 else SHOW_RESPONSE)
+        # Bright ascending lead riff, busier in the reactive latter half.
+        lead_on=local%2==0 or (scene>=3 and local%8==3)
+        lead_note=root+12+scale[motif[local%16]]
+        if scene==5 and local%16 in (4,12):lead_note+=12
+        lead=show_pitch(lead_note,4 if lead_note<84 else 5) if lead_on else (0,0)
+        # Quarter-note bass outlines the root and fifth at 150 BPM.
+        bass_note=root-12+(7 if local%8 in (4,6) else 0)
+        bass=show_pitch(bass_note,3) if local%2==0 else (0,0)
+        # Short alternating major chord tones in the treble; final chorus
+        # brightens with extra offbeat accents and rising arpeggios.
+        harmony_on=(local%4==1 if scene in (1,2) else local%4 in (0,3))
+        harmony=show_pitch(root+12+(0,4,7,12)[(local//4)%4],4) if harmony_on else (0,0)
+        # 1=kick 2=snare 3=hat, interleaved eighth-note rock/arcade groove.
+        percussion=(1 if local%4==0 else 2 if local%4==2 else 3)
+        song.append(bytes((*lead,*bass,*harmony,percussion,int(local%16==0))))
+    assert len(song)==SHOW_STEPS and all(len(event)==8 for event in song)
     return b''.join(song)
 SHOW_MUSIC=show_compose()
 
@@ -993,11 +1022,14 @@ asm.label('music_start')
 for reg,value in ((0x22,0),(0x27,0),(0x2B,0)):
     ym_reg(reg,value)
 for ch in range(3):
-    ym_reg(0xB0+ch,7 if ch==2 else 4)
+    ym_reg(0xB0+ch,7 if ch!=1 else 4)
     ym_reg(0xB4+ch,0xC0)
     for slot in (0,4,8,12):
         ym_reg(0x30+slot+ch,1 if ch!=1 else 2)
-        ym_reg(0x40+slot+ch,(0x0B,0x14,0x21)[ch] if slot==12 else 0x31)
+        # Rounded bass, sparkling four-operator lead and short bright pad.
+        ym_reg(0x40+slot+ch,
+               (0x16,0x19,0x25)[ch] if slot==12 else
+               (0x2A,0x30,0x34)[ch])
         ym_reg(0x50+slot+ch,0x1F)
         ym_reg(0x60+slot+ch,0x08+ch)
         ym_reg(0x70+slot+ch,0x07)
@@ -1023,7 +1055,7 @@ asm.rts()
 asm.label('music_tick')
 asm.movea(4,0xFF0006);asm.movew_ai_d(4,0);asm.tstw(0)
 asm.beq('music_tick_end')
-asm.movea(4,0xFF0000);asm.movew_ai_d(4,0);asm.addq(0,4)
+asm.movea(4,0xFF0000);asm.movew_ai_d(4,0);asm.addq(0,SHOW_EVENTS_PER_SECOND)
 asm.movea(4,0xFF0008);asm.movew_ai_d(4,1)
 asm.w(0xB041) # CMP.W D1,D0
 asm.branch(0x6D00,'music_tick_store') # BLT
@@ -1051,13 +1083,21 @@ for ch in range(3):
     asm.moveq(0,0xA0+ch);asm.bsr('ym_write')
     ym_reg(0x28,0xF0+ch)
     asm.label('music_rest_'+str(ch))
-asm.w(0x141C) # PSG kick flag
-asm.tstb(2);asm.beq('music_no_kick')
-asm.moveb_imm_ai(5,0xE7)
-asm.moveb_imm_ai(5,0xF1)
-asm.bra('music_kick_end')
-asm.label('music_no_kick');asm.moveb_imm_ai(5,0xFF)
-asm.label('music_kick_end')
+# Authentic SN76489 PSG noise patterns: kick, snare and quieter hats.
+asm.moveq(2,0);asm.w(0x141C) # Clear D2 before loading byte flag.
+asm.cmpiw(2,1);asm.beq('music_kick')
+asm.cmpiw(2,2);asm.beq('music_snare')
+asm.cmpiw(2,3);asm.beq('music_hat')
+asm.moveb_imm_ai(5,0xFF);asm.bra('music_drum_end')
+asm.label('music_kick')
+asm.moveb_imm_ai(5,0xE4);asm.moveb_imm_ai(5,0xF2)
+asm.bra('music_drum_end')
+asm.label('music_snare')
+asm.moveb_imm_ai(5,0xE7);asm.moveb_imm_ai(5,0xF4)
+asm.bra('music_drum_end')
+asm.label('music_hat')
+asm.moveb_imm_ai(5,0xE5);asm.moveb_imm_ai(5,0xFA)
+asm.label('music_drum_end')
 asm.w(0x141C) # Authored transition accent marker
 asm.label('music_event_end');asm.rts()
 
@@ -1088,8 +1128,8 @@ def put(start,stop,text):
     rom[start:stop]=b.ljust(stop-start,b' ')
 put(0x100,0x110,'SEGA MEGA DRIVE')
 put(0x110,0x120,'(C) MCRETRO 2026')
-put(0x120,0x150,'VRAMPAGE MD FX LAB V0.3.6 DEMOSCENE')
-put(0x150,0x180,'VRAMPAGE MD FX LAB V0.3.6 DEMOSCENE')
+put(0x120,0x150,'VRAMPAGE MD FX LAB V0.3.7 DEMOSCENE')
+put(0x150,0x180,'VRAMPAGE MD FX LAB V0.3.7 DEMOSCENE')
 put(0x180,0x18E,'GM 00000000-00')
 put(0x190,0x1A0,'J               ')
 rom[0x1A0:0x1A8]=struct.pack('>II',0,len(rom)-1)
@@ -1099,15 +1139,17 @@ if len(rom)%2:rom+=b'\x00'
 rom[0x1A4:0x1A8]=struct.pack('>I',len(rom)-1)
 checksum=sum(struct.unpack_from('>H',rom,i)[0] for i in range(0x200,len(rom),2))&0xFFFF
 rom[0x18E:0x190]=struct.pack('>H',checksum)
-(OUT/'VRAMpage-MD-Demo-Cart-v0.3.6-Show.bin').write_bytes(rom)
+(OUT/'VRAMpage-MD-Demo-Cart-v0.3.7-Show.bin').write_bytes(rom)
 report={
  'romSize':len(rom),'checksum':f'{checksum:04X}',
  'show':{'totalSeconds':180,'playMode':'automatic after original menu idle',
          'manualMenu':True,'regionFrameRate':{'NTSC':60,'PAL':50},
          'originalPortraitAndLogo':True,'chromaControls':'A/B/C and START'},
- 'music':{'original':True,'tempoBPM':120,'eventsPerSecond':4,
+ 'music':{'original':True,'tempoBPM':SHOW_BPM,'eventsPerSecond':SHOW_EVENTS_PER_SECOND,
           'steps':SHOW_STEPS,'eventBytes':len(SHOW_MUSIC),
           'scenes':list(SHOW_SCENES),'lengthSeconds':180,
+          'tonality':'major','percussion':['kick','snare','hat'],
+          'character':'bright energetic original arcade demoscene',
           'fmChannels':[0,1,2],'psgNoise':True},
  'sha256':hashlib.sha256(rom).hexdigest(), 'baseKitSHA256':APPROVED_KIT_SHA256,
  'patternTiles':SPRITE_TILE_BASE+SPRITE_TILE_COUNT,'patternBytes':len(ALL_PATTERNS),
