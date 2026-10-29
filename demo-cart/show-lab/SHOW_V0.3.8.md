@@ -92,3 +92,36 @@ decay, secondary decay, and sustain/release settings. The ROM writes those
 registers to the real YM2612 address ports. This does not alter the shared
 emulator audio mixer, the website, or the approved v0.3.5 cartridge. Objective
 native playback tests and owner's listening assessment remain essential.
+
+## Original Composition Reset: Written Song Rather Than Generated Notes
+
+The first v0.3.8 experiments produced technically valid but unmusical output.
+The owner described it as "Mmm Human Music". Treat that criticism as
+substantive: the FM timbres and note randomisation are **not** a musical
+composition. This successor draft retains all original assets and the ROM
+engine while replacing the song's note authoring with one coherent
+musical structure.
+
+This candidate uses original notated A-major/F-sharp-minor brass melodies and
+separate horn responses. The section form is **four-bar count-in,
+eight-bar brass statement, sixteen-bar verse, eight-bar prechorus,
+sixteen-bar chorus, sixteen-bar second verse, sixteen-bar chorus,
+twelve-bar breakdown, twelve-bar final chorus and a four-and-a-half-bar
+ending**. Original chord progressions and walking bass use chord tones and
+approach notes, with brass countermelodies and offbeat two-voice ska harmony.
+The 180-second audiovisual show continues uninterrupted.
+
+**Critical performance fix:** the previous engine turned off every FM
+note at every 200 ms event. The new hardware tracker recognises a specific
+held-note marker (0xFF,0x00), which skips key-off and preserves the current
+YM2612 note until an explicit rest or subsequent note. Both PAL and NTSC
+start with explicitly muted PSG channels before playing the first event.
+All notes and forms are encoded in the native ROM, not browser synthesis.
+
+The new song still needs serious **human listening review**. Native WASM
+checks establish timing, successful boot, audible PCM output from YM2612
+and PSG, and six distinct scenes. They **do not** establish that the tune
+sounds professional, that its brass timbres are convincing, or that the
+arrangement is musically satisfying. Preserve the earlier, volume-balanced
+v0.3.8 candidate as a reference point. No song is approved or deployed
+without the owner's explicit agreement.

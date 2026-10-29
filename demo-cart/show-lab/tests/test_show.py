@@ -48,6 +48,11 @@ class OriginalShowTests(unittest.TestCase):
         self.assertTrue(all(len(p[2])==4 and all(len(op)==6 for op in p[2])
                             for p in patches))
         self.assertEqual(len(self.values["SHOW_MUSIC"]),14400)
+        self.assertEqual(music["heldNoteMarker"],255)
+        self.assertEqual(music["keyCentre"],"A major / F-sharp minor")
+        self.assertEqual(len(music["writtenSongForm"]),10)
+        self.assertEqual(sum(steps for _,steps in music["writtenSongForm"]),900)
+        self.assertIn("brass-led ska-punk", music["character"])
         # Bass has stronger fundamentals; skank plucks quickly while
         # organ retains slower decay. Algorithm 4's two carriers are audible.
         bass,skank,organ=patches[2][2],patches[3][2],patches[4][2]
@@ -71,18 +76,24 @@ class OriginalShowTests(unittest.TestCase):
         for row in rows:
             self.assertEqual(len(row),16)
             for offset in (0,2,4,6,8,10):
-                self.assertTrue(row[offset] == 0 or (row[offset]&0x38) in
+                self.assertTrue(row[offset] in (0,0xFF) or (row[offset]&0x38) in
                                 (0x18,0x20,0x28,0x30))
             self.assertIn(row[12],(0,1,2,3,4))
             self.assertIn(row[13],(0,1))
             self.assertEqual(row[14:],b'\x00\x00')
         self.assertEqual({row[12] for row in rows},{0,1,2,3,4})
-        self.assertGreater(sum(row[0]!=0 for row in rows),250)
+        self.assertGreater(sum(row[0] not in (0,255) for row in rows),150)
+        self.assertGreater(sum(row[0]==255 for row in rows),70)
+        self.assertGreater(sum(row[0]==0 for row in rows),100)
+        self.assertGreater(sum(row[2]==255 for row in rows),40)
+        self.assertGreater(sum(row[4]==255 for row in rows),150)
         self.assertGreater(sum(row[6]!=0 for row in rows),300)
         self.assertEqual(sum(row[6]!=0 and i%2==0 for i,row in enumerate(rows)
                              if 100<=i<250),0)
-        self.assertGreater(sum(row[10]!=0 for row in rows),100)
+        self.assertGreater(sum(row[10]!=0 for row in rows),40)
         self.assertGreater(len(set(rows)),150)
+        self.assertGreater(len(set(tuple(rows[i:i+8]) for i in range(0,len(rows)-8,8))),35)
+        self.assertEqual(sum(row[6]!=0 and i%2==0 for i,row in enumerate(rows)),0)
 
     def test_rom_is_valid_and_original_artwork_is_unchanged(self):
         self.assertEqual(self.rom[0x100:0x104],b"SEGA")
@@ -99,7 +110,8 @@ class OriginalShowTests(unittest.TestCase):
             hashlib.sha256(self.values["PATTERNS"]).hexdigest())
         self.assertTrue({"music_start","music_tick","music_event","show_intro",
                          "show_finale","show_music","ym_write","ym_write_high",
-                         "psg_drum_tick","psg_drum_tick_done"}.issubset(
+                         "psg_drum_tick","psg_drum_tick_done","music_keep_0",
+                         "music_keep_5"}.issubset(
             self.values["asm"].labels))
         self.assertIn(bytes.fromhex("00a04000"),self.rom)
         self.assertIn(bytes.fromhex("00a04001"),self.rom)
