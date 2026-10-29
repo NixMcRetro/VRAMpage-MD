@@ -448,6 +448,39 @@ assert len(SPRITE_SAT_FRAMES)==SPRITE_PHASES*SPRITE_COUNT*8
 assert len(ALL_PATTERNS)<0xC000, 'Tile upload must not overlap Plane A'
 assert all((word&0x7FF)>=FX_BASE for scene in (tile_cells,colour_cells,sprite_cells,audio_cells) for word in scene)
 
+# A fully original 120 BPM composition, using FM-frequency events.
+# Four eighth-note events per second. Each event is eight bytes:
+# [lead hi/lo, bass hi/lo, pad hi/lo, PSG kick, transition accent].
+SHOW_SCENES=(('Captain Intro',20),('Chromatic Vortex',30),
+ ('Neon Aurora',30),('Sprite Storm',35),
+ ('Chroma Reactor',40),('Finale',25))
+SHOW_STEPS=4*sum(seconds for _,seconds in SHOW_SCENES)
+assert SHOW_STEPS==720
+SHOW_MOTIF=(0,2,4,2,3,2,1,0,4,3,2,1,0,2,3,4)
+SHOW_SCALES=((0,3,5,7,10),(0,2,3,7,8),(0,3,5,8,10),
+             (0,2,5,7,10),(0,3,6,7,10),(0,3,5,7,10))
+def show_pitch(note,block):
+    hz=440*2**((note-69)/12)
+    fnum=round(hz*2**(20-block)/(7670454/144))
+    assert 0<fnum<2048, (note,block,fnum)
+    return ((block<<3)|(fnum>>8), fnum&255)
+def show_compose():
+    song=[]
+    boundaries=[0]
+    for _,duration in SHOW_SCENES: boundaries.append(boundaries[-1]+4*duration)
+    for step in range(SHOW_STEPS):
+        scene=next(i for i in range(6) if boundaries[i]<=step<boundaries[i+1])
+        local=step-boundaries[scene]
+        root=(48,53,46,51)[(step//16)%4]
+        scale=SHOW_SCALES[scene]
+        lead=show_pitch(root+12+scale[SHOW_MOTIF[(local//2)%16]%5],4) if local%2==0 else (0,0)
+        bass=show_pitch(root-12+(7 if local%8>=4 else 0),3) if local%2==0 else (0,0)
+        pad=show_pitch(root+12+scale[(local//8)%5],4) if local%4==0 else (0,0)
+        song.append(bytes((*lead,*bass,*pad,int(local%4==0),int(local%16==0))))
+    assert len(song)==720 and all(len(row)==8 for row in song)
+    return b''.join(song)
+SHOW_MUSIC=show_compose()
+
 asm=A68()
 # Mega Drive vectors: stack and reset PC, all unused exception vectors stop safely.
 for i in range(64):asm.data[i*4:i*4+4]=struct.pack('>I',0x200)
@@ -861,6 +894,7 @@ asm.moveb_imm_ai(5,0x8A);asm.moveb_imm_ai(5,0x14)
 asm.moveb_imm_ai(5,0x94);asm.rts()
 asm.label('sound_off');asm.moveb_imm_ai(5,0x9F);asm.rts()
 
+asm.append('show_music',SHOW_MUSIC)
 asm.append('patterns',ALL_PATTERNS) # Keep approved title tiles; append menu and arrow tiles
 asm.append('cram',CRAM)
 asm.append('palette_static_colour',COLOUR_PALETTES[:128])
@@ -901,6 +935,10 @@ rom[0x18E:0x190]=struct.pack('>H',checksum)
 (OUT/'VRAMpage-MD-Demo-Cart-v0.3.6-Show.bin').write_bytes(rom)
 report={
  'romSize':len(rom),'checksum':f'{checksum:04X}',
+ 'music':{'original':True,'tempoBPM':120,'eventsPerSecond':4,
+          'steps':SHOW_STEPS,'eventBytes':len(SHOW_MUSIC),
+          'scenes':list(SHOW_SCENES),'lengthSeconds':180,
+          'fmChannels':[0,1,2],'psgNoise':True},
  'sha256':hashlib.sha256(rom).hexdigest(), 'baseKitSHA256':APPROVED_KIT_SHA256,
  'patternTiles':SPRITE_TILE_BASE+SPRITE_TILE_COUNT,'patternBytes':len(ALL_PATTERNS),
  'spriteCount':SPRITE_COUNT,'spriteTileBase':SPRITE_TILE_BASE,'spritePhases':SPRITE_PHASES,
