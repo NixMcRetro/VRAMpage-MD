@@ -3,6 +3,7 @@
 from pathlib import Path
 import io
 import hashlib
+import json
 import os
 import shutil
 import subprocess
@@ -219,6 +220,11 @@ def copy_package(root: Path, upstream: Path, work: Path, output: Path) -> None:
     shutil.copytree(scripts_source, source_dir / "scripts")
     shutil.copy2(root / "THIRD-PARTY-NOTICES.md", source_dir / "THIRD-PARTY-NOTICES.md")
     shutil.copy2(root / "THIRD-PARTY-NOTICES.md", output / "THIRD-PARTY-NOTICES.md")
+    # Record the exact generated source set before local files can enter staging.
+    inventory = {path.relative_to(source_dir).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+                 for path in sorted(source_dir.rglob("*")) if path.is_file()}
+    (source_dir / "SOURCE-FILES.json").write_text(
+        json.dumps(inventory, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     core_dir = output / "core"
     core_dir.mkdir()
     generated = upstream / "src/main/js"

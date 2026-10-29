@@ -87,6 +87,16 @@ def _profile(root: Path) -> tuple[bytes, bytes, bytes, dict[str, str]]:
     marker = _safe_file(root, f"{RUNTIME_PROFILE}/.vrampage-site-runtime-profile").read_text(encoding="utf-8")
     if marker != f"VRAMpage site runtime profile v1\n{PINNED_UPSTREAM}\n":
         raise BundleError("The staged runtime profile marker is missing or invalid.")
+    source_root = root / RUNTIME_PROFILE / "source"
+    inventory = json.loads(_safe_file(source_root, "SOURCE-FILES.json").read_text())
+    actual_sources = {p.relative_to(source_root).as_posix() for p in source_root.rglob("*")
+                      if p.is_file() and p.relative_to(source_root).as_posix() != "SOURCE-FILES.json"}
+    if not isinstance(inventory, dict) or set(inventory) != actual_sources:
+        raise BundleError("Runtime source staging differs from the recorded build inventory.")
+    for name, digest in inventory.items():
+        data = _safe_file(source_root, name).read_bytes()
+        if not isinstance(digest, str) or _sha(data) != digest:
+            raise BundleError(f"Runtime source differs from its build inventory: {name}")
     building = _safe_file(root, BUILDING).read_bytes()
     notices = _safe_file(root, NOTICES).read_bytes()
     text = building.decode("utf-8")
@@ -161,6 +171,8 @@ def _source_paths(root: Path, manifest: dict) -> list[str]:
             raise BundleError(f"Symlinks are not allowed in runtime source: {path}")
         relative = path.relative_to(profile_source).as_posix()
         parts = PurePosixPath(relative).parts
+        if relative == "SOURCE-FILES.json":
+            continue
         if not path.is_file() or any(part in {".git", "build", "docs", "assets", ".vscode", "node_modules"} for part in parts):
             continue
         if path.name.endswith((".pyc", ".o", ".a", ".wasm.map", ".dbg")):
@@ -229,6 +241,7 @@ def _source_archive(root: Path, paths: list[str], version: str, commit: str,
         root, f"{RUNTIME_PROFILE}/THIRD-PARTY-NOTICES.md").read_bytes()
     for name in ("genplus.js", "genplus.wasm"):
         files[f"runtime/core/{name}"] = _safe_file(root, f"site/core/{name}").read_bytes()
+    files["REBUILD.txt"] = SOURCE_INSTRUCTIONS.encode("utf-8")
     files["SOURCE-INFO.json"] = b""  # filled after source entries are hashed
     entries = {name: _sha(data) for name, data in sorted(files.items()) if name != "SOURCE-INFO.json"}
     source_info = {

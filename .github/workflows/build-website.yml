@@ -143,13 +143,19 @@ jobs:
         shell: bash
         run: |
           mkdir -p release
-          python3 scripts/cartridges.py stage-site release/vrampage
+          python3 scripts/package-website.py --output release/vrampage
+          cp release/vrampage/source/VRAMpage-MD-v0.5.1-corresponding-source.zip release/
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          task_source_sha=$(sha256sum release/VRAMpage-MD-v0.5.1-corresponding-source.zip | cut -d ' ' -f1)
+          python3 scripts/verify-corresponding-source.py release/VRAMpage-MD-v0.5.1-corresponding-source.zip \
+            --expected-sha256 "$task_source_sha" --output "$RUNNER_TEMP/rebuilt-corresponding-source"
+          python3 tests/browser_website.py --browser chromium --site-root release/vrampage
           tar -czf release/VRAMpage-MD-static-site.tar.gz -C release vrampage
       - name: Package cross-platform browser app
         run: |
           python3 scripts/package-review.py --output release/VRAMpage-MD-v0.5.1-browser.zip
           cd release
-          sha256sum VRAMpage-MD-v0.5.1-browser.zip > SHA256SUMS.txt
+          sha256sum VRAMpage-MD-v0.5.1-browser.zip VRAMpage-MD-v0.5.1-corresponding-source.zip > SHA256SUMS.txt
       - name: Upload ready-to-run browser app
         uses: actions/upload-artifact@v7
         with:
@@ -158,6 +164,13 @@ jobs:
           path: |
             release/VRAMpage-MD-v0.5.1-browser.zip
             release/SHA256SUMS.txt
+          if-no-files-found: error
+      - name: Upload complete corresponding-source archive
+        uses: actions/upload-artifact@v7
+        with:
+          name: VRAMpage-MD-corresponding-source
+          retention-days: 30
+          path: release/VRAMpage-MD-v0.5.1-corresponding-source.zip
           if-no-files-found: error
       - name: Upload static hosting bundle
         uses: actions/upload-artifact@v7

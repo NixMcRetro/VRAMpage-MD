@@ -108,6 +108,11 @@ def _fixture(tmp_path, *, licence=True, symlink=False, missing_source=False):
     _put(root, f"{source}/scripts/runtime.js", "// runtime shim\n")
     if symlink:
         (root / source / "scripts" / "bad.py").symlink_to(root / "scripts" / "patch_core.py")
+    source_root = root / source
+    inventory = {p.relative_to(source_root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                 for p in source_root.rglob("*") if p.is_file()}
+    _put(root, source + "/SOURCE-FILES.json", json.dumps(inventory))
+    _put(root, ".gitignore", "/site/source/\n/site/core/\n")
     subprocess.run(["git", "init", "-q", str(root)], check=True)
     subprocess.run(["git", "-C", str(root), "config", "user.email", "test@example.invalid"], check=True)
     subprocess.run(["git", "-C", str(root), "config", "user.name", "Test"], check=True)
@@ -136,6 +141,15 @@ class WebsiteBundleTests(unittest.TestCase):
 
   def tearDown(self):
     self.temp.cleanup()
+
+  def test_ignored_runtime_source_extras_are_rejected_without_destination_writes(self):
+    root = _fixture(self.tmp_path)
+    private = root / "site/source/runtime-profile/source/private-build-notes.txt"
+    private.write_text("Private build notes must never be published")
+    destination = self.tmp_path / "website"
+    with self.assertRaisesRegex(BundleError, "inventory"):
+        build(root, destination)
+    self.assertFalse(destination.exists())
 
   def test_build_is_deterministic_and_verified(self):
     tmp_path = self.tmp_path
