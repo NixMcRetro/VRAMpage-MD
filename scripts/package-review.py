@@ -150,6 +150,13 @@ def _collect_paths(output_path):
         selected.append((relative, source, data))
 
     by_name = {name: data for name, _source, data in selected}
+    # Bundles that autoload v0.3.5 MUST contain the exact original cartridge.
+    # Disposable fixtures and historical pre-v0.3.5 app bundles retain their
+    # own baseline behaviour; no unapproved cartridge is ever accepted.
+    new_demo = "site/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin"
+    if b"VRAMpage-MD-Demo-Cart-v0.3.5.bin" in by_name.get("site/app.js", b""):
+        if new_demo not in by_name:
+            raise BundleError("The v0.3.5 default Demo Cart is missing. Run scripts/build-demo-cart.py before packaging.")
     missing = [name for name in REQUIRED_FILES
                if name not in by_name or not by_name[name]]
     if missing:
@@ -182,13 +189,6 @@ def _build_info():
 
 
 def create_package(output_path):
-    # Regenerate the approved homebrew cartridge from the pinned source kit.
-    # The other ROM extensions and unapproved signatures remain forbidden.
-    try:
-        subprocess.run([sys.executable, str(ROOT / "scripts/build-demo-cart.py")],
-                       cwd=ROOT, check=True)
-    except (OSError, subprocess.CalledProcessError) as error:
-        raise BundleError(f"Could not rebuild original Demo Cart: {error}") from error
     output_path = Path(output_path).expanduser().absolute()
     selected = _collect_paths(output_path)
     build_info = _build_info()
