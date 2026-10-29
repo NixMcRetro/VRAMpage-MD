@@ -103,7 +103,7 @@ class BrowserLogicTests(unittest.TestCase):
             path=str(ROOT / "tests/fixtures/mock-core.js"),
             content_type="application/javascript"))
         # All existing tests exercise the manual-ROM workflow unless opted in.
-        page.route("**/demo/VRAMpage-MD-Demo-Cart-v0.1.bin", lambda route: route.fulfill(
+        page.route("**/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin", lambda route: route.fulfill(
             status=200 if demo_rom else 404,
             content_type="application/octet-stream",
             body=self.synthetic_rom() if demo_rom else b"Missing test demo"))
@@ -111,7 +111,7 @@ class BrowserLogicTests(unittest.TestCase):
             page.add_init_script("""(() => {
                 const originalFetch=window.fetch;
                 window.fetch=(url,opts)=>{
-                    if(String(url)==='./demo/VRAMpage-MD-Demo-Cart-v0.1.bin')
+                    if(String(url)==='./demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin')
                         return new Promise(resolve=>{
                             window.__resumeDemoFetch=()=>originalFetch(url,opts).then(resolve);
                         });

@@ -136,6 +136,40 @@ class ReviewBundleTests(unittest.TestCase):
             self.assertEqual(rejected.returncode, 1)
             self.assertIn("Refusing to package a game ROM", rejected.stderr)
 
+    def test_future_default_requires_exact_original_demo_v035(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "checkout"
+            root.mkdir()
+            launcher = make_checkout(root)
+            default = root / "site/app.js"
+            default.write_text("const DEMO_ROM_URL='./demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin';")
+            subprocess.run(["git", "-C", str(root), "add", "site/app.js"], check=True)
+            subprocess.run(["git", "-C", str(root), "-c", "user.name=Bundle test",
+                            "-c", "user.email=bundle-test@example.invalid",
+                            "commit", "-qm", "Default original v0.3.5 cartridge"], check=True)
+            missing = self.run_packager(launcher, Path(directory) / "missing.zip")
+            self.assertEqual(missing.returncode, 1)
+            self.assertIn("default Demo Cart is missing", missing.stderr)
+            # Use the SHA-pinned generated ROM, not any supplied game cartridge.
+            subprocess.run([sys.executable, str(ROOT / "scripts/build-demo-cart.py")], check=True,
+                           capture_output=True, text=True)
+            approved = ROOT / "site/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin"
+            target = root / "site/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin"
+            target.parent.mkdir(exist_ok=True)
+            target.write_bytes(approved.read_bytes())
+            output = Path(directory) / "approved-new.zip"
+            result = self.run_packager(launcher, output)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            with zipfile.ZipFile(output) as archive:
+                self.assertEqual(archive.read("VRAMpage-MD/site/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin"),
+                                 approved.read_bytes())
+            changed = bytearray(target.read_bytes())
+            changed[-1] ^= 1
+            target.write_bytes(changed)
+            rejected = self.run_packager(launcher, Path(directory) / "tampered-new.zip")
+            self.assertEqual(rejected.returncode, 1)
+            self.assertIn("unexpected checksum", rejected.stderr)
+
     def test_stale_local_metadata_is_replaced_without_changing_checkout(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "checkout"

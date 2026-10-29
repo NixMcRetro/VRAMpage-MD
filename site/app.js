@@ -3323,7 +3323,7 @@
   }
 
   // Original, same-origin Demo Cart. Never outranks a local cartridge selection.
-  const DEMO_ROM_URL='./demo/VRAMpage-MD-Demo-Cart-v0.1.bin';
+  const DEMO_ROM_URL='./demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin';
   const CUSTOM_CHOSEN_KEY='vrampage-custom-rom-preferred';
   function customCartridgePreviouslyChosen() {
     try { return window.sessionStorage.getItem(CUSTOM_CHOSEN_KEY)==='1'; }
@@ -3332,7 +3332,7 @@
   async function loadBuiltInDemo() {
     const generation=romLoadGeneration;
     try {
-      stamp('Loading original Demo Cart…');
+      stamp('Loading original Demo Cart v0.3.5…');
       const response=await fetch(DEMO_ROM_URL,{credentials:'same-origin'});
       if(!response.ok) throw new Error(`HTTP ${response.status}`);
       const bytes=new Uint8Array(await response.arrayBuffer());
@@ -3344,7 +3344,7 @@
       stamp(`Built-in demo unavailable: ${error.message}`);
       if(!error.cartridgeActivationUncertain)
         message('INSERT YOUR CARTRIDGE',
-          'The original demo cartridge could not be loaded. Choose a local Mega Drive ROM to continue.');
+          'The original Demo Cart v0.3.5 could not be loaded. Choose a local Mega Drive ROM to continue.');
     }
   }
 

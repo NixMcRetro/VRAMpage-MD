@@ -84,6 +84,23 @@ Inspect failed steps before retrying. Finish related documentation before
 triggering another full CI run. Keep the current continuation checkpoint short,
 with exact commits/checks, evidence links, blockers and the next bounded task.
 
+## Future Built-In Demo Cart Releases
+
+The user's 29 October 2026 approval applies to **integrating the original
+Demo Cart v0.3.5 into this repository's main and future releases**, not to
+replacing an existing public release. For all future browser release builds,
+run `python3 scripts/build-demo-cart.py` and include the generated
+`site/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin` (150,564 bytes; SHA-256
+`89faaace638c1ccae7062e96cef02d5350059488a35acb372f1e4b5d4dec277f`). `site/app.js` autoloads this
+original verified cartridge. The previous v0.1 binary remains tracked for
+historical compatibility. Never check in newly generated ROMs or relax the
+approved-cartridge allowlists; the generator must fail if the pinned output
+differs. Keep the original portrait and logo source assets unchanged. Run
+the source, actual Genesis Plus GX, all browser and packaged-release tests,
+and obtain normal approval before publishing new releases or deploying the
+McRetro.net website. Do not change the already public v0.5.0 artifacts.
+The three-minute music-led show is still a future milestone.
+
 ## Versions, releases and evidence
 
 `VERSION` and `docs/VERSIONING.md` are authoritative. Use 0.2.x for incremental

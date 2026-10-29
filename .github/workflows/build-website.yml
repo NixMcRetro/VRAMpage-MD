@@ -66,6 +66,19 @@ jobs:
           node tests/test_region_profile_wasm.cjs site/core/genplus.js "$RUNNER_TEMP/normal-core/genplus.js"
           node tests/test_session_checkpoint_runtime.cjs site/core/genplus.js "$RUNNER_TEMP/normal-core/genplus.js"
           node tests/test_wasm_logic.cjs site/core/genplus.js
+      - name: Verify original Demo Cart v0.3.5 inside real Genesis Plus GX
+        shell: bash
+        run: |
+          python3 scripts/build-demo-cart.py
+          python3 -m unittest discover -s demo-cart/fx-lab/tests -v
+          node tests/test_demo_cart_v035_wasm.cjs site/core/genplus.js
+      - name: Upload native Demo Cart v0.3.5 verification frames
+        uses: actions/upload-artifact@v7
+        with:
+          name: demo-cart-v035-native-frames
+          path: artifacts/demo-cart-v035-genplus/
+          if-no-files-found: error
+          retention-days: 14
       - name: Verify isolated RAM diagnostics with synthetic CPU tests
         shell: bash
         run: |
@@ -120,6 +133,11 @@ jobs:
         run: python3 tests/browser_core.py --browser chromium
       - name: Verify actual runtime and legacy VRAM model handoffs
         run: python3 tests/browser_transaction.py --browser chromium --normal-core "$RUNNER_TEMP/normal-core"
+      - name: Verify future release has the exact approved default Demo Cart
+        shell: bash
+        run: |
+          python3 scripts/build-demo-cart.py
+          test "$(sha256sum site/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin | cut -d ' ' -f1)" = "89faaace638c1ccae7062e96cef02d5350059488a35acb372f1e4b5d4dec277f"
       - name: Package static website with corresponding emulator source
         shell: bash
         run: |

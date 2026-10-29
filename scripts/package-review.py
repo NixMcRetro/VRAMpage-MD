@@ -54,6 +54,8 @@ NATIVE_BLITTER_MARKER = b"VRAMpage MD: native RGBA output blitter"
 APPROVED_DEMO = {
     "site/demo/VRAMpage-MD-Demo-Cart-v0.1.bin":
         "93b9fc72a428657c012fb4325bc1382b69b9d3c9d0af4a4dc312732789dfe0d4",
+    "site/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin":
+        "89faaace638c1ccae7062e96cef02d5350059488a35acb372f1e4b5d4dec277f",
     "demo-cart/VRAMpage-MD-Demo-Cart-v0.1-Source-Kit.zip":
         "fb073ee201ce73072c83a569742a644c2f8c7816e102ffd55ce723154bd67403",
 }
@@ -148,6 +150,13 @@ def _collect_paths(output_path):
         selected.append((relative, source, data))
 
     by_name = {name: data for name, _source, data in selected}
+    # Bundles that autoload v0.3.5 MUST contain the exact original cartridge.
+    # Disposable fixtures and historical pre-v0.3.5 app bundles retain their
+    # own baseline behaviour; no unapproved cartridge is ever accepted.
+    new_demo = "site/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin"
+    if b"VRAMpage-MD-Demo-Cart-v0.3.5.bin" in by_name.get("site/app.js", b""):
+        if new_demo not in by_name:
+            raise BundleError("The v0.3.5 default Demo Cart is missing. Run scripts/build-demo-cart.py before packaging.")
     missing = [name for name in REQUIRED_FILES
                if name not in by_name or not by_name[name]]
     if missing:

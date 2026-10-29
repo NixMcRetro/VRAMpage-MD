@@ -7,6 +7,21 @@ with video memory, Work RAM and FM/PSG sound through a modified emulator.
 **[Download v0.5.0](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip)** ·
 [Checksums](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/SHA256SUMS.txt)
 
+## Original Built-In Demo Cart v0.3.5
+
+Future built VRAMpage MD browser packages automatically include and autoload
+the original **Demo Cart v0.3.5**, with the approved captain portrait and chrome
+logo, real Mega Drive VDP effects, and player-controlled Chroma Reactor bending.
+During Chroma Reactor press **A** to cycle bend strengths, **B** to recover clean
+graphics, **C** for maximum distortion, or **START** for the menu.
+
+Codex must build the cartridge reproducibly with
+[`python3 scripts/build-demo-cart.py`](scripts/build-demo-cart.py). The source
+[`demo-cart/fx-lab/build_fx.py`](demo-cart/fx-lab/build_fx.py) is checked in,
+but the generated 150,564-byte ROM is **not**. Its pinned SHA-256 is
+`89faaace638c1ccae7062e96cef02d5350059488a35acb372f1e4b5d4dec277f`. The demo's v0.3.5 identifier is independent of the browser
+application's v0.5.0. **The already published v0.5.0 download is unchanged.**
+
 ## 🎮 Try It
 
 Open the live app, choose **Load ROM**, then **Enable Sound**. Cartridge files
