@@ -32,7 +32,7 @@ def _fixture(tmp_path, *, licence=True, symlink=False, missing_source=False):
         "scripts/cartridges.py", "scripts/build-demo-cart.py", "scripts/build-core.sh",
         "scripts/build-core-runtime.py", "scripts/install-runtime-site.py",
         "scripts/patch_core.py", "scripts/session_checkpoint_patch.py", "scripts/serve.py",
-        "scripts/package-website.py", "scripts/website_bundle.py",
+        "scripts/package-website.py", "scripts/website_bundle.py", "scripts/verify-corresponding-source.py",
         "site/style.css", "site/app.js", "site/cartridges.js", "site/framebuffer.js",
         "site/rgb-encoder.js", "site/circuit-config.js", "site/experiment-comparison.js",
     ):

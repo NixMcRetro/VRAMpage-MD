@@ -11,7 +11,9 @@ with video memory, Work RAM and FM/PSG sound through a modified emulator.
 
 Proposed **v0.5.1** adds a [lightweight website package](docs/LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md)
 with a complete corresponding-source archive. It is under review; the public
-links above remain v0.5.0. No release or website deployment is approved.
+links above remain v0.5.0. The planned complete local artifact is
+`VRAMpage-MD-v0.5.1-browser.zip`; it is not published. No release or website
+deployment is approved.
 
 ## 🎮 Built-In Cartridges
 

@@ -1,3 +1,39 @@
+## Active v0.5.1 Lightweight Deployment Proposal — 29 October 2026 UTC
+
+Owner scope is **proposal branch and PR only**. Do not merge, publish a release,
+change public v0.5.0 assets, modify McRetro.net or trigger deployment without
+explicit approval. This supersedes general automatic-merge instructions.
+Base main is `996d35310e03d1fc67a8e4c1681e090c6edff227` (PR100 complete).
+
+The [proposal](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md) and
+[licence inventory](LICENCE-AUDIT-v0.5.1.md) separate confirmed custom-source,
+non-commercial, copyright and LGPL terms from unresolved interpretations.
+Keep the complete same-origin source ZIP; GitHub-only delivery is not cleared.
+Legacy FM provenance, literal Musashi binary-notice wording and the site's
+non-commercial status require qualified clarification before deployment approval.
+
+The thin artifact has 17 files and one complete, versioned source ZIP. Its
+manifest, exact raw runtime pair, generated modified native source, frontend,
+build/API scripts, cartridge source and notices are hash-bound. The builder
+rejects unknown staged-source files using the recorded build inventory, rejects
+unsafe ZIP entries, and retains approved cartridge/source-kit identities.
+Current public release catalog stays v0.5.0; only this proposal branch uses0.5.1.
+No emulator controls or native algorithms are changed.
+
+Candidate7a28b7a independently rebuilds both core files byte for byte using
+Emscripten4.0.23. Thin-site actual-browser tests pass selector, PAL, local files,
+private loopback-only GETs, export identity, mobile width and source/licence links.
+The package/inventory/security tests pass. Full regression and final PR CI are
+integration evidence, not permission to merge or deploy. Preserve failed-run
+logs and investigate before retry; never relax existing assertions.
+
+Measured same-runtime full-tree526files/17,349,861bytes vs thin17/3,082,386:
+96.8% fewerfiles and82.2% lessstorage. The read-only older GitHub website tree
+at949c1f8 has13files/1,518,565bytes and no source directory; do not claim the
+same-runtime savings are removals from that existing smaller deployment.
+The staging helper deliberately rejects a nonempty website subtree; actual
+migration is a separately approved operation and was not executed here.
+
 ## Built-In Cartridge Selector — Integration Checkpoint, 29 October 2026 (UTC)
 
 Authorized task starts from main `c73ac2777e65640bfed14ec159804c9d563361f5`

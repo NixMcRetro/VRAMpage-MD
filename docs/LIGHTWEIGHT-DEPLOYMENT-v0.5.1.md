@@ -71,11 +71,41 @@ changing that label or choosing any external-only source-delivery policy.
 
 ## Footprint and Checks
 
-Final measured file/byte counts and verification results are recorded here once
-the candidate archive has been rebuilt and tested. Two baselines are required:
-the same runtime with the existing full-tree staging policy, and the currently
-published older website tree. The latter currently has a small footprint and
-cannot be used to claim savings from removing a source directory it lacks.
+Measurements from candidate `7a28b7a` (29 October 2026 UTC), counting regular
+files and their uncompressed on-disk byte lengths:
+
+| Package / Baseline | Files | Bytes | MiB |
+| --- | ---: | ---: | ---: |
+| Same runtime, full-tree staging | 526 | 17,349,861 | 16.55 |
+| Thin candidate with complete source ZIP | 17 | 3,082,386 | 2.94 |
+| Older current GitHub website tree | 13 | 1,518,565 | 1.45 |
+
+The same-runtime reduction is **96.8% fewer files and 82.2% less storage**.
+The source ZIP itself is 1,254,751 bytes (about 1.20 MiB). Subsequent source/docs
+metadata can change compressed bytes slightly; the 17-file layout is fixed.
+The JSON record is retained with local verification evidence.
+
+The third row is the read-only GitHub tree `homepages/vrampage-md` at website
+commit `949c1f878127cdbe8675b78330f2fe0097a95aba`, not a current-domain HTTP crawl.
+It contains no source directory and uses the older runtime/cartridge interface.
+Thus the new complete candidate **adds** four files and about 1.49 MiB relative
+to that older tree; it is not accurate to claim hundreds of currently deployed
+files are removed. The large reduction applies to the full-source staging
+policy for the same current runtime. This proposal does not modify that website.
+
+Jekyll would copy 17 static files instead of traversing 526 candidate files.
+The ZIP is copied as one opaque asset; compilation/rebuild verification stays
+in VRAMpage MD's CI, not McRetro.net's build. No website build benchmark is
+claimed because no actual website checkout/build/deployment was performed.
+
+The archive extracted from candidate `7a28b7a` rebuilt both files byte for byte
+with Emscripten 4.0.23: JS SHA-256
+`e8da1c28303fd3900f35c032ce01802c76d1d041dc8a0d6cd57bdc97ee3af4d0`, WASM
+`8fa2fa0fe6a47890c948ed39a7f095980d9ffde7d4405a88ce07a5f34b8814b7`.
+The thin-site browser test also passed selector switching, PAL, private local
+ROM insertion, available build identity, mobile width and the actual archive
+link with all requests restricted to loopback GETs. Final PR CI and review
+results are recorded in the work queue and PR description.
 
 No existing regression suite is removed or relaxed. The complete local browser
 ZIP remains available separately, with its normal/fallback source fixtures.
