@@ -1,3 +1,33 @@
+## Ponytail Full Mode and Safari Acceptance — 30 October 2026 (Sydney)
+
+The owner confirmed that [PR #109](https://github.com/NixMcRetro/VRAMpage-MD/pull/109)
+fixes local-ROM selection in Safari. It merged as
+`9bc1eb31e3789ef2e09478bacf3ea09214df2c8a`, with all seven
+[main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40898552986)
+and four [CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40898553124)
+passing. This is owner acceptance of that fix, not a new website deployment.
+
+The requested Ponytail integration retains the single upstream compact rules
+block in root `AGENTS.md`, pinned to v5.3.3 / commit
+`96608e078b2d5ea607c5c3b8b5a54d1c1fba6846`, with its exact MIT licence.
+Full Mode is explicit for subsequent development tasks and new Codex sessions;
+project-specific instructions retain precedence. No duplicate skill/hook rules
+are introduced. Existing project instructions before the Ponytail section are
+byte-preserved; the embedded upstream block is byte-exact and appears once.
+
+Codex CLI 0.163.0's actual `debug prompt-input` renderer loads the complete
+14,624-byte file once from both root and `site/`, including the Full default.
+Verification used an offline ephemeral container with repository/git metadata
+mounted read-only; host Codex settings and credentials were untouched. The file
+fits the default 32,768-byte instruction limit. Require independent review,
+protected CI/CodeQL and verified main before integrating this requested update.
+
+Next unattended priority: bounded stabilisation of the new FM Output Model
+with existing region, faults and recovery. Reuse current tests and evidence;
+fix concrete regressions, preserve intentional glitch/HALT outcomes, and avoid
+repeating the completed default-model soak or optional physical RAM research.
+VERSION, approved cartridges, published assets and McRetro.net remain unchanged.
+
 ## Safari Local-ROM Picker — Integration Checkpoint, 30 October 2026 (Sydney)
 
 The owner reports that the live page's **Load Your Own ROM…** choice opens no

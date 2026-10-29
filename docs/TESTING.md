@@ -1,3 +1,14 @@
+# Codex Instruction Loading
+
+Ponytail Full Mode is integrated once in root `AGENTS.md`, with pinned upstream
+provenance and licence. On Codex CLI 0.163.0, `codex debug prompt-input` renders
+the actual model input without an inference request. Run it from the repository
+root and a nested directory; verify the complete file appears once and includes
+the Full default. Keep it below the default 32,768-byte instruction budget and
+check for a competing `AGENTS.override.md`. A read-only managed Codex home may
+need an offline ephemeral container for the renderer; mount the repository and
+git metadata read-only. No application dependency or lifecycle hook is required.
+
 # Direct Cartridge Picker Actions
 
 The cartridge chooser must open the local file picker from a direct trusted

@@ -1,3 +1,12 @@
+## Development Instructions — Ponytail Full Mode
+
+- Pin the existing single Ponytail rules block to upstream v5.3.3 and retain its
+  MIT licence. Preserve project-specific instructions and required safety gates.
+- Enable Full Mode by default for subsequent development tasks and verify actual
+  Codex instruction loading from root and nested directories.
+- Record the owner's Safari acceptance of PR #109; no runtime, version, release
+  or website change accompanies this instruction update.
+
 ## Development Source — Direct Cartridge Picker Actions
 
 - Keep one Choose Cartridge control with both approved built-ins and a direct
