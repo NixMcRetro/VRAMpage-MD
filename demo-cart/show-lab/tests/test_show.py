@@ -55,6 +55,9 @@ class OriginalShowTests(unittest.TestCase):
         fnum=((high&7)<<8)|low
         self.assertTrue(1075<=fnum<=1090, fnum)
         self.assertEqual(((self.values["show_pitch"](60)[0])>>3),4)
+        # The corrected OPN2 tuning must support legitimate low bass
+        # notes using lower block values, without treating them as corruption.
+        self.assertEqual(self.values["show_pitch"](33)[0]>>3,1)
         self.assertEqual(music["heldNoteMarker"],255)
         self.assertEqual(music["keyCentre"],"A major / F-sharp minor")
         self.assertEqual(len(music["writtenSongForm"]),10)
@@ -84,7 +87,7 @@ class OriginalShowTests(unittest.TestCase):
             self.assertEqual(len(row),16)
             for offset in (0,2,4,6,8,10):
                 self.assertTrue(row[offset] in (0,0xFF) or (row[offset]&0x38) in
-                                (0x18,0x20,0x28,0x30))
+                                (0x08,0x10,0x18,0x20,0x28,0x30,0x38))
             self.assertIn(row[12],(0,1,2,3,4))
             self.assertIn(row[13],(0,1))
             self.assertEqual(row[14:],b'\x00\x00')
