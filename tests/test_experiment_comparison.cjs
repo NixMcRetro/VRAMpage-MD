@@ -101,6 +101,11 @@ assert.equal(compare(fmMachine(fmDiscrete),fmMachine(fmIntegrated)).find(r=>r.la
 assert.equal(compare(fmMachine(fmDiscrete),fmMachine({...fmDiscrete,backend:'nuked-opn2',supported:false,effectiveModel:null})).find(r=>r.label==='FM Output Backend').status,'mismatch');
 assert.equal(compare(fmMachine(fmDiscrete),fmMachine({...fmDiscrete,backend:'nuked-opn2'})).find(r=>r.label==='Effective FM Output Model').status,'unknown',
   'effective MAME identity is unknown when the reported backend contradicts it');
+const missingBackend={...fmDiscrete};delete missingBackend.backend;
+assert.equal(compare(fmMachine(fmDiscrete),fmMachine(missingBackend)).find(r=>r.label==='Effective FM Output Model').status,'unknown',
+  'effective MAME identity is unknown when backend metadata is missing');
+assert.equal(compare(fmMachine(fmDiscrete),fmMachine({...fmDiscrete,backend:'unknown-opn'})).find(r=>r.label==='Effective FM Output Model').status,'unknown',
+  'effective MAME identity is unknown when backend metadata is invalid');
 assert.equal(compare(fmMachine(fmDiscrete),fmMachine({...fmDiscrete,schemaVersion:2})).find(r=>r.label==='Effective FM Output Model').status,'unknown');
 assert.equal(compare(fmMachine(fmDiscrete),{machine:{available:true}}).find(r=>r.label==='Effective FM Output Model').status,'unknown');
 console.log('Machine-region comparison observations passed.');
