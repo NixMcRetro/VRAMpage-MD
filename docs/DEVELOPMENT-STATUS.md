@@ -1,3 +1,42 @@
+## Built-In Cartridge Selection Verified — 29 October 2026 (UTC)
+
+[PR #100](https://github.com/NixMcRetro/VRAMpage-MD/pull/100) merged as
+`996d35310e03d1fc67a8e4c1681e090c6edff227`. Its tree exactly matches reviewed,
+tested head `27f4e09b28a64559f3e0c35fd47f35cc0d5cf653`
+(tree `d3004b247d02ba890db02819ce44989302f45e3d`).
+All seven protected checks passed on the
+[PR](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40805195838) and
+[main](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40809766464).
+All four CodeQL analyses passed on the
+[PR](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40805192566) and
+[main](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40809766326).
+
+[Download the verified development browser build](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40809766464/artifacts/12870445297)
+(artifact expires 28 November 2026, 03:06:38 UTC). Its inner ZIP has 808 entries,
+verified archive checksum and exact main source metadata. Both downloaded browser
+and static artifacts contain the manifest-approved Demo Cart and original
+Colour Test with exact size/SHA-256, rebuildable source and notices; preserved
+v0.1/source-kit assets remain byte-identical.
+
+Choose Cartridge, session preferences, asynchronous explicit-choice precedence,
+existing activation/recovery and private local files are complete. The permanent
+[cartridge policy](BUILT-IN-CARTRIDGES.md), manifest, generators, packaging and
+AGENTS instructions are on main. No newly generated ROM binary is tracked.
+Source/sanitizer checks, 172 interface cases, actual-core12, layout7, all package
+checks and the complete browser matrix pass. Both cartridges execute under NTSC-U
+and PAL; the existing detailed Demo Cart A/B/C/VDP regression is retained.
+Independent Luna High review approved source and boundary fixes. The final
+reserved-ID guard also passes focused tests and full PR/main CI.
+
+Application VERSION remains 0.5.0. All 18 published release records and attached
+asset identities are unchanged; McRetro.net was not modified or deployed. Raw
+local/download audit is `/workspace/scratch/cartridge-selector/final-audit.json`.
+Final status is recorded on `maintenance/cartridge-selector-delivery` to avoid a
+new documentation-only main build. No implementation or CI blocker remains.
+Next step is user review of this development build; any cartridge approval,
+version bump, release publication or website deployment remains separately
+authorized. Physical-console and human listening acceptance are not claimed.
+
 ## Built-In Cartridge Selector — Integration Checkpoint, 29 October 2026 (UTC)
 
 Authorized task starts from main `c73ac2777e65640bfed14ec159804c9d563361f5`
