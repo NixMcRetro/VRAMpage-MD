@@ -1525,8 +1525,9 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         page=new_manual_startup_page(browser)
                         errors=[]
                         page.on('pageerror',lambda error:errors.append(str(error)))
-                        rom_requests=[]
-                        page.on('request',lambda request:rom_requests.append(request.url))
+                        origin=f'http://127.0.0.1:{server.server_port}'
+                        requests=[]
+                        page.on('request',lambda request:requests.append((request.url,request.method)))
                         core_js=(OPTIONS.site_root/'core/genplus.js').read_text()
                         core_js+='\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c;return c;});\n'
                         page.route('**/core/genplus.js',lambda route:route.fulfill(content_type='text/javascript',body=core_js))
@@ -1538,6 +1539,24 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         page.locator('#logicExperiment > summary').click()
                         page.locator('#saveCheckpointBtn').click()
                         expect(page.locator('#checkpointStatus')).to_contain_text('Saved Frame')
+                        baseline=page.evaluate('''() => {
+                          window.captureContinuation=()=>{
+                            testCore._tick();const count=testCore._sound();
+                            const frame=testCore._get_frame_buffer_ref();
+                            const pixels=testCore.HEAPU8.subarray(frame,frame+640*480*4).slice();
+                            const left=testCore._get_web_audio_l_ref(),right=testCore._get_web_audio_r_ref();
+                            const pcm=new Uint8Array(count*8);pcm.set(new Uint8Array(testCore.HEAPF32.buffer,left,count*4));
+                            pcm.set(new Uint8Array(testCore.HEAPF32.buffer,right,count*4),count*4);
+                            const samples=new Float32Array(pcm.buffer);
+                            window.lastContinuation={pixels,pcm,count,finite:Array.from(samples).every(Number.isFinite),
+                              nonzero:samples.some(sample=>Math.abs(sample)>0.0001)};
+                            return {count:lastContinuation.count,finite:lastContinuation.finite,nonzero:lastContinuation.nonzero};
+                          };
+                          const summary=captureContinuation();window.checkpointBaseline={...lastContinuation};return summary;
+                        }''')
+                        self.assertGreater(baseline['count'],0)
+                        self.assertTrue(baseline['finite'])
+                        self.assertTrue(baseline['nonzero'],'the original synthetic PSG tone must produce native PCM')
                         page.evaluate('''() => {
                           const native=File.prototype.arrayBuffer;
                           window.pendingReads={};
@@ -1552,10 +1571,9 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         page.wait_for_function("window.pendingReads['stale-fm-read.bin']")
                         page.locator('#romFile').set_input_files({'name':'rejected-fm-read.bin','mimeType':'application/octet-stream','buffer':original_cartridge()})
                         page.wait_for_function("window.pendingReads['rejected-fm-read.bin']")
-                        page.evaluate("window.pendingReads['rejected-fm-read.bin'].reject(new Error('latest synthetic asynchronous ROM read rejection'))")
+                        page.evaluate("async () => { window.pendingReads['rejected-fm-read.bin'].reject(new Error('latest synthetic asynchronous ROM read rejection')); await Promise.resolve(); await Promise.resolve(); }")
                         expect(page.locator('#experimentLog')).to_contain_text('latest synthetic asynchronous ROM read rejection')
-                        page.evaluate("window.pendingReads['stale-fm-read.bin'].reject(new Error('stale synthetic asynchronous ROM read rejection'))")
-                        page.wait_for_timeout(50)
+                        page.evaluate("async () => { window.pendingReads['stale-fm-read.bin'].reject(new Error('stale synthetic asynchronous ROM read rejection')); await Promise.resolve(); await Promise.resolve(); }")
                         log=page.locator('#experimentLog').inner_text()
                         self.assertNotIn('stale synthetic asynchronous ROM read rejection',log,
                                          'a stale asynchronous rejection cannot overwrite or append to the current selection result')
@@ -1570,34 +1588,27 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         self.assertEqual(state['fm']['requestedModel'],'integrated')
                         self.assertEqual((state['region']['regionCode'],state['region']['requestedRegion']), (0x80,2))
                         self.assertEqual(state['checkpointReady'],1)
-                        replay=page.evaluate('''() => {
-                          window.captureSavedContinuation=()=>{
-                            testCore._tick();const count=testCore._sound();
-                            const hash=(bytes)=>{let h=2166136261;for(const b of bytes)h=Math.imul(h^b,16777619);return h>>>0;};
-                            const frame=testCore._get_frame_buffer_ref(),pixels=testCore.HEAPU8.subarray(frame,frame+640*480*4);
-                            const left=testCore._get_web_audio_l_ref(),right=testCore._get_web_audio_r_ref();
-                            const pcm=new Uint8Array(count*8);pcm.set(new Uint8Array(testCore.HEAPF32.buffer,left,count*4));
-                            pcm.set(new Uint8Array(testCore.HEAPF32.buffer,right,count*4),count*4);
-                            const samples=new Float32Array(pcm.buffer);
-                            return {pixels:hash(pixels),pcm:hash(pcm),count,finite:Array.from(samples).every(Number.isFinite),
-                              nonzero:samples.some(sample=>Math.abs(sample)>0.0001)};
-                          };
-                          return captureSavedContinuation();
-                        }''')
-                        self.assertGreater(replay['count'],0)
-                        self.assertTrue(replay['finite'])
-                        self.assertTrue(replay['nonzero'],'the original synthetic PSG tone must produce native PCM')
                         page.locator('#restoreCheckpointBtn').click()
                         expect(page.locator('#checkpointStatus')).to_contain_text('Restored Frame')
                         self.assertEqual(page.evaluate('testCore._get_session_checkpoint_ready()'),1)
-                        self.assertEqual(page.evaluate('captureSavedContinuation()'),replay,
-                                         'the preserved checkpoint replays the same video and stereo PCM after restore')
+                        replay=page.evaluate('''() => {
+                          const current=captureContinuation();
+                          return {...current,
+                            pixelsMatch:current.count===checkpointBaseline.count&&
+                              lastContinuation.pixels.every((value,index)=>value===checkpointBaseline.pixels[index]),
+                            pcmMatch:current.count===checkpointBaseline.count&&
+                              lastContinuation.pcm.every((value,index)=>value===checkpointBaseline.pcm[index])};
+                        }''')
+                        self.assertTrue(replay['finite'])
+                        self.assertTrue(replay['nonzero'])
+                        self.assertTrue(replay['pixelsMatch'],'restore replays the exact saved video bytes')
+                        self.assertTrue(replay['pcmMatch'],'restore replays the exact saved stereo PCM bytes')
                         page.locator('#resetBtn').click()
                         self.assertEqual(page.evaluate('testCore._get_fm_output_model_state().effectiveModel'),'integrated')
                         self.assertEqual(page.evaluate('testCore._get_region_state().regionCode'),0xc0)
                         self.assertEqual(page.evaluate('testCore._get_session_checkpoint_ready()'),0)
-                        self.assertFalse(any('stale-fm-read.bin' in url or 'rejected-fm-read.bin' in url for url in rom_requests),
-                                         'local ROM reads remain in the browser and are never uploaded')
+                        self.assertTrue(all(url.startswith(origin+'/') and method=='GET' for url,method in requests),
+                                        'local ROM selection performs only same-origin GET requests; it never uploads')
                         self.assertEqual(errors,[])
                     finally:browser.close()
             finally:server.shutdown()
