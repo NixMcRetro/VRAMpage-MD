@@ -6,14 +6,17 @@ is mandatory; run only with matching approved asset files.
 """
 from __future__ import annotations
 from pathlib import Path
-import json, hashlib, struct, zipfile, math, colorsys, ast
+import json, hashlib, struct, zipfile, math, colorsys, ast, os
 
 ROOT = Path(__file__).resolve().parent.parent / 'fx-lab'
 BASE_KIT = ROOT.parent / 'VRAMpage-MD-Demo-Cart-v0.1-Source-Kit.zip'
 APPROVED_KIT_SHA256 = 'fb073ee201ce73072c83a569742a644c2f8c7816e102ffd55ce723154bd67403'
 assert hashlib.sha256(BASE_KIT.read_bytes()).hexdigest() == APPROVED_KIT_SHA256, 'Base ROM source kit changed'
+# Isolated owner-review ROM only. Normal 180-second cartridge is untouched.
+HOOK_PREVIEW=os.environ.get('VRAMPAGE_HOOK_PREVIEW')=='1'
 OUT = Path(__file__).resolve().parent / 'build'
-OUT.mkdir(exist_ok=True)
+if HOOK_PREVIEW: OUT=OUT/'music-lab'
+OUT.mkdir(parents=True,exist_ok=True)
 with zipfile.ZipFile(BASE_KIT) as archive:
     PATTERNS = archive.read('demo-cart/assets/title_patterns.bin')
     TILEMAP = archive.read('demo-cart/assets/title_tilemap_viewport.bin')
@@ -472,6 +475,10 @@ assert SHOW_STEPS==900
 PSG_DRUMS=(('kick',0xE4,8),('snare',0xE7,9),
            ('hat',0xE5,12),('fill',0xE7,8))
 assert all(7<=atten<15 for _,_,atten in PSG_DRUMS)
+# YM2612 register offsets 0,4,8,12 refer to S1,S3,S2,S4.
+# Our instrument definitions are written in logical S1,S2,S3,S4 order,
+# so S2's carrier settings MUST be written to offset 8, not offset 4.
+YM_OPERATOR_OFFSETS=(0,8,4,12)
 
 # These ten sections constitute one original 112.5-bar song, not six
 # procedurally transposed jingles. The closing half-bar is a held cadence.
@@ -800,9 +807,13 @@ def show_note_number(spelling):
     return (int(m.group(2))+1)*12+NOTES[m.group(1)]
 def show_pitch(note,block=None):
     if block is None:
-        block=3 if note<=46 else (5 if note>=84 else 4)
+        # C4 (MIDI 60) uses block 4, C5 block 5 etc. Keeping FNUM
+        # within the usual semitone table preserves tuning and headroom.
+        block=max(0,min(7,note//12-1))
     hz=440*2**((note-69)/12)
-    fnum=round(hz*2**(20-block)/(7670454/144))
+    # OPN2 uses 21-BLOCK, not 20-BLOCK. The previous equation was
+    # an octave too low for the given musical note.
+    fnum=round(hz*2**(21-block)/(7670454/144))
     assert 0<fnum<2048,(note,block,fnum)
     return ((block<<3)|(fnum>>8), fnum&255)
 def score_pitch(token):
@@ -884,6 +895,13 @@ def show_compose():
     assert len(song)==SHOW_STEPS
     return b''.join(song)
 SHOW_MUSIC=show_compose()
+if HOOK_PREVIEW:
+    from hook_score import make_hook_preview
+    SHOW_MUSIC=make_hook_preview(score_pitch,show_pitch,CHORDS)
+    SHOW_STEPS=len(SHOW_MUSIC)//SHOW_EVENT_BYTES
+    assert SHOW_STEPS==100 and len(SHOW_MUSIC)==1600
+else:
+    assert SHOW_STEPS==900 and len(SHOW_MUSIC)==14400
 
 asm=A68()
 # Mega Drive vectors: stack and reset PC, all unused exception vectors stop safely.
@@ -1410,7 +1428,7 @@ for ch,(_,algorithm,operators) in enumerate(SHOW_PATCHES):
     ym_reg(0xB0+slot_ch,algorithm,bank)
     ym_reg(0xB4+slot_ch,0xC0,bank)
     for op,(mul,level,attack,decay1,decay2,sustain_release) in enumerate(operators):
-        slot=(0,4,8,12)[op]
+        slot=YM_OPERATOR_OFFSETS[op]
         ym_reg(0x30+slot+slot_ch,mul,bank)
         ym_reg(0x40+slot+slot_ch,level,bank)
         ym_reg(0x50+slot+slot_ch,attack,bank)
@@ -1549,7 +1567,8 @@ if len(rom)%2:rom+=b'\x00'
 rom[0x1A4:0x1A8]=struct.pack('>I',len(rom)-1)
 checksum=sum(struct.unpack_from('>H',rom,i)[0] for i in range(0x200,len(rom),2))&0xFFFF
 rom[0x18E:0x190]=struct.pack('>H',checksum)
-(OUT/'VRAMpage-MD-Demo-Cart-v0.3.8-Show.bin').write_bytes(rom)
+(OUT/('VRAMpage-MD-Demo-Cart-v0.3.8-Hook-Preview.bin' if HOOK_PREVIEW
+      else 'VRAMpage-MD-Demo-Cart-v0.3.8-Show.bin')).write_bytes(rom)
 report={
  'romSize':len(rom),'checksum':f'{checksum:04X}',
  'show':{'totalSeconds':180,'playMode':'automatic after original menu idle',
@@ -1557,10 +1576,12 @@ report={
          'originalPortraitAndLogo':True,'chromaControls':'A/B/C and START'},
  'music':{'original':True,'tempoBPM':SHOW_BPM,'eventsPerSecond':SHOW_EVENTS_PER_SECOND,
           'steps':SHOW_STEPS,'eventBytes':len(SHOW_MUSIC),'eventStrideBytes':SHOW_EVENT_BYTES,
-          'scenes':list(SHOW_SCENES),'lengthSeconds':180,
+          'musicLabPreview':HOOK_PREVIEW,'ymLogicalSlotOffsets':list(YM_OPERATOR_OFFSETS),
+          'pitchFormula':'YM2612 FNUM = Hz * 144 * 2^(21-BLOCK) / clock',
+          'scenes':list(SHOW_SCENES),'lengthSeconds':SHOW_STEPS//SHOW_EVENTS_PER_SECOND,
           'tonality':'major','percussion':['kick','snare','hat','fill'],
           'character':'original scored brass-led ska-punk instrumental',
-          'scoreStructure':'ten written musical sections, independent of visual scenes',
+          'scoreStructure':('100-event original hook audition' if HOOK_PREVIEW else 'ten written musical sections, independent of visual scenes'),
           'writtenSongForm':[(name,steps) for name,steps,_ in SHOW_FORM],
           'keyCentre':'A major / F-sharp minor',
           'heldNoteMarker':255,
