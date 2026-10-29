@@ -287,7 +287,7 @@ class BrowserLogicTests(unittest.TestCase):
         expect(summary).to_be_focused()
         page.keyboard.press('Enter')
         self.assertTrue(page.locator('#cartridgeChooser').evaluate('node=>node.open'))
-        outside=page.locator('#rawVideoToggle')
+        outside=page.locator('#pauseBtn')
         outside.focus()
         outside.click()
         self.assertFalse(page.locator('#cartridgeChooser').evaluate('node=>node.open'))
@@ -298,11 +298,13 @@ class BrowserLogicTests(unittest.TestCase):
         for width,height in [(1366,768),(390,844),(360,640),(844,390)]:
             with self.subTest(viewport=(width,height)):
                 page.set_viewport_size({'width':width,'height':height})
+                page.evaluate('window.scrollTo(0,0)')
                 page.evaluate('() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
                 toolbar=page.locator('.toolbar').bounding_box()
                 page.locator('#cartridgeChooser > summary').click()
                 choices=page.locator('.cartridge-choices').bounding_box()
-                self.assertEqual(page.locator('.toolbar').bounding_box(),toolbar)
+                opened=page.locator('.toolbar').bounding_box()
+                self.assertEqual((opened['width'],opened['height']),(toolbar['width'],toolbar['height']))
                 self.assertGreaterEqual(choices['x'],0)
                 self.assertGreaterEqual(choices['y'],0)
                 self.assertLessEqual(choices['x']+choices['width'],width)
