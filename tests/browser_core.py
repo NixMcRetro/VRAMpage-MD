@@ -1608,7 +1608,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         self.assertEqual(page.evaluate('testCore._get_region_state().regionCode'),0xc0)
                         self.assertEqual(page.evaluate('testCore._get_session_checkpoint_ready()'),0)
                         self.assertTrue(all(url.startswith(origin+'/') and method=='GET' for url,method in requests),
-                                        'local ROM selection performs only same-origin GET requests; it never uploads')
+                                        'local-read recovery must not issue POST or cross-origin requests')
                         self.assertEqual(errors,[])
                     finally:browser.close()
             finally:server.shutdown()
