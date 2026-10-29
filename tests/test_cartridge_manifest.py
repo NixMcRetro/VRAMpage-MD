@@ -111,7 +111,8 @@ class CartridgeManifestTests(unittest.TestCase):
             self.fixture(root)
             for name, data in [('game.bin', b'unknown'), ('game.GEN', b'unknown'),
                                ('game.iso', b'unknown'), ('game.md', bytes(0x100) + b'SEGA'),
-                               ('Sonic.md', b'unknown'), ('extra.zip', b'unknown')]:
+                               ('Sonic.md', b'unknown'), ('extra.zip', b'unknown'),
+                               ('.env', b'private'), ('credentials.json', b'private')]:
                 target = root / 'site' / name
                 target.write_bytes(data)
                 with self.subTest(name=name), self.assertRaises(CartridgeError):

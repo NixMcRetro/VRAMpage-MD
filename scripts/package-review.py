@@ -20,11 +20,6 @@ CACHE_PARTS = {
     "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".cache",
     ".tox", ".venv", "venv", "node_modules", "coverage",
 }
-SECRET_NAMES = {
-    "credentials", "credentials.json", "id_rsa", "id_ed25519",
-    "id_ecdsa", "secrets.json", "secrets.yaml", "secrets.yml",
-}
-SECRET_SUFFIXES = {".pem", ".p12", ".pfx", ".key"}
 REQUIRED_FILES = (
     "START.command",
     "README.md",
@@ -79,15 +74,6 @@ def _excluded_cache(relative):
                for part in parts)
 
 
-def _is_secret_path(relative):
-    path = PurePosixPath(relative)
-    lowered = [part.lower() for part in path.parts]
-    name = path.name.lower()
-    return (any(part in {".aws", ".ssh", "secrets", "credentials"} for part in lowered)
-            or name == ".env" or name.startswith(".env.")
-            or name in SECRET_NAMES or path.suffix.lower() in SECRET_SUFFIXES)
-
-
 def _git_tracked_paths():
     try:
         result = subprocess.run(
@@ -121,8 +107,6 @@ def _collect_paths(output_path):
         source = _repo_path(relative)
         if source.resolve() == output_resolved:
             continue
-        if _is_secret_path(relative):
-            raise BundleError(f"Refusing to package a file that may contain a user secret: {relative}")
         data = source.read_bytes()
         verify_asset(relative, data, assets)
         selected.append((relative, source, data))

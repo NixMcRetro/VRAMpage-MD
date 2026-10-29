@@ -12,6 +12,9 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 ROM_SUFFIXES = {'.bin', '.gen', '.smd', '.rom', '.sms', '.gg', '.32x', '.iso', '.cue', '.chd', '.mdx'}
 ARCHIVE_SUFFIXES = {'.zip', '.7z', '.rar', '.tar', '.gz', '.bz2', '.xz'}
+SECRET_NAMES = {'credentials', 'credentials.json', 'id_rsa', 'id_ed25519', 'id_ecdsa',
+                'secrets.json', 'secrets.yaml', 'secrets.yml'}
+SECRET_SUFFIXES = {'.pem', '.p12', '.pfx', '.key'}
 
 
 class CartridgeError(ValueError):
@@ -127,7 +130,17 @@ def approved_assets(manifest):
             **{asset['path']: asset for asset in manifest['preservedAssets']}}
 
 
+def is_secret_path(relative):
+    path = PurePosixPath(relative)
+    name = path.name.lower()
+    return (any(part.lower() in {'.aws', '.ssh', 'secrets', 'credentials'} for part in path.parts)
+            or name == '.env' or name.startswith('.env.')
+            or name in SECRET_NAMES or path.suffix.lower() in SECRET_SUFFIXES)
+
+
 def verify_asset(relative, data, assets):
+    if is_secret_path(relative):
+        raise CartridgeError(f'Refusing to package a file that may contain a user secret: {relative}')
     expected = assets.get(relative)
     if expected is not None:
         if len(data) != expected['size'] or hashlib.sha256(data).hexdigest() != expected['sha256']:
