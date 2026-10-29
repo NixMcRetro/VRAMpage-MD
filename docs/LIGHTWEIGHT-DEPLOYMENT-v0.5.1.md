@@ -76,24 +76,26 @@ https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.1/VRAMpage-MD-v
 
 ## Footprint and Checks
 
-Measurements from candidate `7a28b7a` (29 October 2026 UTC), counting regular
+Measurements from candidate `7406b01` (with linked-runtime notices) (29 October 2026 UTC), counting regular
 files and their uncompressed on-disk byte lengths:
 
 | Package / Baseline | Files | Bytes | MiB |
 | --- | ---: | ---: | ---: |
 | Same runtime, full-tree staging | 526 | 17,349,861 | 16.55 |
-| Thin candidate with complete source ZIP | 17 | 3,082,386 | 2.94 |
+| Thin candidate with complete source ZIP | 17 | 3,142,990 | 3.00 |
 | Older current GitHub website tree | 13 | 1,518,565 | 1.45 |
 
-The same-runtime reduction is **96.8% fewer files and 82.2% less storage**.
-The source ZIP itself is 1,254,751 bytes (about 1.20 MiB). Subsequent source/docs
+The full-tree row is the existing staging policy measured before the additional
+standard-runtime notices; the compiled core is identical in both candidates.
+The same-runtime reduction is **96.8% fewer files and 81.9% less storage**.
+The source ZIP itself is 1,271,806 bytes (about 1.21 MiB). Subsequent source/docs
 metadata can change compressed bytes slightly; the 17-file layout is fixed.
 The JSON record is retained with local verification evidence.
 
 The third row is the read-only GitHub tree `homepages/vrampage-md` at website
 commit `949c1f878127cdbe8675b78330f2fe0097a95aba`, not a current-domain HTTP crawl.
 It contains no source directory and uses the older runtime/cartridge interface.
-Thus the new complete candidate **adds** four files and about 1.49 MiB relative
+Thus the new complete candidate **adds** four files and about 1.55 MiB relative
 to that older tree; it is not accurate to claim hundreds of currently deployed
 files are removed. The large reduction applies to the full-source staging
 policy for the same current runtime. This proposal does not modify that website.

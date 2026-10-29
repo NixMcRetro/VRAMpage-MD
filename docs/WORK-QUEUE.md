@@ -27,8 +27,8 @@ The package/inventory/security tests pass. Full regression and final PR CI are
 integration evidence, not permission to merge or deploy. Preserve failed-run
 logs and investigate before retry; never relax existing assertions.
 
-Measured same-runtime full-tree526files/17,349,861bytes vs thin17/3,082,386:
-96.8% fewerfiles and82.2% lessstorage. The read-only older GitHub website tree
+Measured same-runtime full-tree526files/17,349,861bytes vs thin17/3,142,990:
+96.8% fewerfiles and81.9% lessstorage. The read-only older GitHub website tree
 at949c1f8 has13files/1,518,565bytes and no source directory; do not claim the
 same-runtime savings are removals from that existing smaller deployment.
 The staging helper deliberately rejects a nonempty website subtree; actual
