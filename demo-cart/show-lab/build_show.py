@@ -831,11 +831,11 @@ def show_compose():
     for step,(name,section_steps,local,chords) in enumerate(timeline):
         beat=local%8
         bar=local//8
-        chord=chords[bar]
+        chord=chords[bar%len(chords)]
         root,third,fifth=CHORDS[chord]
         next_index=min(step+(8-beat),SHOW_STEPS-1)
         n_name,n_steps,n_local,n_chords=timeline[next_index]
-        next_chord=n_chords[n_local//8]
+        next_chord=n_chords[(n_local//8)%len(n_chords)]
         next_root=CHORDS[next_chord][0]
         # Two written horn parts. Hold markers mean no chip key-off;
         # actual rests release the voice. This enables real phrases.
