@@ -12,6 +12,7 @@ import zipfile
 
 from playwright.sync_api import expect, sync_playwright
 from browser_core import original_cartridge
+from browser_cartridge import choose_cartridge
 
 OPTIONS = None
 
@@ -45,7 +46,7 @@ window.Module=opts=>coreFactory(opts).then(core=>{window.testCore=core;return co
                         default = next(c for c in manifest['cartridges'] if c['id'] == manifest['defaultCartridge'])
                         expect(page.locator('#romName')).to_have_text(default['displayName'].upper())
                         for cartridge in manifest['cartridges']:
-                            page.locator('#cartridgeSelect').select_option(cartridge['id'])
+                            choose_cartridge(page,cartridge['id'])
                             expect(page.locator('#romName')).to_have_text(cartridge['displayName'].upper())
                             page.wait_for_function('testCore._get_logic_frame()>12')
                         page.locator('#regionSelect').select_option('2')

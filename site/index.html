@@ -41,11 +41,13 @@
         <div class="screen-info"><span id="romName">NO CARTRIDGE INSERTED</span><span id="fpsIndicator">— FPS</span></div>
         <div class="video-options"><label><input id="rawVideoToggle" type="checkbox"> Raw Emulator Output</label><span id="videoStatus" role="status" aria-live="polite">Video: native pixels</span></div>
         <div class="toolbar">
-          <select id="cartridgeSelect" aria-label="Choose Cartridge" class="cartridge-select">
-            <option value="">Choose Cartridge</option>
-            <option value="local">Load Your Own ROM…</option>
-          </select>
-          <input id="romFile" type="file" accept=".bin,.md,.gen,application/octet-stream" aria-label="Load Mega Drive ROM">
+          <details id="cartridgeChooser" class="cartridge-chooser">
+            <summary>Choose Cartridge</summary>
+            <div class="cartridge-choices">
+              <button type="button" data-cartridge="local">Load Your Own ROM…</button>
+            </div>
+          </details>
+          <input id="romFile" type="file" accept=".bin,.md,.gen,application/octet-stream" aria-label="Load Mega Drive ROM" tabindex="-1">
           <button id="resetBtn" type="button" disabled title="Disconnect faults and reboot from the same cartridge">Clean Restart</button>
           <button id="pauseBtn" type="button" disabled>Pause</button>
           <button id="soundBtn" type="button" disabled aria-pressed="false">Enable Sound</button>

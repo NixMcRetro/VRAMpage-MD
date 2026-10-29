@@ -3407,10 +3407,12 @@
     const response=await fetch('./cartridges.json',{credentials:'same-origin',cache:'no-cache'});
     if (!response.ok) throw new Error(`Cartridge manifest HTTP ${response.status}`);
     const manifest=window.VRAMpageCartridges.validateManifest(await response.json());
-    const select=$('cartridgeSelect');
+    const choices=$('cartridgeChooser').querySelector('.cartridge-choices');
     for (const cart of manifest.cartridges) {
-      const option=new Option(`${cart.displayName} v${cart.version}`,cart.id);
-      select.insertBefore(option,select.querySelector('[value="local"]'));
+      const button=document.createElement('button');
+      button.type='button';button.dataset.cartridge=cart.id;
+      button.textContent=`${cart.displayName} v${cart.version}`;
+      choices.insertBefore(button,choices.querySelector('[data-cartridge="local"]'));
     }
     return manifest;
   }
@@ -3464,10 +3466,16 @@
       await startCartridge(bytes,file.name);
     } catch(error) { cartridgeLoadError(error,generation); }
   }
-  function chooseCartridge() {
-    const select=$('cartridgeSelect'), id=select.value;
-    select.value='';
-    if (!id) return;
+  function closeCartridgeChooser(restoreFocus=false) {
+    const chooser=$('cartridgeChooser');
+    chooser.open=false;
+    if (restoreFocus) chooser.querySelector('summary').focus();
+  }
+  function chooseCartridge(event) {
+    const button=event.target.closest('button[data-cartridge]');
+    if (!button) return;
+    const id=button.dataset.cartridge;
+    closeCartridgeChooser(true);
     if (id==='local') {
       // Choosing the file picker cancels pending automatic/explicit loads even if dismissed.
       ++romLoadGeneration; rememberCartridge('local');
@@ -3491,6 +3499,7 @@
     setKeyboardTarget(keyboardTarget);
     document.addEventListener('keydown', event => {
       if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.target.closest?.('#cartridgeChooser')) return;
       if (event.target instanceof HTMLInputElement ||
           event.target instanceof HTMLSelectElement ||
           event.target instanceof HTMLTextAreaElement ||
@@ -3712,7 +3721,15 @@
       drawActiveVideo();
       refreshRgbEncoderControls();
     });
-    $('cartridgeSelect').addEventListener('change',chooseCartridge);
+    $('cartridgeChooser').querySelector('.cartridge-choices').addEventListener('click',chooseCartridge);
+    $('cartridgeChooser').addEventListener('keydown',event=>{
+      if (event.key==='Escape' && $('cartridgeChooser').open) {
+        event.preventDefault();closeCartridgeChooser(true);
+      }
+    });
+    document.addEventListener('pointerdown',event=>{
+      if ($('cartridgeChooser').open && !$('cartridgeChooser').contains(event.target)) closeCartridgeChooser();
+    });
     $('romFile').addEventListener('change',event=>{loadLocalRom(event.target.files?.[0]);event.target.value='';});
     $('resetBtn').addEventListener('click',cleanRestart);
     $('compactResetBtn').addEventListener('click',cleanRestart);
