@@ -9,7 +9,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-from website_bundle import BundleError, build, verify_website  # noqa: E402
+from website_bundle import BundleError, build, verify_source_archive, verify_website  # noqa: E402
 from cartridges import CartridgeError  # noqa: E402
 
 
@@ -88,14 +88,18 @@ def _fixture(tmp_path, *, licence=True, symlink=False):
     _put(root, f"{source}/wasm-genplus/cmake/macros.cmake", "macro(add_source_files)\nendmacro()\n")
     for relative in (
         "src/main/c/core/genesis.c", "src/main/c/core/sound/ym3438.c",
+        "src/main/c/core/sound/ym2612.c", "src/main/c/core/sound/ym2413.c",
+        "src/main/c/core/sound/eq.c",
         "src/main/c/core/m68k/m68k.h", "src/main/c/core/z80/z80.c",
         "src/main/c/core/sound/blip_buf.c",
+        "src/main/c/wasm/scrc32.c",
     ):
         _put(root, f"{source}/wasm-genplus/{relative}", f"source {relative}\n")
     if licence:
         _put(root, f"{source}/wasm-genplus/src/main/c/core/ntsc/license.txt",
              "GNU LESSER GENERAL PUBLIC LICENSE Version 2.1\n")
     _put(root, f"{source}/scripts/patch_core.py", "# patcher\n")
+    _put(root, f"{source}/scripts/session_checkpoint_patch.py", "# patcher\n")
     if symlink:
         (root / source / "scripts" / "bad.py").symlink_to(root / "scripts" / "patch_core.py")
     subprocess.run(["git", "init", "-q", str(root)], check=True)
@@ -160,6 +164,10 @@ class WebsiteBundleTests(unittest.TestCase):
     with self.assertRaisesRegex(BundleError, "new or empty"):
         build(root, dest)
     assert sentinel.read_text() == "keep"
+
+  def test_source_archive_validator_rejects_invalid_zip(self):
+    with self.assertRaisesRegex(BundleError, "Invalid corresponding-source archive"):
+        verify_source_archive(b"not a zip")
 
 
   def test_missing_lgpl_text_fails_before_destination_creation(self):

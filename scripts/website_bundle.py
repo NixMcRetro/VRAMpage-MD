@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -25,6 +26,9 @@ BUILDING = f"{RUNTIME_PROFILE}/BUILDING.txt"
 NOTICES = f"{RUNTIME_PROFILE}/THIRD-PARTY-NOTICES.md"
 PINNED_UPSTREAM = "6090aff9e9b2f578cd28882bd4571d2e35b1d674"
 EMSCRIPTEN = "4.0.23"
+MAX_SOURCE_ARCHIVE_SIZE = 32 * 1024 * 1024
+MAX_SOURCE_ARCHIVE_EXPANDED_SIZE = 64 * 1024 * 1024
+MAX_SOURCE_ARCHIVE_FILES = 4000
 SOURCE_LINK = '<a href="source-and-licences.html">Source Code &amp; Licences</a>'
 SOURCE_INSTRUCTIONS = (
     "From the extracted source ZIP, activate Emscripten 4.0.23 and run:\n\n"
@@ -248,6 +252,96 @@ def _render_source_page(version: str, archive_name: str, archive_hash: str) -> b
 <p><a href="index.html">Return to VRAMpage MD</a></p></main></body></html>\n''').encode()
 
 
+def verify_source_archive(archive: bytes | bytearray | memoryview | Path | str,
+                          expected_metadata: dict | None = None) -> dict:
+    """Validate ZIP paths and every SOURCE-INFO hash before extraction; return metadata.
+
+    This proves internal consistency, not publisher identity. Bind the archive SHA-256
+    to trusted build metadata before using it as a release artifact.
+    """
+    try:
+        data = Path(archive).read_bytes() if isinstance(archive, (Path, str)) else bytes(archive)
+    except OSError as error:
+        raise BundleError(f"Cannot read corresponding-source archive: {error}") from error
+    if len(data) > MAX_SOURCE_ARCHIVE_SIZE:
+        raise BundleError("Corresponding-source archive exceeds the supported size limit.")
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as source_zip:
+            members = source_zip.infolist()
+            names = [member.filename for member in members]
+            if len(members) > MAX_SOURCE_ARCHIVE_FILES or len(names) != len(set(names)):
+                raise BundleError("Source archive has too many files or duplicate paths.")
+            if sum(member.file_size for member in members) > MAX_SOURCE_ARCHIVE_EXPANDED_SIZE:
+                raise BundleError("Source archive expands beyond the supported size limit.")
+            for name, member in zip(names, members):
+                path = PurePosixPath(name)
+                mode = member.external_attr >> 16
+                if (not name or path.is_absolute() or path.as_posix() != name or not path.parts
+                        or any(part in {"", ".", ".."} for part in path.parts)
+                        or "\\" in name or ":" in name or stat.S_ISLNK(mode)
+                        or stat.S_ISDIR(mode)):
+                    raise BundleError(f"Unsafe source ZIP entry: {name}")
+            if "SOURCE-INFO.json" not in names:
+                raise BundleError("Source archive is missing root SOURCE-INFO.json.")
+            metadata = json.loads(source_zip.read("SOURCE-INFO.json"))
+            if not isinstance(metadata, dict) or not isinstance(metadata.get("files"), dict):
+                raise BundleError("SOURCE-INFO.json must contain a file hash map.")
+            expected_names = set(metadata["files"]) | {"SOURCE-INFO.json"}
+            if set(names) != expected_names:
+                raise BundleError("Source archive entries do not match SOURCE-INFO.json.")
+            for relative, digest in metadata["files"].items():
+                path = PurePosixPath(relative)
+                if (not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest)
+                        or path.is_absolute() or path.as_posix() != relative
+                        or any(part in {"", ".", ".."} for part in path.parts)):
+                    raise BundleError(f"Invalid SOURCE-INFO file entry: {relative}")
+                if _sha(source_zip.read(relative)) != digest:
+                    raise BundleError(f"Source archive SHA-256 mismatch: {relative}")
+            if (metadata.get("application") != "VRAMpage MD"
+                    or not re.fullmatch(r"\d+\.\d+\.\d+", metadata.get("version", ""))
+                    or not re.fullmatch(r"[0-9a-f]{40}", metadata.get("source_commit", ""))
+                    or metadata.get("wasm_genplus_commit") != PINNED_UPSTREAM
+                    or metadata.get("emscripten_version") != EMSCRIPTEN
+                    or not isinstance(metadata.get("core_sha256"), dict)
+                    or set(metadata["core_sha256"]) != {"genplus.js", "genplus.wasm"}):
+                raise BundleError("SOURCE-INFO.json has invalid version, commit, toolchain or core metadata.")
+            required = {
+                "project/VERSION", "project/THIRD-PARTY-NOTICES.md",
+                "project/licences/EMSCRIPTEN-LICENSE.txt", "emulator/BUILDING.txt",
+                "emulator/THIRD-PARTY-NOTICES.md", "emulator/PROFILE-THIRD-PARTY-NOTICES.md",
+                "emulator/scripts/patch_core.py", "emulator/scripts/session_checkpoint_patch.py",
+                "emulator/wasm-genplus/CMakeLists.txt",
+                "emulator/wasm-genplus/src/main/c/core/genesis.c",
+                "emulator/wasm-genplus/src/main/c/core/sound/ym3438.c",
+                "emulator/wasm-genplus/src/main/c/core/sound/ym2612.c",
+                "emulator/wasm-genplus/src/main/c/core/sound/ym2413.c",
+                "emulator/wasm-genplus/src/main/c/core/sound/blip_buf.c",
+                "emulator/wasm-genplus/src/main/c/core/sound/eq.c",
+                "emulator/wasm-genplus/src/main/c/core/m68k/m68k.h",
+                "emulator/wasm-genplus/src/main/c/core/z80/z80.c",
+                "emulator/wasm-genplus/src/main/c/wasm/scrc32.c",
+                "emulator/wasm-genplus/src/main/c/core/ntsc/license.txt",
+                "runtime/core/genplus.js", "runtime/core/genplus.wasm",
+            }
+            if not required.issubset(names):
+                raise BundleError("Source archive is missing required source, licence or runtime files.")
+            if source_zip.read("project/VERSION").decode("utf-8").strip() != metadata["version"]:
+                raise BundleError("Project VERSION does not match SOURCE-INFO metadata.")
+            for name, digest in metadata["core_sha256"].items():
+                if (not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest)
+                        or _sha(source_zip.read(f"runtime/core/{name}")) != digest):
+                    raise BundleError(f"Archived runtime core hash does not match SOURCE-INFO: {name}")
+    except BundleError:
+        raise
+    except (zipfile.BadZipFile, json.JSONDecodeError, KeyError, TypeError, ValueError, OSError, RuntimeError) as error:
+        raise BundleError(f"Invalid corresponding-source archive: {error}") from error
+    if expected_metadata:
+        for key, value in expected_metadata.items():
+            if metadata.get(key) != value:
+                raise BundleError(f"Source archive metadata mismatch for {key}.")
+    return metadata
+
+
 def _expected_runtime_paths(root: Path, manifest: dict) -> set[str]:
     paths = {"source-and-licences.html", "build-info.json", "SHA256SUMS.txt", *STATIC_FILES}
     paths.update(entry["path"] for entry in manifest["cartridges"])
@@ -354,23 +448,12 @@ def verify_website(dest: Path, root: Path) -> None:
     archive_rel = info["source_archive"]["path"]
     if archive_rel not in actual or _sha((dest / archive_rel).read_bytes()) != info["source_archive"]["sha256"]:
         raise BundleError("Corresponding-source archive does not match build-info.json.")
+    source_info = verify_source_archive((dest / archive_rel).read_bytes(), {
+        "source_commit": info["source_commit"], "version": info["version"],
+        "core_sha256": info["core_sha256"],
+    })
     with zipfile.ZipFile(dest / archive_rel) as archive:
         names = archive.namelist()
-        if len(names) != len(set(names)):
-            raise BundleError("Source archive contains duplicate paths.")
-        for name, member in zip(names, archive.infolist()):
-            rel = PurePosixPath(name)
-            if (not name or rel.is_absolute() or rel.as_posix() != name or ".." in rel.parts
-                    or "\\" in name or ":" in name or stat.S_ISLNK(member.external_attr >> 16)):
-                raise BundleError(f"Unsafe source ZIP entry: {name}")
-        source_info = json.loads(archive.read("SOURCE-INFO.json"))
-        expected_source_names = set(source_info["files"]) | {"SOURCE-INFO.json"}
-        if set(names) != expected_source_names:
-            raise BundleError("Corresponding-source archive has missing or unexpected files.")
-        for relative, digest in source_info["files"].items():
-            name = relative
-            if name not in names or _sha(archive.read(name)) != digest:
-                raise BundleError(f"Corresponding-source archive content mismatch: {relative}")
         if source_info["source_commit"] != info["source_commit"] or source_info["core_sha256"] != info["core_sha256"]:
             raise BundleError("Corresponding-source metadata does not match runtime build metadata.")
         version = (root / "VERSION").read_text(encoding="utf-8").strip()
@@ -427,4 +510,4 @@ def verify_website(dest: Path, root: Path) -> None:
     verify_site(root, manifest)
 
 
-__all__ = ["BundleError", "build", "verify_website"]
+__all__ = ["BundleError", "build", "verify_source_archive", "verify_website"]
