@@ -1,3 +1,14 @@
+## Development Source — Direct Cartridge Picker Actions
+
+- Keep one Choose Cartridge control with both approved built-ins and a direct
+  Load Your Own ROM… button, avoiding the native-select-to-file-dialog handoff
+  reported to fail in Safari. Preserve the existing validated load/recovery path.
+- Test real button/keyboard picker activation, dismissal, focus and selection
+  races without weakening existing cartridge or layout assertions. Native macOS
+  Safari confirmation remains separate from Linux WebKit automation.
+- Keep VERSION, published downloads, approved cartridges and the live site
+  unchanged; this source correction requires separate publication approval.
+
 ## Development Source — FM Output Model Selector
 
 - Add a compact Discrete/Integrated choice beside Region, retaining Discrete as

@@ -1,3 +1,41 @@
+## Safari Local-ROM Picker — Integration Checkpoint, 30 October 2026 (Sydney)
+
+The owner reports that the live page's **Load Your Own ROM…** choice opens no
+file dialog in Safari, while Firefox works. The native cartridge menu itself
+opens. Before this correction, published and development builds triggered the
+hidden file input from a native select's change handler. Linux WPE WebKit and Chromium open a dialog
+with trusted keyboard selection; this does not reproduce macOS Safari's native
+pointer-menu path. The old `select_option` test supplies activation while sending
+untrusted change events, so it does not verify that platform interaction.
+
+Keep one compact Choose Cartridge disclosure with the same manifest-approved
+built-ins and local-ROM choice. Direct buttons open the local picker in their
+click handler; preserve existing approval, validation, recovery, session/default
+and cancellation rules. Use native summary/buttons, outside/Escape closing and
+keyboard/focus handling without a framework or browser detection. Require
+trusted click/keyboard picker coverage and the original race/rejection/layout
+assertions, independent review, protected CI/CodeQL and verified main. Native
+macOS Safari remains a manual confirmation; do not claim it passed in Linux.
+
+Local verification passes: 18 cartridge cases in Chromium and WPE WebKit, the
+seven original display/input cases in each engine, and final changed picker/
+visibility cases rechecked after the automation-listener correction. Direct
+click/Enter/Space each produce a chooser; cancellation/reopening, visible/hidden
+state, focus, key isolation and desktop/mobile/844 × 390 bounds are asserted.
+The full source/JS/native suite passes (23 cartridge and 148 general tests; two
+unchanged vendor/SDK-dependent classes skipped). Independent review approved
+after rerunning all three new picker/key/layout cases in WPE WebKit. Full
+protected browser/package/CodeQL gates remain required before source merge.
+
+[FM selector PR #108](https://github.com/NixMcRetro/VRAMpage-MD/pull/108) is
+complete at `7d2dda1332989733a3fe5e84b0e8b9c3f8697cf3`, identical to its reviewed
+tree. All seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40890156450)
+and four [CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40890155904)
+passed; downloaded main browser/source artifacts match the independently rebuilt
+runtime and approved cartridges. VERSION, published assets, approved Demo Cart
+v0.3.5 and McRetro.net stay unchanged. The completed v0.5.1 publication approval
+does not authorize publishing or deploying this later source correction.
+
 ## FM Output Model Selector — Integration Checkpoint, 29 October 2026
 
 The compact Discrete/Integrated selector is implemented beside Region, using

@@ -1,3 +1,13 @@
+# Direct Cartridge Picker Actions
+
+The cartridge chooser must open the local file picker from a direct trusted
+button activation. Exercise pointer click, Enter/Space, cancellation/reopening,
+outside/Escape closing and keyboard focus; preserve the existing built-in,
+local-file, invalid-ROM and asynchronous-selection assertions. Programmatic
+native-select events alone do not establish Safari's platform popup behavior.
+Run the cartridge cases in Chromium/Firefox/WebKit and retain all seven original
+layout/input cases. Linux WPE WebKit is not native macOS Safari verification.
+
 # FM Output Model Runtime Checks
 
 The [staged Discrete/Integrated control](FM-OUTPUT-MODEL.md) uses the production
