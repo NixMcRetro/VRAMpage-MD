@@ -1,6 +1,6 @@
 /* Run the exact experimental Demo Cart inside compiled Genesis Plus GX WASM.
  * This is a runtime probe, not a replacement for human visual acceptance.
- * Usage: node tests/test_demo_cart_v035_wasm.cjs site/core/genplus.js
+ * Usage: node tests/test_demo_cart_v038_wasm.cjs site/core/genplus.js
  */
 'use strict';
 const assert = require('node:assert/strict');
@@ -11,9 +11,9 @@ const zlib = require('node:zlib');
 
 const root = path.resolve(__dirname, '..');
 const coreFile = path.resolve(process.argv[2] || 'site/core/genplus.js');
-const romFile = path.join(root, 'demo-cart/show-lab/build/VRAMpage-MD-Demo-Cart-v0.3.7-Show.bin');
+const romFile = path.join(root, 'demo-cart/show-lab/build/VRAMpage-MD-Demo-Cart-v0.3.8-Show.bin');
 const reportFile = path.join(root, 'demo-cart/show-lab/build/rom_report.json');
-const output = path.join(root, 'artifacts/demo-cart-v037-genplus');
+const output = path.join(root, 'artifacts/demo-cart-v038-genplus');
 const WIDTH = 320, HEIGHT = 224, PITCH = 640;
 const PREVIOUS_SHA = 'ba276ed3aa7d6876684c60a7c49a6cf2febddfec8f94867cd85db8b0181f72e1';
 // Pin the new v0.3.5 digest after the first real Genesis Plus GX build report is inspected.
@@ -156,6 +156,9 @@ function recordSceneAudio(machine, label, frames, fps) {
   assert.equal(report.music.lengthSeconds,180);
   assert.equal(report.music.steps,900);
   assert.equal(report.music.tempoBPM,150);
+  assert.equal(report.music.eventStrideBytes,16);
+  assert.deepEqual(report.music.fmChannels,[0,1,2,3,4,5]);
+  assert.equal(report.music.eventBytes,14400);
   assert.equal(report.sha256,crypto.createHash('sha256').update(rom).digest('hex'));
   const captures=[], audioClips=[];
   for (const [region,fps,idle,label] of [[1,60,600,'ntsc'],[2,50,500,'pal']]) {
