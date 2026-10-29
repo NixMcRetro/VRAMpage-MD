@@ -9,11 +9,11 @@ VERSION, approved cartridges, releases and the live site. Reuse the
 
 ## Completed v0.5.1 Release and Lightweight Website
 
-[PR102](https://github.com/NixMcRetro/VRAMpage-MD/pull/102) and
-[website PR12](https://github.com/NixMcRetro/mcretro.net/pull/12) are merged.
+[PR #102](https://github.com/NixMcRetro/VRAMpage-MD/pull/102) and
+[website PR #12](https://github.com/NixMcRetro/mcretro.net/pull/12) are merged.
 v0.5.1 is published and live, with one complete same-origin source ZIP, matching
 GitHub source mirror, literal Musashi notice in WASM and verified non-commercial
-hosting. PR/main/release/site/CodeQL and all17live file checks passed; earlier
+hosting. PR/main/release/site/CodeQL and all 17 live file checks passed; earlier
 releases and unrelated website content remain unchanged. Future publication or
 hosting changes require separate approval.
 
