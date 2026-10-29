@@ -52,16 +52,22 @@ jobs:
           mkdir -p "$RUNNER_TEMP/normal-core"
           cp site/core/genplus.js site/core/genplus.wasm "$RUNNER_TEMP/normal-core/"
           test "$(sha256sum site/core/genplus.js | cut -d ' ' -f1)" = "3b984104bf92fd9e7a47fa5f081ed18d020e61dee6cd87df7580c147a3edc3bd"
-          test "$(sha256sum site/core/genplus.wasm | cut -d ' ' -f1)" = "0bb55f946e5bb20ba0efc24e81776305ba8e1d9a82e0a3dcdca9e6218fbbe6d9"
+          test "$(sha256sum site/core/genplus.wasm | cut -d ' ' -f1)" = "dbd28f8f7dd101a5331c9a38911dd7a187d1c7790bed41ede2da8854083f2ad7"
           test -s site/core/genplus.js
           test -s site/core/genplus.wasm
           test -f site/source/README.txt
+          node tests/test_musashi_notice_wasm.cjs site/core/genplus.wasm \
+            site/source/src/main/c/core/m68k/m68k.h \
+            0bb55f946e5bb20ba0efc24e81776305ba8e1d9a82e0a3dcdca9e6218fbbe6d9
           bash scripts/build-core.sh site-runtime
           test -s site/core/genplus.js
           test -s site/core/genplus.wasm
           test -f site/source/runtime-profile/BUILDING.txt
           test -f site/source/runtime-profile/source/scripts/vram_transaction_api.js
           test -f site/source/runtime-profile/source/scripts/region_profile_api.js
+          node tests/test_musashi_notice_wasm.cjs site/core/genplus.wasm \
+            site/source/runtime-profile/source/wasm-genplus/src/main/c/core/m68k/m68k.h \
+            8fa2fa0fe6a47890c948ed39a7f095980d9ffde7d4405a88ce07a5f34b8814b7
           node tests/test_runtime_build_profile.cjs site/core/genplus.js
           node tests/test_region_profile_wasm.cjs site/core/genplus.js "$RUNNER_TEMP/normal-core/genplus.js"
           node tests/test_session_checkpoint_runtime.cjs site/core/genplus.js "$RUNNER_TEMP/normal-core/genplus.js"

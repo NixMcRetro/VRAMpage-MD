@@ -36,6 +36,7 @@ REQUIRED_FILES = (
     "site/core/genplus.wasm",
     "site/source/README.txt",
     "site/source/patch_core.py",
+    "site/source/embed_musashi_notice.py",
     "site/source/vram_fault_patch.c",
     "site/source/vram_transaction_render.h",
     "site/source/src/main/c/core/vdp_render.h",

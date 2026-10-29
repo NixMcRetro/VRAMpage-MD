@@ -40,6 +40,21 @@ class RuntimeOutputPathValidation(unittest.TestCase):
                 with self.subTest(output=output), self.assertRaises(RuntimeError):
                     BUILD.validate_output_path(root, vendor, output)
 
+    def test_runtime_cmake_embeds_musashi_notice_after_link(self):
+        with tempfile.TemporaryDirectory(prefix="runtime-cmake-notice-") as temporary:
+            cmake = Path(temporary) / "CMakeLists.txt"
+            cmake.write_text(
+                "project(genplus C CXX)\n"
+                "set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../src/main/js)\n"
+                "add_executable(${PROJECT_NAME} ${SOURCE_FILES})\n"
+            )
+            BUILD.patch_cmake(cmake)
+            text = cmake.read_text()
+            self.assertIn("find_package(Python3 REQUIRED COMPONENTS Interpreter)", text)
+            self.assertIn("add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD", text)
+            self.assertIn("scripts/embed_musashi_notice.py", text)
+            self.assertIn("src/main/c/core/m68k/m68k.h", text)
+
 
 if __name__ == "__main__":
     unittest.main()

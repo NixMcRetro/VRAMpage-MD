@@ -31,6 +31,7 @@ def _fixture(tmp_path, *, licence=True, symlink=False, missing_source=False, mis
         "README.md", "START.command", "docs/RUNNING-LOCALLY.md",
         "scripts/cartridges.py", "scripts/build-demo-cart.py", "scripts/build-core.sh",
         "scripts/build-core-runtime.py", "scripts/install-runtime-site.py",
+        "scripts/embed_musashi_notice.py",
         "scripts/patch_core.py", "scripts/session_checkpoint_patch.py", "scripts/serve.py",
         "scripts/package-website.py", "scripts/website_bundle.py", "scripts/verify-corresponding-source.py",
         "site/style.css", "site/app.js", "site/cartridges.js", "site/framebuffer.js",
@@ -108,6 +109,7 @@ def _fixture(tmp_path, *, licence=True, symlink=False, missing_source=False, mis
              "GNU LESSER GENERAL PUBLIC LICENSE Version 2.1\n")
     _put(root, f"{source}/scripts/patch_core.py", "# patcher\n")
     _put(root, f"{source}/scripts/session_checkpoint_patch.py", "# patcher\n")
+    _put(root, f"{source}/scripts/embed_musashi_notice.py", "# notice embedder\n")
     _put(root, f"{source}/scripts/runtime.js", "// runtime shim\n")
     if symlink:
         (root / source / "scripts" / "bad.py").symlink_to(root / "scripts" / "patch_core.py")
