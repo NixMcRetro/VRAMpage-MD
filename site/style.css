@@ -445,9 +445,19 @@ footer { padding-top:9px; font-size:10px; }
 
 /* Keep all five controls on one row in a short landscape window. */
 .toolbar button { padding-inline:5px; }
-/* The native cartridge menu stays compact; its options can show full names. */
-.toolbar .cartridge-select { flex:1; width:0; min-width:110px; min-height:32px; padding:3px; font:700 10px Arial,Helvetica,sans-serif; cursor:pointer; }
-@media(max-width:680px) { .toolbar .cartridge-select { flex:1 1 40%; min-height:40px; } }
+/* Direct cartridge buttons keep file selection inside a trusted click. */
+.toolbar .cartridge-chooser { position:relative; flex:1; width:0; min-width:110px; }
+.cartridge-chooser summary { min-height:32px; padding:3px; display:flex; align-items:center; justify-content:center; gap:5px; border:1px solid #888e89; border-radius:2px; background:var(--surface); font:700 10px Arial,Helvetica,sans-serif; cursor:pointer; list-style:none; }
+.cartridge-chooser summary::-webkit-details-marker { display:none; }
+.cartridge-chooser summary::after { content:'▾'; }
+.cartridge-chooser[open] summary::after { content:'▴'; }
+.cartridge-chooser summary:hover { background:var(--surface-2); }
+.cartridge-choices { position:absolute; bottom:calc(100% + 4px); left:0; z-index:5; display:flex; flex-direction:column; gap:4px; width:max-content; min-width:100%; max-width:min(320px, calc(100vw - 44px)); padding:4px; border:1px solid var(--rule); background:var(--surface); box-shadow:0 3px 8px #0003; }
+.toolbar .cartridge-choices button { flex:none; width:100%; min-width:0; min-height:32px; padding:6px 8px; text-align:left; font-size:11px; }
+@media(max-width:680px) {
+  .toolbar .cartridge-chooser { flex:1 1 40%; }
+  .cartridge-chooser summary, .toolbar .cartridge-choices button { min-height:40px; }
+}
 
 @media (min-width:841px) and (max-height:420px) {
   .machine-options { column-gap:8px; row-gap:4px; }

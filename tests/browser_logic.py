@@ -9,6 +9,7 @@ import threading
 import unittest
 
 from browser_result import AnnotatedBrowserResult
+from browser_cartridge import choose_cartridge
 
 from playwright.sync_api import expect, sync_playwright
 
@@ -202,17 +203,17 @@ class BrowserLogicTests(unittest.TestCase):
 
     def test_cartridge_selector_switches_builtins_and_keeps_session_choice(self):
         page=self.new_page(demo_rom=True)
-        options=page.locator('#cartridgeSelect option').all_text_contents()
+        options=page.locator('#cartridgeChooser button').all_text_contents()
         self.assertIn(self.demo_cart['displayName']+' v'+self.demo_cart['version'],options)
         self.assertIn(self.colour_cart['displayName']+' v'+self.colour_cart['version'],options)
         self.assertIn('Load Your Own ROM…',options)
-        page.locator('#cartridgeSelect').select_option('colour-test')
+        choose_cartridge(page,'colour-test')
         expect(page.locator('#romName')).to_have_text('VRAMPAGE MD COLOUR TEST')
         self.assertEqual(page.evaluate('mockCore.starts'),2)
         page.reload()
         expect(page.locator('#romName')).to_have_text('VRAMPAGE MD COLOUR TEST')
         self.assertEqual(page.evaluate('mockCore.starts'),1)
-        page.locator('#cartridgeSelect').select_option('demo')
+        choose_cartridge(page,'demo')
         expect(page.locator('#romName')).to_have_text('VRAMPAGE MD DEMO CART')
         self.assertEqual(page.evaluate('mockCore.starts'),2)
 
@@ -220,21 +221,114 @@ class BrowserLogicTests(unittest.TestCase):
         page=self.new_page(demo_rom=True,stalled_demo=True)
         page.wait_for_function("typeof window.__resumeDemoFetch==='function'")
         with page.expect_file_chooser() as chooser:
-            page.locator('#cartridgeSelect').select_option('local')
+            choose_cartridge(page,'local')
         chooser.value.set_files([])
         page.evaluate('window.__resumeDemoFetch()')
         page.wait_for_timeout(100)
         self.assertEqual(page.evaluate('mockCore.starts'),0)
         expect(page.locator('#powerLabel')).to_have_text('WAITING FOR ROM')
         with page.expect_file_chooser() as chooser:
-            page.locator('#cartridgeSelect').select_option('local')
+            choose_cartridge(page,'local')
         chooser.value.set_files({'name':'private-local.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
         expect(page.locator('#romName')).to_have_text('PRIVATE-LOCAL.BIN')
+
+    def test_cartridge_picker_direct_click_enter_space_cancel_and_reopen(self):
+        page=self.page
+        summary=page.locator('#cartridgeChooser > summary')
+        local=page.locator('#cartridgeChooser button[data-cartridge="local"]')
+        choices=page.locator('.cartridge-choices')
+        expect(choices).to_be_hidden()
+        # Keep interception enabled between rapid keyboard activations.
+        choosers=[]
+        page.on('filechooser',lambda chooser:choosers.append(chooser))
+        page.evaluate("""() => {
+          window.cartridgeActivations=[];
+          document.querySelector('[data-cartridge="local"]').addEventListener('click',event=>
+            cartridgeActivations.push({trusted:event.isTrusted,active:navigator.userActivation.isActive}));
+        }""")
+        for action in ['click','Enter','Space']:
+            with self.subTest(action=action):
+                if action=='click':
+                    summary.click()
+                else:
+                    summary.focus()
+                    page.keyboard.press(action)
+                    for _ in range(page.locator('#cartridgeChooser button').count()): page.keyboard.press('Tab')
+                    expect(local).to_be_focused()
+                expect(choices).to_be_visible()
+                with page.expect_file_chooser() as chooser:
+                    if action=='click': local.click()
+                    else: page.keyboard.press(action)
+                chooser.value.set_files([])
+                self.assertFalse(page.locator('#cartridgeChooser').evaluate('node=>node.open'))
+                expect(choices).to_be_hidden()
+                expect(summary).to_be_focused()
+        self.assertEqual(page.evaluate('cartridgeActivations'),[{'trusted':True,'active':True}]*3)
+        self.assertEqual(page.evaluate('mockCore.starts'),0)
+        with page.expect_file_chooser() as chooser:
+            choose_cartridge(page,'local')
+        chooser.value.set_files({'name':'after-cancel.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
+        expect(page.locator('#romName')).to_have_text('AFTER-CANCEL.BIN')
+        self.assertEqual(len(choosers),4)
+
+    def test_cartridge_chooser_escape_outside_and_keyboard_do_not_control_emulator(self):
+        page=self.page
+        self.load_rom(page)
+        summary=page.locator('#cartridgeChooser > summary')
+        summary.click()
+        choices=page.locator('.cartridge-choices')
+        expect(choices).to_be_visible()
+        state="""() => JSON.stringify({pause:document.querySelector('#pauseBtn').textContent,
+          starts:mockCore.starts,logic:mockCore.logic.setterCalls,vram:mockCore.vramModel.calls,
+          masks:mockCore.vramMaskCalls,psg:mockCore.psg.calls,fm:mockCore.fm.calls})"""
+        before=page.evaluate(state)
+        for control in [summary,page.locator('#cartridgeChooser button[data-cartridge="local"]')]:
+            control.focus()
+            for key in ['ArrowRight','ArrowDown','KeyZ','KeyX','KeyC','Digit1','Digit0','KeyP']:
+                with self.subTest(control=control,key=key):
+                    ticks=page.evaluate('mockCore.ticks')
+                    page.keyboard.down(key)
+                    page.wait_for_function('before=>mockCore.ticks>before',arg=ticks)
+                    self.assertFalse(page.evaluate('mockCore.inputs.some(Boolean)'))
+                    self.assertEqual(page.evaluate(state),before)
+                    page.keyboard.up(key)
+        page.keyboard.press('Escape')
+        self.assertFalse(page.locator('#cartridgeChooser').evaluate('node=>node.open'))
+        expect(choices).to_be_hidden()
+        expect(summary).to_be_focused()
+        page.keyboard.press('Enter')
+        self.assertTrue(page.locator('#cartridgeChooser').evaluate('node=>node.open'))
+        expect(choices).to_be_visible()
+        outside=page.locator('#pauseBtn')
+        outside.focus()
+        outside.click()
+        self.assertFalse(page.locator('#cartridgeChooser').evaluate('node=>node.open'))
+        expect(choices).to_be_hidden()
+        expect(outside).to_be_focused()
+
+    def test_cartridge_chooser_fits_short_and_mobile_windows_without_resizing_toolbar(self):
+        page=self.page
+        for width,height in [(1366,768),(390,844),(360,640),(844,390)]:
+            with self.subTest(viewport=(width,height)):
+                page.set_viewport_size({'width':width,'height':height})
+                page.evaluate('window.scrollTo(0,0)')
+                page.evaluate('() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
+                toolbar=page.locator('.toolbar').bounding_box()
+                page.locator('#cartridgeChooser > summary').click()
+                choices=page.locator('.cartridge-choices').bounding_box()
+                opened=page.locator('.toolbar').bounding_box()
+                self.assertEqual((opened['width'],opened['height']),(toolbar['width'],toolbar['height']))
+                self.assertGreaterEqual(choices['x'],0)
+                self.assertGreaterEqual(choices['y'],0)
+                self.assertLessEqual(choices['x']+choices['width'],width)
+                self.assertLessEqual(choices['y']+choices['height'],height)
+                self.assertLessEqual(page.evaluate('document.documentElement.scrollWidth'),width)
+                page.keyboard.press('Escape')
 
     def test_cartridge_latest_builtin_wins_over_pending_demo(self):
         page=self.new_page(demo_rom=True,stalled_demo=True)
         page.wait_for_function("typeof window.__resumeDemoFetch==='function'")
-        page.locator('#cartridgeSelect').select_option('colour-test')
+        choose_cartridge(page,'colour-test')
         expect(page.locator('#romName')).to_have_text('VRAMPAGE MD COLOUR TEST')
         page.evaluate('window.__resumeDemoFetch()')
         page.wait_for_timeout(100)
@@ -249,7 +343,7 @@ class BrowserLogicTests(unittest.TestCase):
         }""")
         page.locator('#romFile').set_input_files({'name':'slow-local.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
         page.wait_for_function("typeof window.finishLocalRead==='function'")
-        page.locator('#cartridgeSelect').select_option('colour-test')
+        choose_cartridge(page,'colour-test')
         expect(page.locator('#romName')).to_have_text('VRAMPAGE MD COLOUR TEST')
         page.evaluate('window.finishLocalRead()')
         page.wait_for_timeout(100)
@@ -267,7 +361,7 @@ class BrowserLogicTests(unittest.TestCase):
         approved=(ROOT/'site'/self.colour_cart['path']).read_bytes()
         altered=bytearray(approved);altered[-1]^=1
         page.route('**/'+self.colour_cart['path'],lambda route:route.fulfill(body=bytes(altered)))
-        page.locator('#cartridgeSelect').select_option('colour-test')
+        choose_cartridge(page,'colour-test')
         expect(page.locator('#experimentLog')).to_contain_text('SHA-256 does not match')
         expect(page.locator('#romName')).to_have_text('SYNTHETIC-TEST.BIN')
         self.assertEqual(page.evaluate('({starts:mockCore.starts,psg:JSON.stringify(mockCore.psg)})'),before)
@@ -275,7 +369,7 @@ class BrowserLogicTests(unittest.TestCase):
         page.locator('#compactResetBtn').click()
         expect(page.locator('#romName')).to_have_text('SYNTHETIC-TEST.BIN')
         page.unroute('**/'+self.colour_cart['path'])
-        page.locator('#cartridgeSelect').select_option('colour-test')
+        choose_cartridge(page,'colour-test')
         expect(page.locator('#romName')).to_have_text('VRAMPAGE MD COLOUR TEST')
         expect(page.locator('#restoreCheckpointBtn')).to_be_disabled()
 
@@ -286,7 +380,7 @@ class BrowserLogicTests(unittest.TestCase):
         page.route('**/cartridges.json',lambda route:route.fulfill(content_type='application/json',body=json.dumps(manifest)))
         page.reload()
         expect(page.locator('#placeholderTitle')).to_have_text('BUILT-IN CARTRIDGE UNAVAILABLE')
-        self.assertEqual(page.locator('#cartridgeSelect option').count(),2)
+        self.assertEqual(page.locator('#cartridgeChooser button').count(),1)
         self.load_rom(page)
         expect(page.locator('#romName')).to_have_text('SYNTHETIC-TEST.BIN')
 
@@ -307,7 +401,7 @@ class BrowserLogicTests(unittest.TestCase):
         page.evaluate('window.finishCore()')
         expect(page.locator('#romName')).to_have_text('EARLY-LOCAL.BIN')
         page.evaluate('window.finishManifest()')
-        page.wait_for_function("document.querySelector('#cartridgeSelect option[value=demo]')")
+        page.wait_for_function("document.querySelector('#cartridgeChooser button[data-cartridge=demo]')")
         self.assertEqual(page.evaluate('mockCore.starts'),1)
         expect(page.locator('#romName')).to_have_text('EARLY-LOCAL.BIN')
 
@@ -317,7 +411,7 @@ class BrowserLogicTests(unittest.TestCase):
           const native=VRAMpageCartridges.verify;
           VRAMpageCartridges.verify=(bytes,cart)=>new Promise(resolve=>window.finishVerification=()=>native(bytes,cart).then(resolve));
         }""")
-        page.locator('#cartridgeSelect').select_option('colour-test')
+        choose_cartridge(page,'colour-test')
         page.wait_for_function("typeof window.finishVerification==='function'")
         self.load_rom(page)
         page.evaluate('window.finishVerification()')
@@ -328,7 +422,7 @@ class BrowserLogicTests(unittest.TestCase):
     def test_cartridge_static_http_without_webcrypto_still_verifies(self):
         page=self.page
         page.evaluate("Object.defineProperty(window.crypto,'subtle',{value:undefined})")
-        page.locator('#cartridgeSelect').select_option('colour-test')
+        choose_cartridge(page,'colour-test')
         expect(page.locator('#romName')).to_have_text('VRAMPAGE MD COLOUR TEST')
         self.assertEqual(page.evaluate('mockCore.starts'),1)
 
@@ -336,7 +430,7 @@ class BrowserLogicTests(unittest.TestCase):
         page=self.new_page(circuit_config=True)
         self.load_rom(page)
         page.evaluate('mockCore.rejectVramModel=true')
-        page.locator('#cartridgeSelect').select_option('colour-test')
+        choose_cartridge(page,'colour-test')
         expect(page.locator('#placeholderTitle')).to_have_text('CARTRIDGE ACTIVATION UNCERTAIN')
         expect(page.locator('#powerLabel')).to_have_text('WAITING FOR ROM')
         page.evaluate('mockCore.rejectVramModel=false')
@@ -349,10 +443,10 @@ class BrowserLogicTests(unittest.TestCase):
         self.load_rom()
         page=self.page
         page.route('**/'+self.colour_cart['path'],lambda route:route.fulfill(body=b'too short'))
-        page.locator('#cartridgeSelect').select_option('colour-test')
+        choose_cartridge(page,'colour-test')
         expect(page.locator('#experimentLog')).to_contain_text('size does not match')
-        page.evaluate("document.querySelector('#cartridgeSelect').add(new Option('Unapproved','unapproved'))")
-        page.locator('#cartridgeSelect').select_option('unapproved')
+        page.evaluate("const button=document.createElement('button');button.type='button';button.dataset.cartridge='unapproved';button.textContent='Unapproved';document.querySelector('.cartridge-choices').append(button)")
+        choose_cartridge(page,'unapproved')
         expect(page.locator('#experimentLog')).to_contain_text('not approved')
         self.assertEqual(page.evaluate('mockCore.starts'),1)
         expect(page.locator('#romName')).to_have_text('SYNTHETIC-TEST.BIN')
@@ -364,7 +458,7 @@ class BrowserLogicTests(unittest.TestCase):
           const native=VRAMpageCartridges.verify;
           VRAMpageCartridges.verify=(bytes,cart)=>new Promise(resolve=>window.finishVerification=()=>native(bytes,cart).then(resolve));
         }""")
-        page.locator('#cartridgeSelect').select_option('colour-test')
+        choose_cartridge(page,'colour-test')
         page.wait_for_function("typeof window.finishVerification==='function'")
         page.locator('#resetBtn').click()
         page.wait_for_function('mockCore.starts===2')

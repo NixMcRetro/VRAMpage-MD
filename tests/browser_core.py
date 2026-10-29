@@ -14,6 +14,7 @@ import unittest
 
 from playwright.sync_api import sync_playwright, expect
 from browser_result import AnnotatedBrowserResult
+from browser_cartridge import choose_cartridge
 
 ROOT = Path(__file__).resolve().parents[1]
 OPTIONS = None
@@ -130,7 +131,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                                            f'Original Demo Cart rendered a blank or uniform image: {screen}')
                         self.assertEqual(page.locator('#soundBtn').inner_text(), 'Enable Sound')
                         for cartridge in manifest['cartridges']:
-                            page.locator('#cartridgeSelect').select_option(cartridge['id'])
+                            choose_cartridge(page,cartridge['id'])
                             expect(page.locator('#romName')).to_have_text(cartridge['displayName'].upper())
                             page.wait_for_function('window.testCore._get_logic_frame()>12')
                             page.locator('#regionSelect').select_option('2')
