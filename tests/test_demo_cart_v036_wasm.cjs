@@ -121,11 +121,25 @@ async function machine(region, rom) {
     m.run(idle+20);
     captures.push(m.capture(label+'-intro'));
     const left=new Float32Array(m.core.HEAPF32.buffer,m.core._get_web_audio_l_ref(),2048);
-    let audibleSamples=0;
+    const mem=new DataView(m.core.HEAPU8.buffer);
+    const base=m.core._get_logic_ram_ref();
+    const readWord=offset=>mem.getUint16(base+offset,true);
+    let audibleSamples=0, audioFrames=0, lastCount=0,peak=0;
     for(let i=0;i<20;i++){
-      m.frame();
-      for(const sample of left) if(Number.isFinite(sample) && Math.abs(sample)>0.0001) audibleSamples++;
+      lastCount=m.frame();
+      if(lastCount>0) audioFrames++;
+      for(let sample=0;sample<lastCount;sample++){
+        const value=left[sample];
+        peak=Math.max(peak,Math.abs(value));
+        if(Number.isFinite(value) && Math.abs(value)>0.0001) audibleSamples++;
+      }
     }
+    console.log('SHOW AUDIO TRACE',JSON.stringify({
+      region,frame:m.core._get_logic_frame(),cpuFlags:m.core._get_logic_cpu_flags(),
+      songAccumulator:readWord(0),songIndex:readWord(2),active:readWord(6),
+      cadence:readWord(8),audioFrames,lastCount,peak,audibleSamples
+    }));
+    assert.equal(readWord(6),1,'Original show must be active after idle and before score verification');
     assert.ok(audibleSamples>0,'YM2612/PSG score must generate non-silent native audio samples');
     m.run(20*fps+20);
     captures.push(m.capture(label+'-vortex'));
