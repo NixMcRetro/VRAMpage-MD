@@ -1,13 +1,29 @@
-## Active FM Output Model Selector — 29 October 2026
+## FM Output Model Selector — Integration Checkpoint, 29 October 2026
 
-Implement the compact staged Discrete/Integrated control beside Region using
-[the bounded feature contract](FM-OUTPUT-MODEL.md) and the verified native proof.
-Discrete stays default; requests apply on Clean Restart/new cartridge, while
-CPU Reset and checkpoint restore retain the active model and saved slot. Expose
-requested/effective identity in observations and comparison, with legacy data
-Unknown. Preserve normal hashes, VERSION, approved cartridges and live releases.
-Use an isolated branch, focused actual-WASM/browser tests, specialist review,
-all protected checks/CodeQL and verified main before source integration.
+The compact Discrete/Integrated selector is implemented beside Region, using
+[the bounded feature contract](FM-OUTPUT-MODEL.md). Discrete remains default;
+changes stage until Clean Restart/new cartridge. Pending/rejected choices,
+CPU Reset and checkpoint restore retain active sound/model and the saved slot.
+Versioned `machine.fmOutputModel` observations/comparison distinguish pending,
+effective and backend identity independently from Region; legacy/inconsistent
+data stays Unknown. Grouped controls preserve active/pending labels on phones.
+
+Independent Luna High specialist review approved after rerunning production
+actual-WASM output/DAC/status/fault routing, all 13 checkpoint groups (two models
+by NTSC/PAL), strict native/API and comparison checks, four focused mock browser
+cases and a real-core FM/PAL/checkpoint browser case. Full source/ASan/UBSan checks
+pass locally; two environment-dependent classes skipped there are covered by the
+separate SDK diagnostic-WASM run and pinned CI. Retained-source rebuilding is
+byte-exact with all 267 inventory hashes and Musashi notice validated.
+
+Final runtime JS SHA-256 is
+`dd69d2de684ff898b5dc69f01ac76a121a91c0bf5fe7c659122394c15063fac2`;
+WASM is `04c3108a1359e364da25e1570e5789dd20d1f3a250e2ea97d62868967183f844`.
+Only the runtime gate changes; normal gates stay fixed. Require all seven
+protected checks and CodeQL before merge, then verify main. VERSION, approved
+cartridges, releases and McRetro.net remain unchanged. Audibility and physical
+hardware accuracy are not established. Experimental Demo Cart listening/gameplay
+acceptance remains owner work; optional NTSC VA6 issue #73 does not block source.
 
 ## Completed FM Output Model Proof — 29 October 2026
 
