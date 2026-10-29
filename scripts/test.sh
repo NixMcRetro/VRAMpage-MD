@@ -5,6 +5,9 @@ cd "$ROOT"
 python3 scripts/build-demo-cart.py
 python3 -m unittest discover -s demo-cart/fx-lab/tests -v
 node --check tests/test_demo_cart_v035_wasm.cjs
+node --check tests/test_bundled_cartridges_wasm.cjs
+node --check site/cartridges.js
+node tests/test_cartridges.cjs
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 node --check site/app.js
 node --check site/circuit-config.js

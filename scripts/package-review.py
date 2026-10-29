@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Create a ROM-free local review ZIP from a built VRAMpage MD checkout."""
+"""Create a local review ZIP containing only approved original cartridges from a built VRAMpage MD checkout."""
 
 import argparse
-import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -11,6 +10,9 @@ import subprocess
 import sys
 import zipfile
 
+from cartridges import (CartridgeError, approved_assets, load_manifest, source_paths,
+                        verify_asset, verify_site)
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
@@ -18,16 +20,11 @@ CACHE_PARTS = {
     "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".cache",
     ".tox", ".venv", "venv", "node_modules", "coverage",
 }
-ROM_SUFFIXES = {
-    ".bin", ".gen", ".smd", ".rom", ".sms", ".gg", ".32x", ".iso",
-    ".cue", ".chd", ".mdx",
-}
 SECRET_NAMES = {
     "credentials", "credentials.json", "id_rsa", "id_ed25519",
     "id_ecdsa", "secrets.json", "secrets.yaml", "secrets.yml",
 }
 SECRET_SUFFIXES = {".pem", ".p12", ".pfx", ".key"}
-ARCHIVE_SUFFIXES = {".zip", ".7z", ".rar", ".tar", ".gz", ".bz2", ".xz"}
 REQUIRED_FILES = (
     "START.command",
     "README.md",
@@ -36,6 +33,8 @@ REQUIRED_FILES = (
     "site/index.html",
     "site/style.css",
     "site/app.js",
+    "site/cartridges.js",
+    "site/cartridges.json",
     "site/framebuffer.js",
     "site/rgb-encoder.js",
     "site/core/genplus.js",
@@ -49,16 +48,6 @@ REQUIRED_FILES = (
 )
 BUILD_INFO_PATHS = {"BUILD-INFO.json", "site/build-info.json"}
 NATIVE_BLITTER_MARKER = b"VRAMpage MD: native RGBA output blitter"
-# Narrow, content-addressed exception for this project's original homebrew cartridge.
-# Other game ROMs and nested archives remain prohibited.
-APPROVED_DEMO = {
-    "site/demo/VRAMpage-MD-Demo-Cart-v0.1.bin":
-        "93b9fc72a428657c012fb4325bc1382b69b9d3c9d0af4a4dc312732789dfe0d4",
-    "site/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin":
-        "89faaace638c1ccae7062e96cef02d5350059488a35acb372f1e4b5d4dec277f",
-    "demo-cart/VRAMpage-MD-Demo-Cart-v0.1-Source-Kit.zip":
-        "fb073ee201ce73072c83a569742a644c2f8c7816e102ffd55ce723154bd67403",
-}
 
 
 class BundleError(Exception):
@@ -113,6 +102,8 @@ def _git_tracked_paths():
 
 
 def _collect_paths(output_path):
+    manifest = verify_site(ROOT, load_manifest(ROOT))
+    assets = approved_assets(manifest)
     paths = set(_git_tracked_paths())
     if not SITE.is_dir():
         raise BundleError("The checkout is missing the site/ directory.")
@@ -133,31 +124,11 @@ def _collect_paths(output_path):
         if _is_secret_path(relative):
             raise BundleError(f"Refusing to package a file that may contain a user secret: {relative}")
         data = source.read_bytes()
-        expected = APPROVED_DEMO.get(relative)
-        if expected is not None:
-            if hashlib.sha256(data).hexdigest() != expected:
-                raise BundleError(f"Original Demo Cart asset has an unexpected checksum: {relative}")
-            if relative.endswith(".bin") and (len(data) < 0x200 or data[0x100:0x104] != b"SEGA"):
-                raise BundleError(f"Original Demo Cart has an invalid Mega Drive header: {relative}")
-            selected.append((relative, source, data))
-            continue
-        if PurePosixPath(relative).suffix.lower() in ROM_SUFFIXES:
-            raise BundleError(f"Refusing to package a game ROM or disc image: {relative}")
-        if PurePosixPath(relative).suffix.lower() in ARCHIVE_SUFFIXES:
-            raise BundleError(f"Refusing to package an opaque nested archive: {relative}")
-        if len(data) >= 0x104 and data[0x100:0x104] == b"SEGA":
-            raise BundleError(f"Refusing to package a Mega Drive ROM signature: {relative}")
+        verify_asset(relative, data, assets)
         selected.append((relative, source, data))
 
     by_name = {name: data for name, _source, data in selected}
-    # Bundles that autoload v0.3.5 MUST contain the exact original cartridge.
-    # Disposable fixtures and historical pre-v0.3.5 app bundles retain their
-    # own baseline behaviour; no unapproved cartridge is ever accepted.
-    new_demo = "site/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin"
-    if b"VRAMpage-MD-Demo-Cart-v0.3.5.bin" in by_name.get("site/app.js", b""):
-        if new_demo not in by_name:
-            raise BundleError("The v0.3.5 default Demo Cart is missing. Run scripts/build-demo-cart.py before packaging.")
-    missing = [name for name in REQUIRED_FILES
+    missing = [name for name in set(REQUIRED_FILES) | assets.keys() | source_paths(manifest)
                if name not in by_name or not by_name[name]]
     if missing:
         raise BundleError("The built review bundle is incomplete; missing or empty files:\n  "
@@ -218,7 +189,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         count = create_package(args.output)
-    except BundleError as error:
+    except (BundleError, CartridgeError) as error:
         print(f"Cannot create local review bundle: {error}", file=sys.stderr)
         return 1
     print(f"Created {args.output.expanduser().absolute()} with {count} files.")

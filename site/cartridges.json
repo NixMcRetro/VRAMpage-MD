@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "defaultCartridge": "demo",
+  "cartridges": [
+    {
+      "id": "demo",
+      "version": "0.3.5",
+      "displayName": "VRAMpage MD Demo Cart",
+      "approved": true,
+      "path": "demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin",
+      "source": "demo-cart/fx-lab/build_fx.py",
+      "build": {
+        "method": "python3",
+        "output": "demo-cart/fx-lab/build/VRAMpage-MD-FX-Lab-v0.3.5-Demoscene.bin"
+      },
+      "size": 150564,
+      "sha256": "89faaace638c1ccae7062e96cef02d5350059488a35acb372f1e4b5d4dec277f",
+      "license": {
+        "type": "project-original",
+        "attribution": "VRAMpage MD project; original program and user-approved portrait and logo assets",
+        "redistribution": "Authorized by the project owner for VRAMpage MD built-in cartridges and future bundles",
+        "notice": "demo-cart/CARTRIDGE-NOTICES.md"
+      },
+      "regions": ["J", "U", "E"]
+    },
+    {
+      "id": "colour-test",
+      "version": "1",
+      "displayName": "VRAMpage MD Colour Test",
+      "approved": true,
+      "path": "demo/VRAMpage-MD-Colour-Test.bin",
+      "source": "demo-cart/colour-test/build_colour_test.py",
+      "build": {
+        "method": "python3",
+        "output": "demo-cart/colour-test/VRAMpage-MD-Colour-Test.bin"
+      },
+      "size": 65536,
+      "sha256": "b919f0dede640f699b9fec17e826de13a2f8d661d81616fbb6903a9a7e1d40c9",
+      "license": {
+        "type": "project-original",
+        "attribution": "VRAMpage MD project; original program and graphics created for the VRAMpage MD blog illustration",
+        "redistribution": "Authorized by the project owner for VRAMpage MD built-in cartridges and future bundles",
+        "notice": "demo-cart/CARTRIDGE-NOTICES.md",
+        "originalNotice": "demo-cart/colour-test/ORIGINAL-README.txt"
+      },
+      "regions": ["U"]
+    }
+  ],
+  "preservedAssets": [
+    {
+      "path": "site/demo/VRAMpage-MD-Demo-Cart-v0.1.bin",
+      "size": 49388,
+      "sha256": "93b9fc72a428657c012fb4325bc1382b69b9d3c9d0af4a4dc312732789dfe0d4"
+    },
+    {
+      "path": "demo-cart/VRAMpage-MD-Demo-Cart-v0.1-Source-Kit.zip",
+      "size": 42025,
+      "sha256": "fb073ee201ce73072c83a569742a644c2f8c7816e102ffd55ce723154bd67403"
+    }
+  ]
+}

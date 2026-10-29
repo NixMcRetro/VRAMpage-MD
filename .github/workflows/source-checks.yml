@@ -78,6 +78,8 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: ${{ steps.browser-cache.outputs.cache-primary-key }}
+      - name: Build and verify manifest-approved cartridges
+        run: python3 scripts/build-demo-cart.py
       - name: Run ${{ matrix.browser }} layout and input tests
         run: python tests/browser_display.py --browser ${{ matrix.browser }} --artifacts artifacts/browser
       - name: Run ${{ matrix.browser }} logic interface tests

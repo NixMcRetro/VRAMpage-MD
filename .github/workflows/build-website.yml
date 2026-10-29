@@ -72,6 +72,7 @@ jobs:
           python3 scripts/build-demo-cart.py
           python3 -m unittest discover -s demo-cart/fx-lab/tests -v
           node tests/test_demo_cart_v035_wasm.cjs site/core/genplus.js
+          node tests/test_bundled_cartridges_wasm.cjs site/core/genplus.js
       - name: Upload native Demo Cart v0.3.5 verification frames
         uses: actions/upload-artifact@v7
         with:
@@ -133,18 +134,16 @@ jobs:
         run: python3 tests/browser_core.py --browser chromium
       - name: Verify actual runtime and legacy VRAM model handoffs
         run: python3 tests/browser_transaction.py --browser chromium --normal-core "$RUNNER_TEMP/normal-core"
-      - name: Verify future release has the exact approved default Demo Cart
+      - name: Verify all manifest-approved cartridges for future bundles
         shell: bash
         run: |
           python3 scripts/build-demo-cart.py
-          test "$(sha256sum site/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin | cut -d ' ' -f1)" = "89faaace638c1ccae7062e96cef02d5350059488a35acb372f1e4b5d4dec277f"
+          python3 scripts/cartridges.py verify-site
       - name: Package static website with corresponding emulator source
         shell: bash
         run: |
           mkdir -p release
-          cp -R site release/vrampage
-          # Avoid extraneous Python or local build junk inside public artifact.
-          find release/vrampage -type d -name '__pycache__' -prune -exec rm -rf '{}' +
+          python3 scripts/cartridges.py stage-site release/vrampage
           tar -czf release/VRAMpage-MD-static-site.tar.gz -C release vrampage
       - name: Package cross-platform browser app
         run: |
@@ -225,6 +224,8 @@ jobs:
           with zipfile.ZipFile(archives[0]) as package:
               package.extractall(extract_dir)
           project = extract_dir / "VRAMpage-MD"
+          import subprocess
+          subprocess.run([sys.executable, str(project / "scripts/cartridges.py"), "verify-site"], check=True)
           required = (
               project / "site/core/genplus.js",
               project / "site/core/genplus.wasm",
