@@ -157,6 +157,24 @@ class CartridgeManifestTests(unittest.TestCase):
                 build_cartridges(root)
             self.assertEqual(before, {path: (root / path).read_bytes() for path in before})
 
+    def test_source_file_and_parent_symlinks_cannot_disclose_in_root_secrets(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root, destination = Path(directory)/'source', Path(directory)/'static'
+            self.fixture(root)
+            secret=root/'.env';secret.write_text('private fixture')
+            entry=self.manifest['cartridges'][1]
+            source=root/entry['source'];original=source.read_bytes()
+            source.unlink();source.symlink_to(secret)
+            with self.assertRaisesRegex(CartridgeError,'Symlinks'):
+                stage_site(destination,root)
+            self.assertFalse(destination.exists())
+            source.unlink();source.write_bytes(original)
+            parent=source.parent;renamed=parent.with_name('aliased-source')
+            parent.rename(renamed);parent.symlink_to(renamed,target_is_directory=True)
+            with self.assertRaisesRegex(CartridgeError,'Symlinks'):
+                stage_site(destination,root)
+            self.assertFalse(destination.exists())
+
     def test_symlinks_cannot_supply_or_receive_static_content(self):
         with tempfile.TemporaryDirectory() as directory:
             root, outside = Path(directory) / 'source', Path(directory) / 'outside'

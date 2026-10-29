@@ -238,6 +238,25 @@ class ReviewBundleTests(unittest.TestCase):
                     self.assertFalse(output.exists())
                     private.unlink()
 
+    def test_in_root_source_and_parent_symlinks_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)/'checkout';root.mkdir()
+            launcher=make_checkout(root)
+            source=root/'site/source/README.txt'
+            source.unlink();source.symlink_to(root/'README.md')
+            output=Path(directory)/'symlink.zip'
+            rejected=self.run_packager(launcher,output)
+            self.assertEqual(rejected.returncode,1)
+            self.assertIn('Symlinks',rejected.stderr)
+            self.assertFalse(output.exists())
+            source.unlink();source.write_text('source')
+            parent=root/'site/source';renamed=root/'aliased-source'
+            parent.rename(renamed);parent.symlink_to(renamed,target_is_directory=True)
+            rejected=self.run_packager(launcher,output)
+            self.assertEqual(rejected.returncode,1)
+            self.assertIn('Symlinks',rejected.stderr)
+            self.assertFalse(output.exists())
+
     def test_rom_signature_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "checkout"

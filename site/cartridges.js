@@ -6,10 +6,10 @@
       throw new Error('Unsupported cartridge manifest.');
     const ids = new Set(), paths = new Set();
     for (const cart of manifest.cartridges) {
-      if (!cart || cart.approved !== true || !/^[a-z][a-z0-9-]*$/.test(cart.id) || ids.has(cart.id) ||
+      if (!cart || cart.approved !== true || typeof cart.id !== 'string' || !/^[a-z][a-z0-9-]*$/.test(cart.id) || ids.has(cart.id) ||
           typeof cart.displayName !== 'string' || !cart.displayName.trim() ||
           typeof cart.version !== 'string' || !cart.version.trim() ||
-          typeof cart.path !== 'string' || !/^demo\/[A-Za-z0-9_-]+\.bin$/.test(cart.path) || paths.has(cart.path) ||
+          typeof cart.path !== 'string' || !/^demo\/[A-Za-z0-9][A-Za-z0-9._-]*\.bin$/.test(cart.path) || paths.has(cart.path) ||
           !Number.isInteger(cart.size) || cart.size < 512 || cart.size > 4*1024*1024 ||
           typeof cart.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(cart.sha256))
         throw new Error('Unapproved or invalid built-in cartridge.');

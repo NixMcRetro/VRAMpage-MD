@@ -87,9 +87,11 @@ def original_z80_store_cartridge():
 class ActualCoreBrowserTests(unittest.TestCase):
     def test_bundled_demo_boots_renders_and_respects_manual_override(self):
         # Use the actual compiled WASM core, never a mock or a synthetic screenshot.
-        rom = OPTIONS.site_root / 'demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin'
+        manifest=json.loads((OPTIONS.site_root/'cartridges.json').read_text())
+        default=next(c for c in manifest['cartridges'] if c['id']==manifest['defaultCartridge'])
+        rom = OPTIONS.site_root / default['path']
         self.assertTrue(rom.is_file(), 'The original homebrew Demo Cart must be in the built site')
-        handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
+        handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root.parent)
         with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:
             threading.Thread(target=server.serve_forever, daemon=True).start()
             try:
@@ -104,7 +106,12 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         core_js += '\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\n'
                         page.route('**/core/genplus.js', lambda route: route.fulfill(
                             content_type='text/javascript', body=core_js))
-                        page.goto(f'http://127.0.0.1:{server.server_port}/')
+                        origin=f'http://127.0.0.1:{server.server_port}'
+                        requests=[]
+                        page.on('request',lambda request:requests.append((request.url,request.method)))
+                        # Exercise a subdirectory static host with all Internet requests denied.
+                        page.route('https://**',lambda route:route.abort())
+                        page.goto(f'{origin}/{OPTIONS.site_root.name}/')
                         expect(page.locator('#romName')).to_have_text('VRAMPAGE MD DEMO CART')
                         expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
                         page.wait_for_function('window.testCore?._get_logic_frame()>12')
@@ -121,12 +128,24 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         self.assertGreater(screen['uniqueColours'], 4,
                                            f'Original Demo Cart rendered a blank or uniform image: {screen}')
                         self.assertEqual(page.locator('#soundBtn').inner_text(), 'Enable Sound')
+                        for cartridge in manifest['cartridges']:
+                            page.locator('#cartridgeSelect').select_option(cartridge['id'])
+                            expect(page.locator('#romName')).to_have_text(cartridge['displayName'].upper())
+                            page.wait_for_function('window.testCore._get_logic_frame()>12')
+                            page.locator('#regionSelect').select_option('2')
+                            page.locator('#resetBtn').click()
+                            page.wait_for_function('window.testCore._get_region_state().pal===true && window.testCore._get_logic_frame()>12')
+                            expect(page.locator('#romName')).to_have_text(cartridge['displayName'].upper())
+                            expect(page.locator('#soundBtn')).to_have_text('Enable Sound')
+                        self.assertTrue(all(url.startswith(origin+'/') and method=='GET' for url,method in requests),requests)
                         page.locator('#romFile').set_input_files({
                             'name':'user-choice.bin','mimeType':'application/octet-stream',
                             'buffer':original_cartridge()})
                         expect(page.locator('#romName')).to_have_text('USER-CHOICE.BIN')
                         page.locator('#resetBtn').click()
                         expect(page.locator('#romName')).to_have_text('USER-CHOICE.BIN')
+                        self.assertTrue(all(url.startswith(origin+'/') and method=='GET' for url,method in requests),
+                                        'Local file loading must not upload or contact remote hosts')
                         self.assertEqual(errors, [])
                     finally:
                         browser.close()

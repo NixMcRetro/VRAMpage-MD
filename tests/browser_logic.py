@@ -244,7 +244,7 @@ class BrowserLogicTests(unittest.TestCase):
           File.prototype.arrayBuffer=function(){return new Promise(resolve=>window.finishLocalRead=()=>native.call(this).then(resolve));};
         }""")
         page.locator('#romFile').set_input_files({'name':'slow-local.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
-        page.wait_for_function('window.finishLocalRead')
+        page.wait_for_function("typeof window.finishLocalRead==='function'")
         page.locator('#cartridgeSelect').select_option('colour-test')
         expect(page.locator('#romName')).to_have_text('VRAMPAGE MD COLOUR TEST')
         page.evaluate('window.finishLocalRead()')
@@ -298,7 +298,7 @@ class BrowserLogicTests(unittest.TestCase):
             (ROOT/'tests/fixtures/mock-core.js').read_text()+
             '\nconst realFactory=window.Module;window.Module=opts=>new Promise(resolve=>window.finishCore=()=>realFactory(opts).then(resolve));'))
         page.reload()
-        page.wait_for_function('window.finishCore && window.finishManifest')
+        page.wait_for_function("typeof window.finishCore==='function' && typeof window.finishManifest==='function'")
         page.locator('#romFile').set_input_files({'name':'early-local.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
         page.evaluate('window.finishCore()')
         expect(page.locator('#romName')).to_have_text('EARLY-LOCAL.BIN')
@@ -314,7 +314,7 @@ class BrowserLogicTests(unittest.TestCase):
           VRAMpageCartridges.verify=(bytes,cart)=>new Promise(resolve=>window.finishVerification=()=>native(bytes,cart).then(resolve));
         }""")
         page.locator('#cartridgeSelect').select_option('colour-test')
-        page.wait_for_function('window.finishVerification')
+        page.wait_for_function("typeof window.finishVerification==='function'")
         self.load_rom(page)
         page.evaluate('window.finishVerification()')
         page.wait_for_timeout(100)

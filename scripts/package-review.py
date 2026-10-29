@@ -50,11 +50,16 @@ class BundleError(Exception):
 
 
 def _repo_path(relative):
-    """Resolve a checkout-relative file and reject traversal or outside symlinks."""
+    """Resolve a checkout-relative file and reject traversal and symlinks."""
     candidate = PurePosixPath(relative)
     if candidate.is_absolute() or ".." in candidate.parts or not candidate.parts:
         raise BundleError(f"Unsafe path in package input: {relative!r}")
     path = ROOT.joinpath(*candidate.parts)
+    component = ROOT
+    for part in candidate.parts:
+        component = component / part
+        if component.is_symlink():
+            raise BundleError(f'Symlinks are not allowed in package inputs: {relative}')
     try:
         resolved = path.resolve(strict=True)
     except OSError as error:

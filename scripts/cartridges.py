@@ -33,6 +33,11 @@ def safe_path(relative):
 
 def repo_file(root, relative):
     path = Path(root) / safe_path(relative)
+    component = Path(root)
+    for part in PurePosixPath(relative).parts:
+        component = component / part
+        if component.is_symlink():
+            raise CartridgeError(f'Symlinks are not allowed in cartridge inputs: {relative}')
     try:
         resolved = path.resolve(strict=True)
         resolved.relative_to(Path(root).resolve())
