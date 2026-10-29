@@ -1,10 +1,16 @@
-## Active FM Output Model Selector
+## Active Stabilisation
 
-Add a compact staged Discrete/Integrated choice using the existing MAME backend,
-Region lifecycle and [feature contract](docs/FM-OUTPUT-MODEL.md). Preserve default
-Discrete output and expose requested/effective identity for exports/comparison.
-No Enhanced/Nuked/VA choice, version bump, cartridge promotion or deployment.
-Require specialist review, native/browser evidence, protected CI/CodeQL and main.
+The major video, Work RAM and audio controls are integrated, including the
+[FM Output Model selector](https://github.com/NixMcRetro/VRAMpage-MD/pull/108).
+The owner accepted the [Safari local-ROM fix](https://github.com/NixMcRetro/VRAMpage-MD/pull/109).
+Continue bounded crash/regression, browser/audio and usability stabilisation
+under the feature freeze; preserve intentional glitch/HALT outcomes.
+
+The current regression covers rejected asynchronous ROM reads while FM/region
+choices are pending and a checkpoint exists, using actual-core byte-exact video
+and PCM replay. Reuse existing evidence and helpers; preserve source/CodeQL,
+three-browser and complete-package gates. No release, version bump, cartridge
+promotion or website deployment accompanies this verification work.
 
 ## Completed FM Output Model Proof
 

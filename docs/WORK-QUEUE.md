@@ -1,3 +1,34 @@
+## Async ROM Read Recovery — Verification Checkpoint, 30 October 2026 (Sydney)
+
+The unattended stabilisation slice adds one actual-core browser regression for
+rejected local-file reads while Integrated/PAL is pending, Discrete/NTSC remains
+active and a session checkpoint exists. Current rejection is reported; the
+cancelled older rejection stays suppressed. The accepted cartridge and pause
+state, effective/requested machine settings and saved checkpoint are preserved.
+
+Before the reads fail, the test copies the saved checkpoint's next video and
+stereo PCM bytes, then advances the current core. After Restore it compares the
+complete saved bytes and sample count, including finite/nonzero synthetic PSG
+PCM. Clean Restart must apply pending settings and discard the old slot. Request
+capture checks same-origin GET-only traffic, and stale errors use microtask
+drains. These are digital regression checks, not a human listening review.
+
+The corrected case passes Chromium and WPE WebKit against the retained production
+runtime. Independent Luna High review approved after rechecking WebKit and the
+staged app/core hashes. No application/native bug reproduced; runtime source,
+hash gates, dependencies, existing assertions and approved cartridges stay
+unchanged. Full protected source/browser/package CI, CodeQL and verified main
+remain the integration gates.
+
+[Ponytail PR #110](https://github.com/NixMcRetro/VRAMpage-MD/pull/110) is complete
+at `b4ec5156b2630c1a8296b346dcf7b72d730d4013`, with all seven
+[main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40905623528)
+and four [CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40905622725)
+passed. Full Mode remains the repository default; actual Codex root/nested
+instruction loading was verified. Keep the feature freeze active; respond to
+concrete stability findings without repeating completed native matrices or
+optional physical-board research. No publication, version bump or website update.
+
 ## Ponytail Full Mode and Safari Acceptance — 30 October 2026 (Sydney)
 
 The owner confirmed that [PR #109](https://github.com/NixMcRetro/VRAMpage-MD/pull/109)

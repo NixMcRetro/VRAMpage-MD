@@ -1,3 +1,13 @@
+## Development Verification — Rejected ROM Read Recovery
+
+- Add an actual-core browser regression for delayed local-file read rejection
+  while FM/region changes are pending and an accepted checkpoint exists.
+- Compare copied video and stereo PCM bytes against a pre-failure baseline;
+  verify active/pending settings, pause state, current/stale errors and restart
+  checkpoint invalidation. Preserve existing assertions and runtime behavior.
+- Keep the feature freeze active; no application, native core, version, approved
+  cartridge, published release or website change is included.
+
 ## Development Instructions — Ponytail Full Mode
 
 - Pin the existing single Ponytail rules block to upstream v5.3.3 and retain its

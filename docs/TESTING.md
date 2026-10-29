@@ -43,6 +43,16 @@ notice gates. Complete browser/static bundles retain exact matching source,
 notices and build instructions. Normal-core hashes remain unchanged; runtime API
 changes must be verified from a fresh source build before its hash gate changes.
 
+The actual-browser case selected by `-k rejected_async_rom` composes pending
+Integrated/PAL choices with rejected current and stale local-file reads while a
+Discrete/NTSC checkpoint exists. Its baseline copies video/stereo PCM bytes
+before the reads fail, then compares every saved byte after Restore. It also
+checks finite/nonzero synthetic PSG PCM, accepted cartridge/pause state,
+requested/effective identities, stale-error suppression after microtask drains,
+same-origin GET-only traffic, and Clean Restart application/invalidation. It
+uses the production core and existing original cartridge fixture; a passing
+synthetic test is not a listening or commercial-game compatibility review.
+
 # v0.5.1 Thin Website and Corresponding Source
 
 The review-only [lightweight proposal](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md) adds
