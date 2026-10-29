@@ -498,8 +498,8 @@ assert sum(section[1] for section in SHOW_FORM)==SHOW_STEPS
 # the demo visuals. A4 = 440 Hz. Melodies are original.
 BRASS_LEAD={
  'count_in':(
-  '- - - - - - - -',
-  '- - - - - - - -',
+  'A4 = C#5 E5 = F#5 E5 -',
+  'E5 = - B4 C#5 E5 = -',
   '- - - - A4 = C#5 =',
   'E5 = D5 C#5 = B4 A4 =',
  ),
@@ -844,9 +844,7 @@ def show_compose():
         fill=score_pitch(render_written_fill(name,bar,beat))
         # Bass follows the harmony. Quarter-note pulses, held eighths,
         # and chromatic pickups to the next chord are played intentionally.
-        if name=='count_in' and bar<2:
-            bass=SCORE_REST
-        elif name=='breakdown' and bar<2:
+        if name=='breakdown' and bar<2:
             bass=score_pitch('-' if beat not in (0,4) else 'F#2')
         else:
             pickup=next_root-1 if next_root>=root else next_root+1
@@ -870,7 +868,7 @@ def show_compose():
         organ=show_pitch(root+12+(fifth if beat in (1,5) else third)) if organ_on else SCORE_REST
         # Kick on 1/3, snare on 2/4, closed hi-hat between. The single
         # PSG noise channel cannot make simultaneous independent drums.
-        if name=='count_in' and bar<2:
+        if name=='count_in' and bar==0 and beat%2==1:
             drum=0
         elif name=='breakdown' and bar<2:
             drum=2 if beat in (2,6) else 0
