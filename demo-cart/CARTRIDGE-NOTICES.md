@@ -35,3 +35,7 @@ the repository root. `site/cartridges.json` records the approved identities,
 sizes, checksums, build inputs, region headers and attribution. Generated ROMs
 remain ignored. Complete browser ZIPs carry the source tree; static bundles
 carry a rebuildable source snapshot under `source/cartridges/`.
+
+The preserved Colour Test README refers to the original download's
+`SHA256SUMS.txt`. In these bundles the authoritative cartridge checksum is
+in `site/cartridges.json`; the README is retained as historical provenance.

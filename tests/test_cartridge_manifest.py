@@ -11,7 +11,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from cartridges import (CartridgeError, approved_assets, build_cartridges, load_manifest,
+from cartridges import (CartridgeError, STATIC_FILES, approved_assets, build_cartridges, load_manifest,
                         source_paths, stage_site, validate_manifest, verify_site)
 
 
@@ -27,6 +27,11 @@ class CartridgeManifestTests(unittest.TestCase):
             path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / relative, path)
         (root / 'site/app.js').write_text('// deliberately no cartridge-name marker')
+        for relative in STATIC_FILES:
+            target=root/'site'/relative
+            if not target.exists():
+                target.parent.mkdir(parents=True,exist_ok=True)
+                target.write_bytes(b'\0asmfixture' if relative.endswith('.wasm') else b'static fixture')
 
     def test_both_outputs_reproduce_published_identities_and_region_headers(self):
         for entry in self.manifest['cartridges']:
@@ -106,6 +111,24 @@ class CartridgeManifestTests(unittest.TestCase):
                         self.assertEqual(sentinel.read_text(), 'keep existing destination')
                         self.assertEqual(list(destination.iterdir()), [sentinel])
                         target.write_bytes(data)
+
+    def test_static_bundle_requires_complete_nonempty_application_and_wasm(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root,destination=Path(directory)/'source',Path(directory)/'static'
+            self.fixture(root)
+            for relative in STATIC_FILES:
+                target=root/'site'/relative;original=target.read_bytes()
+                for mutation in ('missing','empty'):
+                    if target.exists():target.unlink()
+                    if mutation=='empty':target.write_bytes(b'')
+                    with self.subTest(relative=relative,mutation=mutation),self.assertRaises(CartridgeError):
+                        stage_site(destination,root)
+                    self.assertFalse(destination.exists())
+                target.write_bytes(original)
+            (root/'site/core/genplus.wasm').write_bytes(b'invalid wasm')
+            with self.assertRaisesRegex(CartridgeError,'WebAssembly'):
+                stage_site(destination,root)
+            self.assertFalse(destination.exists())
 
     def test_unknown_roms_and_archives_are_rejected_before_static_copy(self):
         with tempfile.TemporaryDirectory() as directory:

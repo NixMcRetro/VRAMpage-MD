@@ -110,7 +110,8 @@ class ActualCoreBrowserTests(unittest.TestCase):
                         requests=[]
                         page.on('request',lambda request:requests.append((request.url,request.method)))
                         # Exercise a subdirectory static host with all Internet requests denied.
-                        page.route('https://**',lambda route:route.abort())
+                        page.context.route('**/*',lambda route:route.continue_()
+                                           if route.request.url.startswith(origin+'/') else route.abort())
                         page.goto(f'{origin}/{OPTIONS.site_root.name}/')
                         expect(page.locator('#romName')).to_have_text('VRAMPAGE MD DEMO CART')
                         expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')

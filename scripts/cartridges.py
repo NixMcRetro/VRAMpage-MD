@@ -11,6 +11,9 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 ROM_SUFFIXES = {'.bin', '.gen', '.smd', '.rom', '.sms', '.gg', '.32x', '.iso', '.cue', '.chd', '.mdx'}
+STATIC_FILES = ('index.html', 'style.css', 'app.js', 'cartridges.js', 'cartridges.json',
+                'framebuffer.js', 'rgb-encoder.js', 'circuit-config.js', 'experiment-comparison.js',
+                'core/genplus.js', 'core/genplus.wasm', 'source/README.txt')
 ARCHIVE_SUFFIXES = {'.zip', '.7z', '.rar', '.tar', '.gz', '.bz2', '.xz'}
 SECRET_NAMES = {'credentials', 'credentials.json', 'id_rsa', 'id_ed25519', 'id_ecdsa',
                 'secrets.json', 'secrets.yaml', 'secrets.yml'}
@@ -222,6 +225,11 @@ def stage_site(destination, root=ROOT):
             or destination.resolve().is_relative_to((root / 'site').resolve())):
         raise CartridgeError('Static destination must be separate from site/ and not a symlink')
     manifest = verify_site(root)
+    for relative in STATIC_FILES:
+        if not repo_file(root, 'site/' + relative).read_bytes():
+            raise CartridgeError(f'Empty static application file: {relative}')
+    if not repo_file(root, 'site/core/genplus.wasm').read_bytes().startswith(b'\0asm'):
+        raise CartridgeError('Static emulator does not have the WebAssembly signature')
     assets = approved_assets(manifest)
     # Validate before changing a destination, including any stale cartridge files.
     if destination.exists():
