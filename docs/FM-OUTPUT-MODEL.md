@@ -49,6 +49,26 @@ cannot silently look equivalent. Treat missing, invalid or unavailable legacy
 observations as Unknown. Avoid changing circuit-fault configuration schemas for
 this machine setting unless an existing contract requires it.
 
+## Runtime API
+
+`_set_fm_output_model_request(id)` accepts exactly one numeric integer: 0 for
+Discrete or 1 for Integrated. Status 0 stages it, 1 rejects invalid input and 2
+rejects an unsupported backend. Rejection preserves the previous request, active
+sound and checkpoint. The JS facade hides the native setter and the native
+boundary independently rejects fractions, nonfinite values and other IDs.
+
+`_get_fm_output_model_state()` returns schema 1 with `available`, `supported`,
+`loaded`, `requestedModel`, `effectiveModel`, `backend` and `reason`. Model strings
+are `discrete` and `integrated`. API availability is separate from loaded,
+supported emulation: before cartridge start, effective model and backend are
+null. Loaded backend identity is `mame-opn2` or `nuked-opn2`; an unsupported
+backend reports no effective model and refuses requests. Reasons distinguish
+`not-started`, `unsupported-backend` and `none`. Invalid native observations must
+not be presented as a valid effective model.
+
+This API is runtime-only. Normal/legacy profiles retain their previous behavior
+and have no new model setter or observation export.
+
 ## Acceptance
 
 - Reuse the complete proof's default parity, native PCM/DAC/status, CPU/banked-Z80
