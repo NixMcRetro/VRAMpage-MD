@@ -3497,6 +3497,42 @@ class BrowserLogicTests(unittest.TestCase):
         self.page.mouse.up()
         self.assertFalse(self.page.evaluate('mockCore.logic.active'))
 
+    def test_hidden_without_blur_releases_held_ram_and_keyboard_input(self):
+        self.page.close();self.page=self.new_page(circuit_config=True)
+        self.load_rom()
+        self.page.locator('#psgLegMode').select_option('ground')
+        self.page.locator('#psgChip .pin').nth(0).click()
+        self.page.locator('#psgChip .pin').nth(7).click()
+        self.page.locator('#fmLegMode').select_option('ground')
+        self.page.locator('#fmChip .pin').nth(0).click()
+        self.page.locator('#fmChip .pin').nth(7).click()
+        audio_state=self.page.evaluate("[mockCore.psg.configured,mockCore.psg.dataMask,mockCore.fm.configured,mockCore.fm.dataMask]")
+        self.page.locator('#ramWriteMode').select_option('hold')
+        button=self.page.locator('[data-ram-frame-pair="10,11"]')
+        button.hover();self.page.mouse.down()
+        self.page.keyboard.down('ArrowRight')
+        self.page.wait_for_function('mockCore.inputs[6]===1')
+        starts=self.page.evaluate('mockCore.starts')
+        self.page.evaluate("window.__blurEvents=0;window.addEventListener('blur',()=>window.__blurEvents++)")
+
+        self.page.evaluate("Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'))")
+        self.page.wait_for_function('!mockCore.logic.active')
+        self.assertEqual(self.page.evaluate('window.__blurEvents'),0)
+        self.assertEqual(self.page.evaluate('mockCore.starts'),starts)
+        self.assertEqual(self.page.evaluate('mockCore.logic.recoveries.length'),0)
+        self.assertEqual(self.page.evaluate("[mockCore.psg.configured,mockCore.psg.dataMask,mockCore.fm.configured,mockCore.fm.dataMask]"),audio_state)
+        expect(button).to_have_attribute('aria-pressed','false')
+
+        self.page.mouse.up();self.page.keyboard.up('ArrowRight')
+        self.page.evaluate("Object.defineProperty(document,'hidden',{configurable:true,value:false});document.dispatchEvent(new Event('visibilitychange'))")
+        self.page.wait_for_function('mockCore.inputs[6]===0')
+        button.hover();self.page.mouse.down()
+        self.page.evaluate("document.dispatchEvent(new Event('visibilitychange'))")
+        self.assertTrue(self.page.evaluate('mockCore.logic.active'),
+                        'visible transition released a new held RAM contact')
+        self.page.mouse.up()
+        self.assertFalse(self.page.evaluate('mockCore.logic.active'))
+
     def test_ram_write_hold_release_exceptions_are_reported_and_pause(self):
         self.page.close();self.page=self.new_page(circuit_config=True)
         self.load_rom()
