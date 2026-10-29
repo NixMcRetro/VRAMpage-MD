@@ -1,3 +1,41 @@
+## Built-In Cartridge Selector — Integration Checkpoint, 29 October 2026 (UTC)
+
+Authorized task starts from main `c73ac2777e65640bfed14ec159804c9d563361f5`
+([PR #99](https://github.com/NixMcRetro/VRAMpage-MD/pull/99), all seven main
+checks and four CodeQL analyses passing). The new
+[cartridge guide](BUILT-IN-CARTRIDGES.md) and `AGENTS.md` define the permanent
+manifest/approval/release policy. `site/cartridges.json` owns current identities;
+only explicitly approved originals are built and bundled. No generated ROM is
+newly tracked. Application `VERSION`, public releases, original v0.1/source-kit
+assets, captain portrait/logo and McRetro.net are preserved.
+
+Choose Cartridge offers the approved Demo Cart, original Colour Test and the
+local file picker. The existing activation/recovery path is reused; explicit
+choices and Clean Restart cancel older manifest/fetch/hash/file/core waits.
+Local file contents remain private. Built-in size and SHA-256 are verified even
+on static HTTP hosts without Web Crypto. Complete ZIP/static packages require
+all approved bytes and source/notices; unknown images, secret metadata,
+symlinked source/destination paths and incomplete static runtimes fail closed.
+
+Local evidence: exact source rebuilds; both cartridges execute 180 actual
+Genesis Plus GX frames under NTSC-U and PAL, with nonuniform original pixels,
+Work RAM progress and bounded finite PCM. The detailed v0.3.5 A/B/C native
+regression passes with 28 frame captures. All 169 original-plus-selector
+Chromium interface cases pass, with 15 focused cartridge cases (including three
+additional recovery cases) also passing. The 12-case actual-core suite passes;
+its strengthened default test passes again with local-only GET requests and
+subdirectory hosting. Layout7 passes without weakening existing height bounds.
+The 26-case manifest/package/static group passes, including rebuilding extracted
+cartridge source. Full source/sanitizer checks passed before the final bounded
+static-completeness test; final source CI remains required. Local LeakSanitizer
+is disabled for container ptrace; ASan/UBSan and CI sanitizer settings remain.
+
+Independent Luna High review approved the implementation and final static
+completeness/toolbar/test delta. Findings on symlinks, metadata and validator
+parity were fixed and retested. Require every protected-main check and CodeQL
+on the final PR head before merge, then verify main CI and package source/tree.
+No release, VERSION bump or website deployment is authorized by this task.
+
 ## Demo Cart v0.3.5 Source Integration, 29 October 2026
 
 The user approved integration of the experimentally verified original

@@ -37,10 +37,15 @@ your default browser. If it does not open, copy the printed `http://127.0.0.1:â€
 address into a browser. Keep the terminal open while playing; press **Ctrl+C**
 there to stop the server. No online account is needed to run an extracted copy.
 
-Choose **Load ROM**, select your own legally usable Mega Drive cartridge, then
-click **Enable Sound**. ROM files are read locally by your browser and are not
-uploaded. Use the on-screen keyboard guide to play. To use another browser, open
-the same printed local address there.
+Development builds and future releases start the approved Demo Cart. Use
+**Choose Cartridge** for the original Demo Cart, silent Colour Test, or
+**Load Your Own ROMâ€¦**. The published v0.5.0 package still has its original
+**Load ROM** control. Click **Enable Sound** separately when ready. Cartridge
+files are read locally and are never uploaded. Built-in selections persist
+within the browser-tab session; local file contents are not stored or restored
+after refresh. The files run offline while the local HTTP server is running.
+Use the on-screen keyboard guide to play. To use another browser, open the same
+printed local address there.
 
 Serve the files over HTTP; opening site/index.html directly as a `file://` URL can
 prevent the WASM emulator from loading. To choose a port, append `--port 8000`.

@@ -1,6 +1,7 @@
 """Checks the local review ZIP builder using disposable Git checkouts."""
 from pathlib import Path
 import os
+import shutil
 import json
 import subprocess
 import sys
@@ -11,6 +12,8 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGER = ROOT / "scripts" / "package-review.py"
+MANIFEST = json.loads((ROOT / "site/cartridges.json").read_text())
+ASSET_PATHS = ["site/" + entry["path"] for entry in MANIFEST["cartridges"]] + [asset["path"] for asset in MANIFEST["preservedAssets"]]
 BLITTER_MARKER = b"VRAMpage MD: native RGBA output blitter"
 
 
@@ -24,6 +27,7 @@ def make_checkout(root, *, wasm=True, include_rom=False):
         "site/index.html": b"<html></html>",
         "site/style.css": b"body {}",
         "site/app.js": b"// app",
+        "site/cartridges.js": b"// cartridge helper",
         "site/framebuffer.js": b"// framebuffer",
         "site/rgb-encoder.js": b"// RGB encoder",
         "site/core/genplus.js": b"// generated core",
@@ -44,24 +48,37 @@ def make_checkout(root, *, wasm=True, include_rom=False):
         path = root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(content)
+    # A complete current source fixture always carries the manifest, builders,
+    # notices and every approved binary; no app.js marker changes this policy.
+    sources = subprocess.check_output(['git', '-C', str(ROOT), 'ls-files', 'demo-cart'], text=True).splitlines()
+    for relative in set(sources + ASSET_PATHS + [
+            'site/cartridges.json', 'scripts/cartridges.py', 'scripts/build-demo-cart.py']):
+        target = root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT / relative, target)
     (root / "START.command").chmod(0o755)
     shutil_copy = root / "scripts" / "package-review.py"
     shutil_copy.parent.mkdir(parents=True, exist_ok=True)
     shutil_copy.write_bytes(PACKAGER.read_bytes())
     subprocess.run(["git", "init", "-q", str(root)], check=True)
     subprocess.run(["git", "-C", str(root), "add", "README.md", "START.command",
-                    "docs", "scripts/serve.py", "scripts/package-review.py", "site", "VERSION"], check=True)
+                    "docs", "scripts", "site", "demo-cart", "VERSION"], check=True)
     subprocess.run(["git", "-C", str(root), "-c", "user.name=Bundle test",
                     "-c", "user.email=bundle-test@example.invalid", "commit", "-qm", "Fixture"], check=True)
     return shutil_copy
 
 
 class ReviewBundleTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        subprocess.run([sys.executable, str(ROOT / 'scripts/build-demo-cart.py')],
+                       check=True, capture_output=True, text=True)
+
     def run_packager(self, launcher, output):
         return subprocess.run([sys.executable, str(launcher), "--output", str(output)],
                               capture_output=True, text=True, timeout=20)
 
-    def test_package_has_launch_metadata_source_and_no_rom(self):
+    def test_package_has_launch_metadata_source_and_only_approved_roms(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "checkout"
             root.mkdir()
@@ -94,81 +111,48 @@ class ReviewBundleTests(unittest.TestCase):
                 self.assertIn("site/source/src/main/c/core/ntsc/license.txt", names)
                 self.assertNotIn("private-notes.txt", names)
                 self.assertFalse(any("__pycache__" in name for name in names))
-                self.assertFalse(any(name.endswith(".bin") for name in names))
+                self.assertEqual({name for name in names if name.endswith(".bin")},
+                                 {name for name in ASSET_PATHS if name.endswith(".bin")})
+                for relative in ASSET_PATHS:
+                    self.assertEqual(archive.read("VRAMpage-MD/" + relative), (ROOT / relative).read_bytes())
+                archive.extractall(Path(directory) / "extracted")
+            rebuilt = subprocess.run([sys.executable, str(Path(directory) / "extracted/VRAMpage-MD/scripts/build-demo-cart.py")],
+                                     capture_output=True, text=True)
+            self.assertEqual(rebuilt.returncode, 0, rebuilt.stderr)
 
-    def test_only_pinned_original_homebrew_rom_and_source_kit_are_allowed(self):
+    def test_all_manifest_assets_are_required_without_an_app_marker(self):
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory) / "checkout"
+            root = Path(directory) / 'checkout'
             root.mkdir()
             launcher = make_checkout(root)
-            paths = (
-                "site/demo/VRAMpage-MD-Demo-Cart-v0.1.bin",
-                "demo-cart/VRAMpage-MD-Demo-Cart-v0.1-Source-Kit.zip",
-            )
-            for relative in paths:
-                target = root / relative
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes((ROOT / relative).read_bytes())
-            subprocess.run(["git", "-C", str(root), "add", *paths], check=True)
-            subprocess.run(["git", "-C", str(root), "-c", "user.name=Bundle test",
-                            "-c", "user.email=bundle-test@example.invalid", "commit",
-                            "-qm", "Original demo assets"], check=True)
-            output = Path(directory) / "approved.zip"
-            result = self.run_packager(launcher, output)
-            self.assertEqual(result.returncode, 0, result.stderr)
-            with zipfile.ZipFile(output) as archive:
-                for relative in paths:
-                    self.assertEqual(archive.read("VRAMpage-MD/" + relative),
-                                     (ROOT / relative).read_bytes())
-            # Any modification to even the permitted path is a hard failure.
-            rom = root / paths[0]
-            modified = bytearray(rom.read_bytes())
-            modified[-1] ^= 1
-            rom.write_bytes(modified)
-            rejected = self.run_packager(launcher, Path(directory) / "tampered.zip")
-            self.assertEqual(rejected.returncode, 1)
-            self.assertIn("unexpected checksum", rejected.stderr)
-            # Unrelated ROMs remain prohibited even when the original is intact.
-            rom.write_bytes((ROOT / paths[0]).read_bytes())
-            other = root / "site/demo/unapproved.bin"
-            other.write_bytes((ROOT / paths[0]).read_bytes())
-            rejected = self.run_packager(launcher, Path(directory) / "unapproved.zip")
-            self.assertEqual(rejected.returncode, 1)
-            self.assertIn("Refusing to package a game ROM", rejected.stderr)
+            for relative in ASSET_PATHS:
+                with self.subTest(relative=relative):
+                    target = root / relative
+                    data = target.read_bytes()
+                    target.unlink()
+                    output = Path(directory) / 'missing.zip'
+                    result = self.run_packager(launcher, output)
+                    self.assertEqual(result.returncode, 1)
+                    self.assertIn(relative, result.stderr)
+                    self.assertFalse(output.exists())
+                    target.write_bytes(data)
 
-    def test_future_default_requires_exact_original_demo_v035(self):
+    def test_mutated_approved_assets_are_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory) / "checkout"
+            root = Path(directory) / 'checkout'
             root.mkdir()
             launcher = make_checkout(root)
-            default = root / "site/app.js"
-            default.write_text("const DEMO_ROM_URL='./demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin';")
-            subprocess.run(["git", "-C", str(root), "add", "site/app.js"], check=True)
-            subprocess.run(["git", "-C", str(root), "-c", "user.name=Bundle test",
-                            "-c", "user.email=bundle-test@example.invalid",
-                            "commit", "-qm", "Default original v0.3.5 cartridge"], check=True)
-            missing = self.run_packager(launcher, Path(directory) / "missing.zip")
-            self.assertEqual(missing.returncode, 1)
-            self.assertIn("default Demo Cart is missing", missing.stderr)
-            # Use the SHA-pinned generated ROM, not any supplied game cartridge.
-            subprocess.run([sys.executable, str(ROOT / "scripts/build-demo-cart.py")], check=True,
-                           capture_output=True, text=True)
-            approved = ROOT / "site/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin"
-            target = root / "site/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin"
-            target.parent.mkdir(exist_ok=True)
-            target.write_bytes(approved.read_bytes())
-            output = Path(directory) / "approved-new.zip"
-            result = self.run_packager(launcher, output)
-            self.assertEqual(result.returncode, 0, result.stderr)
-            with zipfile.ZipFile(output) as archive:
-                self.assertEqual(archive.read("VRAMpage-MD/site/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin"),
-                                 approved.read_bytes())
-            changed = bytearray(target.read_bytes())
-            changed[-1] ^= 1
-            target.write_bytes(changed)
-            rejected = self.run_packager(launcher, Path(directory) / "tampered-new.zip")
-            self.assertEqual(rejected.returncode, 1)
-            self.assertIn("unexpected checksum", rejected.stderr)
+            for relative in ASSET_PATHS:
+                with self.subTest(relative=relative):
+                    target = root / relative
+                    data = target.read_bytes()
+                    target.write_bytes(data[:-1] + bytes([data[-1] ^ 1]))
+                    output = Path(directory) / 'mutated.zip'
+                    result = self.run_packager(launcher, output)
+                    self.assertEqual(result.returncode, 1)
+                    self.assertIn('unexpected checksum', result.stderr)
+                    self.assertFalse(output.exists())
+                    target.write_bytes(data)
 
     def test_stale_local_metadata_is_replaced_without_changing_checkout(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -253,6 +237,25 @@ class ReviewBundleTests(unittest.TestCase):
                     self.assertEqual(result.returncode, 1)
                     self.assertFalse(output.exists())
                     private.unlink()
+
+    def test_in_root_source_and_parent_symlinks_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)/'checkout';root.mkdir()
+            launcher=make_checkout(root)
+            source=root/'site/source/README.txt'
+            source.unlink();source.symlink_to(root/'README.md')
+            output=Path(directory)/'symlink.zip'
+            rejected=self.run_packager(launcher,output)
+            self.assertEqual(rejected.returncode,1)
+            self.assertIn('Symlinks',rejected.stderr)
+            self.assertFalse(output.exists())
+            source.unlink();source.write_text('source')
+            parent=root/'site/source';renamed=root/'aliased-source'
+            parent.rename(renamed);parent.symlink_to(renamed,target_is_directory=True)
+            rejected=self.run_packager(launcher,output)
+            self.assertEqual(rejected.returncode,1)
+            self.assertIn('Symlinks',rejected.stderr)
+            self.assertFalse(output.exists())
 
     def test_rom_signature_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:

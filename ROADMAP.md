@@ -1,3 +1,10 @@
+## Built-In Cartridge Selection
+
+The approved manifest drives the compact selector, automatic default and every
+future complete browser/static package. See [maintenance and acceptance gates](docs/BUILT-IN-CARTRIDGES.md).
+New Demo Cart revisions require explicit approval; broader demo-show work remains
+separate. Application versions, public artifacts and deployment are independent.
+
 # VRAMpage MD roadmap
 
 ## Authorized Work RAM Write Inhibit — Development Source

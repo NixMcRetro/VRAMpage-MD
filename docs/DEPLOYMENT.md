@@ -10,7 +10,8 @@ confirmed that the hosted app works; direct custom-domain access remains outside
 this execution environment's allowed network destinations.
 
 The [original colour-test ROM and source](https://mcretro.net/assets/downloads/2026/10/vrampage-md/VRAMpage-MD-Colour-Test.zip)
-are separate blog downloads, not part of the emulator release. They contain no
+remain available as separate blog downloads; future packages also include the
+manifest-approved original Colour Test. They contain no
 commercial game assets and the program is silent.
 
 Future website updates still require separate approval. The staging helper now
@@ -31,8 +32,15 @@ Build from the exact tested commit, preserving source and notices:
 bash scripts/test.sh
 bash scripts/build-core.sh normal
 bash scripts/build-core.sh site-runtime
+python3 scripts/build-demo-cart.py
+python3 scripts/cartridges.py verify-site
 python3 scripts/package-review.py --output /tmp/VRAMpage-MD-v0.5.0-browser.zip
 ```
+
+Follow the [permanent cartridge packaging policy](BUILT-IN-CARTRIDGES.md).
+Static bundles must be staged through `python3 scripts/cartridges.py stage-site DEST`
+after building; this verifies all approved bytes and retains cartridge source/notices.
+This command stages local files and does not deploy a website.
 
 The build workflow runs actual-core checks and tests extracted packages in Firefox
 and WebKit, then supplies the browser ZIP/checksum and a separate static-site tar.

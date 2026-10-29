@@ -13,6 +13,7 @@
   <script src="rgb-encoder.js" defer></script>
   <script src="circuit-config.js" defer></script>
   <script src="experiment-comparison.js" defer></script>
+  <script src="cartridges.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -33,14 +34,17 @@
             <canvas id="screen" width="320" height="224" aria-label="Mega Drive video output"></canvas>
             <div id="screenPlaceholder" class="screen-placeholder">
               <strong id="placeholderTitle">NO CARTRIDGE</strong>
-              <p id="placeholderMessage">Load a local game ROM to begin. The emulator runs entirely in your browser.</p>
+              <p id="placeholderMessage">Choose a built-in cartridge or load your own ROM. The emulator runs entirely in your browser.</p>
             </div>
           </div>
         </div>
         <div class="screen-info"><span id="romName">NO CARTRIDGE INSERTED</span><span id="fpsIndicator">— FPS</span></div>
         <div class="video-options"><label><input id="rawVideoToggle" type="checkbox"> Raw Emulator Output</label><span id="videoStatus" role="status" aria-live="polite">Video: native pixels</span></div>
         <div class="toolbar">
-          <label class="load-btn" for="romFile">Load ROM</label>
+          <select id="cartridgeSelect" aria-label="Choose Cartridge" class="cartridge-select">
+            <option value="">Choose Cartridge</option>
+            <option value="local">Load Your Own ROM…</option>
+          </select>
           <input id="romFile" type="file" accept=".bin,.md,.gen,application/octet-stream" aria-label="Load Mega Drive ROM">
           <button id="resetBtn" type="button" disabled title="Disconnect faults and reboot from the same cartridge">Clean Restart</button>
           <button id="pauseBtn" type="button" disabled>Pause</button>
@@ -299,7 +303,7 @@
       </details>
       <details class="notes-block">
         <summary class="section-heading"><h2>04 <span>/</span> Build Notes</h2><span>Technical Details</span></summary>
-        <p>No ROM included. Your cartridge data stays in this browser.</p>
+        <p>Includes approved original homebrew cartridges. Your own cartridge files stay in this browser and are never uploaded.</p>
         <p>Sound is available with <strong>Enable Sound</strong>. The separate logic/Work RAM panel is an experimental 68000 transaction model.</p>
         <p class="small-note">The game display automatically fills consistently missing framebuffer rows. Select <strong>Raw Emulator Output</strong> to inspect untouched pixels. This does not alter emulated VRAM or hardware faults.</p>
         <p class="small-note">Emulator: <a href="https://github.com/h1romas4/wasm-genplus" target="_blank" rel="noreferrer">wasm-genplus</a> / <a href="https://github.com/ekeeke/Genesis-Plus-GX" target="_blank" rel="noreferrer">Genesis Plus GX</a>. Redistributing a modified core requires its corresponding source and applicable licence notices.</p>

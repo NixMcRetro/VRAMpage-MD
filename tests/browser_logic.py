@@ -103,15 +103,19 @@ class BrowserLogicTests(unittest.TestCase):
             path=str(ROOT / "tests/fixtures/mock-core.js"),
             content_type="application/javascript"))
         # All existing tests exercise the manual-ROM workflow unless opted in.
-        page.route("**/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin", lambda route: route.fulfill(
+        manifest=json.loads((ROOT / 'site/cartridges.json').read_text())
+        self.demo_cart=next(c for c in manifest['cartridges'] if c['id']==manifest['defaultCartridge'])
+        self.colour_cart=next(c for c in manifest['cartridges'] if c['id']=='colour-test')
+        page.route("**/"+self.demo_cart['path'], lambda route: route.fulfill(
             status=200 if demo_rom else 404,
             content_type="application/octet-stream",
-            body=self.synthetic_rom() if demo_rom else b"Missing test demo"))
+            body=(ROOT / 'site' / self.demo_cart['path']).read_bytes() if demo_rom else b"Missing test demo"))
         if stalled_demo:
+            page.add_init_script('window.__testDemoUrl='+json.dumps('./'+self.demo_cart['path'])+';')
             page.add_init_script("""(() => {
                 const originalFetch=window.fetch;
                 window.fetch=(url,opts)=>{
-                    if(String(url)==='./demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin')
+                    if(String(url)===window.__testDemoUrl)
                         return new Promise(resolve=>{
                             window.__resumeDemoFetch=()=>originalFetch(url,opts).then(resolve);
                         });
@@ -191,6 +195,179 @@ class BrowserLogicTests(unittest.TestCase):
         page.wait_for_timeout(100)
         expect(page.locator("#romName")).to_have_text("PREFERRED.BIN")
         self.assertEqual(page.evaluate("window.mockCore.starts"),1)
+
+    def test_cartridge_selector_switches_builtins_and_keeps_session_choice(self):
+        page=self.new_page(demo_rom=True)
+        options=page.locator('#cartridgeSelect option').all_text_contents()
+        self.assertIn(self.demo_cart['displayName']+' v'+self.demo_cart['version'],options)
+        self.assertIn(self.colour_cart['displayName']+' v'+self.colour_cart['version'],options)
+        self.assertIn('Load Your Own ROM…',options)
+        page.locator('#cartridgeSelect').select_option('colour-test')
+        expect(page.locator('#romName')).to_have_text('VRAMPAGE MD COLOUR TEST')
+        self.assertEqual(page.evaluate('mockCore.starts'),2)
+        page.reload()
+        expect(page.locator('#romName')).to_have_text('VRAMPAGE MD COLOUR TEST')
+        self.assertEqual(page.evaluate('mockCore.starts'),1)
+        page.locator('#cartridgeSelect').select_option('demo')
+        expect(page.locator('#romName')).to_have_text('VRAMPAGE MD DEMO CART')
+        self.assertEqual(page.evaluate('mockCore.starts'),2)
+
+    def test_cartridge_picker_cancels_pending_demo_even_when_dismissed(self):
+        page=self.new_page(demo_rom=True,stalled_demo=True)
+        page.wait_for_function("typeof window.__resumeDemoFetch==='function'")
+        with page.expect_file_chooser() as chooser:
+            page.locator('#cartridgeSelect').select_option('local')
+        chooser.value.set_files([])
+        page.evaluate('window.__resumeDemoFetch()')
+        page.wait_for_timeout(100)
+        self.assertEqual(page.evaluate('mockCore.starts'),0)
+        expect(page.locator('#powerLabel')).to_have_text('WAITING FOR ROM')
+        with page.expect_file_chooser() as chooser:
+            page.locator('#cartridgeSelect').select_option('local')
+        chooser.value.set_files({'name':'private-local.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
+        expect(page.locator('#romName')).to_have_text('PRIVATE-LOCAL.BIN')
+
+    def test_cartridge_latest_builtin_wins_over_pending_demo(self):
+        page=self.new_page(demo_rom=True,stalled_demo=True)
+        page.wait_for_function("typeof window.__resumeDemoFetch==='function'")
+        page.locator('#cartridgeSelect').select_option('colour-test')
+        expect(page.locator('#romName')).to_have_text('VRAMPAGE MD COLOUR TEST')
+        page.evaluate('window.__resumeDemoFetch()')
+        page.wait_for_timeout(100)
+        self.assertEqual(page.evaluate('mockCore.starts'),1)
+        expect(page.locator('#romName')).to_have_text('VRAMPAGE MD COLOUR TEST')
+
+    def test_cartridge_builtin_selection_cancels_pending_local_read(self):
+        page=self.page
+        page.evaluate("""() => {
+          const native=File.prototype.arrayBuffer;
+          File.prototype.arrayBuffer=function(){return new Promise(resolve=>window.finishLocalRead=()=>native.call(this).then(resolve));};
+        }""")
+        page.locator('#romFile').set_input_files({'name':'slow-local.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
+        page.wait_for_function("typeof window.finishLocalRead==='function'")
+        page.locator('#cartridgeSelect').select_option('colour-test')
+        expect(page.locator('#romName')).to_have_text('VRAMPAGE MD COLOUR TEST')
+        page.evaluate('window.finishLocalRead()')
+        page.wait_for_timeout(100)
+        self.assertEqual(page.evaluate('mockCore.starts'),1)
+        expect(page.locator('#romName')).to_have_text('VRAMPAGE MD COLOUR TEST')
+
+    def test_cartridge_hash_failure_retains_faults_checkpoint_and_restart(self):
+        page=self.checkpoint_page()
+        self.load_rom(page)
+        page.locator('#pauseBtn').click()
+        page.locator('#saveCheckpointBtn').click()
+        expect(page.locator('#restoreCheckpointBtn')).to_be_enabled()
+        page.locator('#randomPsgBtn').click()
+        before=page.evaluate('({starts:mockCore.starts,psg:JSON.stringify(mockCore.psg)})')
+        approved=(ROOT/'site'/self.colour_cart['path']).read_bytes()
+        altered=bytearray(approved);altered[-1]^=1
+        page.route('**/'+self.colour_cart['path'],lambda route:route.fulfill(body=bytes(altered)))
+        page.locator('#cartridgeSelect').select_option('colour-test')
+        expect(page.locator('#experimentLog')).to_contain_text('SHA-256 does not match')
+        expect(page.locator('#romName')).to_have_text('SYNTHETIC-TEST.BIN')
+        self.assertEqual(page.evaluate('({starts:mockCore.starts,psg:JSON.stringify(mockCore.psg)})'),before)
+        expect(page.locator('#restoreCheckpointBtn')).to_be_enabled()
+        page.locator('#compactResetBtn').click()
+        expect(page.locator('#romName')).to_have_text('SYNTHETIC-TEST.BIN')
+        page.unroute('**/'+self.colour_cart['path'])
+        page.locator('#cartridgeSelect').select_option('colour-test')
+        expect(page.locator('#romName')).to_have_text('VRAMPAGE MD COLOUR TEST')
+        expect(page.locator('#restoreCheckpointBtn')).to_be_disabled()
+
+    def test_cartridge_manifest_failure_keeps_local_loading_available(self):
+        page=self.page
+        manifest=json.loads((ROOT/'site/cartridges.json').read_text())
+        manifest['cartridges'][0]['approved']=False
+        page.route('**/cartridges.json',lambda route:route.fulfill(content_type='application/json',body=json.dumps(manifest)))
+        page.reload()
+        expect(page.locator('#placeholderTitle')).to_have_text('BUILT-IN CARTRIDGE UNAVAILABLE')
+        self.assertEqual(page.locator('#cartridgeSelect option').count(),2)
+        self.load_rom(page)
+        expect(page.locator('#romName')).to_have_text('SYNTHETIC-TEST.BIN')
+
+    def test_cartridge_user_selection_precedes_delayed_manifest_and_core(self):
+        page=self.page
+        page.add_init_script("""(() => {
+          const nativeFetch=window.fetch;
+          window.fetch=(url,opts)=>String(url)==='./cartridges.json'
+            ? new Promise(resolve=>window.finishManifest=()=>nativeFetch(url,opts).then(resolve))
+            : nativeFetch(url,opts);
+        })();""")
+        page.route('**/core/genplus.js',lambda route:route.fulfill(content_type='application/javascript',body=
+            (ROOT/'tests/fixtures/mock-core.js').read_text()+
+            '\nconst realFactory=window.Module;window.Module=opts=>new Promise(resolve=>window.finishCore=()=>realFactory(opts).then(resolve));'))
+        page.reload()
+        page.wait_for_function("typeof window.finishCore==='function' && typeof window.finishManifest==='function'")
+        page.locator('#romFile').set_input_files({'name':'early-local.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
+        page.evaluate('window.finishCore()')
+        expect(page.locator('#romName')).to_have_text('EARLY-LOCAL.BIN')
+        page.evaluate('window.finishManifest()')
+        page.wait_for_function("document.querySelector('#cartridgeSelect option[value=demo]')")
+        self.assertEqual(page.evaluate('mockCore.starts'),1)
+        expect(page.locator('#romName')).to_have_text('EARLY-LOCAL.BIN')
+
+    def test_cartridge_stale_verification_cannot_replace_new_local_rom(self):
+        page=self.page
+        page.evaluate("""() => {
+          const native=VRAMpageCartridges.verify;
+          VRAMpageCartridges.verify=(bytes,cart)=>new Promise(resolve=>window.finishVerification=()=>native(bytes,cart).then(resolve));
+        }""")
+        page.locator('#cartridgeSelect').select_option('colour-test')
+        page.wait_for_function("typeof window.finishVerification==='function'")
+        self.load_rom(page)
+        page.evaluate('window.finishVerification()')
+        page.wait_for_timeout(100)
+        self.assertEqual(page.evaluate('mockCore.starts'),1)
+        expect(page.locator('#romName')).to_have_text('SYNTHETIC-TEST.BIN')
+
+    def test_cartridge_static_http_without_webcrypto_still_verifies(self):
+        page=self.page
+        page.evaluate("Object.defineProperty(window.crypto,'subtle',{value:undefined})")
+        page.locator('#cartridgeSelect').select_option('colour-test')
+        expect(page.locator('#romName')).to_have_text('VRAMPAGE MD COLOUR TEST')
+        self.assertEqual(page.evaluate('mockCore.starts'),1)
+
+    def test_cartridge_builtin_native_failure_uses_existing_clean_restart_recovery(self):
+        page=self.new_page(circuit_config=True)
+        self.load_rom(page)
+        page.evaluate('mockCore.rejectVramModel=true')
+        page.locator('#cartridgeSelect').select_option('colour-test')
+        expect(page.locator('#placeholderTitle')).to_have_text('CARTRIDGE ACTIVATION UNCERTAIN')
+        expect(page.locator('#powerLabel')).to_have_text('WAITING FOR ROM')
+        page.evaluate('mockCore.rejectVramModel=false')
+        page.locator('#compactResetBtn').click()
+        expect(page.locator('#romName')).to_have_text('SYNTHETIC-TEST.BIN')
+        expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+        self.assertEqual(page.evaluate('mockCore.starts'),3)
+
+    def test_cartridge_size_and_unknown_choice_rejected_before_core_mutation(self):
+        self.load_rom()
+        page=self.page
+        page.route('**/'+self.colour_cart['path'],lambda route:route.fulfill(body=b'too short'))
+        page.locator('#cartridgeSelect').select_option('colour-test')
+        expect(page.locator('#experimentLog')).to_contain_text('size does not match')
+        page.evaluate("document.querySelector('#cartridgeSelect').add(new Option('Unapproved','unapproved'))")
+        page.locator('#cartridgeSelect').select_option('unapproved')
+        expect(page.locator('#experimentLog')).to_contain_text('not approved')
+        self.assertEqual(page.evaluate('mockCore.starts'),1)
+        expect(page.locator('#romName')).to_have_text('SYNTHETIC-TEST.BIN')
+
+    def test_cartridge_clean_restart_cancels_pending_builtin_verification(self):
+        self.load_rom()
+        page=self.page
+        page.evaluate("""() => {
+          const native=VRAMpageCartridges.verify;
+          VRAMpageCartridges.verify=(bytes,cart)=>new Promise(resolve=>window.finishVerification=()=>native(bytes,cart).then(resolve));
+        }""")
+        page.locator('#cartridgeSelect').select_option('colour-test')
+        page.wait_for_function("typeof window.finishVerification==='function'")
+        page.locator('#resetBtn').click()
+        page.wait_for_function('mockCore.starts===2')
+        page.evaluate('window.finishVerification()')
+        page.wait_for_timeout(100)
+        self.assertEqual(page.evaluate('mockCore.starts'),2)
+        expect(page.locator('#romName')).to_have_text('SYNTHETIC-TEST.BIN')
 
     def load_rom(self, page=None):
         page = page or self.page

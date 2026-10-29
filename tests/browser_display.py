@@ -47,8 +47,7 @@ class BrowserDisplayTests(unittest.TestCase):
             path=str(ROOT / 'tests/fixtures/mock-core.js'), content_type='application/javascript'))
         # Layout tests intentionally start empty; the actual-core suite covers
         # auto-loaded Demo Cart. Preserve the independent manual-ROM baseline.
-        self.page.route('**/demo/VRAMpage-MD-Demo-Cart-v0.1.bin',
-                        lambda route: route.fulfill(status=404, body='Manual test fixture'))
+        self.page.add_init_script("window.sessionStorage.setItem('vrampage-custom-rom-preferred','1')")
         self.page.goto(f'http://127.0.0.1:{self.server.server_port}/')
         expect(self.page.locator('#powerLabel')).to_have_text('WAITING FOR ROM')
         # A format stub accepted by the UI, NOT an executable game ROM.
