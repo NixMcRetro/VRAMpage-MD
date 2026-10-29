@@ -75,6 +75,41 @@ core binaries are distributed as review artifacts, include their exact complete
 modified source, build inputs and notices. Summary-only CI artifacts avoid an
 unnecessary binary distribution.
 
+## Local Verification Checkpoint
+
+The isolated actual-WASM build produces finite, nonzero and repeatable PCM for
+both models. Its default Discrete PCM, framebuffer, Work RAM and status reads
+match the production runtime and normal core. The native status-port fixture
+reports `[128, 0, 0, 0]` for Discrete and `[128, 0, 128, 0]` for Integrated;
+the second port difference follows the pinned emulator implementation. Correct
+bank-1 channel-6 panning and DAC bytes 0/128/255 produce distinct output within
+each model as well as between models.
+
+Both models retain the same fault routing observations:
+
+| Path | Input Writes | Changed Bytes |
+| --- | ---: | ---: |
+| CPU FM D0/D5 bridge | 64 | 34 |
+| CPU FM D7 cut | 64 | 11 |
+| Banked-Z80 FM D0/D5 bridge | 62 | 33 |
+| Banked-Z80 FM D7 cut | 62 | 11 |
+| Z80 PSG D0/D7 bridge control | 3 | 2 |
+
+The real checkpoint suite passes 11 groups, including each model's exact
+PCM/framebuffer/Work RAM replay after CPU Reset, pending/rejected selections,
+and fresh-instance parity after restart applies the pending model. The existing
+FM runtime regression also passes. These are synthetic original-cartridge
+observations, not audible listening or physical hardware measurements.
+
+Rebuilding the retained matching source with Emscripten 4.0.23 reproduces the
+proof JS/WASM byte for byte; its 266-file source inventory and Musashi notice
+validate. The full local source suite passes (23 cartridge tests, 148 general
+tests with two environment-dependent classes skipped, plus JS/native checks).
+ASan/UBSan remain enabled; only local LeakSanitizer is disabled for the container
+ptrace limitation. Required CI supplies the pinned build/browser environment.
+Independent specialist review and final protected-main CI/CodeQL are integration
+gates; these local results alone do not authorize a release or deployment.
+
 ## Following Integration
 
 A later public control must reuse the proven lifecycle, expose requested and
