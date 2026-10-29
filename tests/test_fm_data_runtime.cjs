@@ -44,15 +44,15 @@ function fmToneCartridge(dacByte) {
   if (dacByte !== undefined) {
     fastByte(0x00a04000, 0x2b); fastByte(0x00a04001, 0x80);
     fastByte(0x00a04000, 0x2a); fastByte(0x00a04001, dacByte);
-    fastByte(0x00a04000, 0xb6); fastByte(0x00a04001, 0xc0);
+    fastByte(0x00a04002, 0xb6); fastByte(0x00a04003, 0xc0);
   }
   // Record immediate and delayed FM status reads in work RAM to check that
   // the input wrapper preserves the core's busy/status timing.
   words.push(0x1039, 0x00a0, 0x4000, 0x13c0, 0x00ff, 0x0100);
-  words.push(0x1039, 0x00a0, 0x4002, 0x13c0, 0x00ff, 0x0102);
+  words.push(0x1039, 0x00a0, 0x4002, 0x13c0, 0x00ff, 0x0104);
   for (let i = 0; i < 400; i++) words.push(0x4e71);
   words.push(0x1039, 0x00a0, 0x4000, 0x13c0, 0x00ff, 0x0101);
-  words.push(0x1039, 0x00a0, 0x4002, 0x13c0, 0x00ff, 0x0103);
+  words.push(0x1039, 0x00a0, 0x4002, 0x13c0, 0x00ff, 0x0105);
   reg(0x22, 0x00); // LFO off
   reg(0x27, 0x00); // normal channel mode
   for (const offset of [0, 4, 8, 12]) {
@@ -285,7 +285,7 @@ function fmStatusProbe(core) {
 function fmStatusPorts(core) {
   const base = core._get_logic_ram_ref() >>> 0;
   return [core.HEAPU8[base + 0x101], core.HEAPU8[base + 0x100],
-    core.HEAPU8[base + 0x103], core.HEAPU8[base + 0x102]];
+    core.HEAPU8[base + 0x105], core.HEAPU8[base + 0x104]];
 }
 
 function fmZ80ResetMarker(core) {
