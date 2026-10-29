@@ -25,8 +25,10 @@ const manifest=validateManifest(JSON.parse(fs.readFileSync(path.join(root,'site/
         core._wasm_input_update();core._tick();
         const count=core._sound();
         assert.ok(count>0 && count<=2048,'Bounded native audio frame');
-        const samples=new Float32Array(core.HEAPF32.buffer,core._get_sound_buffer_ref(),count*2);
-        for (const sample of samples) assert.ok(Number.isFinite(sample) && Math.abs(sample)<=1,'Finite bounded PCM');
+        for (const ref of [core._get_web_audio_l_ref(),core._get_web_audio_r_ref()]) {
+          const samples=new Float32Array(core.HEAPF32.buffer,ref,count);
+          for (const sample of samples) assert.ok(Number.isFinite(sample) && Math.abs(sample)<=1,'Finite bounded PCM');
+        }
       }
       const state=core._get_region_state();
       assert.equal(state.pal,request===2);

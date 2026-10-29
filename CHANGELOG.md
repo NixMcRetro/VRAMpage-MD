@@ -1,3 +1,13 @@
+## Development Source — Unified Cartridge Selection
+
+- Add Choose Cartridge for the latest approved Demo Cart, original Colour Test
+  and local ROMs; explicit choices cancel older asynchronous loads.
+- Make one approved manifest authoritative for browser metadata, reproducible
+  cartridge builds, checksums, packaging and future release gates. Include
+  matching cartridge sources and notices in complete browser/static bundles.
+- Preserve the app version, published releases, original artwork and separate
+  website deployment approval.
+
 # Changelog
 
 ## Development Source — Work RAM Write Inhibit

@@ -70,6 +70,14 @@ updates do not rebuild or retag an unchanged public application release.
    together, and test the published package's source-commit metadata.
 2. Run `bash scripts/test.sh`, then full native WASM and synthetic browser
    checks using the appropriate workflow.
-3. Publish only the exact built/tested `main` commit; use a ROM-free archive,
+3. Publish only the exact built/tested `main` commit; include only manifest-approved cartridges,
    corresponding modified emulator source, a SHA-256 file and a matching tag.
 4. Keep VRAMpage-MD `main` independent from `mcretro.net/main`.
+
+## Independent Cartridge Versions
+
+The browser application's `VERSION` does not follow Demo Cart revisions. The
+approved [cartridge manifest](../site/cartridges.json) is authoritative for all
+future bundled cartridge metadata and default selection. Follow the
+[permanent packaging gates](BUILT-IN-CARTRIDGES.md); do not replace old release
+assets when a new cartridge is approved.

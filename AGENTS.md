@@ -84,22 +84,39 @@ Inspect failed steps before retrying. Finish related documentation before
 triggering another full CI run. Keep the current continuation checkpoint short,
 with exact commits/checks, evidence links, blockers and the next bounded task.
 
-## Future Built-In Demo Cart Releases
+## Permanent Built-In Cartridge Policy
 
-The user's 29 October 2026 approval applies to **integrating the original
-Demo Cart v0.3.5 into this repository's main and future releases**, not to
-replacing an existing public release. For all future browser release builds,
-run `python3 scripts/build-demo-cart.py` and include the generated
-`site/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin` (150,564 bytes; SHA-256
-`89faaace638c1ccae7062e96cef02d5350059488a35acb372f1e4b5d4dec277f`). `site/app.js` autoloads this
-original verified cartridge. The previous v0.1 binary remains tracked for
-historical compatibility. Never check in newly generated ROMs or relax the
-approved-cartridge allowlists; the generator must fail if the pinned output
-differs. Keep the original portrait and logo source assets unchanged. Run
-the source, actual Genesis Plus GX, all browser and packaged-release tests,
-and obtain normal approval before publishing new releases or deploying the
-McRetro.net website. Do not change the already public v0.5.0 artifacts.
-The three-minute music-led show is still a future milestone.
+`site/cartridges.json` is the single authoritative approved cartridge manifest.
+Its default must be the latest **explicitly owner-approved and verified** Demo
+Cart; experimental branches and larger version numbers are never approval.
+Application `VERSION` and cartridge versions are independent. Update the
+manifest's source/build/size/SHA-256/licensing together only after explicit
+approval and actual Genesis Plus GX NTSC/PAL verification. Do not manually
+copy cartridge version, URL or digest constants into the app, package scripts,
+workflows or generic tests. Historical evidence and version-specific regressions
+retain their original identities.
+
+Every future complete browser ZIP and static website bundle must include every
+manifest-approved cartridge, especially the approved default Demo Cart and
+original Colour Test. Run `python3 scripts/build-demo-cart.py` to generate from
+approved source, then `python3 scripts/cartridges.py verify-site`. Packaging
+must reject missing, altered or unknown ROMs and include matching cartridge
+source and licence/attribution notices. Never commit newly generated ROM
+binaries or include commercial games. Preserve the tracked Demo Cart v0.1,
+its original source kit, captain portrait and logo unchanged. Retain byte-exact
+Colour Test provenance and notices; do not invent third-party licence grants.
+
+The Choose Cartridge menu and automatic startup use the same manifest and
+validated activation/recovery path. Explicit selections outrank every older
+asynchronous operation, including default startup, downloads, hashing, file
+reads and core initialisation. User ROM files stay local; do not upload or
+persist their contents. Keep controller, audio, region, fault and checkpoint
+semantics. Test both built-ins, local loading, rejection/recovery/races, HTTP
+subdirectory/offline local serving and complete package checksums without
+weakening existing tests. Require protected-main checks **and CodeQL** before
+merge and verify main afterwards. Publishing, replacing release assets, bumping
+VERSION and deploying McRetro.net require separate explicit approval.
+See [cartridge maintenance and release gates](docs/BUILT-IN-CARTRIDGES.md).
 
 ## Versions, releases and evidence
 
@@ -113,7 +130,7 @@ JSON. Do not silently rebuild or replace an existing public artifact.
 Release titles must be exactly `VRAMpage MD v0.x.x`, without subtitles. Publish
 meaningful usable milestones only; preserve historical releases unchanged.
 
-Provide complete ROM-free Mac packages with built JS/WASM, matching source,
+Provide complete browser packages with only manifest-approved original/homebrew ROMs, built JS/WASM, matching source,
 notices, START.command, instructions and checksum. Verify package source commit,
 version and tag. Respect upstream non-commercial/corresponding-source terms.
 

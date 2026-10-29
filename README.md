@@ -7,20 +7,27 @@ with video memory, Work RAM and FM/PSG sound through a modified emulator.
 **[Download v0.5.0](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip)** ·
 [Checksums](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/SHA256SUMS.txt)
 
-## Original Built-In Demo Cart v0.3.5
+## 🎮 Built-In Cartridges
 
-Future built VRAMpage MD browser packages automatically include and autoload
-the original **Demo Cart v0.3.5**, with the approved captain portrait and chrome
-logo, real Mega Drive VDP effects, and player-controlled Chroma Reactor bending.
-During Chroma Reactor press **A** to cycle bend strengths, **B** to recover clean
-graphics, **C** for maximum distortion, or **START** for the menu.
+New development builds offer **Choose Cartridge**:
 
-Codex must build the cartridge reproducibly with
-[`python3 scripts/build-demo-cart.py`](scripts/build-demo-cart.py). The source
-[`demo-cart/fx-lab/build_fx.py`](demo-cart/fx-lab/build_fx.py) is checked in,
-but the generated 150,564-byte ROM is **not**. Its pinned SHA-256 is
-`89faaace638c1ccae7062e96cef02d5350059488a35acb372f1e4b5d4dec277f`. The demo's v0.3.5 identifier is independent of the browser
-application's v0.5.0. **The already published v0.5.0 download is unchanged.**
+- **VRAMpage MD Demo Cart** — the latest approved demo, started automatically.
+- **VRAMpage MD Colour Test** — our original silent colour-pattern cartridge.
+- **Load Your Own ROM…** — select a compatible Mega Drive ROM; it stays local.
+
+Your explicit choice takes priority, including while another cartridge is
+loading. Built-in choices persist for this browser-tab session; choosing a local
+file prevents automatic demo loading after refresh without storing your file.
+The demo retains the approved captain portrait/logo and Chroma Reactor controls:
+**A** cycles bend strengths, **B** recovers graphics, **C** maximises distortion,
+and **START** opens the menu.
+
+The [approved manifest](site/cartridges.json) owns cartridge versions, sources,
+build instructions, checksums and licensing. Every future complete browser ZIP
+and static bundle includes its verified cartridges; generated ROM binaries are
+not committed. See [cartridge maintenance](docs/BUILT-IN-CARTRIDGES.md).
+Cartridge and application versions are independent. **Published downloads and
+the current live site are unchanged by development-source updates.**
 
 ## 🎮 Try It
 
