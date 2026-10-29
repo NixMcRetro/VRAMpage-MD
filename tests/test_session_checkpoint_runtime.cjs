@@ -122,8 +122,8 @@ async function fmOutputModelCore(model, region=1) {
   const state=c._get_fm_output_model_state();
   assert.equal(state.effectiveModel, model===0?'discrete':'integrated');
   assert.equal(state.backend,'mame-opn2');
-  const regionState=c._get_region_profile_state();
-  assert.equal(regionState.regionCode,region===2?2:0,
+  const regionState=c._get_region_state();
+  assert.equal(regionState.regionCode,region===2?0xc0:0x80,
     'selected Region is active alongside the FM Output Model');
   return c;
 }
@@ -205,8 +205,8 @@ function modelProofFrames(c) { return Array.from({length: 6}, () => frame(c)); }
   assert.equal(typeof c._set_fm_output_model_request,'function',
     'runtime profile exposes staged FM Output Model selection');
   {
-    const modelOutputs = [];
-    for (const [model, region] of [[0, 1], [1, 2]]) {
+    const modelOutputs = new Map();
+    for (const region of [1, 2]) for (const model of [0, 1]) {
       const c = await fmOutputModelCore(model, region);
       for (let i = 0; i < 8; i++) frame(c);
       const warm = frame(c);
@@ -239,7 +239,7 @@ function modelProofFrames(c) { return Array.from({length: 6}, () => frame(c)); }
         'save, CPU Reset, restore replays exact model-specific native output');
 
       const replacement = 1 - model;
-      const replacementRegion=region===2?1:2;
+      const replacementRegion=region;
       assert.equal(c._get_session_checkpoint_ready(), 1);
       assert.equal(c._set_region_request(replacementRegion),0,
         'pending Region remains independently staged beside FM model');
@@ -251,15 +251,18 @@ function modelProofFrames(c) { return Array.from({length: 6}, () => frame(c)); }
       const restarted = frame(c);
       assert.ok(restarted.nonzero);
       const freshModel = await fmOutputModelCore(replacement, replacementRegion);
-      assert.equal(c._get_region_profile_state().regionCode,
-        replacementRegion===2?2:0,'Clean Restart applies pending Region with FM model');
+      assert.equal(c._get_region_state().regionCode,
+        replacementRegion===2?0xc0:0x80,'Clean Restart retains the selected Region with FM model');
       assert.deepEqual(restarted, frame(freshModel),
         'Clean Restart native output matches a fresh instance of the requested model');
-      modelOutputs.push({model, warm, restarted});
+      if (!modelOutputs.has(region)) modelOutputs.set(region, []);
+      modelOutputs.get(region).push({model, warm, restarted});
       groups++;
     }
-    assert.notDeepEqual(modelOutputs[0].warm.left, modelOutputs[1].warm.left,
-      'checkpoint fixture produces different native PCM across MAME models');
+    for (const [region, outputs] of modelOutputs) {
+      assert.notDeepEqual(outputs[0].warm.left, outputs[1].warm.left,
+        `region ${region}: checkpoint fixture isolates different native PCM across MAME models`);
+    }
   }
 
   for (const kind of ['pad3', 'pad6', 'sram', 'protected-sram']) {
