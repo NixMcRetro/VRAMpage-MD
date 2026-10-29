@@ -93,6 +93,21 @@ and have no new native model setter or state API.
   CodeQL before merge; verify main afterwards. Never weaken a test to hide a
   regression. Keep exact commands, commits and checks in the continuation record.
 
+## Verification Checkpoint
+
+Independent Luna High review approved the implementation and final landscape
+delta. Actual-WASM output/fault tests, all 13 checkpoint groups across both
+models and NTSC/PAL, native strict/sanitizer checks and comparison tests pass.
+Four focused mock-browser cases and the real-core combined FM/PAL checkpoint
+lifecycle pass. All seven original display/input tests pass, including the
+unchanged 844 × 390 bounds and native picture ratio/minimum.
+
+The full local source suite passes; its two conditional skips pass separately
+with the pinned vendor/SDK. Rebuilding retained source reproduces JS/WASM byte
+for byte, with all 267 inventory hashes and matching helper files/notices
+verified. Protected PR/main CI and CodeQL remain the integration gates. These
+checks establish digital emulator behavior, not listening or physical fidelity.
+
 Keep VERSION, the manifest-approved Demo Cart v0.3.5 and Colour Test, experimental
 cartridge branches, published releases and McRetro.net unchanged. No release,
 publication or deployment is authorized by this development feature.
