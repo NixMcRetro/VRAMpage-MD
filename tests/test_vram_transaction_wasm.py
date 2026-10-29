@@ -282,7 +282,7 @@ class VramTransactionWasm(unittest.TestCase):
         normal_paths = (fixture / "site/core/genplus.js", fixture / "site/core/genplus.wasm")
         expected_hashes = (
             "3b984104bf92fd9e7a47fa5f081ed18d020e61dee6cd87df7580c147a3edc3bd",
-            "0bb55f946e5bb20ba0efc24e81776305ba8e1d9a82e0a3dcdca9e6218fbbe6d9",
+            "dbd28f8f7dd101a5331c9a38911dd7a187d1c7790bed41ede2da8854083f2ad7",
         )
 
         def hashes(paths):
