@@ -1109,20 +1109,13 @@ def patch_core(root: Path, transaction_adapter: bool = True) -> bool:
                                '#ifdef VRAM_TX_RUNTIME\n    z80_ram_bridge_start();\n#endif\n'
                                '    bend_reset();\n#ifdef VRAM_TX_RUNTIME\n'
                                '    region_profile_mark_loaded();\n#endif\n}')
-    prior_model_start_hook = ('    system_reset();\n    work_ram_logic_start();\n'
-                              '#ifdef VRAM_TX_RUNTIME\n    z80_ram_bridge_start();\n#endif\n'
-                              '    bend_reset();\n#ifdef VRAM_TX_RUNTIME\n'
-                              '    region_profile_mark_loaded();\n'
-                              '    fm_output_model_mark_loaded();\n#endif\n}')
     start_hook = ('    system_reset();\n    work_ram_logic_start();\n'
                   '#ifdef VRAM_TX_RUNTIME\n    z80_ram_bridge_start();\n#endif\n'
                   '    bend_reset();\n#ifdef VRAM_TX_RUNTIME\n'
                   '    region_profile_mark_loaded();\n'
                   '    fm_output_model_mark_loaded();\n#endif\n}')
     if wasm.count(start_hook) == 0:
-        if wasm.count(prior_model_start_hook) == 1:
-            pass
-        elif wasm.count(marked_prior_start_hook) == 1:
+        if wasm.count(marked_prior_start_hook) == 1:
             wasm = wasm.replace(marked_prior_start_hook, start_hook, 1)
         elif wasm.count(prior_runtime_start_hook) == 1:
             wasm = wasm.replace(prior_runtime_start_hook, start_hook, 1)
