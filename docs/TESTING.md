@@ -1,3 +1,21 @@
+# v0.5.1 Thin Website and Corresponding Source
+
+The review-only [lightweight proposal](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md) adds
+strict package/source inventory, safe ZIP, exact byte/digest, missing licence,
+unknown cartridge and destination-preservation tests. The source rebuild checker
+requires an approved archive SHA before extracting or executing its build tools.
+A fresh extraction and Emscripten4.0.23 CMake/Make build must reproduce both
+served core files exactly. This runs before the static/source CI artifacts are
+uploaded. The complete browser ZIP and all existing normal/runtime suites remain.
+
+`python tests/browser_website.py --browser chromium --site-root OUTPUT` exercises
+the actual thin artifact in a subdirectory, both built-in cartridges, private
+local ROMs, PAL, build/export identity, mobile width, notices and real local source
+ZIP downloads. It allows only loopback GET requests. Source/licence pages must
+include the full notices, LGPL and compiler licence without public CDN assets.
+Passing technical checks does not settle the [licence interpretations](LICENCE-AUDIT-v0.5.1.md)
+or authorize merge, publication or website modification/deployment.
+
 # Manifest-Approved Cartridge Checks
 
 `bash scripts/test.sh` builds every approved cartridge and runs manifest, source,

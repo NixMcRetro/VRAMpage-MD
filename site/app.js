@@ -69,7 +69,7 @@
   let coreReadyPromise, cartridgeManifestPromise;
   let romIdentity = null;
   const CORE_PIN = '6090aff9e9b2f578cd28882bd4571d2e35b1d674';
-  const APPLICATION_VERSION = '0.5.0';
+  const APPLICATION_VERSION = '0.5.1';
   let buildInfo = {status:'unavailable',applicationVersion:APPLICATION_VERSION,sourceCommit:null};
   loadBuildInfo().then(info=>{buildInfo=info;});
 
@@ -2767,7 +2767,7 @@
       schemaVersion:1,
       machine:machineObservation(),
       build:{...buildInfo},
-      modelVersion:'0.5.0-experimental',
+      modelVersion:'0.5.1-experimental',
       vramFault:{kind:vramAddressMask?'address-stuck-low':actualPair()?'address-bridge':'none',
         addressMask:vramAddressMask,lines:vramLines(vramAddressMask),bridge:actualPair()?[...actualPair()]:null},
       vramAddressLineChanges:vramAddressLineChanges.map(entry=>({...entry})),

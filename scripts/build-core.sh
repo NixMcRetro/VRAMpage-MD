@@ -70,8 +70,14 @@ import sys
 cmake = Path(sys.argv[1])
 text = cmake.read_text()
 flag = '-sEXPORTED_RUNTIME_METHODS=HEAPU8,HEAPF32'
+anchor = 'add_executable(${PROJECT_NAME} ${SOURCE_FILES})'
+post_build = '''add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/../../scripts/embed_musashi_notice.py"
+            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.wasm"
+            "${CMAKE_SOURCE_DIR}/src/main/c/core/m68k/m68k.h"
+    COMMENT "Embedding the pinned Musashi binary notice"
+    VERBATIM)'''
 if flag not in text:
-    anchor = 'add_executable(${PROJECT_NAME} ${SOURCE_FILES})'
     if text.count(anchor) != 1:
         raise SystemExit('Expected CMakeLists target definition missing. Not modifying vendor source.')
     text = text.replace(anchor,
@@ -82,6 +88,14 @@ if flag not in text:
     print('Enabled Emscripten HEAPU8 and HEAPF32 runtime exports.')
 else:
     print('Emscripten HEAPU8 and HEAPF32 runtime exports already configured.')
+if text.count(post_build) == 0:
+    if text.count(anchor) != 1 or 'find_package(Python3 REQUIRED COMPONENTS Interpreter)' in text:
+        raise SystemExit('Expected unmodified CMake target for Musashi notice hook. No modifications made.')
+    text = text.replace(anchor,
+        'find_package(Python3 REQUIRED COMPONENTS Interpreter)\n' + anchor + '\n' + post_build, 1)
+    cmake.write_text(text)
+elif text.count(post_build) != 1:
+    raise SystemExit('Musashi notice hook is ambiguous. No modifications made.')
 PY_EMSCRIPTEN_EXPORTS
 
 mkdir -p "$CORE/build"
@@ -93,6 +107,9 @@ mkdir -p "$CORE/build"
   emcmake cmake .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5
   emmake make -j2
 )
+python3 "$ROOT/scripts/embed_musashi_notice.py" \
+  "$CORE/src/main/js/genplus.wasm" \
+  "$CORE/src/main/c/core/m68k/m68k.h"
 
 cp "$ROOT/README.md" "$ROOT/site/README.md"
 cp "$CORE/src/main/js/genplus.js" "$ROOT/site/core/genplus.js"
@@ -116,6 +133,7 @@ cp "$ROOT/scripts/work_ram_data_mask_api.js" "$ROOT/site/source/"
 cp "$ROOT/scripts/patch_core.py" "$ROOT/site/source/"
 cp "$ROOT/scripts/build-core.sh" "$ROOT/site/source/"
 cp "$ROOT/scripts/build-core-runtime.py" "$ROOT/site/source/"
+cp "$ROOT/scripts/embed_musashi_notice.py" "$ROOT/site/source/"
 cp "$ROOT/scripts/session_checkpoint_runtime.c" "$ROOT/site/source/"
 cp "$ROOT/scripts/session_checkpoint_patch.py" "$ROOT/site/source/"
 cp "$ROOT/scripts/vram_transaction_api.js" "$ROOT/site/source/"

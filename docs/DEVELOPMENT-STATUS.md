@@ -1,3 +1,37 @@
+## v0.5.1 Release and Website Update — 29 October 2026
+
+The owner approved proceeding with release and deployment, superseding the
+proposal-only hold, and confirmed **non-commercial hobby hosting with no
+monetization**. Preserve public v0.5.0 and older release assets.
+
+PR #102 prepares the 17-file website package with one complete corresponding-
+source ZIP, matching GitHub source mirror, approved Demo Cart/Colour Test,
+notices and checksums. The same-origin ZIP remains mandatory; GitHub-only
+source delivery is outside this decision. All native executable sections and
+emulator controls stay unchanged; a deterministic custom WASM section preserves
+Musashi's exact notice inside the binary. Source rebuilds reproduce that output.
+
+The [licence audit](LICENCE-AUDIT-v0.5.1.md) records the GX project-wide default
+grant for the legacy FM code, binary/source notice measures, LGPL rebuild route
+and owner-confirmed hosting context. A change to monetization or source delivery
+requires reassessment; there is no generic outside-legal-review prerequisite.
+
+Require independent review, all seven protected PR/main checks and four CodeQL
+analyses before publishing v0.5.1. Publish and verify the exact corresponding-
+source ZIP and checksums. Then update only `homepages/vrampage-md/` through a
+separate McRetro.net PR, retaining the source ZIP on the same origin. Website
+checks must validate the manifest-approved ROMs, reject unknown/altered files,
+and compare all 17 files byte for byte after Jekyll. Merge only after its build
+passes, then verify deployment and live runtime/source links.
+
+The original same-runtime full-source baseline was 526 files /17,349,861 bytes;
+notice-complete review candidate was 17 files /3,144,524 bytes (about3.00MiB).
+Metadata/source revisions change compressed bytes slightly. The older website
+actually had13files/1,518,565bytes; the reduction is against full-source staging,
+not a claim that hundreds of currently hosted files are removed. No Git-history
+or build-time savings are asserted. Final commit/check/artifact identities belong
+in the PR and release evidence, not self-referential generated source.
+
 ## Built-In Cartridge Selector — Integration Checkpoint, 29 October 2026 (UTC)
 
 Authorized task starts from main `c73ac2777e65640bfed14ec159804c9d563361f5`

@@ -3,6 +3,7 @@
 from pathlib import Path
 import io
 import hashlib
+import json
 import os
 import shutil
 import subprocess
@@ -44,6 +45,7 @@ HELPER_FILES = (
     "work_ram_data_mask_api.js",
     "session_checkpoint_runtime.c",
     "session_checkpoint_patch.py",
+    "embed_musashi_notice.py",
     "region_profile_runtime.c",
     "region_profile_runtime.h",
     "region_profile_api.js",
@@ -151,6 +153,17 @@ def prepare_output(output: Path) -> None:
 def patch_cmake(cmake: Path) -> None:
     text = cmake.read_text()
     anchor = "add_executable(${PROJECT_NAME} ${SOURCE_FILES})"
+    post_build = '''add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/../scripts/embed_musashi_notice.py"
+            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.wasm"
+            "${CMAKE_SOURCE_DIR}/src/main/c/core/m68k/m68k.h"
+    COMMENT "Embedding the pinned Musashi binary notice"
+    VERBATIM)'''
+    python_finder = "find_package(Python3 REQUIRED COMPONENTS Interpreter)"
+    if text.count(post_build):
+        raise RuntimeError("Pinned CMake already contains the Musashi notice hook")
+    if text.count(python_finder):
+        raise RuntimeError("Pinned CMake already contains a Python3 lookup")
     flags = (
         'add_compile_flags(C "-DVRAM_TX_RUNTIME")',
         'add_compile_flags(LD "-sEXPORTED_RUNTIME_METHODS=HEAPU8,HEAPF32")',
@@ -165,7 +178,8 @@ def patch_cmake(cmake: Path) -> None:
         raise RuntimeError("Pinned source already contains runtime profile flags")
     if text.count(anchor) != 1:
         raise RuntimeError("Pinned CMake target anchor is missing or ambiguous")
-    text = text.replace(anchor, "\n".join(flags) + "\n" + anchor, 1)
+    text = text.replace(anchor, python_finder + "\n" + "\n".join(flags) + "\n" + anchor, 1)
+    text = text.replace(anchor, anchor + "\n" + post_build, 1)
     cmake.write_text(text)
 
 
@@ -219,6 +233,11 @@ def copy_package(root: Path, upstream: Path, work: Path, output: Path) -> None:
     shutil.copytree(scripts_source, source_dir / "scripts")
     shutil.copy2(root / "THIRD-PARTY-NOTICES.md", source_dir / "THIRD-PARTY-NOTICES.md")
     shutil.copy2(root / "THIRD-PARTY-NOTICES.md", output / "THIRD-PARTY-NOTICES.md")
+    # Record the exact generated source set before local files can enter staging.
+    inventory = {path.relative_to(source_dir).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+                 for path in sorted(source_dir.rglob("*")) if path.is_file()}
+    (source_dir / "SOURCE-FILES.json").write_text(
+        json.dumps(inventory, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     core_dir = output / "core"
     core_dir.mkdir()
     generated = upstream / "src/main/js"

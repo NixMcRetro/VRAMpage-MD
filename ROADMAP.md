@@ -1,3 +1,12 @@
+## v0.5.1 — Approved Release and Lightweight Website
+
+The owner approved the release/website workflow and confirmed non-commercial
+hosting. Complete notice-bearing binary/source verification, independent review,
+protected PR/main checks and CodeQL; then publish the matching browser/source
+ZIPs and update McRetro.net through its own tested PR. Keep the same-origin
+source archive. Preserve earlier release assets and unrelated website content.
+[Deployment](docs/LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md).
+
 ## Built-In Cartridge Selection
 
 The approved manifest drives the compact selector, automatic default and every

@@ -4,12 +4,18 @@ A browser workbench for circuit-bending a Sega Mega Drive / Genesis. Experiment
 with video memory, Work RAM and FM/PSG sound through a modified emulator.
 
 **[Open VRAMpage MD](https://mcretro.net/homepages/vrampage-md/)** ·
-**[Download v0.5.0](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip)** ·
-[Checksums](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/SHA256SUMS.txt)
+**[Download v0.5.1](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.1/VRAMpage-MD-v0.5.1-browser.zip)** ·
+[Checksums](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.1/SHA256SUMS.txt)
+
+**v0.5.1** adds a [lightweight website package](docs/LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md)
+with one complete corresponding-source ZIP and retained licence notices. The
+matching source ZIP accompanies the GitHub release and hosted runtime. Earlier
+public releases remain available unchanged. Release and website publication
+have separate verified workflows.
 
 ## 🎮 Built-In Cartridges
 
-New development builds offer **Choose Cartridge**:
+The **Choose Cartridge** menu offers:
 
 - **VRAMpage MD Demo Cart** — the latest approved demo, started automatically.
 - **VRAMpage MD Colour Test** — our original silent colour-pattern cartridge.
@@ -26,12 +32,12 @@ The [approved manifest](site/cartridges.json) owns cartridge versions, sources,
 build instructions, checksums and licensing. Every future complete browser ZIP
 and static bundle includes its verified cartridges; generated ROM binaries are
 not committed. See [cartridge maintenance](docs/BUILT-IN-CARTRIDGES.md).
-Cartridge and application versions are independent. **Published downloads and
-the current live site are unchanged by development-source updates.**
+Cartridge and application versions are independent. Source commits alone do
+not update published downloads or the live website.
 
 ## 🎮 Try It
 
-Open the live app, choose **Load ROM**, then **Enable Sound**. Cartridge files
+Open the live app and try the built-in demo, then choose **Enable Sound**. Cartridge files
 stay in your browser and are not uploaded. Use your own legally usable ROM, or
 start with the free original test program:
 
@@ -61,19 +67,19 @@ it is removed. **CPU Reset** preserves RAM and sound-chip state, although
 restarted game code can overwrite RAM. **Clean Restart** fully reboots.
 See the [controls and recovery guide](docs/RUNNING-LOCALLY.md).
 
-Development source adds [Work RAM Write Inhibit](docs/WORK-RAM-WRITE-INHIBIT.md),
+The app includes [Work RAM Write Inhibit](docs/WORK-RAM-WRITE-INHIBIT.md),
 which retains old upper/lower bytes by suppressing selected writes. It also includes an optional
 [Z80 RAM Write Bridge](docs/Z80-RAM-WRITE-BRIDGE.md) for sound-driver memory.
-It is off by default and is not included in the published v0.5.0 download.
-The same development source adds optional [RGB Encoder Input Contacts](docs/RGB-ENCODER-INPUTS.md),
+It is off by default and is not included in earlier v0.5.0 downloads.
+The app also offers optional [RGB Encoder Input Contacts](docs/RGB-ENCODER-INPUTS.md),
 an output-only approximation separate from memory and sound faults.
-Development builds also offer [Region Selection](docs/REGION-PROFILES-PLAN.md):
+The app also offers [Region Selection](docs/REGION-PROFILES-PLAN.md):
 NTSC-U remains the default; stage another region and apply it with Clean Restart.
-These additions are not in the published download or hosted v0.5.0 app.
+These additions are included in the v0.5.1 release target.
 
 ## 💻 Run Locally
 
-Download and extract the complete **v0.5.0 browser ZIP** above. From its
+Download and extract the complete **v0.5.1 browser ZIP** above. From its
 **VRAMpage-MD** folder, run:
 
 | System | Command |

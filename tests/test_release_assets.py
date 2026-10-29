@@ -48,7 +48,7 @@ class ReleaseAssetTests(unittest.TestCase):
         self.assertIn('core/genplus.js', self.parser.scripts)
         self.assertIn('"$ROOT/site/core/genplus.wasm"', self.stage)
         self.assertIn('"$ROOT/site/source/README.txt"', self.stage)
-        self.assertIn('"$ROOT/scripts/cartridges.py" stage-site "$DEST"', self.stage)
+        self.assertIn('"$ROOT/scripts/package-website.py" --output "$DEST"', self.stage)
         self.assertNotIn('mkdir -p "$DEST', self.stage)
 
     def test_release_script_does_not_commit_or_push(self):
@@ -65,7 +65,7 @@ class ReleaseAssetTests(unittest.TestCase):
     def test_workflow_verifies_complete_static_and_zip_bundles(self):
         workflow = (ROOT / '.github/workflows/build-website.yml').read_text()
         self.assertIn('python3 scripts/cartridges.py verify-site', workflow)
-        self.assertIn('python3 scripts/cartridges.py stage-site release/vrampage', workflow)
+        self.assertIn('python3 scripts/package-website.py --output release/vrampage', workflow)
         self.assertIn('scripts/cartridges.py', workflow)
         self.assertNotIn(load_manifest(ROOT)['cartridges'][0]['sha256'], workflow)
 

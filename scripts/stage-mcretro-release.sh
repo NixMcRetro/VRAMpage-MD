@@ -25,11 +25,11 @@ for file in   "$ROOT/site/index.html" "$ROOT/site/app.js" "$ROOT/site/cartridges
     exit 1
   fi
 done
-# Manifest verification checks every approved cartridge, preserved asset and source
-# before the staging helper changes the destination. Build cartridges separately.
+# The thin builder verifies approved ROMs and complete corresponding source.
+# It refuses a nonempty destination; migration requires a separately reviewed
+# clean release subtree. Build cartridges separately.
 DEST="$TARGET/homepages/vrampage-md"
-python3 "$ROOT/scripts/cartridges.py" stage-site "$DEST"
-cp "$ROOT/README.md" "$DEST/README.md"
+python3 "$ROOT/scripts/package-website.py" --output "$DEST"
 printf 'VRAMpage MD release staged locally at: %s\n' "$DEST"
 printf 'Website branch: %s\n' "$branch"
 printf 'No commit, push or deployment was made. Review these files:\n'

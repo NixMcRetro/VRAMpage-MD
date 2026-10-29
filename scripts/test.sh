@@ -9,6 +9,7 @@ node --check tests/test_bundled_cartridges_wasm.cjs
 node --check site/cartridges.js
 node tests/test_cartridges.cjs
 python3 -m unittest discover -s tests -p 'test_*.py' -v
+python3 -m py_compile scripts/package-website.py scripts/website_bundle.py scripts/verify-corresponding-source.py tests/browser_website.py
 node --check site/app.js
 node --check site/circuit-config.js
 node --check site/experiment-comparison.js

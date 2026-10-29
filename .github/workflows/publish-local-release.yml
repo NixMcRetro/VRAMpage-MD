@@ -1,4 +1,4 @@
-name: Prepare v0.5.0 browser release draft
+name: Prepare v0.5.1 browser release draft
 
 # Explicitly dispatched after main passes review. Only this repository is used.
 on:
@@ -26,47 +26,59 @@ jobs:
         with:
           name: VRAMpage-MD-local-review
           path: download
+      - uses: actions/download-artifact@v8
+        with:
+          name: VRAMpage-MD-corresponding-source
+          path: download
       - name: Check packaged commit and produce checksum
         run: |
           cd download
           python3 - <<'PY'
           import json, os, zipfile
-          with zipfile.ZipFile('VRAMpage-MD-v0.5.0-browser.zip') as bundle:
+          with zipfile.ZipFile('VRAMpage-MD-v0.5.1-browser.zip') as bundle:
               root_info = bundle.read('VRAMpage-MD/BUILD-INFO.json')
               assert root_info == bundle.read('VRAMpage-MD/site/build-info.json')
               assert len(bundle.namelist()) == len(set(bundle.namelist()))
               info = json.loads(root_info)
+              bundle_bytes = {name: bundle.read('VRAMpage-MD/site/core/' + name) for name in ('genplus.js', 'genplus.wasm')}
               assert info['source_commit'] == os.environ['GITHUB_SHA'], info
-              assert info['application_version'] == '0.5.0', info
+              assert info['application_version'] == '0.5.1', info
+          with zipfile.ZipFile('VRAMpage-MD-v0.5.1-corresponding-source.zip') as sources:
+              source_info = json.loads(sources.read('SOURCE-INFO.json'))
+              assert source_info['source_commit'] == os.environ['GITHUB_SHA'], source_info
+              assert source_info['version'] == '0.5.1', source_info
+              import hashlib
+              for name, digest in source_info['core_sha256'].items():
+                  assert hashlib.sha256(bundle_bytes[name]).hexdigest() == digest
           PY
-          sha256sum VRAMpage-MD-v0.5.0-browser.zip > SHA256SUMS.txt
+          sha256sum -c SHA256SUMS.txt
       - name: Attach the complete ZIP to the release draft
         run: |
           # Earlier canonical releases retain their original assets and notes.
           # The deleted legacy v2.4.0 retains only its source tag. See:
           # https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.4
           # Never replace assets or metadata of an already-public release.
-          if gh release view v0.5.0 >/dev/null 2>&1 &&
-             [ "$(gh release view v0.5.0 --json isDraft --jq '.isDraft')" = 'false' ]; then
-            echo 'v0.5.0 is already public; publish a new version instead of replacing it.' >&2
+          if gh release view v0.5.1 >/dev/null 2>&1 &&
+             [ "$(gh release view v0.5.1 --json isDraft --jq '.isDraft')" = 'false' ]; then
+            echo 'v0.5.1 is already public; publish a new version instead of replacing it.' >&2
             exit 1
           fi
-          if ! gh release view v0.5.0 >/dev/null 2>&1; then
-            gh release create v0.5.0 --draft --target "$GITHUB_SHA" --title 'VRAMpage MD v0.5.0' --notes-file docs/RELEASE-NOTES-v0.5.0.md
+          if ! gh release view v0.5.1 >/dev/null 2>&1; then
+            gh release create v0.5.1 --draft --target "$GITHUB_SHA" --title 'VRAMpage MD v0.5.1' --notes-file docs/RELEASE-NOTES-v0.5.1.md
           fi
           # GitHub draft releases do not necessarily create a Git tag yet.
           # Create only an absent ref; never move or overwrite an existing tag.
-          if ! gh api "repos/$GH_REPO/git/ref/tags/v0.5.0" >/dev/null 2>&1; then
+          if ! gh api "repos/$GH_REPO/git/ref/tags/v0.5.1" >/dev/null 2>&1; then
             gh api "repos/$GH_REPO/git/refs" --method POST \
-              -f ref=refs/tags/v0.5.0 -f sha="$GITHUB_SHA" >/dev/null
+              -f ref=refs/tags/v0.5.1 -f sha="$GITHUB_SHA" >/dev/null
           fi
           # Resolve lightweight or annotated tags to the commit packaged above.
-          tag_commit="$(gh api "repos/$GH_REPO/commits/v0.5.0" --jq '.sha')"
+          tag_commit="$(gh api "repos/$GH_REPO/commits/v0.5.1" --jq '.sha')"
           if [ "$tag_commit" != "$GITHUB_SHA" ]; then
             echo "Release tag does not match packaged source: $tag_commit != $GITHUB_SHA" >&2
             exit 1
           fi
-          gh release view v0.5.0 --json body --jq .body > /tmp/release-notes.md
+          gh release view v0.5.1 --json body --jq .body > /tmp/release-notes.md
           python3 - <<'PY'
           import os
           from pathlib import Path
@@ -77,6 +89,6 @@ jobs:
                         'Release validation: https://github.com/' + os.environ['GITHUB_REPOSITORY'] + '/actions/runs/' + os.environ['GITHUB_RUN_ID']])
           p.write_text('\n'.join(lines) + '\n')
           PY
-          gh release edit v0.5.0 --target "$GITHUB_SHA" --notes-file /tmp/release-notes.md
-          gh release upload v0.5.0 download/VRAMpage-MD-v0.5.0-browser.zip download/SHA256SUMS.txt --clobber
-          echo 'v0.5.0 draft prepared; publication remains a separate reviewed action.'
+          gh release edit v0.5.1 --target "$GITHUB_SHA" --notes-file /tmp/release-notes.md
+          gh release upload v0.5.1 download/VRAMpage-MD-v0.5.1-browser.zip download/VRAMpage-MD-v0.5.1-corresponding-source.zip download/SHA256SUMS.txt --clobber
+          echo 'v0.5.1 draft prepared; publication remains a separate reviewed action.'

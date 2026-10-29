@@ -1,3 +1,13 @@
+## v0.5.1 — Lightweight Website Packaging
+
+- Prepare a runtime-only website layout with approved original cartridges and
+  one complete version-matched corresponding-source archive, retaining notices.
+- Add source/binary/checksum verification, archive rebuild proof and footprint
+  comparison. Keep current emulator controls and behavior unchanged.
+- Document custom non-commercial, source-delivery and LGPL obligations and
+  remaining limits on future arrangements. Record owner-approved non-commercial
+  hosting, the GX default FM grant and Musashi notice inside WASM metadata.
+
 ## Development Source — Unified Cartridge Selection
 
 - Add Choose Cartridge for the latest approved Demo Cart, original Colour Test

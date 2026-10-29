@@ -1,7 +1,17 @@
+## v0.5.1 — Approved Release Target
+
+`VERSION` is **0.5.1**. The owner approved its release and separate website update
+on 29 October 2026, after confirming non-commercial hosting. Require protected
+PR/main CI, CodeQL, complete source/notice verification and byte-exact rebuilds
+before publication. The new artifacts are `VRAMpage-MD-v0.5.1-browser.zip` and
+`VRAMpage-MD-v0.5.1-corresponding-source.zip`. Preserve v0.5.0 and older assets.
+See [deployment](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md) and the
+[licence assessment](LICENCE-AUDIT-v0.5.1.md).
+
 # Versioning policy
 
-Current public milestone: **v0.5.0** (`VERSION` stores `0.5.0`), packaged as
-`VRAMpage-MD-v0.5.0-browser.zip` for Windows, macOS and Linux browsers. It adds
+Current release target: **v0.5.1**, packaged as
+`VRAMpage-MD-v0.5.1-browser.zip` for Windows, macOS and Linux browsers. It adds
 ordered recovery, explicit session checkpoints and cross-platform distribution.
 Public v0.4.1 and older tags/assets remain immutable. Later source work uses build
 commit metadata; never silently rebuild a public asset. Publish new milestones
