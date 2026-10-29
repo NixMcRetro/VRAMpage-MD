@@ -48,6 +48,13 @@ class OriginalShowTests(unittest.TestCase):
         self.assertTrue(all(len(p[2])==4 and all(len(op)==6 for op in p[2])
                             for p in patches))
         self.assertEqual(len(self.values["SHOW_MUSIC"]),14400)
+        self.assertEqual(music["musicLabPreview"],False)
+        self.assertEqual(music["ymLogicalSlotOffsets"],[0,8,4,12])
+        high,low=self.values["show_pitch"](69)
+        self.assertEqual(high>>3,4)
+        fnum=((high&7)<<8)|low
+        self.assertTrue(1075<=fnum<=1090, fnum)
+        self.assertEqual(((self.values["show_pitch"](60)[0])>>3),4)
         self.assertEqual(music["heldNoteMarker"],255)
         self.assertEqual(music["keyCentre"],"A major / F-sharp minor")
         self.assertEqual(len(music["writtenSongForm"]),10)
