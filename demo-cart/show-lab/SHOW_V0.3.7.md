@@ -35,3 +35,21 @@ Source is stacked on the v0.3.6 draft PR. Neither candidate is approved as
 the packaged Demo Cart; `site/cartridges.json` remains pinned to v0.3.5.
 Do not merge, publish a GitHub release, or deploy McRetro.net without
 separate explicit approval.
+
+## Extended Native Listening Review
+
+The experimental CI now captures fourteen seconds from each of the six show
+scenes in both NTSC and PAL, using the actual Genesis Plus GX stereo FM/PSG
+output. This provides twelve independently playable WAV files. The existing
+`ntsc-original-score.wav` and `pal-original-score.wav` filenames are
+retained for the introduction, but now contain fourteen seconds rather than
+four. The review JSON records each recording's native frame range, peak,
+duration and SHA-256 digest.
+
+GitHub Actions uploads three temporary, separate review artifacts: a ROM-only
+archive, the scene-audio archive, and the comprehensive show-review archive.
+GitHub Actions downloads are ZIP files; the ROM-only archive contains just
+the experimental `.bin`. These review artifacts expire after fourteen days
+and are not GitHub releases or approved built-in cartridges. No musical notes,
+ROM instructions, artwork, or default-cartridge manifest are changed by this
+review improvement.

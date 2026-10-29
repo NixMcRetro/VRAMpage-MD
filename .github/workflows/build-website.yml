@@ -82,6 +82,20 @@ jobs:
             demo-cart/show-lab/build/VRAMpage-MD-Demo-Cart-v0.3.7-Show.bin
             demo-cart/show-lab/build/rom_report.json
           if-no-files-found: error
+      - name: Upload experimental v0.3.7 ROM only for owner testing
+        uses: actions/upload-artifact@v7
+        with:
+          name: demo-cart-v037-rom-only
+          retention-days: 14
+          path: demo-cart/show-lab/build/VRAMpage-MD-Demo-Cart-v0.3.7-Show.bin
+          if-no-files-found: error
+      - name: Upload original v0.3.7 scene audio for owner listening
+        uses: actions/upload-artifact@v7
+        with:
+          name: demo-cart-v037-scene-audio
+          retention-days: 14
+          path: artifacts/demo-cart-v037-genplus/*.wav
+          if-no-files-found: error
       - name: Verify original Demo Cart v0.3.5 inside real Genesis Plus GX
         shell: bash
         run: |
