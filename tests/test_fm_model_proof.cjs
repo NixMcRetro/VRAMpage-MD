@@ -63,6 +63,10 @@ async function main() {
     'default proof core preserves production FM status reads');
 
   const invalid = await createCore(proofPath, rom, core => {
+    assert.equal(core._fm_model_proof_active_model(), -1,
+      'module has no effective FM model before cartridge start');
+    assert.equal(core._fm_model_proof_pending_model(), 0,
+      'module defaults its pending FM model to Discrete');
     const before = core._fm_model_proof_pending_model();
     for (const value of [-1, 2, 3, 1.5]) assert.equal(core._fm_model_proof_request(value), 1);
     assert.equal(core._fm_model_proof_pending_model(), before,

@@ -239,6 +239,9 @@ function modelProofFrames(c) { return Array.from({length: 6}, () => frame(c)); }
         'Clean Restart applies the pending model after defaults and before sound init');
       const restarted = frame(c);
       assert.ok(restarted.nonzero);
+      const freshModel = await modelProofCore(replacement);
+      assert.deepEqual(restarted, frame(freshModel),
+        'Clean Restart native output matches a fresh instance of the requested model');
       modelOutputs.push({model, warm, restarted});
       groups++;
     }
