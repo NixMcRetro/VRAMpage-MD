@@ -512,6 +512,9 @@ asm.bsr('load_palettes')
 asm.bsr('clear_plane_b')
 asm.bsr('clear_sprites')
 asm.bsr('clear_hscroll')
+# Work RAM may contain arbitrary power-on data. Never start the tracker
+# until the explicit show-start routine has programmed its channel state.
+asm.movea(4,0xFF0006);asm.movew_imm_ai(4,0)
 # D7: menu selection 0..4. D3: previous 8-bit button state, for edge detection.
 # Button bits: UP=1 DOWN=2 LEFT=4 RIGHT=8 B=16 C=32 A=64 START=128.
 asm.moveq(7,0);asm.moveq(3,0)
@@ -1096,6 +1099,9 @@ rom[0x18E:0x190]=struct.pack('>H',checksum)
 (OUT/'VRAMpage-MD-Demo-Cart-v0.3.6-Show.bin').write_bytes(rom)
 report={
  'romSize':len(rom),'checksum':f'{checksum:04X}',
+ 'show':{'totalSeconds':180,'playMode':'automatic after original menu idle',
+         'manualMenu':True,'regionFrameRate':{'NTSC':60,'PAL':50},
+         'originalPortraitAndLogo':True,'chromaControls':'A/B/C and START'},
  'music':{'original':True,'tempoBPM':120,'eventsPerSecond':4,
           'steps':SHOW_STEPS,'eventBytes':len(SHOW_MUSIC),
           'scenes':list(SHOW_SCENES),'lengthSeconds':180,
