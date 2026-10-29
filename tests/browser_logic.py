@@ -103,15 +103,19 @@ class BrowserLogicTests(unittest.TestCase):
             path=str(ROOT / "tests/fixtures/mock-core.js"),
             content_type="application/javascript"))
         # All existing tests exercise the manual-ROM workflow unless opted in.
-        page.route("**/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin", lambda route: route.fulfill(
+        manifest=json.loads((ROOT / 'site/cartridges.json').read_text())
+        self.demo_cart=next(c for c in manifest['cartridges'] if c['id']==manifest['defaultCartridge'])
+        self.colour_cart=next(c for c in manifest['cartridges'] if c['id']=='colour-test')
+        page.route("**/"+self.demo_cart['path'], lambda route: route.fulfill(
             status=200 if demo_rom else 404,
             content_type="application/octet-stream",
-            body=self.synthetic_rom() if demo_rom else b"Missing test demo"))
+            body=(ROOT / 'site' / self.demo_cart['path']).read_bytes() if demo_rom else b"Missing test demo"))
         if stalled_demo:
+            page.add_init_script('window.__testDemoUrl='+json.dumps('./'+self.demo_cart['path'])+';')
             page.add_init_script("""(() => {
                 const originalFetch=window.fetch;
                 window.fetch=(url,opts)=>{
-                    if(String(url)==='./demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin')
+                    if(String(url)===window.__testDemoUrl)
                         return new Promise(resolve=>{
                             window.__resumeDemoFetch=()=>originalFetch(url,opts).then(resolve);
                         });

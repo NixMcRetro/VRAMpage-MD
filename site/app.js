@@ -1,6 +1,6 @@
 'use strict';
 // Standalone (no bundler) frontend for wasm-genplus with a custom C fault API.
-// No third-party JS, fonts, CDN, telemetry, or ROM downloads.
+// No third-party JS, fonts, CDN or telemetry. Built-in cartridges are same-origin.
 (() => {
   const $ = id => document.getElementById(id);
   // The native viewport is stored inside a 640x480 framebuffer.
@@ -66,6 +66,7 @@
   let logicAddressMask = 0, addressLineChanges = [];
   let logicResetState = 'No cartridge loaded';
   let romLoadGeneration = 0;
+  let coreReadyPromise, cartridgeManifestPromise;
   let romIdentity = null;
   const CORE_PIN = '6090aff9e9b2f578cd28882bd4571d2e35b1d674';
   const APPLICATION_VERSION = '0.5.0';
@@ -3322,49 +3323,90 @@
     // Browser audio is unlocked by a separate Sound button after user gesture.
   }
 
-  // Original, same-origin Demo Cart. Never outranks a local cartridge selection.
-  const DEMO_ROM_URL='./demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin';
+  const CARTRIDGE_KEY='vrampage-cartridge-preference';
   const CUSTOM_CHOSEN_KEY='vrampage-custom-rom-preferred';
-  function customCartridgePreviouslyChosen() {
-    try { return window.sessionStorage.getItem(CUSTOM_CHOSEN_KEY)==='1'; }
-    catch (_) { return false; }
-  }
-  async function loadBuiltInDemo() {
-    const generation=romLoadGeneration;
+  function cartridgePreference() {
     try {
-      stamp('Loading original Demo Cart v0.3.5…');
-      const response=await fetch(DEMO_ROM_URL,{credentials:'same-origin'});
-      if(!response.ok) throw new Error(`HTTP ${response.status}`);
-      const bytes=new Uint8Array(await response.arrayBuffer());
-      if(generation!==romLoadGeneration || started || customCartridgePreviouslyChosen()) return;
-      ++romLoadGeneration;
-      await startCartridge(bytes,'VRAMpage MD Demo Cart');
-    } catch(error) {
-      if(generation!==romLoadGeneration || started) return;
-      stamp(`Built-in demo unavailable: ${error.message}`);
-      if(!error.cartridgeActivationUncertain)
-        message('INSERT YOUR CARTRIDGE',
-          'The original Demo Cart v0.3.5 could not be loaded. Choose a local Mega Drive ROM to continue.');
-    }
+      return window.sessionStorage.getItem(CARTRIDGE_KEY) ||
+        (window.sessionStorage.getItem(CUSTOM_CHOSEN_KEY)==='1' ? 'local' : null);
+    } catch (_) { return null; }
   }
-
+  function rememberCartridge(id) {
+    try {
+      window.sessionStorage.setItem(CARTRIDGE_KEY,id);
+      window.sessionStorage.setItem(CUSTOM_CHOSEN_KEY,id==='local'?'1':'0');
+    } catch (_) { /* Private browsing may block session storage. */ }
+  }
+  async function readCartridgeManifest() {
+    const response=await fetch('./cartridges.json',{credentials:'same-origin',cache:'no-cache'});
+    if (!response.ok) throw new Error(`Cartridge manifest HTTP ${response.status}`);
+    const manifest=window.VRAMpageCartridges.validateManifest(await response.json());
+    const select=$('cartridgeSelect');
+    for (const cart of manifest.cartridges) {
+      const option=new Option(`${cart.displayName} v${cart.version}`,cart.id);
+      select.insertBefore(option,select.querySelector('[value="local"]'));
+    }
+    return manifest;
+  }
+  function cartridgeLoadError(error,generation,builtIn=false) {
+    if (generation!==romLoadGeneration) return;
+    stamp(`ERROR: ${error.message}`);
+    if (!started && !error.cartridgeActivationUncertain)
+      message(builtIn?'BUILT-IN CARTRIDGE UNAVAILABLE':'CARTRIDGE COULD NOT START',
+        `${error.message}${builtIn?' Choose Cartridge to retry or load your own Mega Drive ROM.':''}`);
+  }
+  async function loadBuiltInCartridge(id,{automatic=false,generation=romLoadGeneration}={}) {
+    if (!automatic) { generation=++romLoadGeneration; rememberCartridge(id); }
+    try {
+      const manifest=await cartridgeManifestPromise;
+      if (generation!==romLoadGeneration) return;
+      const cart=manifest.cartridges.find(cart=>cart.id===id);
+      if (!cart) throw new Error('This built-in cartridge is not approved.');
+      stamp(`Loading ${cart.displayName} v${cart.version}…`);
+      const response=await fetch(`./${cart.path}`,{credentials:'same-origin'});
+      if (!response.ok) throw new Error(`Cartridge HTTP ${response.status}`);
+      const length=response.headers.get('content-length');
+      if (length!==null && !response.headers.get('content-encoding') && Number(length)!==cart.size) throw new Error('Built-in cartridge size does not match its approval.');
+      const bytes=new Uint8Array(await response.arrayBuffer());
+      if (generation!==romLoadGeneration) return;
+      await window.VRAMpageCartridges.verify(bytes,cart);
+      await coreReadyPromise;
+      if (generation!==romLoadGeneration) return;
+      await startCartridge(bytes,cart.displayName);
+    } catch(error) { cartridgeLoadError(error,generation,true); }
+  }
+  async function automaticCartridgeStartup(generation) {
+    try {
+      const [manifest]=await Promise.all([cartridgeManifestPromise,coreReadyPromise]);
+      if (generation!==romLoadGeneration || started || !emulator) return;
+      const id=cartridgePreference() ?? manifest.defaultCartridge;
+      if (id==='local') return;
+      await loadBuiltInCartridge(id,{automatic:true,generation});
+    } catch(error) { cartridgeLoadError(error,generation,true); }
+  }
   async function loadLocalRom(file) {
     if (!file) return;
     const generation=++romLoadGeneration;
-    try { window.sessionStorage.setItem(CUSTOM_CHOSEN_KEY,'1'); }
-    catch (_) { /* Private browsing may block session storage. */ }
+    rememberCartridge('local');
     try {
       stamp(`Loading local cartridge: ${file.name}`);
       if (file.size<0x200 || file.size>4*1024*1024)
         throw new Error('Expected a 512-byte to 4-MB uncompressed Mega Drive ROM.');
       const bytes=new Uint8Array(await file.arrayBuffer());
+      await coreReadyPromise;
       if (generation!==romLoadGeneration) return;
       await startCartridge(bytes,file.name);
-    } catch(e) {
-      if (generation!==romLoadGeneration) return;
-      stamp(`ERROR: ${e.message}`);
-      if (!started && !e.cartridgeActivationUncertain) message('CARTRIDGE COULD NOT START',e.message);
-    }
+    } catch(error) { cartridgeLoadError(error,generation); }
+  }
+  function chooseCartridge() {
+    const select=$('cartridgeSelect'), id=select.value;
+    select.value='';
+    if (!id) return;
+    if (id==='local') {
+      // Choosing the file picker cancels pending automatic/explicit loads even if dismissed.
+      ++romLoadGeneration; rememberCartridge('local');
+      $('romFile').click();
+    } else void loadBuiltInCartridge(id);
   }
 
   async function cleanRestart() {
@@ -3461,10 +3503,10 @@
       setRunning(false);
       if (!logicApiAvailable) logicStatusMessage='Rebuild core for logic faults';
       updateLogicControls();
-      message('INSERT YOUR CARTRIDGE','Choose a Sonic the Hedgehog ROM stored on your computer. The file is loaded only in this browser.');
+      message('INSERT YOUR CARTRIDGE','Choose a built-in cartridge or load your own compatible Mega Drive ROM. Your file stays in this browser.');
       refreshRegionState();
       stamp('Core loaded; ready for cartridge.');
-      if(!customCartridgePreviouslyChosen()) void loadBuiltInDemo();
+
     } catch(e) {
       emulator=null;
       message('CORE INITIALISATION FAILED',e.message);
@@ -3602,6 +3644,7 @@
       drawActiveVideo();
       refreshRgbEncoderControls();
     });
+    $('cartridgeSelect').addEventListener('change',chooseCartridge);
     $('romFile').addEventListener('change',event=>{loadLocalRom(event.target.files?.[0]);event.target.value='';});
     $('resetBtn').addEventListener('click',cleanRestart);
     $('compactResetBtn').addEventListener('click',cleanRestart);
@@ -3620,7 +3663,10 @@
     updateLogicControls();
     resetStats();
     requestAnimationFrame(animationFrame);
-    initialiseCore();
+    const startupGeneration=romLoadGeneration;
+    cartridgeManifestPromise=readCartridgeManifest();
+    coreReadyPromise=initialiseCore();
+    void automaticCartridgeStartup(startupGeneration);
   }
   setup();
 })();
