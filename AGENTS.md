@@ -168,7 +168,11 @@ outcomes concisely with PR, commit, CI and download links and honest limitations
 
 ## Ponytail coding principles
 
-The following rules are from [DietrichGebert/ponytail's `AGENTS.md`](https://github.com/DietrichGebert/ponytail/blob/main/AGENTS.md) (MIT license). They supplement, rather than replace, the project instructions above.
+The following rules are integrated from [Ponytail v5.3.3's `AGENTS.md`](https://github.com/DietrichGebert/ponytail/blob/96608e078b2d5ea607c5c3b8b5a54d1c1fba6846/AGENTS.md),
+verified on 30 October 2026 at commit
+`96608e078b2d5ea607c5c3b8b5a54d1c1fba6846`. The [MIT licence](licences/PONYTAIL-LICENSE.txt)
+is retained. This is the single copy of the upstream rules; they supplement
+the project instructions above. Review upstream changes before updating this pin.
 
 # Ponytail, lazy senior dev mode
 
@@ -203,15 +207,20 @@ Never cut: validation at trust boundaries, error handling that prevents data los
 
 (Yes, this file also applies to agents working on the ponytail repo itself. Especially to them.)
 
-## Ponytail mode selection for Codex Cloud
+## Ponytail Full Mode in Codex
 
-These are task-level instruction modes when using the repository in Codex Cloud, not installed slash commands or lifecycle hooks. Default to **full** when no mode is specified.
+**Ponytail Full Mode is enabled by default for this repository and all subsequent
+development tasks**, including new Codex sessions. Codex loads these instructions
+from the root `AGENTS.md` when working in the repository or its subdirectories;
+no lifecycle hook is needed. An explicit mode selection applies to that task only.
 
 - **lite**: Implement the requested change, briefly identifying a simpler option when useful. Preserve required checks and safety.
 - **full** (default): Follow all Ponytail principles; implement the smallest complete solution, reuse existing code, and test non-trivial logic.
 - **ultra**: Apply full and also question unnecessary complexity or scope before implementation. Do not override a clear user requirement or block an otherwise authorised task.
 - **off**: Set aside Ponytail-specific preferences for that task while keeping all project instructions and essential safety requirements.
 
-A task can choose a mode by saying `Use Ponytail lite`, `Use Ponytail full`, `Use Ponytail ultra`, or `Use Ponytail off`. This selection applies to that task only. It does not change the repository default or activate Ponytail's CLI plugin commands.
+A task can choose a mode by saying `Use Ponytail lite`, `Use Ponytail full`,
+`Use Ponytail ultra`, or `Use Ponytail off`. The next task defaults to Full Mode
+again. This instruction-file integration does not install plugin commands.
 
 Project-specific instructions above take priority over Ponytail preferences if they conflict. Never remove validation, security, accessibility, data-loss prevention, required reviews or tests merely to reduce code or tokens.
