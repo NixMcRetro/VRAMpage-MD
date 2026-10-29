@@ -1,3 +1,15 @@
+## Development Source — FM Output Model Selector
+
+- Add a compact Discrete/Integrated choice beside Region, retaining Discrete as
+  the default MAME output model. Show active and pending identity; apply changes
+  only with Clean Restart or a new cartridge.
+- Preserve the active model, sound and checkpoint through pending/rejected
+  choices, CPU Reset and Restore. Keep older cores usable with an unavailable
+  control, and record versioned model/backend identity in exports/comparison.
+- Reuse the original native proof against the production API, including both
+  models under NTSC-U/PAL and real-browser checkpoint/restart behavior. Preserve
+  normal hashes, VERSION, approved cartridges, releases and the live website.
+
 ## Development Proof — FM Output Models
 
 - Verify MAME Discrete/Integrated native PCM, DAC/status, chip-local CPU/Z80
