@@ -236,6 +236,8 @@ class BrowserLogicTests(unittest.TestCase):
         page=self.page
         summary=page.locator('#cartridgeChooser > summary')
         local=page.locator('#cartridgeChooser button[data-cartridge="local"]')
+        choices=page.locator('.cartridge-choices')
+        expect(choices).to_be_hidden()
         page.evaluate("""() => {
           window.cartridgeActivations=[];
           document.querySelector('[data-cartridge="local"]').addEventListener('click',event=>
@@ -250,11 +252,13 @@ class BrowserLogicTests(unittest.TestCase):
                     page.keyboard.press(action)
                     for _ in range(page.locator('#cartridgeChooser button').count()): page.keyboard.press('Tab')
                     expect(local).to_be_focused()
+                expect(choices).to_be_visible()
                 with page.expect_file_chooser() as chooser:
                     if action=='click': local.click()
                     else: page.keyboard.press(action)
                 chooser.value.set_files([])
                 self.assertFalse(page.locator('#cartridgeChooser').evaluate('node=>node.open'))
+                expect(choices).to_be_hidden()
                 expect(summary).to_be_focused()
         self.assertEqual(page.evaluate('cartridgeActivations'),[{'trusted':True,'active':True}]*3)
         self.assertEqual(page.evaluate('mockCore.starts'),0)
@@ -268,6 +272,8 @@ class BrowserLogicTests(unittest.TestCase):
         self.load_rom(page)
         summary=page.locator('#cartridgeChooser > summary')
         summary.click()
+        choices=page.locator('.cartridge-choices')
+        expect(choices).to_be_visible()
         state="""() => JSON.stringify({pause:document.querySelector('#pauseBtn').textContent,
           starts:mockCore.starts,logic:mockCore.logic.setterCalls,vram:mockCore.vramModel.calls,
           masks:mockCore.vramMaskCalls,psg:mockCore.psg.calls,fm:mockCore.fm.calls})"""
@@ -284,13 +290,16 @@ class BrowserLogicTests(unittest.TestCase):
                     page.keyboard.up(key)
         page.keyboard.press('Escape')
         self.assertFalse(page.locator('#cartridgeChooser').evaluate('node=>node.open'))
+        expect(choices).to_be_hidden()
         expect(summary).to_be_focused()
         page.keyboard.press('Enter')
         self.assertTrue(page.locator('#cartridgeChooser').evaluate('node=>node.open'))
+        expect(choices).to_be_visible()
         outside=page.locator('#pauseBtn')
         outside.focus()
         outside.click()
         self.assertFalse(page.locator('#cartridgeChooser').evaluate('node=>node.open'))
+        expect(choices).to_be_hidden()
         expect(outside).to_be_focused()
 
     def test_cartridge_chooser_fits_short_and_mobile_windows_without_resizing_toolbar(self):
