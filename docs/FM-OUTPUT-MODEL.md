@@ -46,8 +46,11 @@ Include versioned requested/effective model and backend identity in machine
 observations and experiment exports. Pending and effective models must remain
 distinguishable. Compare observed active identity so a Discrete/Integrated pair
 cannot silently look equivalent. Treat missing, invalid or unavailable legacy
-observations as Unknown. Avoid changing circuit-fault configuration schemas for
-this machine setting unless an existing contract requires it.
+observations as Unknown. The observation is `machine.fmOutputModel`, independently
+available from Region. Compare requested/effective model, backend and support;
+effective identity requires its own valid version, loaded and supported state.
+Avoid changing circuit-fault configuration schemas for this machine setting
+unless an existing contract requires it.
 
 ## Runtime API
 
@@ -63,11 +66,11 @@ are `discrete` and `integrated`. API availability is separate from loaded,
 supported emulation: before cartridge start, effective model and backend are
 null. Loaded backend identity is `mame-opn2` or `nuked-opn2`; an unsupported
 backend reports no effective model and refuses requests. Reasons distinguish
-`not-started`, `unsupported-backend` and `none`. Invalid native observations must
+`not-started`, `unsupported-backend`, `unsupported-model` and `none`. Invalid native observations must
 not be presented as a valid effective model.
 
 This API is runtime-only. Normal/legacy profiles retain their previous behavior
-and have no new model setter or observation export.
+and have no new native model setter or state API.
 
 ## Acceptance
 
