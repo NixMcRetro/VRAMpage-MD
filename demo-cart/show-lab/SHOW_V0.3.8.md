@@ -49,3 +49,23 @@ dependency and review sequence is deliberately resolved and explicitly
 approved. `site/cartridges.json` remains pinned to the approved
 v0.3.5 Demo Cart, and application `VERSION` remains 0.5.0.
 No public release, GitHub Pages or McRetro.net deployment is authorised.
+
+## v0.3.8 Audio Balance Refinement
+
+The user reported PSG drums overwhelming the six-voice YM2612 score. This
+experimental cartridge now attenuates the PSG kick, snare, hat and fill to
+8, 9, 12 and 8 respectively, on the genuine SN76489-compatible
+0 (loudest) through 15 (silent) volume scale. A 68000 routine advances
+noise attenuation each VBlank, fading every hit to silence within three
+to eight frames. This applies to both NTSC and PAL.
+
+The six original FM instrument patches each reduce carrier total level by
+five register steps for greater brass, bass and offbeat keyboard presence.
+The melody, song timing, VDP effects, original logo and portrait, and
+controller inputs are unchanged. PSG decay state is explicitly reset at
+boot, at show start, and at show stop.
+
+This fix is **entirely inside the Demo Cart ROM**. Neither Genesis Plus GX's
+audio mix nor the website, other cartridges, approved v0.3.5 ROM, or
+v0.5.1 website package is modified. Human listening remains necessary
+to decide whether this first balance adjustment is satisfactory.

@@ -462,6 +462,12 @@ SHOW_EVENTS_PER_SECOND=5
 SHOW_EVENT_BYTES=16
 SHOW_STEPS=SHOW_EVENTS_PER_SECOND*sum(duration for _,duration in SHOW_SCENES)
 assert SHOW_STEPS==900
+# SN76489 noise attenuation: 0 loudest, 15 silent. Previous almost-full
+# PSG attacks masked YM2612 brass and bass; these are reduced in the ROM.
+# Each hit fades by one attenuation step per actual VBlank, no browser gain.
+PSG_DRUMS=(('kick',0xE4,8),('snare',0xE7,9),
+           ('hat',0xE5,12),('fill',0xE7,8))
+assert all(7<=atten<15 for _,_,atten in PSG_DRUMS)
 # Roots I-IV-V-I for each section. The title/chorus/finale share a recurring
 # original hook, while the verse and breakdown use different melodic phrases.
 SHOW_CHORDS=(
@@ -506,12 +512,12 @@ SHOW_RESPONSE=(7,9,12,9, 7,4,2,4, 9,12,14,12, 9,7,4,2)
 # (name, algorithm/feedback, operator multiples, total levels,
 #  decay 1, decay 2, sustain level/release)
 SHOW_PATCHES=(
- ('brass_lead',    0x37,(1,1,2,1),(38,47,44,18),0x0A,0x07,0x46),
- ('brass_answer',  0x37,(1,2,1,1),(42,45,43,21),0x0D,0x09,0x56),
- ('walking_bass',  0x34,(1,2,1,1),(26,47,42,16),0x06,0x04,0x37),
- ('offbeat_skank', 0x37,(1,2,2,1),(52,49,48,23),0x18,0x12,0xF6),
- ('organ_accents',0x37,(1,1,1,2),(55,48,43,28),0x0C,0x08,0x67),
- ('horn_fills',   0x37,(2,1,2,1),(44,48,40,22),0x0D,0x0A,0x56),
+ ('brass_lead',    0x37,(1,1,2,1),(38,47,44,13),0x0A,0x07,0x46),
+ ('brass_answer',  0x37,(1,2,1,1),(42,45,43,16),0x0D,0x09,0x56),
+ ('walking_bass',  0x34,(1,2,1,1),(26,47,42,11),0x06,0x04,0x37),
+ ('offbeat_skank', 0x37,(1,2,2,1),(52,49,48,18),0x18,0x12,0xF6),
+ ('organ_accents',0x37,(1,1,1,2),(55,48,43,23),0x0C,0x08,0x67),
+ ('horn_fills',   0x37,(2,1,2,1),(44,48,40,17),0x0D,0x0A,0x56),
 )
 assert len(SHOW_PATCHES)==6
 def show_pitch(note,block=None):
@@ -608,6 +614,7 @@ asm.bsr('clear_hscroll')
 # Work RAM may contain arbitrary power-on data. Never start the tracker
 # until the explicit show-start routine has programmed its channel state.
 asm.movea(4,0xFF0006);asm.movew_imm_ai(4,0)
+asm.movea(4,0xFF000A);asm.movew_imm_ai(4,0) # Uninitialised RAM is unsafe.
 # D7: menu selection 0..4. D3: previous 8-bit button state, for edge detection.
 # Button bits: UP=1 DOWN=2 LEFT=4 RIGHT=8 B=16 C=32 A=64 START=128.
 asm.moveq(7,0);asm.moveq(3,0)
@@ -940,6 +947,7 @@ asm.label('wait_leave')
 asm.movew_ai_d(0,1);asm.andiw(1,8);asm.bne('wait_leave')
 asm.label('wait_enter')
 asm.movew_ai_d(0,1);asm.andiw(1,8);asm.beq('wait_enter')
+asm.bsr('psg_drum_tick')
 asm.bsr('music_tick')
 asm.rts()
 
@@ -1103,7 +1111,8 @@ for ch,(_,algorithm,mults,levels,decay1,decay2,release) in enumerate(SHOW_PATCHE
         ym_reg(0x60+slot+slot_ch,decay1,bank)
         ym_reg(0x70+slot+slot_ch,decay2,bank)
         ym_reg(0x80+slot+slot_ch,release,bank)
-for address,value in ((0xFF0000,0),(0xFF0002,0),(0xFF0006,1)):
+for address,value in ((0xFF0000,0),(0xFF0002,0),(0xFF0006,1),
+                      (0xFF000A,0),(0xFF000C,15)):
     asm.movea(4,address);asm.movew_imm_ai(4,value)
 asm.movea(4,0xA10001);asm.moveb_ai_d(4,0);asm.andib(0,0x40)
 asm.beq('music_region_ntsc')
@@ -1111,15 +1120,29 @@ asm.movea(4,0xFF0008);asm.movew_imm_ai(4,50)
 asm.bra('music_first_note')
 asm.label('music_region_ntsc')
 asm.movea(4,0xFF0008);asm.movew_imm_ai(4,60)
+for volume in (0x9F,0xBF,0xDF,0xFF):
+    asm.moveb_imm_ai(5,volume) # Reset previous manual PSG state.
 asm.label('music_first_note');asm.bsr('music_event');asm.rts()
 
 asm.label('music_stop')
 asm.movea(4,0xFF0006);asm.movew_imm_ai(4,0)
+asm.movea(4,0xFF000A);asm.movew_imm_ai(4,0)
 for ch in range(6):
     ym_reg(0x28,ch if ch<3 else ch+1)
 for volume in (0x9F,0xBF,0xDF,0xFF):
     asm.moveb_imm_ai(5,volume)
 asm.rts()
+
+# FF000A counts remaining decay frames; FF000C contains attenuation (0..15).
+# The PSG volume is changed by actual 68000 writes, never by the emulator mixer.
+asm.label('psg_drum_tick')
+asm.movea(4,0xFF000A);asm.movew_ai_d(4,0)
+asm.tstw(0);asm.beq('psg_drum_tick_done')
+asm.subq(0,1);asm.movew_d_ai(0,4)
+asm.movea(4,0xFF000C);asm.movew_ai_d(4,1)
+asm.addq(1,1);asm.movew_d_ai(1,4)
+asm.addiw(1,0xF0);asm.moveb_d_ai(1,5)
+asm.label('psg_drum_tick_done');asm.rts()
 
 asm.label('music_tick')
 asm.movea(4,0xFF0006);asm.movew_ai_d(4,0);asm.tstw(0)
@@ -1154,24 +1177,21 @@ for ch in range(6):
     asm.moveq(0,0xA0+slot_ch);asm.bsr('ym_write_high' if bank else 'ym_write')
     ym_reg(0x28,0xF0+key_channel)
     asm.label('music_rest_'+str(ch))
-# Authentic SN76489 PSG noise patterns: kick, snare and quieter hats.
-asm.moveq(2,0);asm.w(0x141C) # Clear D2 before loading byte flag.
-asm.cmpiw(2,1);asm.beq('music_kick')
-asm.cmpiw(2,2);asm.beq('music_snare')
-asm.cmpiw(2,3);asm.beq('music_hat')
-asm.cmpiw(2,4);asm.beq('music_fill')
-asm.moveb_imm_ai(5,0xFF);asm.bra('music_drum_end')
-asm.label('music_kick')
-asm.moveb_imm_ai(5,0xE4);asm.moveb_imm_ai(5,0xF2)
+# Each native PSG hit has a bounded, per-frame attenuation envelope.
+asm.moveq(2,0);asm.w(0x141C) # MOVE.B (A4)+,D2: drum code.
+for flag,(name,_,atten) in enumerate(PSG_DRUMS,1):
+    asm.cmpiw(2,flag);asm.beq('music_'+name)
+# Drum rest: stop the previous noise decay and silence the noise channel.
+asm.moveb_imm_ai(5,0xFF)
+asm.movea(4,0xFF000A);asm.movew_imm_ai(4,0)
 asm.bra('music_drum_end')
-asm.label('music_snare')
-asm.moveb_imm_ai(5,0xE7);asm.moveb_imm_ai(5,0xF4)
-asm.bra('music_drum_end')
-asm.label('music_hat')
-asm.moveb_imm_ai(5,0xE5);asm.moveb_imm_ai(5,0xFA)
-asm.bra('music_drum_end')
-asm.label('music_fill')
-asm.moveb_imm_ai(5,0xE7);asm.moveb_imm_ai(5,0xF1)
+for name,noise_control,atten in PSG_DRUMS:
+    asm.label('music_'+name)
+    asm.moveb_imm_ai(5,noise_control)
+    asm.moveb_imm_ai(5,0xF0|atten)
+    asm.movea(4,0xFF000A);asm.movew_imm_ai(4,15-atten)
+    asm.movea(4,0xFF000C);asm.movew_imm_ai(4,atten)
+    asm.bra('music_drum_end')
 asm.label('music_drum_end')
 asm.w(0x141C) # Authored phrase/transition accent marker
 asm.w(0x141C) # Two reserved bytes keep 16-byte event alignment.
@@ -1227,7 +1247,9 @@ report={
           'scenes':list(SHOW_SCENES),'lengthSeconds':180,
           'tonality':'major','percussion':['kick','snare','hat','fill'],
           'character':'original upbeat brass-led ska-punk demoscene',
-          'fmChannels':[0,1,2,3,4,5],'psgNoise':True,'patches':[x[0] for x in SHOW_PATCHES]},
+          'fmChannels':[0,1,2,3,4,5],'psgNoise':True,'patches':[x[0] for x in SHOW_PATCHES],
+          'psgDrumAttenuation':{n:a for n,_,a in PSG_DRUMS},
+          'psgVblankDecay':True},
  'sha256':hashlib.sha256(rom).hexdigest(), 'baseKitSHA256':APPROVED_KIT_SHA256,
  'patternTiles':SPRITE_TILE_BASE+SPRITE_TILE_COUNT,'patternBytes':len(ALL_PATTERNS),
  'spriteCount':SPRITE_COUNT,'spriteTileBase':SPRITE_TILE_BASE,'spritePhases':SPRITE_PHASES,

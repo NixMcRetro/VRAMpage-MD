@@ -28,6 +28,14 @@ class OriginalShowTests(unittest.TestCase):
         self.assertEqual(music["fmChannels"],[0,1,2,3,4,5])
         self.assertEqual(music["eventStrideBytes"],16)
         self.assertEqual(len(music["patches"]),6)
+        self.assertTrue(music["psgVblankDecay"])
+        self.assertEqual(music["psgDrumAttenuation"],
+                         {"kick":8,"snare":9,"hat":12,"fill":8})
+        self.assertTrue(all(music["psgDrumAttenuation"][n]>old
+                            for n,old in {"kick":2,"snare":4,"hat":10,
+                                          "fill":1}.items()))
+        self.assertTrue(all(patch[3][-1]<=23
+                            for patch in self.values["SHOW_PATCHES"]))
         self.assertEqual(music["tonality"],"major")
         self.assertEqual(music["percussion"],["kick","snare","hat","fill"])
         self.assertEqual(music["eventsPerSecond"],5)
@@ -70,7 +78,8 @@ class OriginalShowTests(unittest.TestCase):
         self.assertEqual(self.report["assetSHA256"]["title_patterns.bin"],
             hashlib.sha256(self.values["PATTERNS"]).hexdigest())
         self.assertTrue({"music_start","music_tick","music_event","show_intro",
-                         "show_finale","show_music","ym_write","ym_write_high"}.issubset(
+                         "show_finale","show_music","ym_write","ym_write_high",
+                         "psg_drum_tick","psg_drum_tick_done"}.issubset(
             self.values["asm"].labels))
         self.assertIn(bytes.fromhex("00a04000"),self.rom)
         self.assertIn(bytes.fromhex("00a04001"),self.rom)
