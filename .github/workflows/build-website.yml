@@ -77,7 +77,10 @@ jobs:
         with:
           name: demo-cart-v036-show-review
           retention-days: 14
-          path: artifacts/demo-cart-v036-genplus/
+          path: |
+            artifacts/demo-cart-v036-genplus/
+            demo-cart/show-lab/build/VRAMpage-MD-Demo-Cart-v0.3.6-Show.bin
+            demo-cart/show-lab/build/rom_report.json
           if-no-files-found: error
       - name: Verify original Demo Cart v0.3.5 inside real Genesis Plus GX
         shell: bash

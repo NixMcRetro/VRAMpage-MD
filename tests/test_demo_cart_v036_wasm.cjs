@@ -141,7 +141,28 @@ async function machine(region, rom) {
     }));
     assert.equal(readWord(6),1,'Original show must be active after idle and before score verification');
     assert.ok(audibleSamples>0,'YM2612/PSG score must generate non-silent native audio samples');
-    m.run(20*fps+20);
+    // Capture original FM/PSG output directly from the WASM native audio
+    // buffers, not a browser overlay or synthetic/offline soundtrack.
+    const right=new Float32Array(m.core.HEAPF32.buffer,m.core._get_web_audio_r_ref(),2048);
+    const clipFrames=4*fps, pcm=[];
+    for(let i=0;i<clipFrames;i++){
+      const count=m.frame();
+      for(let j=0;j<count;j++){
+        pcm.push(Math.max(-32768,Math.min(32767,Math.round(left[j]*32767))));
+        pcm.push(Math.max(-32768,Math.min(32767,Math.round(right[j]*32767))));
+      }
+    }
+    const riff=Buffer.alloc(44+pcm.length*2);
+    riff.write('RIFF',0,'ascii');riff.writeUInt32LE(riff.length-8,4);
+    riff.write('WAVE',8,'ascii');riff.write('fmt ',12,'ascii');
+    riff.writeUInt32LE(16,16);riff.writeUInt16LE(1,20);
+    riff.writeUInt16LE(2,22);riff.writeUInt32LE(44100,24);
+    riff.writeUInt32LE(44100*4,28);riff.writeUInt16LE(4,32);
+    riff.writeUInt16LE(16,34);riff.write('data',36,'ascii');
+    riff.writeUInt32LE(pcm.length*2,40);
+    for(let j=0;j<pcm.length;j++)riff.writeInt16LE(pcm[j],44+j*2);
+    fs.writeFileSync(path.join(output,label+'-original-score.wav'),riff);
+    m.run(20*fps+20-clipFrames);
     captures.push(m.capture(label+'-vortex'));
     m.run(30*fps+20);
     captures.push(m.capture(label+'-aurora'));
