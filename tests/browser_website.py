@@ -72,7 +72,9 @@ window.Module=opts=>coreFactory(opts).then(core=>{window.testCore=core;return co
                         expect(page.locator('body')).to_contain_text('LLVM Exceptions')
                         expect(page.locator('body')).to_contain_text('Sun Microsystems')
                         self.assertLessEqual(page.evaluate('document.documentElement.scrollWidth'), 390)
-                        source_link = page.locator('a[href$="-corresponding-source.zip"]')
+                        source_link = page.locator('a[href^="source/"][href$="-corresponding-source.zip"]')
+                        expect(page.get_by_role('link', name='GitHub Release Source Mirror', exact=True)).to_have_attribute(
+                            'href', f'https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v{build["application_version"]}/VRAMpage-MD-v{build["application_version"]}-corresponding-source.zip')
                         response = page.request.get(source_link.evaluate('node=>node.href'))
                         self.assertEqual(response.status, 200)
                         data = response.body()
