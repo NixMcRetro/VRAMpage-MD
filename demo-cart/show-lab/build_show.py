@@ -451,31 +451,72 @@ assert len(ALL_PATTERNS)<0xC000, 'Tile upload must not overlap Plane A'
 assert all((word&0x7FF)>=FX_BASE for scene in (tile_cells,colour_cells,sprite_cells,audio_cells) for word in scene)
 
 # Original, deliberately upbeat, 150-BPM Mega Drive arcade/demo score.
-# Five eighth-note tracker events per second, all written by 68000 to FM/PSG.
-# Event layout: [lead hi/lo, bass hi/lo, harmony hi/lo, percussion, accent].
+# Original brass-led ska-punk soundtrack: five eighth-notes per second,
+# authored for six hardware YM2612 voices and one PSG noise percussion part.
+# No melody, sample, riff or arrangement has been copied from the reference band.
 SHOW_SCENES=(('Captain Intro',20),('Chromatic Vortex',30),
  ('Neon Aurora',30),('Sprite Storm',35),
  ('Chroma Reactor',40),('Finale',25))
 SHOW_BPM=150
 SHOW_EVENTS_PER_SECOND=5
+SHOW_EVENT_BYTES=16
 SHOW_STEPS=SHOW_EVENTS_PER_SECOND*sum(duration for _,duration in SHOW_SCENES)
 assert SHOW_STEPS==900
-# Every scene uses a bright major or pentatonic scale; no minor-key passages.
-SHOW_SCALES=(
- (0,2,4,5,7,9,11),   # Title: sunny C major
- (0,2,4,5,7,9,11),   # Vortex: adventurous D major
- (0,2,4,5,7,9,11),   # Aurora: sparkling F major
- (0,2,4,5,7,9,11),   # Sprite Storm: punchy G major
- (0,2,4,5,7,9,11),   # Chroma Reactor: playful E major
- (0,2,4,5,7,9,11),   # Finale: bright C-major return
+# Roots I-IV-V-I for each section. The title/chorus/finale share a recurring
+# original hook, while the verse and breakdown use different melodic phrases.
+SHOW_CHORDS=(
+ (48,53,55,48),  # Captain Intro: C F G C
+ (50,55,57,50),  # Chromatic Vortex: D G A D
+ (53,58,60,53),  # Neon Aurora: F Bb C F
+ (55,60,62,55),  # Sprite Storm: G C D G
+ (52,57,59,52),  # Chroma Reactor: E A B E
+ (48,53,55,48),  # Finale: C F G C
 )
-# I-V-IV-V by scene, returning strongly to the tonic at each finale phrase.
-SHOW_CHORDS=((48,55,53,55),(50,57,55,57),(53,60,58,60),
-             (55,62,60,62),(52,59,57,59),(48,55,53,55))
-# Ascending hooks, octave peaks and answering phrases instead of falling lines.
-SHOW_HOOK=(0,2,4,5,6,5,4,2, 3,4,6,5,4,2,1,0)
-SHOW_RESPONSE=(0,2,3,4,5,6,5,4, 2,3,5,6,4,3,2,0)
-def show_pitch(note,block):
+# Semitone offsets, not borrowed melodies. Different contour and space in each
+# 16-eighth-note phrase makes this one song with distinct sections.
+SHOW_HOOKS=(
+ (0,4,7,9, 7,4,2,0, 4,7,9,12, 11,9,7,4),
+ (0,4,7,12, 9,7,4,2, 0,2,4,7, 9,7,4,2),
+ (7,4,2,0, 2,4,7,9, 7,9,11,9, 7,4,2,4),
+ (0,7,12,11, 9,7,4,7, 12,11,9,7, 4,7,9,12),
+ (0,0,4,7, 2,2,7,9, 4,4,9,11, 7,4,2,0),
+ (0,4,7,12, 11,9,7,4, 9,11,12,14, 12,9,7,0),
+)
+SHOW_LEAD_GATES=(
+ (0,2,4,8,10,12,14),
+ (0,2,3,6,8,9,10,14),
+ (0,4,6,8,12,14),
+ (0,2,4,6,8,10,12,14,15),
+ (0,3,5,8,11,13,15),
+ (0,2,3,4,6,8,10,11,12,14,15),
+)
+SHOW_RESPONSE_GATES=(
+ (5,7,13,15),
+ (4,7,12,15),
+ (3,7,11,15),
+ (3,7,11,15),
+ (2,6,10,14),
+ (5,7,13,15),
+)
+SHOW_RESPONSE=(7,9,12,9, 7,4,2,4, 9,12,14,12, 9,7,4,2)
+# FM 0 brass lead; FM 1 brass answer; FM 2 walking bass;
+# FM 3 staccato offbeat organ/guitar; FM 4 chord accents; FM 5 horn fills.
+# YM2612 programming covers both register banks: FM channels 3-5 are bank 1.
+# A simple six-patch FM palette keeps all instrument data in this homebrew ROM.
+# (name, algorithm/feedback, operator multiples, total levels,
+#  decay 1, decay 2, sustain level/release)
+SHOW_PATCHES=(
+ ('brass_lead',    0x37,(1,1,2,1),(38,47,44,18),0x0A,0x07,0x46),
+ ('brass_answer',  0x37,(1,2,1,1),(42,45,43,21),0x0D,0x09,0x56),
+ ('walking_bass',  0x34,(1,2,1,1),(26,47,42,16),0x06,0x04,0x37),
+ ('offbeat_skank', 0x37,(1,2,2,1),(52,49,48,23),0x18,0x12,0xF6),
+ ('organ_accents',0x37,(1,1,1,2),(55,48,43,28),0x0C,0x08,0x67),
+ ('horn_fills',   0x37,(2,1,2,1),(44,48,40,22),0x0D,0x0A,0x56),
+)
+assert len(SHOW_PATCHES)==6
+def show_pitch(note,block=None):
+    if block is None:
+        block=3 if note<=46 else (5 if note>=84 else 4)
     hz=440*2**((note-69)/12)
     fnum=round(hz*2**(20-block)/(7670454/144))
     assert 0<fnum<2048, (note,block,fnum)
@@ -489,26 +530,46 @@ def show_compose():
         scene=next(i for i in range(len(SHOW_SCENES))
                    if boundaries[i]<=step<boundaries[i+1])
         local=step-boundaries[scene]
-        bar=local//16
-        root=SHOW_CHORDS[scene][bar%4]
-        scale=SHOW_SCALES[scene]
-        motif=(SHOW_HOOK if (bar//2+scene)%2==0 else SHOW_RESPONSE)
-        # Bright ascending lead riff, busier in the reactive latter half.
-        lead_on=local%2==0 or (scene>=3 and local%8==3)
-        lead_note=root+12+scale[motif[local%16]]
-        if scene==5 and local%16 in (4,12):lead_note+=12
-        lead=show_pitch(lead_note,4 if lead_note<84 else 5) if lead_on else (0,0)
-        # Quarter-note bass outlines the root and fifth at 150 BPM.
-        bass_note=root-12+(7 if local%8 in (4,6) else 0)
-        bass=show_pitch(bass_note,3) if local%2==0 else (0,0)
-        # Short alternating major chord tones in the treble; final chorus
-        # brightens with extra offbeat accents and rising arpeggios.
-        harmony_on=(local%4==1 if scene in (1,2) else local%4 in (0,3))
-        harmony=show_pitch(root+12+(0,4,7,12)[(local//4)%4],4) if harmony_on else (0,0)
-        # 1=kick 2=snare 3=hat, interleaved eighth-note rock/arcade groove.
-        percussion=(1 if local%4==0 else 2 if local%4==2 else 3)
-        song.append(bytes((*lead,*bass,*harmony,percussion,int(local%16==0))))
-    assert len(song)==SHOW_STEPS and all(len(event)==8 for event in song)
+        eighth=local%8
+        phrase=local%16
+        bar=local//8
+        remaining=boundaries[scene+1]-step
+        root=SHOW_CHORDS[scene][(bar//2)%4]
+        hook=SHOW_HOOKS[scene]
+        # Brass rests, space for answers and scene-specific energetic phrasing.
+        lead_on=phrase in SHOW_LEAD_GATES[scene]
+        if scene==0 and local<8:lead_on=phrase in (0,4)
+        if remaining<=8:lead_on=phrase in (0,2,4,6,8,10,12,14)
+        lead_note=root+12+hook[phrase]+(12 if scene==5 and phrase in (6,14) else 0)
+        lead=show_pitch(lead_note) if lead_on else (0,0)
+        # A second horn enters in the gaps, providing recognisable ska call/response.
+        answer_on=phrase in SHOW_RESPONSE_GATES[scene] and local>=8
+        answer=show_pitch(root+12+SHOW_RESPONSE[phrase]) if answer_on else (0,0)
+        # Melodic quarter-note bass, with a pickup at the end of exciting bars.
+        bass_walk=(0,7,9,7)
+        bass_on=eighth%2==0 or (scene in (1,3,5) and eighth==7)
+        bass_semitones=bass_walk[eighth//2] if eighth%2==0 else 11
+        bass=show_pitch(root-12+bass_semitones) if bass_on else (0,0)
+        # Exactly on the offbeats, the signature clipped guitar/organ skank.
+        skank_on=local%2==1 and not (scene==0 and local<24)
+        skank=show_pitch(root+12+(0,4,7,4)[eighth//2]) if skank_on else (0,0)
+        # Organ/power-chord punctuations become more prominent in the chorus.
+        chord_on=eighth in ((0,4) if scene in (0,2,4) else (0,3,4,7))
+        chord=show_pitch(root+12+(7 if eighth>=4 else 4)) if chord_on else (0,0)
+        # Last horn gets short responses in the intro and full tutti in finale.
+        fill_on=phrase in ((7,15) if scene in (0,2,4) else (3,7,11,15))
+        if scene==5:fill_on=phrase in (2,5,7,10,13,15)
+        fill=show_pitch(root+19+(0,2,4,7)[(phrase//4)%4]) if fill_on else (0,0)
+        # PSG noise must serialize kick, snare and hats on its single noise channel.
+        # 0=rest, 1=kick, 2=snare, 3=hi-hat, 4=transition fill.
+        if scene==0 and local<8:drum=0
+        elif remaining<=8 and eighth in (2,6):drum=4
+        else:drum=1 if eighth in (0,4) else 2 if eighth in (2,6) else 3
+        accent=int(phrase==0 or remaining<=4)
+        event=bytes((*lead,*answer,*bass,*skank,*chord,*fill,drum,accent,0,0))
+        assert len(event)==SHOW_EVENT_BYTES
+        song.append(event)
+    assert len(song)==SHOW_STEPS
     return b''.join(song)
 SHOW_MUSIC=show_compose()
 
@@ -1015,25 +1076,33 @@ asm.moveb_abs_d(0xA04000,0)
 asm.andib(0,0x80)
 asm.bne('ym_busy')
 asm.rts()
-def ym_reg(reg,value):
-    asm.moveq(0,reg);asm.moveq(1,value);asm.bsr('ym_write')
+asm.label('ym_write_high')
+asm.moveb_d_abs(0,0xA04002)
+asm.moveb_d_abs(1,0xA04003)
+asm.label('ym_busy_high')
+asm.moveb_abs_d(0xA04000,0)
+asm.andib(0,0x80)
+asm.bne('ym_busy_high')
+asm.rts()
+def ym_reg(reg,value,bank=0):
+    asm.moveq(0,reg);asm.moveq(1,value)
+    asm.bsr('ym_write_high' if bank else 'ym_write')
 
 asm.label('music_start')
 for reg,value in ((0x22,0),(0x27,0),(0x2B,0)):
     ym_reg(reg,value)
-for ch in range(3):
-    ym_reg(0xB0+ch,7 if ch!=1 else 4)
-    ym_reg(0xB4+ch,0xC0)
-    for slot in (0,4,8,12):
-        ym_reg(0x30+slot+ch,1 if ch!=1 else 2)
-        # Rounded bass, sparkling four-operator lead and short bright pad.
-        ym_reg(0x40+slot+ch,
-               (0x16,0x19,0x25)[ch] if slot==12 else
-               (0x2A,0x30,0x34)[ch])
-        ym_reg(0x50+slot+ch,0x1F)
-        ym_reg(0x60+slot+ch,0x08+ch)
-        ym_reg(0x70+slot+ch,0x07)
-        ym_reg(0x80+slot+ch,0x26)
+for ch,(_,algorithm,mults,levels,decay1,decay2,release) in enumerate(SHOW_PATCHES):
+    bank,slot_ch=(ch//3),(ch%3)
+    ym_reg(0xB0+slot_ch,algorithm,bank)
+    ym_reg(0xB4+slot_ch,0xC0,bank)
+    for op,(mul,level) in enumerate(zip(mults,levels)):
+        slot=(0,4,8,12)[op]
+        ym_reg(0x30+slot+slot_ch,mul,bank)
+        ym_reg(0x40+slot+slot_ch,level,bank)
+        ym_reg(0x50+slot+slot_ch,0x1F,bank)
+        ym_reg(0x60+slot+slot_ch,decay1,bank)
+        ym_reg(0x70+slot+slot_ch,decay2,bank)
+        ym_reg(0x80+slot+slot_ch,release,bank)
 for address,value in ((0xFF0000,0),(0xFF0002,0),(0xFF0006,1)):
     asm.movea(4,address);asm.movew_imm_ai(4,value)
 asm.movea(4,0xA10001);asm.moveb_ai_d(4,0);asm.andib(0,0x40)
@@ -1046,8 +1115,8 @@ asm.label('music_first_note');asm.bsr('music_event');asm.rts()
 
 asm.label('music_stop')
 asm.movea(4,0xFF0006);asm.movew_imm_ai(4,0)
-for ch in range(3):
-    ym_reg(0x28,ch)
+for ch in range(6):
+    ym_reg(0x28,ch if ch<3 else ch+1)
 for volume in (0x9F,0xBF,0xDF,0xFF):
     asm.moveb_imm_ai(5,volume)
 asm.rts()
@@ -1070,24 +1139,27 @@ asm.label('music_event')
 asm.movea(4,0xFF0002);asm.movew_ai_d(4,0)
 asm.cmpiw(0,SHOW_STEPS);asm.beq('music_event_end')
 asm.addq(0,1);asm.movew_d_ai(0,4)
-asm.subq(0,1);asm.lslw(0,3)
+asm.subq(0,1);asm.lslw(0,4)
 asm.movea_ref(4,'show_music')
-asm.w(0xD8C0) # ADDA.W D0,A4, eight-byte tracker events
-for ch in range(3):
-    ym_reg(0x28,ch)
-    asm.w(0x121C) # MOVE.B (A4)+,D1
-    asm.w(0x141C) # MOVE.B (A4)+,D2
+asm.w(0xD8C0) # ADDA.W D0,A4, sixteen-byte tracker events
+for ch in range(6):
+    key_channel=ch if ch<3 else ch+1 # YM key-on codes skip channel 3
+    bank,slot_ch=ch//3,ch%3
+    ym_reg(0x28,key_channel)
+    asm.w(0x121C) # MOVE.B (A4)+,D1: block/F-number high
+    asm.w(0x141C) # MOVE.B (A4)+,D2: F-number low
     asm.tstb(1);asm.beq('music_rest_'+str(ch))
-    asm.moveq(0,0xA4+ch);asm.bsr('ym_write')
+    asm.moveq(0,0xA4+slot_ch);asm.bsr('ym_write_high' if bank else 'ym_write')
     asm.movew_d_d(2,1)
-    asm.moveq(0,0xA0+ch);asm.bsr('ym_write')
-    ym_reg(0x28,0xF0+ch)
+    asm.moveq(0,0xA0+slot_ch);asm.bsr('ym_write_high' if bank else 'ym_write')
+    ym_reg(0x28,0xF0+key_channel)
     asm.label('music_rest_'+str(ch))
 # Authentic SN76489 PSG noise patterns: kick, snare and quieter hats.
 asm.moveq(2,0);asm.w(0x141C) # Clear D2 before loading byte flag.
 asm.cmpiw(2,1);asm.beq('music_kick')
 asm.cmpiw(2,2);asm.beq('music_snare')
 asm.cmpiw(2,3);asm.beq('music_hat')
+asm.cmpiw(2,4);asm.beq('music_fill')
 asm.moveb_imm_ai(5,0xFF);asm.bra('music_drum_end')
 asm.label('music_kick')
 asm.moveb_imm_ai(5,0xE4);asm.moveb_imm_ai(5,0xF2)
@@ -1097,8 +1169,13 @@ asm.moveb_imm_ai(5,0xE7);asm.moveb_imm_ai(5,0xF4)
 asm.bra('music_drum_end')
 asm.label('music_hat')
 asm.moveb_imm_ai(5,0xE5);asm.moveb_imm_ai(5,0xFA)
+asm.bra('music_drum_end')
+asm.label('music_fill')
+asm.moveb_imm_ai(5,0xE7);asm.moveb_imm_ai(5,0xF1)
 asm.label('music_drum_end')
-asm.w(0x141C) # Authored transition accent marker
+asm.w(0x141C) # Authored phrase/transition accent marker
+asm.w(0x141C) # Two reserved bytes keep 16-byte event alignment.
+asm.w(0x141C)
 asm.label('music_event_end');asm.rts()
 
 asm.append('show_music',SHOW_MUSIC)
@@ -1128,8 +1205,8 @@ def put(start,stop,text):
     rom[start:stop]=b.ljust(stop-start,b' ')
 put(0x100,0x110,'SEGA MEGA DRIVE')
 put(0x110,0x120,'(C) MCRETRO 2026')
-put(0x120,0x150,'VRAMPAGE MD FX LAB V0.3.7 DEMOSCENE')
-put(0x150,0x180,'VRAMPAGE MD FX LAB V0.3.7 DEMOSCENE')
+put(0x120,0x150,'VRAMPAGE MD FX LAB V0.3.8 DEMOSCENE')
+put(0x150,0x180,'VRAMPAGE MD FX LAB V0.3.8 DEMOSCENE')
 put(0x180,0x18E,'GM 00000000-00')
 put(0x190,0x1A0,'J               ')
 rom[0x1A0:0x1A8]=struct.pack('>II',0,len(rom)-1)
@@ -1139,18 +1216,18 @@ if len(rom)%2:rom+=b'\x00'
 rom[0x1A4:0x1A8]=struct.pack('>I',len(rom)-1)
 checksum=sum(struct.unpack_from('>H',rom,i)[0] for i in range(0x200,len(rom),2))&0xFFFF
 rom[0x18E:0x190]=struct.pack('>H',checksum)
-(OUT/'VRAMpage-MD-Demo-Cart-v0.3.7-Show.bin').write_bytes(rom)
+(OUT/'VRAMpage-MD-Demo-Cart-v0.3.8-Show.bin').write_bytes(rom)
 report={
  'romSize':len(rom),'checksum':f'{checksum:04X}',
  'show':{'totalSeconds':180,'playMode':'automatic after original menu idle',
          'manualMenu':True,'regionFrameRate':{'NTSC':60,'PAL':50},
          'originalPortraitAndLogo':True,'chromaControls':'A/B/C and START'},
  'music':{'original':True,'tempoBPM':SHOW_BPM,'eventsPerSecond':SHOW_EVENTS_PER_SECOND,
-          'steps':SHOW_STEPS,'eventBytes':len(SHOW_MUSIC),
+          'steps':SHOW_STEPS,'eventBytes':len(SHOW_MUSIC),'eventStrideBytes':SHOW_EVENT_BYTES,
           'scenes':list(SHOW_SCENES),'lengthSeconds':180,
-          'tonality':'major','percussion':['kick','snare','hat'],
-          'character':'bright energetic original arcade demoscene',
-          'fmChannels':[0,1,2],'psgNoise':True},
+          'tonality':'major','percussion':['kick','snare','hat','fill'],
+          'character':'original upbeat brass-led ska-punk demoscene',
+          'fmChannels':[0,1,2,3,4,5],'psgNoise':True,'patches':[x[0] for x in SHOW_PATCHES]},
  'sha256':hashlib.sha256(rom).hexdigest(), 'baseKitSHA256':APPROVED_KIT_SHA256,
  'patternTiles':SPRITE_TILE_BASE+SPRITE_TILE_COUNT,'patternBytes':len(ALL_PATTERNS),
  'spriteCount':SPRITE_COUNT,'spriteTileBase':SPRITE_TILE_BASE,'spritePhases':SPRITE_PHASES,

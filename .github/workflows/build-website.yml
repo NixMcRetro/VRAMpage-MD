@@ -66,35 +66,35 @@ jobs:
           node tests/test_region_profile_wasm.cjs site/core/genplus.js "$RUNNER_TEMP/normal-core/genplus.js"
           node tests/test_session_checkpoint_runtime.cjs site/core/genplus.js "$RUNNER_TEMP/normal-core/genplus.js"
           node tests/test_wasm_logic.cjs site/core/genplus.js
-      - name: Verify experimental v0.3.7 music show in real Genesis Plus GX
+      - name: Verify experimental v0.3.8 music show in real Genesis Plus GX
         shell: bash
         run: |
           python3 demo-cart/show-lab/build_show.py
           python3 -m unittest discover -s demo-cart/show-lab/tests -v
-          node tests/test_demo_cart_v037_wasm.cjs site/core/genplus.js
-      - name: Upload original Demo Cart v0.3.7 show review
+          node tests/test_demo_cart_v038_wasm.cjs site/core/genplus.js
+      - name: Upload original Demo Cart v0.3.8 show review
         uses: actions/upload-artifact@v7
         with:
-          name: demo-cart-v037-show-review
+          name: demo-cart-v038-show-review
           retention-days: 14
           path: |
-            artifacts/demo-cart-v037-genplus/
-            demo-cart/show-lab/build/VRAMpage-MD-Demo-Cart-v0.3.7-Show.bin
+            artifacts/demo-cart-v038-genplus/
+            demo-cart/show-lab/build/VRAMpage-MD-Demo-Cart-v0.3.8-Show.bin
             demo-cart/show-lab/build/rom_report.json
           if-no-files-found: error
-      - name: Upload experimental v0.3.7 ROM only for owner testing
+      - name: Upload experimental v0.3.8 ROM only for owner testing
         uses: actions/upload-artifact@v7
         with:
-          name: demo-cart-v037-rom-only
+          name: demo-cart-v038-rom-only
           retention-days: 14
-          path: demo-cart/show-lab/build/VRAMpage-MD-Demo-Cart-v0.3.7-Show.bin
+          path: demo-cart/show-lab/build/VRAMpage-MD-Demo-Cart-v0.3.8-Show.bin
           if-no-files-found: error
-      - name: Upload original v0.3.7 scene audio for owner listening
+      - name: Upload original v0.3.8 scene audio for owner listening
         uses: actions/upload-artifact@v7
         with:
-          name: demo-cart-v037-scene-audio
+          name: demo-cart-v038-scene-audio
           retention-days: 14
-          path: artifacts/demo-cart-v037-genplus/*.wav
+          path: artifacts/demo-cart-v038-genplus/*.wav
           if-no-files-found: error
       - name: Verify original Demo Cart v0.3.5 inside real Genesis Plus GX
         shell: bash
