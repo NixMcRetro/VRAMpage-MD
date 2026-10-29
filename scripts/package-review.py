@@ -54,6 +54,8 @@ NATIVE_BLITTER_MARKER = b"VRAMpage MD: native RGBA output blitter"
 APPROVED_DEMO = {
     "site/demo/VRAMpage-MD-Demo-Cart-v0.1.bin":
         "93b9fc72a428657c012fb4325bc1382b69b9d3c9d0af4a4dc312732789dfe0d4",
+    "site/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin":
+        "89faaace638c1ccae7062e96cef02d5350059488a35acb372f1e4b5d4dec277f",
     "demo-cart/VRAMpage-MD-Demo-Cart-v0.1-Source-Kit.zip":
         "fb073ee201ce73072c83a569742a644c2f8c7816e102ffd55ce723154bd67403",
 }
@@ -180,6 +182,13 @@ def _build_info():
 
 
 def create_package(output_path):
+    # Regenerate the approved homebrew cartridge from the pinned source kit.
+    # The other ROM extensions and unapproved signatures remain forbidden.
+    try:
+        subprocess.run([sys.executable, str(ROOT / "scripts/build-demo-cart.py")],
+                       cwd=ROOT, check=True)
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise BundleError(f"Could not rebuild original Demo Cart: {error}") from error
     output_path = Path(output_path).expanduser().absolute()
     selected = _collect_paths(output_path)
     build_info = _build_info()

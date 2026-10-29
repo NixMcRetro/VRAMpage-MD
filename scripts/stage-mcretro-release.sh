@@ -25,16 +25,21 @@ for file in   "$ROOT/site/index.html" "$ROOT/site/app.js" "$ROOT/site/style.css"
     exit 1
   fi
 done
-# The approved homebrew Demo Cart is the only allowed ROM asset.
-DEMO="$ROOT/site/demo/VRAMpage-MD-Demo-Cart-v0.1.bin"
-if [[ ! -f "$DEMO" ]]; then
-  echo "Original Demo Cart is missing: $DEMO" >&2; exit 1
-fi
+# Build and verify the new original Demo Cart for FUTURE approved website builds.
+python3 "$ROOT/scripts/build-demo-cart.py"
+DEMO="$ROOT/site/demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin"
+LEGACY_DEMO="$ROOT/site/demo/VRAMpage-MD-Demo-Cart-v0.1.bin"
+for item in "$DEMO" "$LEGACY_DEMO"; do
+  if [[ ! -f "$item" ]]; then
+    echo "Approved Demo Cart missing: $item" >&2; exit 1
+  fi
+done
 checksum="$(shasum -a 256 "$DEMO" | awk '{print $1}')"
-if [[ "$checksum" != "93b9fc72a428657c012fb4325bc1382b69b9d3c9d0af4a4dc312732789dfe0d4" ]]; then
-  echo "Original Demo Cart checksum mismatch. Refusing to stage." >&2; exit 1
+legacy_checksum="$(shasum -a 256 "$LEGACY_DEMO" | awk '{print $1}')"
+if [[ "$checksum" != "89faaace638c1ccae7062e96cef02d5350059488a35acb372f1e4b5d4dec277f" || "$legacy_checksum" != "93b9fc72a428657c012fb4325bc1382b69b9d3c9d0af4a4dc312732789dfe0d4" ]]; then
+  echo "Approved original cartridge checksum mismatch. Refusing to stage." >&2; exit 1
 fi
-if find "$ROOT/site" -type f \( -iname '*.bin' -o -iname '*.gen' -o -iname '*.smd' -o -iname 'sonic.md' \) | grep -v -F -x "$DEMO" | grep -q .; then
+if find "$ROOT/site" -type f \( -iname '*.bin' -o -iname '*.gen' -o -iname '*.smd' -o -iname 'sonic.md' \) | grep -v -F -x "$DEMO" | grep -v -F -x "$LEGACY_DEMO" | grep -q .; then
   echo "Unapproved cartridge files detected inside site/. Refusing to stage." >&2
   exit 1
 fi

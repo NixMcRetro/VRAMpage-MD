@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
 ORIGINAL_DEMO_ROM = SITE / 'demo' / 'VRAMpage-MD-Demo-Cart-v0.1.bin'
 ORIGINAL_DEMO_SHA256 = '93b9fc72a428657c012fb4325bc1382b69b9d3c9d0af4a4dc312732789dfe0d4'
+LATEST_DEMO_ROM = SITE / 'demo' / 'VRAMpage-MD-Demo-Cart-v0.3.5.bin'
+LATEST_DEMO_SHA256 = '89faaace638c1ccae7062e96cef02d5350059488a35acb372f1e4b5d4dec277f'
 
 
 class AssetReferences(HTMLParser):
@@ -60,15 +62,22 @@ class ReleaseAssetTests(unittest.TestCase):
         self.assertRegex(self.stage, r'\"\$branch\"\s*==\s*\"main\"')
         self.assertNotRegex(self.stage, r'(?m)^\s*git\s+(?:-C\s+\S+\s+)?(?:commit|push)\b')
 
+    def test_latest_original_demo_is_pinned_and_is_browser_default(self):
+        self.assertTrue(LATEST_DEMO_ROM.is_file())
+        self.assertEqual(hashlib.sha256(LATEST_DEMO_ROM.read_bytes()).hexdigest(),
+                         LATEST_DEMO_SHA256)
+        self.assertIn('VRAMpage-MD-Demo-Cart-v0.3.5.bin', (SITE / 'app.js').read_text())
+
     def test_no_cartridge_rom_is_bundled_in_source_tree(self):
         forbidden = {".bin", ".gen", ".smd", ".sms", ".gg", ".rom", ".32x", ".iso", ".cue", ".chd"}
         for file in SITE.rglob("*"):
             if not file.is_file():
                 continue
             with self.subTest(file=str(file.relative_to(ROOT))):
-                if file == ORIGINAL_DEMO_ROM:
-                    self.assertEqual(hashlib.sha256(file.read_bytes()).hexdigest(), ORIGINAL_DEMO_SHA256,
-                                     'The approved original Demo Cart must retain its exact checksum')
+                if file in (ORIGINAL_DEMO_ROM, LATEST_DEMO_ROM):
+                    expected = ORIGINAL_DEMO_SHA256 if file == ORIGINAL_DEMO_ROM else LATEST_DEMO_SHA256
+                    self.assertEqual(hashlib.sha256(file.read_bytes()).hexdigest(), expected,
+                                     'Original homebrew cartridge checksum must be exact')
                     self.assertEqual(file.read_bytes()[0x100:0x104], b'SEGA')
                     continue
                 self.assertNotIn(file.suffix.lower(), forbidden)
