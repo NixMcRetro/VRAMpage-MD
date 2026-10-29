@@ -6,7 +6,7 @@
       throw new Error('Unsupported cartridge manifest.');
     const ids = new Set(), paths = new Set();
     for (const cart of manifest.cartridges) {
-      if (!cart || cart.approved !== true || typeof cart.id !== 'string' || !/^[a-z][a-z0-9-]*$/.test(cart.id) || ids.has(cart.id) ||
+      if (!cart || cart.approved !== true || typeof cart.id !== 'string' || cart.id === 'local' || !/^[a-z][a-z0-9-]*$/.test(cart.id) || ids.has(cart.id) ||
           typeof cart.displayName !== 'string' || !cart.displayName.trim() ||
           typeof cart.version !== 'string' || !cart.version.trim() ||
           typeof cart.path !== 'string' || !/^demo\/[A-Za-z0-9][A-Za-z0-9._-]*\.bin$/.test(cart.path) || paths.has(cart.path) ||

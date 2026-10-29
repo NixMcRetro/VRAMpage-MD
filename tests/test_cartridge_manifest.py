@@ -47,7 +47,7 @@ class CartridgeManifestTests(unittest.TestCase):
 
     def test_malformed_approval_identity_and_build_metadata_fail(self):
         changes = [
-            ('id', 'demo'), ('id', '2027-demo'), ('id', '-demo'),
+            ('id', 'demo'), ('id', 'local'), ('id', '2027-demo'), ('id', '-demo'),
             ('path', 'demo/sub/cart.bin'), ('size', 511), ('size', 4194305),
             ('approved', False), ('size', True), ('size', 0),
             ('sha256', '0' * 63), ('version', ''), ('displayName', ''),

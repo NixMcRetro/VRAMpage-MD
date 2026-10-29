@@ -72,7 +72,7 @@ def validate_manifest(manifest):
         _identity(entry)
         cartridge_id = entry.get('id')
         if (not isinstance(cartridge_id, str) or not re.fullmatch(r'[a-z][a-z0-9-]*', cartridge_id)
-                or cartridge_id in ids or entry.get('approved') is not True
+                or cartridge_id in ids or cartridge_id == 'local' or entry.get('approved') is not True
                 or any(not isinstance(entry.get(key), str) or not entry[key].strip()
                        for key in ('displayName', 'version'))):
             raise CartridgeError('Each cartridge needs a unique ID, version, name and explicit approval')

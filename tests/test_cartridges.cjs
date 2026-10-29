@@ -6,9 +6,9 @@ const cart={id:'demo',approved:true,version:'test',displayName:'Test',path:'demo
 const manifest={schemaVersion:1,defaultCartridge:'demo',cartridges:[cart]};
 assert.equal(api.validateManifest(manifest),manifest);
 api.validateManifest(require('../site/cartridges.json'));
-for (const change of [{approved:false},{id:'../bad'},{id:'2027-demo'},{id:'-demo'},{path:'demo/sub/cart.bin'},{path:'https://bad.test/rom.bin'},{path:'demo/../rom.bin'},
+for (const change of [{approved:false},{id:'../bad'},{id:'2027-demo'},{id:'local'},{id:'-demo'},{path:'demo/sub/cart.bin'},{path:'https://bad.test/rom.bin'},{path:'demo/../rom.bin'},
   {path:'demo/x.bin?x=1'},{size:511},{size:4194305},{size:NaN},{sha256:'x'.repeat(64)},{displayName:''}])
-  assert.throws(()=>api.validateManifest({...manifest,cartridges:[{...cart,...change}]}));
+  assert.throws(()=>api.validateManifest({...manifest,defaultCartridge:change.id ?? 'demo',cartridges:[{...cart,...change}]}));
 for (const bad of [{...manifest,schemaVersion:2},{...manifest,defaultCartridge:'unknown'},
   {...manifest,cartridges:[cart,cart]},{...manifest,cartridges:[cart,{...cart,id:'other'}]}])
   assert.throws(()=>api.validateManifest(bad));
