@@ -87,7 +87,7 @@ def original_z80_store_cartridge():
 class ActualCoreBrowserTests(unittest.TestCase):
     def test_bundled_demo_boots_renders_and_respects_manual_override(self):
         # Use the actual compiled WASM core, never a mock or a synthetic screenshot.
-        rom = OPTIONS.site_root / 'demo/VRAMpage-MD-Demo-Cart-v0.1.bin'
+        rom = OPTIONS.site_root / 'demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin'
         self.assertTrue(rom.is_file(), 'The original homebrew Demo Cart must be in the built site')
         handler = partial(SimpleHTTPRequestHandler, directory=OPTIONS.site_root)
         with ThreadingHTTPServer(('127.0.0.1', 0), handler) as server:

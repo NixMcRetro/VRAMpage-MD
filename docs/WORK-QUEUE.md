@@ -1,3 +1,18 @@
+## Demo Cart v0.3.5 Source Integration, 29 October 2026
+
+The user approved integration of the experimentally verified original
+v0.3.5 cartridge into VRAMpage MD main, plus **future** release packaging.
+Use `scripts/build-demo-cart.py` and
+`demo-cart/fx-lab/build_fx.py`. The generated 150,564-byte cartridge
+must have SHA-256 `89faaace638c1ccae7062e96cef02d5350059488a35acb372f1e4b5d4dec277f`. The source
+is tracked but the generated .bin is ignored; the browser default URL,
+release package allowlist and local staging must select the v0.3.5 ROM.
+Verify in the real Genesis Plus GX with NTSC-U/PAL controls and
+frame-identical B recovery. Do not publish, deploy or alter the historical
+v0.5.0 browser asset. Complete the full 7-check main ruleset and CodeQL
+before merging. YM2612 soundtrack, three-minute sequencing and finale
+remain future work; the v0.3.5 cartridge is only an interactive proof.
+
 # Development work queue
 
 ## Work RAM Write Inhibit — Integration Checkpoint, 28 October 2026 (UTC)
