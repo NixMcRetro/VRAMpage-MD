@@ -1462,6 +1462,56 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     finally:browser.close()
             finally:server.shutdown()
 
+    def test_fm_model_and_region_stage_through_real_core_checkpoint_lifecycle(self):
+        handler=partial(SimpleHTTPRequestHandler,directory=OPTIONS.site_root)
+        with ThreadingHTTPServer(('127.0.0.1',0),handler) as server:
+            threading.Thread(target=server.serve_forever,daemon=True).start()
+            try:
+                with sync_playwright() as p:
+                    kwargs={'executable_path':OPTIONS.executable} if OPTIONS.executable else {}
+                    browser=getattr(p,OPTIONS.browser).launch(**kwargs)
+                    try:
+                        page=new_manual_startup_page(browser)
+                        errors=[]
+                        page.on('pageerror',lambda error:errors.append(str(error)))
+                        core_js=(OPTIONS.site_root/'core/genplus.js').read_text()
+                        core_js+='\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c;return c;});\n'
+                        page.route('**/core/genplus.js',lambda route:route.fulfill(content_type='text/javascript',body=core_js))
+                        page.route('**/core/genplus.wasm',lambda route:route.fulfill(content_type='application/wasm',path=str(OPTIONS.site_root/'core/genplus.wasm')))
+                        page.goto(f'http://127.0.0.1:{server.server_port}/')
+                        page.locator('#romFile').set_input_files({'name':'fm-region-checkpoint.bin','mimeType':'application/octet-stream','buffer':original_cartridge()})
+                        expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+                        self.assertEqual(page.evaluate('testCore._get_fm_output_model_state().effectiveModel'),'discrete')
+                        self.assertEqual(page.evaluate('testCore._get_region_state().regionCode'),0x80)
+                        page.locator('#logicExperiment > summary').click()
+                        expect(page.locator('#saveCheckpointBtn')).to_be_enabled()
+                        page.locator('#saveCheckpointBtn').click()
+                        expect(page.locator('#checkpointStatus')).to_contain_text('Saved Frame')
+                        page.locator('#fmOutputModelSelect').select_option('1')
+                        page.locator('#regionSelect').select_option('2')
+                        expect(page.locator('#fmOutputModelStatus')).to_contain_text('Integrated Pending')
+                        expect(page.locator('#regionStatus')).to_contain_text('Pending')
+                        self.assertEqual(page.evaluate('testCore._get_fm_output_model_state().requestedModel'),'integrated')
+                        self.assertEqual(page.evaluate('testCore._get_fm_output_model_state().effectiveModel'),'discrete')
+                        self.assertEqual(page.evaluate('testCore._get_region_state().regionCode'),0x80)
+                        expect(page.locator('#restoreCheckpointBtn')).to_be_enabled()
+                        page.locator('#logicCpuResetBtn').click()
+                        self.assertEqual(page.evaluate('testCore._get_fm_output_model_state().effectiveModel'),'discrete')
+                        self.assertEqual(page.evaluate('testCore._get_region_state().regionCode'),0x80)
+                        expect(page.locator('#restoreCheckpointBtn')).to_be_enabled()
+                        page.locator('#restoreCheckpointBtn').click()
+                        self.assertEqual(page.evaluate('testCore._get_fm_output_model_state().effectiveModel'),'discrete')
+                        self.assertEqual(page.evaluate('testCore._get_region_state().regionCode'),0x80)
+                        page.locator('#resetBtn').click()
+                        self.assertEqual(page.evaluate('testCore._get_fm_output_model_state().effectiveModel'),'integrated')
+                        self.assertEqual(page.evaluate('testCore._get_region_state().regionCode'),0xc0)
+                        expect(page.locator('#fmOutputModelStatus')).to_contain_text('Integrated Active')
+                        expect(page.locator('#regionStatus')).to_contain_text('Active')
+                        expect(page.locator('#restoreCheckpointBtn')).to_be_disabled()
+                        self.assertEqual(errors,[])
+                    finally:browser.close()
+            finally:server.shutdown()
+
     def test_ordered_recovery_defaults_on_and_observes_real_halt_and_stop(self):
         handler=partial(SimpleHTTPRequestHandler,directory=OPTIONS.site_root)
         with ThreadingHTTPServer(('127.0.0.1',0),handler) as server:
