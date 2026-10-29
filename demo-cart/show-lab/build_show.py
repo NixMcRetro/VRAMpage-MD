@@ -450,72 +450,309 @@ assert len(SPRITE_SAT_FRAMES)==SPRITE_PHASES*SPRITE_COUNT*8
 assert len(ALL_PATTERNS)<0xC000, 'Tile upload must not overlap Plane A'
 assert all((word&0x7FF)>=FX_BASE for scene in (tile_cells,colour_cells,sprite_cells,audio_cells) for word in scene)
 
-# Original, deliberately upbeat, 150-BPM Mega Drive arcade/demo score.
-# Original brass-led ska-punk soundtrack: five eighth-notes per second,
-# authored for six hardware YM2612 voices and one PSG noise percussion part.
-# No melody, sample, riff or arrangement has been copied from the reference band.
-SHOW_SCENES=(('Captain Intro',20),('Chromatic Vortex',30),
- ('Neon Aurora',30),('Sprite Storm',35),
- ('Chroma Reactor',40),('Finale',25))
+# This score is deliberately written as a song. The earlier experiments
+# generated similar short melodies for each visual scene, creating an
+# unmusical loop. This arrangement specifies real notes, rests, sustained
+# notes, harmonic rhythm and countermelodies by hand.
+#
+# 150 BPM, 4/4, eighth-note tracker grid = 5 hardware events per second.
+# The picture scenes do not determine the harmony. The musical form runs
+# continuously under all six VDP scenes, including their fractional bars.
 SHOW_BPM=150
 SHOW_EVENTS_PER_SECOND=5
 SHOW_EVENT_BYTES=16
-SHOW_STEPS=SHOW_EVENTS_PER_SECOND*sum(duration for _,duration in SHOW_SCENES)
+SHOW_SCENES=(('Captain Intro',20),('Chromatic Vortex',30),
+ ('Neon Aurora',30),('Sprite Storm',35),
+ ('Chroma Reactor',40),('Finale',25))
+SHOW_STEPS=SHOW_EVENTS_PER_SECOND*sum(sec for _,sec in SHOW_SCENES)
 assert SHOW_STEPS==900
-# SN76489 noise attenuation: 0 loudest, 15 silent. Previous almost-full
-# PSG attacks masked YM2612 brass and bass; these are reduced in the ROM.
-# Each hit fades by one attenuation step per actual VBlank, no browser gain.
+
+# SN76489 noise channel: 0 is loudest, 15 is silent.
+# Keep the owner's approved quieter balance and per-VBlank decay.
 PSG_DRUMS=(('kick',0xE4,8),('snare',0xE7,9),
            ('hat',0xE5,12),('fill',0xE7,8))
 assert all(7<=atten<15 for _,_,atten in PSG_DRUMS)
-# Roots I-IV-V-I for each section. The title/chorus/finale share a recurring
-# original hook, while the verse and breakdown use different melodic phrases.
-SHOW_CHORDS=(
- (48,53,55,48),  # Captain Intro: C F G C
- (50,55,57,50),  # Chromatic Vortex: D G A D
- (53,58,60,53),  # Neon Aurora: F Bb C F
- (55,60,62,55),  # Sprite Storm: G C D G
- (52,57,59,52),  # Chroma Reactor: E A B E
- (48,53,55,48),  # Finale: C F G C
+
+# These ten sections constitute one original 112.5-bar song, not six
+# procedurally transposed jingles. The closing half-bar is a held cadence.
+# Section tuple: (name, number of eighth-note events, harmony per bar).
+SHOW_FORM=(
+ ('count_in',32, ('A','A','D','E')),
+ ('statement',64,('A','D','E','A','F#m','D','E','E')),
+ ('verse_one',128,('A','E','F#m','D','A','E','D','E')),
+ ('prechorus',64,('Bm','D','E','E','Bm','D','E','E')),
+ ('chorus_one',128,('A','E','F#m','D','A','E','D','E')),
+ ('verse_two',128,('A','E','F#m','D','A','E','Bm','E')),
+ ('chorus_two',128,('A','E','F#m','D','A','E','D','E')),
+ ('breakdown',96,('F#m','D','A','E','F#m','D','Bm','E',
+                  'F#m','D','Bm','E')),
+ ('last_chorus',96,('A','E','F#m','D','A','E','D','E',
+                   'F#m','D','E','E')),
+ ('ending',36,('A','E','D','A','A')),
 )
-# Semitone offsets, not borrowed melodies. Different contour and space in each
-# 16-eighth-note phrase makes this one song with distinct sections.
-SHOW_HOOKS=(
- (0,4,7,9, 7,4,2,0, 4,7,9,12, 11,9,7,4),
- (0,4,7,12, 9,7,4,2, 0,2,4,7, 9,7,4,2),
- (7,4,2,0, 2,4,7,9, 7,9,11,9, 7,4,2,4),
- (0,7,12,11, 9,7,4,7, 12,11,9,7, 4,7,9,12),
- (0,0,4,7, 2,2,7,9, 4,4,9,11, 7,4,2,0),
- (0,4,7,12, 11,9,7,4, 9,11,12,14, 12,9,7,0),
-)
-SHOW_LEAD_GATES=(
- (0,2,4,8,10,12,14),
- (0,2,3,6,8,9,10,14),
- (0,4,6,8,12,14),
- (0,2,4,6,8,10,12,14,15),
- (0,3,5,8,11,13,15),
- (0,2,3,4,6,8,10,11,12,14,15),
-)
-SHOW_RESPONSE_GATES=(
- (5,7,13,15),
- (4,7,12,15),
- (3,7,11,15),
- (3,7,11,15),
- (2,6,10,14),
- (5,7,13,15),
-)
-SHOW_RESPONSE=(7,9,12,9, 7,4,2,4, 9,12,14,12, 9,7,4,2)
-# Distinct YM2612 timbres. Each FM operator is (multiple, TL, AR, D1R,
-# D2R, SL/RR). The four operator register offsets are (0,4,8,12).
-# Algorithm 4 supplies two modulator/carrier pairs; algorithm 5 supplies
-# a shared modulator and three carriers; algorithm 7 adds four carriers.
-# All entries are original homebrew patches, not copied instrument presets.
+assert sum(section[1] for section in SHOW_FORM)==SHOW_STEPS
+
+# Each line is an explicitly written 4/4 bar, eight eighth-note slots.
+# '-' is an intentional rest and '=' holds a currently sounding note.
+# Notation is concert pitch; melody is never transposed automatically by
+# the demo visuals. A4 = 440 Hz. Melodies are original.
+BRASS_LEAD={
+ 'count_in':(
+  '- - - - - - - -',
+  '- - - - - - - -',
+  '- - - - A4 = C#5 =',
+  'E5 = D5 C#5 = B4 A4 =',
+ ),
+ 'statement':(
+  'E5 = - C#5 = E5 F#5 -',
+  'A5 = F#5 E5 = - D5 E5',
+  'G#5 = E5 - B4 = C#5 -',
+  'E5 = - C#5 B4 A4 = -',
+  'C#5 = A4 C#5 E5 = F#5 -',
+  'F#5 = E5 D5 = - A4 B4',
+  'B4 = G#4 B4 C#5 D5 E5 -',
+  'E5 = D5 B4 A4 = - -',
+ ),
+ 'verse_one':(
+  '- - A4 C#5 = - B4 -',
+  '- E5 = - B4 C#5 - -',
+  '- C#5 E5 = - A4 - -',
+  '- A4 = - F#4 A4 B4 -',
+  '- E5 = C#5 - B4 - -',
+  '- B4 C#5 = - G#4 - -',
+  '- D5 = B4 - A4 - -',
+  'G#4 B4 = - E5 = - -',
+ ),
+ 'prechorus':(
+  'B4 = D5 = F#5 = - -',
+  'A4 C#5 D5 = F#5 = - -',
+  'B4 D5 E5 = G#5 = - -',
+  'G#5 = F#5 E5 = - - -',
+  'F#5 = D5 - B4 = D5 -',
+  'F#5 = A5 F#5 E5 = - -',
+  'G#5 = B5 G#5 F#5 = E5 -',
+  'B4 D5 E5 = - - - -',
+ ),
+ 'chorus_one':(
+  'E5 = - C#5 = E5 F#5 -',
+  'G#5 = F#5 E5 = - B4 C#5',
+  'C#5 = E5 F#5 = A5 G#5 E5',
+  'F#5 = E5 D5 = C#5 B4 -',
+  'E5 E5 = C#5 E5 = F#5 -',
+  'G#5 = - B4 C#5 = E5 -',
+  'F#5 = A5 F#5 E5 = D5 -',
+  'B4 C#5 D5 = - B4 A4 =',
+ ),
+ 'verse_two':(
+  '- - E5 = C#5 - B4 -',
+  '- G#4 B4 = - C#5 - -',
+  '- C#5 = A4 - E5 - -',
+  'A4 = - F#4 A4 = - -',
+  '- C#5 E5 = - C#5 - -',
+  '- B4 = G#4 B4 C#5 - -',
+  '- F#5 = D5 B4 A4 - -',
+  'B4 D5 = - E5 = - -',
+ ),
+ 'chorus_two':(
+  'E5 = C#5 - E5 F#5 = -',
+  'G#5 F#5 E5 = - B4 C#5 -',
+  'C#5 = E5 F#5 A5 = G#5 E5',
+  'F#5 E5 D5 = - C#5 B4 -',
+  'E5 = E5 C#5 E5 F#5 = -',
+  'G#5 = - B4 C#5 E5 = -',
+  'A5 G#5 F#5 = E5 D5 = -',
+  'B4 C#5 D5 E5 = B4 A4 =',
+ ),
+ 'breakdown':(
+  '- - - - - - - -',
+  '- - - - - - - -',
+  '- - A4 = - - - -',
+  '- - B4 = - - - -',
+  'C#5 = - - E5 = - -',
+  'D5 = - F#5 = - - -',
+  'B4 = D5 = F#5 = - -',
+  'E5 = - - B4 C#5 D5 -',
+  'C#5 E5 F#5 = - E5 - -',
+  'F#5 = A5 = - F#5 E5 -',
+  'G#5 = F#5 E5 = D5 - -',
+  'B4 D5 E5 = G#5 = - -',
+ ),
+ 'last_chorus':(
+  'E5 = - C#5 = E5 F#5 -',
+  'G#5 F#5 E5 = B4 C#5 = -',
+  'C#5 E5 F#5 = A5 = G#5 E5',
+  'F#5 E5 D5 = C#5 B4 = -',
+  'A5 = G#5 E5 = F#5 - -',
+  'G#5 = E5 C#5 B4 = C#5 -',
+  'F#5 A5 = F#5 E5 D5 = -',
+  'B4 C#5 D5 E5 = B4 A4 =',
+  'C#5 E5 F#5 = A5 = - -',
+  'A5 = F#5 E5 D5 = - -',
+  'G#5 = F#5 E5 D5 B4 = -',
+  'E5 = - D5 C#5 = B4 -',
+ ),
+ 'ending':(
+  'E5 = C#5 E5 A5 = - -',
+  'G#5 F#5 E5 = - B4 C#5 -',
+  'F#5 E5 D5 C#5 B4 = A4 -',
+  'A4 = E5 = A5 = - -',
+  'A5 = = = - - - -',
+ ),
+}
+BRASS_ANSWER={
+ 'count_in':(
+  '- - - - - - - -',
+  '- - - - - - - -',
+  '- - - - - - A4 =',
+  '- - B4 = - - - -',
+ ),
+ 'statement':(
+  '- - A4 = - - C#5 -',
+  '- - D5 = - C#5 - -',
+  '- - B4 = - - E5 =',
+  '- - E5 - - - - -',
+  '- - A4 = - - C#5 -',
+  '- - D5 = - - A4 =',
+  '- - B4 = - - E5 -',
+  '- - - - - - A4 =',
+ ),
+ 'verse_one':(
+  '- - - - E4 A4 - -',
+  '- - - - G#4 B4 = -',
+  '- - - - A4 C#5 - -',
+  '- - D5 = - - A4 -',
+  '- - - - E4 A4 = -',
+  '- - - - G#4 B4 - -',
+  '- - - - F#4 A4 = -',
+  '- - - - B4 = E5 -',
+ ),
+ 'prechorus':(
+  '- - - - - A4 B4 -',
+  '- - - - - D5 = -',
+  '- - - - - E5 = -',
+  '- - - - - G#5 = -',
+  '- - - - - F#5 = -',
+  '- - - - - D5 E5 -',
+  '- - - - - E5 = -',
+  '- - - - B4 = - -',
+ ),
+ 'chorus_one':(
+  '- - A4 = - - C#5 -',
+  '- - B4 = - - G#4 =',
+  '- - A4 = - - C#5 -',
+  '- - A4 = - F#4 = -',
+  '- - C#5 = - - E5 -',
+  '- - B4 = - - E5 =',
+  '- - D5 = - - A4 =',
+  '- - - - - - A4 =',
+ ),
+ 'verse_two':(
+  '- - - - A4 = - -',
+  '- - - - G#4 B4 = -',
+  '- - - - A4 C#5 - -',
+  '- - D5 = - - A4 =',
+  '- - - - E5 = - -',
+  '- - - - B4 G#4 = -',
+  '- - - - D5 = - -',
+  '- - - - B4 = E5 -',
+ ),
+ 'chorus_two':(
+  '- - C#5 = - - E5 -',
+  '- - B4 = - - G#4 =',
+  '- - A4 = - C#5 = -',
+  '- - A4 = - F#4 = -',
+  '- - C#5 = - E5 = -',
+  '- - B4 = - G#4 = -',
+  '- - D5 = - - A4 =',
+  '- - - - E5 = A4 -',
+ ),
+ 'breakdown':(
+  '- - - - - - - -',
+  '- - - - - - - -',
+  '- - - - - - - -',
+  '- - - - - - - -',
+  '- - - - - - - -',
+  '- - - - - - - -',
+  '- - - - - A4 = -',
+  '- - - - - B4 = -',
+  '- - - - - - C#5 -',
+  '- - - - - - D5 -',
+  '- - - - - - E5 -',
+  '- - - - - - G#5 =',
+ ),
+ 'last_chorus':(
+  '- - A4 = - C#5 = -',
+  '- - B4 = - - E5 =',
+  '- - A4 = - C#5 = -',
+  '- - A4 = - - F#4 =',
+  '- - C#5 = - E5 = -',
+  '- - B4 = - E5 = -',
+  '- - D5 = - A4 = -',
+  '- - E5 = - A4 = -',
+  '- - A4 = - - C#5 =',
+  '- - D5 = - - A4 =',
+  '- - B4 = - - E5 =',
+  '- - E5 = - - B4 =',
+ ),
+ 'ending':(
+  '- - A4 = - C#5 = -',
+  '- - B4 = - - E5 =',
+  '- - A4 = - - F#4 =',
+  '- - C#5 = E5 = - -',
+  'E5 = = = - - - -',
+ ),
+}
+# Explicitly notated brief horn doublings. These are accompaniment lines,
+# not a third automatic copy of the lead melody.
+HORN_FILLS={
+ 'count_in':('--------','--------','--------','--------'),
+ 'statement':(
+  '------E5-','----F#5---','------G#5-','--------',
+  '------E5-','----F#5---','------G#5-','--------'),
+ 'verse_one':(
+  '--------','-------B4','--------','------A4-',
+  '--------','-------B4','------D5-','--------'),
+ 'prechorus':(
+  '------D5-','------F#5-','------G#5-','------E5-',
+  '------F#5-','------A5-','------B5-','------G#5-'),
+ 'chorus_one':(
+  '--C#5---E5','--B4----','--A4----','---A4---',
+  '--C#5---E5','--B4----','--D5----','------E5-'),
+ 'verse_two':(
+  '--------','------B4-','--------','------A4-',
+  '--------','------B4-','------D5-','--------'),
+ 'chorus_two':(
+  '--C#5---E5','--B4----','--A4----','---A4---',
+  '--C#5---E5','--B4----','--D5----','------E5-'),
+ 'breakdown':(
+  '--------','--------','--------','--------',
+  '--------','--------','------F#5-','------G#5-',
+  '------A5-','------A5-','------B5-','------G#5-'),
+ 'last_chorus':(
+  '--C#5---E5','--B4----','--A4----','---A4---',
+  '--C#5---E5','--B4----','--D5----','------E5-',
+  '--A4----','--F#5---','--G#5---','------E5-'),
+ 'ending':('------E5-','------G#5-','------F#5-','------E5-','A5-------'),
+}
+# Rhythmic brass doubles are specified in compact no-space eighth strings.
+# Distinguish that notation from the spaced melody parts above.
+def parse_horn_fills(text):
+    import re
+    return re.findall(r'(?:(?:[A-G](?:#|b)?[0-8])|-)',text)
+for name,lead_rows in BRASS_LEAD.items():
+    assert len(lead_rows)==len(BRASS_ANSWER[name])==len(HORN_FILLS[name])
+    assert all(len(row.split())==8 for row in lead_rows)
+    assert all(len(row.split())==8 for row in BRASS_ANSWER[name])
+    assert all(len(parse_horn_fills(row))==8 for row in HORN_FILLS[name]),name
+
+# Chip patches each have operator tuples (MULT, TL, AR, D1R, D2R, SL/RR).
+# Keep previously developed original six-instrument palette unchanged.
 SHOW_PATCHES=(
  ('brass_lead',0x2C,(
-    (1,43,0x1E,0x12,0x0A,0x84),  # brass-edge transient
-    (1,18,0x1F,0x06,0x04,0x46),  # fundamental carrier
-    (2,49,0x1F,0x15,0x0C,0x95),  # bright upper transient
-    (1,16,0x1F,0x07,0x04,0x46))),# second carrier
+    (1,43,0x1E,0x12,0x0A,0x84),
+    (1,18,0x1F,0x06,0x04,0x46),
+    (2,49,0x1F,0x15,0x0C,0x95),
+    (1,16,0x1F,0x07,0x04,0x46))),
  ('brass_answer',0x25,(
     (2,48,0x1F,0x13,0x09,0x86),
     (1,27,0x1E,0x08,0x04,0x56),
@@ -543,67 +780,109 @@ SHOW_PATCHES=(
     (1,20,0x1F,0x09,0x05,0x56))),
 )
 assert len(SHOW_PATCHES)==6
-assert len({name for name,_,_ in SHOW_PATCHES})==6
-assert all(len(ops)==4 and all(
-    0<=mul<=15 and 0<=tl<=127 and 0<=ar<=31 and
-    0<=d1r<=31 and 0<=d2r<=31 and 0<=slrr<=255
-    for mul,tl,ar,d1r,d2r,slrr in ops)
-    for _,_,ops in SHOW_PATCHES)
+
+CHORDS={
+ 'A':  (45,4,7),
+ 'D':  (50,4,7),
+ 'E':  (52,4,7),
+ 'F#m':(42,3,7),
+ 'Bm': (47,3,7),
+}
+NOTES={'C':0,'C#':1,'Db':1,'D':2,'D#':3,'Eb':3,'E':4,
+       'F':5,'F#':6,'Gb':6,'G':7,'G#':8,'Ab':8,'A':9,
+       'A#':10,'Bb':10,'B':11}
+SCORE_HOLD=(0xFF,0)
+SCORE_REST=(0,0)
+def show_note_number(spelling):
+    import re
+    m=re.fullmatch(r'([A-G](?:#|b)?)([0-8])',spelling)
+    assert m is not None, spelling
+    return (int(m.group(2))+1)*12+NOTES[m.group(1)]
 def show_pitch(note,block=None):
     if block is None:
         block=3 if note<=46 else (5 if note>=84 else 4)
     hz=440*2**((note-69)/12)
     fnum=round(hz*2**(20-block)/(7670454/144))
-    assert 0<fnum<2048, (note,block,fnum)
+    assert 0<fnum<2048,(note,block,fnum)
     return ((block<<3)|(fnum>>8), fnum&255)
+def score_pitch(token):
+    if token=='-':return SCORE_REST
+    if token=='=':return SCORE_HOLD
+    return show_pitch(show_note_number(token))
+def chord_for_event(section,section_step):
+    bar=section_step//8
+    return section[2][bar%len(section[2])]
+def render_written_line(section_name,section_bar,beat,part):
+    source=BRASS_LEAD if part=='lead' else BRASS_ANSWER
+    bars=source[section_name]
+    return source[section_name][section_bar%len(bars)].split()[beat]
+def render_written_fill(section_name,section_bar,beat):
+    bars=HORN_FILLS[section_name]
+    return parse_horn_fills(bars[section_bar%len(bars)])[beat]
+
 def show_compose():
     song=[]
-    boundaries=[0]
-    for _,duration in SHOW_SCENES:
-        boundaries.append(boundaries[-1]+SHOW_EVENTS_PER_SECOND*duration)
-    for step in range(SHOW_STEPS):
-        scene=next(i for i in range(len(SHOW_SCENES))
-                   if boundaries[i]<=step<boundaries[i+1])
-        local=step-boundaries[scene]
-        eighth=local%8
-        phrase=local%16
+    timeline=[]
+    for name,steps,chords in SHOW_FORM:
+        assert steps>0 and len(chords)>=steps//8, name
+        for local in range(steps):
+            timeline.append((name,steps,local,chords))
+    assert len(timeline)==SHOW_STEPS
+    for step,(name,section_steps,local,chords) in enumerate(timeline):
+        beat=local%8
         bar=local//8
-        remaining=boundaries[scene+1]-step
-        root=SHOW_CHORDS[scene][(bar//2)%4]
-        hook=SHOW_HOOKS[scene]
-        # Brass rests, space for answers and scene-specific energetic phrasing.
-        lead_on=phrase in SHOW_LEAD_GATES[scene]
-        if scene==0 and local<8:lead_on=phrase in (0,4)
-        if remaining<=8:lead_on=phrase in (0,2,4,6,8,10,12,14)
-        lead_note=root+12+hook[phrase]+(12 if scene==5 and phrase in (6,14) else 0)
-        lead=show_pitch(lead_note) if lead_on else (0,0)
-        # A second horn enters in the gaps, providing recognisable ska call/response.
-        answer_on=phrase in SHOW_RESPONSE_GATES[scene] and local>=8
-        answer=show_pitch(root+12+SHOW_RESPONSE[phrase]) if answer_on else (0,0)
-        # Melodic quarter-note bass, with a pickup at the end of exciting bars.
-        bass_walk=(0,7,9,7)
-        bass_on=eighth%2==0 or (scene in (1,3,5) and eighth==7)
-        bass_semitones=bass_walk[eighth//2] if eighth%2==0 else 11
-        bass=show_pitch(root-12+bass_semitones) if bass_on else (0,0)
-        # Exactly on the offbeats, the signature clipped guitar/organ skank.
-        skank_on=local%2==1 and not (scene==0 and local<24)
-        skank=show_pitch(root+12+(0,4,7,4)[eighth//2]) if skank_on else (0,0)
-        # Organ/power-chord punctuations become more prominent in the chorus.
-        chord_on=eighth in ((0,4) if scene in (0,2,4) else (0,3,4,7))
-        chord=show_pitch(root+12+(7 if eighth>=4 else 4)) if chord_on else (0,0)
-        # Last horn gets short responses in the intro and full tutti in finale.
-        fill_on=phrase in ((7,15) if scene in (0,2,4) else (3,7,11,15))
-        if scene==5:fill_on=phrase in (2,5,7,10,13,15)
-        fill=show_pitch(root+19+(0,2,4,7)[(phrase//4)%4]) if fill_on else (0,0)
-        # PSG noise must serialize kick, snare and hats on its single noise channel.
-        # 0=rest, 1=kick, 2=snare, 3=hi-hat, 4=transition fill.
-        if scene==0 and local<8:drum=0
-        elif remaining<=8 and eighth in (2,6):drum=4
-        else:drum=1 if eighth in (0,4) else 2 if eighth in (2,6) else 3
-        accent=int(phrase==0 or remaining<=4)
-        event=bytes((*lead,*answer,*bass,*skank,*chord,*fill,drum,accent,0,0))
-        assert len(event)==SHOW_EVENT_BYTES
-        song.append(event)
+        chord=chords[bar]
+        root,third,fifth=CHORDS[chord]
+        next_index=min(step+(8-beat),SHOW_STEPS-1)
+        n_name,n_steps,n_local,n_chords=timeline[next_index]
+        next_chord=n_chords[n_local//8]
+        next_root=CHORDS[next_chord][0]
+        # Two written horn parts. Hold markers mean no chip key-off;
+        # actual rests release the voice. This enables real phrases.
+        lead=score_pitch(render_written_line(name,bar,beat,'lead'))
+        answer=score_pitch(render_written_line(name,bar,beat,'answer'))
+        fill=score_pitch(render_written_fill(name,bar,beat))
+        # Bass follows the harmony. Quarter-note pulses, held eighths,
+        # and chromatic pickups to the next chord are played intentionally.
+        if name=='count_in' and bar<2:
+            bass=SCORE_REST
+        elif name=='breakdown' and bar<2:
+            bass=score_pitch('-' if beat not in (0,4) else 'F#2')
+        else:
+            pickup=next_root-1 if next_root>=root else next_root+1
+            bass_note=(root,root+fifth,root+12,root+third,pickup)
+            bass_grid=(bass_note[0],None,bass_note[1],None,
+                       bass_note[2],None,bass_note[3],bass_note[4])
+            bass=SCORE_HOLD if bass_grid[beat] is None else show_pitch(bass_grid[beat])
+        # Musical offbeats (the 'and' of each beat), not a melody on
+        # the same channel as the rhythm guitar. Two FM voices suggest
+        # a chord without PCM samples or any emulator mixing tricks.
+        if beat%2==1 and not (name=='count_in' and bar<2) and not (
+            name=='breakdown' and bar<2):
+            skank=show_pitch(root+12+(third if beat in (1,5) else fifth))
+        else:skank=SCORE_REST
+        if name in ('chorus_one','chorus_two','last_chorus','statement'):
+            organ_on=beat in (1,5)
+        elif name in ('verse_one','verse_two','prechorus','ending'):
+            organ_on=beat in (3,7)
+        else:organ_on=beat==5 and bar>=2
+        if name=='breakdown' and bar<4:organ_on=False
+        organ=show_pitch(root+12+(fifth if beat in (1,5) else third)) if organ_on else SCORE_REST
+        # Kick on 1/3, snare on 2/4, closed hi-hat between. The single
+        # PSG noise channel cannot make simultaneous independent drums.
+        if name=='count_in' and bar<2:
+            drum=0
+        elif name=='breakdown' and bar<2:
+            drum=2 if beat in (2,6) else 0
+        elif (name in ('prechorus','last_chorus','ending') and
+              beat==7 and bar%4==3):
+            drum=4
+        else:drum=(1 if beat in (0,4) else
+                   2 if beat in (2,6) else 3)
+        accent=int(beat==0 or (name=='ending' and bar==4))
+        row=bytes((*lead,*answer,*bass,*skank,*organ,*fill,drum,accent,0,0))
+        assert len(row)==SHOW_EVENT_BYTES
+        song.append(row)
     assert len(song)==SHOW_STEPS
     return b''.join(song)
 SHOW_MUSIC=show_compose()
@@ -1149,9 +1428,10 @@ asm.movea(4,0xFF0008);asm.movew_imm_ai(4,50)
 asm.bra('music_first_note')
 asm.label('music_region_ntsc')
 asm.movea(4,0xFF0008);asm.movew_imm_ai(4,60)
+asm.label('music_first_note')
 for volume in (0x9F,0xBF,0xDF,0xFF):
-    asm.moveb_imm_ai(5,volume) # Reset previous manual PSG state.
-asm.label('music_first_note');asm.bsr('music_event');asm.rts()
+    asm.moveb_imm_ai(5,volume) # Reset PSG state in NTSC and PAL.
+asm.bsr('music_event');asm.rts()
 
 asm.label('music_stop')
 asm.movea(4,0xFF0006);asm.movew_imm_ai(4,0)
@@ -1197,9 +1477,15 @@ asm.w(0xD8C0) # ADDA.W D0,A4, sixteen-byte tracker events
 for ch in range(6):
     key_channel=ch if ch<3 else ch+1 # YM key-on codes skip channel 3
     bank,slot_ch=ch//3,ch%3
+    # An event with high byte FF is a held note, not a key-off. Peek
+    # before writing $28 because the register writer clobbers D1.
+    asm.moveq(0,0);asm.moveb_ai_d(4,0)
+    asm.cmpiw(0,0xFF);asm.beq('music_keep_'+str(ch))
     ym_reg(0x28,key_channel)
-    asm.w(0x121C) # MOVE.B (A4)+,D1: block/F-number high
-    asm.w(0x141C) # MOVE.B (A4)+,D2: F-number low
+    asm.label('music_keep_'+str(ch))
+    asm.moveq(1,0);asm.w(0x121C) # MOVE.B (A4)+,D1: F-number high
+    asm.moveq(2,0);asm.w(0x141C) # MOVE.B (A4)+,D2: F-number low
+    asm.cmpiw(1,0xFF);asm.beq('music_rest_'+str(ch))
     asm.tstb(1);asm.beq('music_rest_'+str(ch))
     asm.moveq(0,0xA4+slot_ch);asm.bsr('ym_write_high' if bank else 'ym_write')
     asm.movew_d_d(2,1)
@@ -1275,7 +1561,12 @@ report={
           'steps':SHOW_STEPS,'eventBytes':len(SHOW_MUSIC),'eventStrideBytes':SHOW_EVENT_BYTES,
           'scenes':list(SHOW_SCENES),'lengthSeconds':180,
           'tonality':'major','percussion':['kick','snare','hat','fill'],
-          'character':'original upbeat brass-led ska-punk demoscene',
+          'character':'original scored brass-led ska-punk instrumental',
+          'scoreStructure':'ten written musical sections, independent of visual scenes',
+          'writtenSongForm':[(name,steps) for name,steps,_ in SHOW_FORM],
+          'keyCentre':'A major / F-sharp minor',
+          'heldNoteMarker':255,
+          'harmonies':['A','D','E','F#m','Bm'],
           'fmChannels':[0,1,2,3,4,5],'psgNoise':True,'patches':[x[0] for x in SHOW_PATCHES],
           'psgDrumAttenuation':{n:a for n,_,a in PSG_DRUMS},
           'psgVblankDecay':True,
