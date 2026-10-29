@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 import hashlib
+import html
 import io
 import json
-import os
 from pathlib import Path, PurePosixPath
 import re
 import shutil
@@ -13,7 +13,7 @@ import subprocess
 import tempfile
 import zipfile
 
-from cartridges import CartridgeError, approved_assets, load_manifest, repo_file, verify_site
+from cartridges import CartridgeError, approved_assets, load_manifest, verify_asset, verify_site
 
 
 STATIC_FILES = (
@@ -83,7 +83,7 @@ def _git_identity(root: Path) -> tuple[str, str]:
     return commit, status
 
 
-def _profile(root: Path) -> tuple[bytes, bytes, dict[str, str]]:
+def _profile(root: Path) -> tuple[bytes, bytes, bytes, dict[str, str]]:
     marker = _safe_file(root, f"{RUNTIME_PROFILE}/.vrampage-site-runtime-profile").read_text(encoding="utf-8")
     if marker != f"VRAMpage site runtime profile v1\n{PINNED_UPSTREAM}\n":
         raise BundleError("The staged runtime profile marker is missing or invalid.")
@@ -104,6 +104,18 @@ def _profile(root: Path) -> tuple[bytes, bytes, dict[str, str]]:
     if not _safe_file(root, f"{RUNTIME_PROFILE}/source/wasm-genplus/CMakeLists.txt").read_bytes():
         raise BundleError("The runtime profile is missing its CMake build definition.")
     vendor = root / RUNTIME_PROFILE / "source/wasm-genplus"
+    cmake_text = _safe_file(vendor, "CMakeLists.txt").read_text(encoding="utf-8")
+    source_block = re.search(r"add_source_files\((.*?)\)", cmake_text, re.DOTALL)
+    if not source_block:
+        raise BundleError("The runtime CMake file does not declare its compiled source list.")
+    compiled_sources = re.findall(r"^\s*\./([A-Za-z0-9_./-]+\.c)\s*$", source_block.group(1), re.MULTILINE)
+    pre_js = re.findall(r"--pre-js=[^\n\"]*/([A-Za-z0-9_.-]+\.js)", cmake_text)
+    if not compiled_sources or not pre_js:
+        raise BundleError("The runtime CMake file is missing compiled sources or pre-js shims.")
+    for relative in compiled_sources:
+        _safe_file(vendor, relative)
+    for name in pre_js:
+        _safe_file(root, f"{RUNTIME_PROFILE}/source/scripts/{name}")
     license_file = vendor / "src/main/c/core/ntsc/license.txt"
     if not license_file.is_file() or license_file.is_symlink():
         raise BundleError("The corresponding source is missing the full LGPL text.")
@@ -114,13 +126,12 @@ def _profile(root: Path) -> tuple[bytes, bytes, dict[str, str]]:
     )
     for relative in required_licences:
         _safe_file(vendor, relative)
-    if b"GNU LESSER GENERAL PUBLIC LICENSE" not in _safe_file(
-        vendor, "src/main/c/core/ntsc/license.txt"
-    ).read_bytes():
+    lgpl_text = _safe_file(vendor, "src/main/c/core/ntsc/license.txt").read_bytes()
+    if b"GNU LESSER GENERAL PUBLIC LICENSE" not in lgpl_text:
         raise BundleError("The corresponding source is missing the full LGPL text.")
     if not _safe_file(root, f"{RUNTIME_PROFILE}/source/THIRD-PARTY-NOTICES.md").read_bytes():
         raise BundleError("The runtime source archive is missing its component notices.")
-    return building, notices, hashes
+    return building, notices, lgpl_text, hashes
 
 
 def _source_paths(root: Path, manifest: dict) -> list[str]:
@@ -142,16 +153,6 @@ def _source_paths(root: Path, manifest: dict) -> list[str]:
     paths.update(source_paths(manifest))
     paths.update(asset["path"] for asset in manifest["preservedAssets"]
                  if asset["path"].startswith("site/"))
-    # Include the whole approved cartridge source kits (including graphics and source
-    # notices), but not generated ROM outputs or tests.
-    for base in (root / "demo-cart",):
-        for path in base.rglob("*"):
-            if path.is_symlink():
-                raise BundleError(f"Symlinks are not allowed in cartridge source: {path}")
-            if path.is_file() and "tests" not in path.relative_to(base).parts and path.suffix.lower() not in {
-                ".bin", ".rom", ".smd", ".md", ".wasm", ".o", ".a", ".pyc",
-            }:
-                paths.add(path.relative_to(root).as_posix())
     # The runtime profile is the source actually used by this binary. Copy the full
     # upstream C/C++ tree, build definitions and VRAMpage shims, pruning build assets.
     profile_source = root / RUNTIME_PROFILE / "source"
@@ -186,6 +187,14 @@ def _source_paths(root: Path, manifest: dict) -> list[str]:
             missing.append(name)
     if missing:
         raise BundleError("Missing or empty corresponding-source files:\n  " + "\n  ".join(missing))
+    assets = approved_assets(manifest)
+    for name in paths:
+        source = (root / RUNTIME_PROFILE / "source" / name[len("emulator/"):]
+                  if name.startswith("emulator/") else _safe_file(root, name))
+        try:
+            verify_asset(name, source.read_bytes(), assets)
+        except CartridgeError as error:
+            raise BundleError(f"Unsafe or unapproved source input {name}: {error}") from error
     return sorted(paths)
 
 
@@ -237,7 +246,11 @@ def _source_archive(root: Path, paths: list[str], version: str, commit: str,
     return source_info
 
 
-def _render_source_page(version: str, archive_name: str, archive_hash: str) -> bytes:
+def _render_source_page(version: str, archive_name: str, archive_hash: str,
+                        notices: bytes, emscripten_license: bytes, lgpl_text: bytes) -> bytes:
+    notices_html = html.escape(notices.decode("utf-8"))
+    emscripten_html = html.escape(emscripten_license.decode("utf-8"))
+    lgpl_html = html.escape(lgpl_text.decode("utf-8"))
     return (f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Source Code &amp; Licences · VRAMpage MD v{version}</title>
@@ -246,9 +259,16 @@ def _render_source_page(version: str, archive_name: str, archive_hash: str) -> b
 <p>Corresponding source for VRAMpage MD v{version}, including the modified WebAssembly core and component notices.</p>
 <p><a href="source/{archive_name}">Download corresponding source ZIP</a> (SHA-256: <code>{archive_hash}</code>).</p>
 <p>GitHub source mirror: planned; not yet published or verified.</p>
+<section aria-labelledby="licence-summary"><h2 id="licence-summary">Distribution and user rights</h2>
+<p><strong>Non-commercial condition:</strong> the included Genesis Plus GX and Nuked OPN2 terms restrict redistribution to non-commercial products or activities. This page does not determine whether advertising or other site activity is commercial.</p>
+<p><strong>LGPL 2.1 components:</strong> blip_buf and MD/SMS NTSC code are distributed under the GNU Lesser General Public License version 2.1 or later. The ZIP contains their complete source and the full LGPL text. Under section 6(a), recipients may modify the library and rebuild/relink the executable from the included application source, build scripts and data. The licence also preserves reverse engineering for debugging modifications. See <code>emulator/wasm-genplus/src/main/c/core/ntsc/license.txt</code> and the blip_buf source header.</p>
+<p>Read <code>project/THIRD-PARTY-NOTICES.md</code>, <code>project/licences/EMSCRIPTEN-LICENSE.txt</code>, <code>emulator/THIRD-PARTY-NOTICES.md</code>, and the original headers beside each component in the ZIP. See also <code>docs/LICENCE-AUDIT-v0.5.1.md</code>.</p></section>
 <h2>Rebuild the WebAssembly core</h2><pre>{SOURCE_INSTRUCTIONS}</pre>
 <p>For terms and attributions, see <code>emulator/THIRD-PARTY-NOTICES.md</code> in the ZIP and the original notices retained with each component's source.</p>
 <p>Release source commit and binary hashes are recorded in <code>SOURCE-INFO.json</code> at the ZIP root.</p>
+<details><summary>Full third-party notices</summary><pre>{notices_html}</pre></details>
+<details><summary>Full LGPL 2.1 text</summary><pre>{lgpl_html}</pre></details>
+<details><summary>Emscripten licence text</summary><pre>{emscripten_html}</pre></details>
 <p><a href="index.html">Return to VRAMpage MD</a></p></main></body></html>\n''').encode()
 
 
@@ -362,7 +382,10 @@ def build(root: Path, dest: Path) -> dict:
         raise BundleError("VERSION must contain a semantic application version.")
     manifest = load_manifest(root)
     verify_site(root, manifest)
-    building, notices, core_hashes = _profile(root)
+    _building, runtime_notices, lgpl_text, core_hashes = _profile(root)
+    notices = (b"Project notices\n\n" + _safe_file(root, "THIRD-PARTY-NOTICES.md").read_bytes()
+               + b"\n\nRuntime profile notices\n\n" + runtime_notices)
+    emscripten_license = _safe_file(root, "licences/EMSCRIPTEN-LICENSE.txt").read_bytes()
     source_paths_list = _source_paths(root, manifest)
     footer = _safe_file(root, "site/index.html").read_text(encoding="utf-8")
     if footer.count("<footer>") != 1 or "Source Code &amp; Licences" in footer:
@@ -381,7 +404,8 @@ def build(root: Path, dest: Path) -> dict:
         archive_path.parent.mkdir(parents=True)
         source_info = _source_archive(root, source_paths_list, version, commit, core_hashes, archive_path)
         archive_data = archive_path.read_bytes()
-        rendered = _render_source_page(version, archive_name, _sha(archive_data))
+        rendered = _render_source_page(version, archive_name, _sha(archive_data), notices,
+                                       emscripten_license, lgpl_text)
         (temp / "source-and-licences.html").write_bytes(rendered)
         for relative in STATIC_FILES:
             data = _safe_file(root, "site/" + relative).read_bytes()
@@ -399,7 +423,8 @@ def build(root: Path, dest: Path) -> dict:
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(source, target)
         (temp / "build-info.json").write_text(json.dumps({
-            "application": "VRAMpage MD", "version": version, "source_commit": commit,
+            "application": "VRAMpage MD", "application_version": version,
+            "package_format": 1, "version": version, "source_commit": commit,
             "wasm_genplus_commit": PINNED_UPSTREAM, "emscripten_version": EMSCRIPTEN,
             "core_sha256": core_hashes,
             "source_archive": {"path": f"source/{archive_name}", "sha256": _sha(archive_data),
@@ -458,7 +483,8 @@ def verify_website(dest: Path, root: Path) -> None:
             raise BundleError("Corresponding-source metadata does not match runtime build metadata.")
         version = (root / "VERSION").read_text(encoding="utf-8").strip()
         commit, _ = _git_identity(root)
-        if (info.get("version") != version or info.get("source_commit") != commit
+        if (info.get("version") != version or info.get("application_version") != version
+                or info.get("package_format") != 1 or info.get("source_commit") != commit
                 or source_info.get("version") != version
                 or source_info.get("wasm_genplus_commit") != PINNED_UPSTREAM
                 or source_info.get("emscripten_version") != EMSCRIPTEN
@@ -478,12 +504,16 @@ def verify_website(dest: Path, root: Path) -> None:
                     "<footer>", f"<footer>{SOURCE_LINK}", 1).encode("utf-8")
             if archive.read(archive_name) != expected_data:
                 raise BundleError(f"Corresponding-source file differs from checkout: {relative}")
-        expected_runtime = _profile(root)[2]
+        _building, runtime_notices, lgpl_text, expected_runtime = _profile(root)
+        notices = (b"Project notices\n\n" + _safe_file(root, "THIRD-PARTY-NOTICES.md").read_bytes()
+                   + b"\n\nRuntime profile notices\n\n" + runtime_notices)
+        emscripten_license = _safe_file(root, "licences/EMSCRIPTEN-LICENSE.txt").read_bytes()
         archive_sha = _sha((dest / archive_rel).read_bytes())
         archive_name = PurePosixPath(archive_rel).name
         if (archive_name != f"VRAMpage-MD-v{version}-corresponding-source.zip"
                 or (dest / "source-and-licences.html").read_bytes()
-                != _render_source_page(version, archive_name, archive_sha)):
+                != _render_source_page(version, archive_name, archive_sha, notices,
+                                       emscripten_license, lgpl_text)):
             raise BundleError("Source page or archive name differs from verified release metadata.")
         for relative in STATIC_FILES:
             expected_data = _safe_file(root, "site/" + relative).read_bytes()

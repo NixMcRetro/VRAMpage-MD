@@ -23,7 +23,7 @@ def _put(root, relative, data):
     return path
 
 
-def _fixture(tmp_path, *, licence=True, symlink=False):
+def _fixture(tmp_path, *, licence=True, symlink=False, missing_source=False):
     root = tmp_path / "source"
     root.mkdir()
     _put(root, "VERSION", "0.5.1\n")
@@ -84,7 +84,10 @@ def _fixture(tmp_path, *, licence=True, symlink=False):
     source = "site/source/runtime-profile/source"
     _put(root, f"{source}/THIRD-PARTY-NOTICES.md", "Source notices.\n")
     _put(root, f"{source}/wasm-genplus/README.md", "wrapper build instructions\n")
-    _put(root, f"{source}/wasm-genplus/CMakeLists.txt", "add_executable(core)\n")
+    _put(root, f"{source}/wasm-genplus/CMakeLists.txt",
+         "add_source_files(\n  ./src/main/c/core/genesis.c\n"
+         "  ./src/main/c/core/sound/ym2612.c\n)\n"
+         "add_compile_flags(LD \"--pre-js=${CMAKE_SOURCE_DIR}/../scripts/runtime.js\")\n")
     _put(root, f"{source}/wasm-genplus/cmake/macros.cmake", "macro(add_source_files)\nendmacro()\n")
     for relative in (
         "src/main/c/core/genesis.c", "src/main/c/core/sound/ym3438.c",
@@ -94,12 +97,15 @@ def _fixture(tmp_path, *, licence=True, symlink=False):
         "src/main/c/core/sound/blip_buf.c",
         "src/main/c/wasm/scrc32.c",
     ):
+        if missing_source and relative.endswith("sound/ym2612.c"):
+            continue
         _put(root, f"{source}/wasm-genplus/{relative}", f"source {relative}\n")
     if licence:
         _put(root, f"{source}/wasm-genplus/src/main/c/core/ntsc/license.txt",
              "GNU LESSER GENERAL PUBLIC LICENSE Version 2.1\n")
     _put(root, f"{source}/scripts/patch_core.py", "# patcher\n")
     _put(root, f"{source}/scripts/session_checkpoint_patch.py", "# patcher\n")
+    _put(root, f"{source}/scripts/runtime.js", "// runtime shim\n")
     if symlink:
         (root / source / "scripts" / "bad.py").symlink_to(root / "scripts" / "patch_core.py")
     subprocess.run(["git", "init", "-q", str(root)], check=True)
@@ -145,6 +151,10 @@ class WebsiteBundleTests(unittest.TestCase):
     assert "legacy-v0.1.bin" not in {p.relative_to(one).as_posix() for p in one.rglob("*") if p.is_file()}
     assert "Source Code &amp; Licences" in (one / "index.html").read_text()
     assert "planned; not yet published or verified" in (one / "source-and-licences.html").read_text()
+    page = (one / "source-and-licences.html").read_text()
+    assert "Full LGPL 2.1 text" in page and "GNU LESSER GENERAL PUBLIC LICENSE" in page
+    build_info = json.loads((one / "build-info.json").read_text())
+    assert build_info["application_version"] == "0.5.1" and build_info["package_format"] == 1
     archive = next((one / "source").glob("*.zip"))
     with zipfile.ZipFile(archive) as zf:
         names = zf.namelist()
@@ -178,6 +188,14 @@ class WebsiteBundleTests(unittest.TestCase):
         build(root, dest)
     assert not dest.exists()
 
+  def test_missing_cmake_component_fails_before_destination_creation(self):
+    tmp_path = self.tmp_path
+    root = _fixture(tmp_path, missing_source=True)
+    dest = tmp_path / "dest"
+    with self.assertRaisesRegex(BundleError, "ym2612.c"):
+        build(root, dest)
+    assert not dest.exists()
+
 
   def test_unapproved_rom_fails_before_destination_creation(self):
     tmp_path = self.tmp_path
@@ -187,6 +205,18 @@ class WebsiteBundleTests(unittest.TestCase):
     with self.assertRaises(CartridgeError):
         build(root, dest)
     assert not dest.exists()
+
+  def test_untracked_private_inputs_are_never_archived(self):
+    tmp_path = self.tmp_path
+    root = _fixture(tmp_path)
+    _put(root, "demo-cart/.env", "SECRET=not-for-archive\n")
+    _put(root, "demo-cart/private.zip", b"unapproved nested archive")
+    dest = tmp_path / "dest"
+    build(root, dest)
+    with zipfile.ZipFile(next((dest / "source").glob("*.zip"))) as archive:
+        names = archive.namelist()
+        self.assertNotIn("project/demo-cart/.env", names)
+        self.assertNotIn("project/demo-cart/private.zip", names)
 
 
   def test_symlink_source_fails_before_destination_creation(self):
