@@ -1,3 +1,8 @@
+Proposed **v0.5.1** review builds keep the complete local browser package.
+The lightweight website bundle is a separate artifact; it carries working local
+source/licence links and a compressed corresponding-source archive. Publication
+and deployment remain unapproved. [Deployment proposal](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md).
+
 # Run VRAMpage MD in Your Browser
 
 VRAMpage MD is a cross-platform HTML/CSS/JavaScript/WebAssembly app. Use a modern

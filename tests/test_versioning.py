@@ -11,7 +11,7 @@ ZIP = f"VRAMpage-MD-{TAG}-browser.zip"
 
 class VersioningTests(unittest.TestCase):
     def test_single_canonical_version(self):
-        self.assertEqual(VERSION, "0.5.0")
+        self.assertEqual(VERSION, "0.5.1")
         self.assertTrue((ROOT / "docs/VERSIONING.md").exists())
         self.assertIn(TAG, (ROOT / "docs/VERSIONING.md").read_text())
 
@@ -45,7 +45,7 @@ class VersioningTests(unittest.TestCase):
         self.assertNotIn("gh release edit v0.2.4", workflow)
         self.assertNotIn("gh release edit v2.4.0", workflow)
         self.assertNotIn("--draft=false", workflow)
-        self.assertIn("--notes-file docs/RELEASE-NOTES-v0.5.0.md", workflow)
+        self.assertIn(f"--notes-file docs/RELEASE-NOTES-{TAG}.md", workflow)
         self.assertIn("SHA256SUMS.txt", build)
 
     def test_current_download_documentation(self):
@@ -57,8 +57,9 @@ class VersioningTests(unittest.TestCase):
 
     def test_current_release_history(self):
         history = (ROOT / "docs/RELEASE-HISTORY.md").read_text()
-        self.assertIn(f"**Current public version:** {TAG}", history)
-        self.assertIn(f"/releases/download/{TAG}/{ZIP}", history)
+        self.assertIn("**Current public version:** v0.5.0", history)
+        self.assertIn(f"Proposed version: **{TAG}**", history)
+        self.assertIn("/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip", history)
         self.assertIn(ZIP, history)
         self.assertIn("/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip", history)
 

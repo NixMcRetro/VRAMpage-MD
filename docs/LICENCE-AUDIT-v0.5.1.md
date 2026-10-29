@@ -1,8 +1,8 @@
 # VRAMpage MD v0.5.1 compiled-core licence audit
 
-**Scope and evidence.** This is a source-level inventory of the actual browser runtime shipped by main commit `996d353` (not a generic inventory of every file in the vendor tree). The release profile records JS SHA-256 `e8da1c28303fd3900f35c032ce01802c76d1d041dc8a0d6cd57bdc97ee3af4d0`, WASM SHA-256 `8fa2fa0fe6a47890c948ed39a7f095980d9ffde7d4405a88ce07a5f34b8814b7`, and pinned `h1romas4/wasm-genplus` source commit `6090aff9e9b2f578cd28882bd4571d2e35b1d674` ([profile build record](https://github.com/NixMcRetro/VRAMpage-MD/blob/996d353/site/source/runtime-profile/BUILDING.txt)). The modified corresponding tree is under `site/source/runtime-profile/source/wasm-genplus`; the adjacent `scripts/` and site `source/` files contain VRAMpage changes. The build record describes this source and the repeatable Emscripten/CMake/Make commands ([pinned build record](https://github.com/NixMcRetro/VRAMpage-MD/blob/996d353/site/source/runtime-profile/BUILDING.txt)).
+**Scope and evidence.** This is a source-level inventory of the actual browser runtime shipped by main commit `996d353` (not a generic inventory of every file in the vendor tree). The release profile records JS SHA-256 `e8da1c28303fd3900f35c032ce01802c76d1d041dc8a0d6cd57bdc97ee3af4d0`, WASM SHA-256 `8fa2fa0fe6a47890c948ed39a7f095980d9ffde7d4405a88ce07a5f34b8814b7`, and pinned `h1romas4/wasm-genplus` source commit `6090aff9e9b2f578cd28882bd4571d2e35b1d674` ([verified complete main bundle](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40809766464/artifacts/12870445297), entry `site/source/runtime-profile/BUILDING.txt`). The modified corresponding tree is under `site/source/runtime-profile/source/wasm-genplus`; the adjacent `scripts/` and site `source/` files contain VRAMpage changes. The build record describes this source and the repeatable Emscripten/CMake/Make commands ([pinned builder](https://github.com/NixMcRetro/VRAMpage-MD/blob/996d35310e03d1fc67a8e4c1681e090c6edff227/scripts/build-core-runtime.py#L233)).
 
-The pinned upstream CMake file explicitly enumerates translation units in lines 8–63, sets `HAVE_YM3438_CORE` at line 81, and adds the VRAMpage runtime API shims at lines 96–103 ([immutable CMake source](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/CMakeLists.txt#L8-L103)). It compiles `z80.c`, Musashi `m68kcpu.c` and `s68kcpu.c`, Genesis Plus GX core, YM2413, YM2612, Nuked OPN2/YM3438, `blip_buf.c`, `eq.c`, both NTSC implementations, and the listed cartridge, CD and WebAssembly support files. It does **not** list Tremor or FAME translation units. Their presence in the complete source archive does not establish their inclusion in this binary. The CMake list includes `scrc32.c` (at `src/main/c/wasm/scrc32.c`), not a `core/wasm` path.
+The pinned upstream CMake file explicitly enumerates translation units in lines 8–63, sets `HAVE_YM3438_CORE` at line 81, and the project builder adds the runtime flags and API shims to the generated CMake file ([immutable CMake source](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/CMakeLists.txt#L8-L83)). It compiles `z80.c`, Musashi `m68kcpu.c` and `s68kcpu.c`, Genesis Plus GX core, YM2413, YM2612, Nuked OPN2/YM3438, `blip_buf.c`, `eq.c`, both NTSC implementations, and the listed cartridge, CD and WebAssembly support files. It does **not** list Tremor or FAME translation units. Their presence in the complete source archive does not establish their inclusion in this binary. The CMake list includes `scrc32.c` (at `src/main/c/wasm/scrc32.c`), not a `core/wasm` path.
 
 ## Licence and attribution inventory
 
@@ -22,7 +22,7 @@ The upstream non-commercial and corresponding-source wording is repeated in more
 
 ## Source delivery recommendation and limits
 
-For the v0.5.1 browser package, the conservative delivery is one version-matched ZIP on the same McRetro origin containing the exact `genplus.js` and `genplus.wasm`, the **complete modified corresponding source** used to build those files, the build scripts/configuration and frontend/launcher source, and a notices/licenses document with full upstream headers/text. Include the pinned vendor source tree, VRAMpage patch/build scripts and API shims; retain unmodified component notices and mark every changed file as required by its applicable notice. The existing build record identifies the source location and build invocation, and the existing third-party notices record the terms and named components ([build record](https://github.com/NixMcRetro/VRAMpage-MD/blob/996d353/site/source/runtime-profile/BUILDING.txt); [notices](https://github.com/NixMcRetro/VRAMpage-MD/blob/996d353/site/source/runtime-profile/THIRD-PARTY-NOTICES.md)). Link the archive prominently from the package instructions and keep it available with the binary version. A checksum and pinned commit/build identifiers make the source-binary match reviewable.
+For the v0.5.1 browser package, the conservative delivery is one version-matched ZIP on the same McRetro origin containing the exact `genplus.js` and `genplus.wasm`, the **complete modified corresponding source** used to build those files, the build scripts/configuration and frontend/launcher source, and a notices/licenses document with full upstream headers/text. Include the pinned vendor source tree, VRAMpage patch/build scripts and API shims; retain unmodified component notices and mark every changed file as required by its applicable notice. The existing build record identifies the source location and build invocation, and the existing third-party notices record the terms and named components ([pinned builder](https://github.com/NixMcRetro/VRAMpage-MD/blob/996d35310e03d1fc67a8e4c1681e090c6edff227/scripts/build-core-runtime.py#L233); [tracked notices](../THIRD-PARTY-NOTICES.md)). Link the archive prominently from the package instructions and keep it available with the binary version. A checksum and pinned commit/build identifiers make the source-binary match reviewable.
 
 A complete, version-matched source ZIP attached to the corresponding GitHub release would provide a useful durable mirror. If GitHub is the only source location, whether linking or “accompanying” the runtime satisfies the core's literal requirement to “include” source is an interpretation question; the text does not specify a hosting protocol. A same-origin package including both removes that avoidable ambiguity. This is a conservative distribution recommendation, not a legal conclusion.
 
@@ -31,3 +31,30 @@ The LGPL components add separate obligations. LGPL 2.1 section 6(a) expressly pe
 The core's non-commercial condition warrants an owner decision on the proposed host/activity. Whether ordinary site advertising, analytics, sponsorship or other monetization makes this distribution a “commercial product or activity” is not resolved by the source wording or this audit. This report makes no finding that McRetro.net violates that condition. The installed Emscripten 4.0.23 `LICENSE` describes the tool as dual MIT / University of Illinois-NCSA licensed and says third-party compiler subdirectory code is not used by default; this audit makes no GPL-exception claim and has not traced every emitted runtime fragment to its toolchain notice. Retain applicable Emscripten/runtime notices with the package after checking the actual generated JS. ROM and trademark rights are outside these component licences, and no third-party game ROM is part of this audit.
 
 **Limit.** This is a factual source/build inventory and conservative packaging recommendation, not legal advice. Obtain qualified legal review for the non-commercial hosting interpretation and the LGPL linked-WASM delivery question before treating those points as cleared.
+
+## Questions That Packaging Alone Does Not Settle
+
+- **GitHub-only delivery:** the custom Genesis Plus GX/Nuked conditions do not
+  say that an external link satisfies “include”. Keep the complete same-origin
+  archive as the default. Qualified advice or rights-holder clarification is
+  needed before removing it; LGPL guidance cannot answer that separate clause.
+- **Musashi binary wording:** the exact quoted condition refers to notices in
+  “any binary files”. A notices page and source archive preserve the text, but
+  this audit does not establish that this satisfies a literal reading for the
+  standalone WASM file. Seek clarification or a reviewed notice-embedding change
+  before declaring this point cleared. No runtime bytes are changed here.
+- **Legacy FM provenance:** the pinned YM2612/YM2413 headers identify authors and
+  MAME provenance without a complete standalone redistribution grant in those
+  headers. Retain the full notices and seek clarification if the composite
+  upstream project permission does not establish the necessary rights. Do not
+  silently relabel this material as modern MAME's GPL/BSD code.
+- **Non-commercial activity:** source availability does not remove the
+  non-commercial restrictions. This audit does not determine whether this
+  particular site's advertising or other activity is within the grant.
+
+The proposed PR is a technical packaging candidate, not permission to deploy.
+The same-origin ZIP removes an avoidable source-location ambiguity and must
+remain available with the corresponding runtime. It does not resolve the
+other interpretation questions above. The pinned Emscripten licence text is
+preserved in `licences/EMSCRIPTEN-LICENSE.txt`; the compiler/system-component
+exception is not used to omit the emulator or application source.

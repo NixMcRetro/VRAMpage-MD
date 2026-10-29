@@ -3888,7 +3888,7 @@ class BrowserLogicTests(unittest.TestCase):
         payload=self.export_payload()
         self.assertEqual(payload['schemaVersion'],1)
         self.assertEqual(payload['build'],expected)
-        self.assertEqual(payload['modelVersion'],'0.5.0-experimental')
+        self.assertEqual(payload['modelVersion'],'0.5.1-experimental')
         self.assertEqual(payload['rom']['sha256'],hashlib.sha256(rom).hexdigest())
         self.assertEqual(payload['logicFault']['kind'],'address')
         self.assertTrue(payload['faultActive'])
@@ -3897,21 +3897,21 @@ class BrowserLogicTests(unittest.TestCase):
 
     @staticmethod
     def valid_build_info():
-        return {'application':'VRAMpage MD','application_version':'0.5.0',
+        return {'application':'VRAMpage MD','application_version':'0.5.1',
                 'source_commit':'a'*40,'package_format':1}
 
     def test_export_provenance_valid_and_filters_unknown_fields(self):
         info=self.valid_build_info()
         info.update({'token':'must-not-be-exported','private':{'secret':'ignore'}})
         self.page=self.new_page(build_info=info)
-        payload=self.assert_build_export({'status':'available','applicationVersion':'0.5.0','sourceCommit':'a'*40})
+        payload=self.assert_build_export({'status':'available','applicationVersion':'0.5.1','sourceCommit':'a'*40})
         self.assertNotIn('must-not-be-exported',json.dumps(payload))
         self.assertNotIn('private',payload['build'])
         self.page.locator('#resetBtn').click()
         self.assertEqual(self.export_payload()['build']['sourceCommit'],'a'*40)
 
     def test_export_provenance_missing(self):
-        self.assert_build_export({'status':'unavailable','applicationVersion':'0.5.0','sourceCommit':None})
+        self.assert_build_export({'status':'unavailable','applicationVersion':'0.5.1','sourceCommit':None})
 
     def test_export_provenance_malformed(self):
         for malformed in ('{broken', 'null', [], self.valid_build_info() | {'source_commit':'A'*40},
@@ -3919,18 +3919,18 @@ class BrowserLogicTests(unittest.TestCase):
                           self.valid_build_info() | {'package_format':'1'}):
             with self.subTest(metadata=malformed):
                 self.page=self.new_page(build_info=malformed)
-                self.assert_build_export({'status':'unavailable','applicationVersion':'0.5.0','sourceCommit':None})
+                self.assert_build_export({'status':'unavailable','applicationVersion':'0.5.1','sourceCommit':None})
 
     def test_export_provenance_mismatched_application_or_version(self):
         for mismatch in ({'application':'Other app'},{'application_version':'0.2.5'},
                          {'package_format':2}):
             with self.subTest(metadata=mismatch):
                 self.page=self.new_page(build_info=self.valid_build_info() | mismatch)
-                self.assert_build_export({'status':'unavailable','applicationVersion':'0.5.0','sourceCommit':None})
+                self.assert_build_export({'status':'unavailable','applicationVersion':'0.5.1','sourceCommit':None})
 
     def test_export_provenance_timeout_never_blocks_play_or_export(self):
         self.page=self.new_page(stalled_build_info=True)
-        self.assert_build_export({'status':'unavailable','applicationVersion':'0.5.0','sourceCommit':None})
+        self.assert_build_export({'status':'unavailable','applicationVersion':'0.5.1','sourceCommit':None})
         self.assertEqual(self.page.evaluate('window.__buildInfoRequests'),1)
         self.assertEqual(self.page.evaluate('window.__buildInfoOptions'),{'credentials':'omit','cache':'no-store'})
         self.assertGreater(self.page.evaluate('mockCore.ticks'),0)
@@ -3948,7 +3948,7 @@ class BrowserLogicTests(unittest.TestCase):
             self.page.locator("#logicExperimentBtn").click()
         download = download_info.value
         payload = json.loads(Path(download.path()).read_text())
-        self.assertEqual(payload["modelVersion"], "0.5.0-experimental")
+        self.assertEqual(payload["modelVersion"], "0.5.1-experimental")
         self.assertEqual(payload["rom"]["name"], "synthetic-test.bin")
         self.assertEqual(payload["rom"]["sha256"], hashlib.sha256(rom).hexdigest())
         self.assertNotIn("bytes", payload["rom"])
@@ -3962,8 +3962,8 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertEqual(payload["cpuFlags"], 3)
 
     def test_read_only_experiment_comparison_uses_unknown_and_inert_text(self):
-        first={"schemaVersion":1,"corePin":"d"*40,"build":{"applicationVersion":"0.5.0","sourceCommit":"a"*40},
-               "modelVersion":"0.5.0-experimental","rom":{"name":"<img src=x onerror=alert(1)>","sha256":"b"*64},
+        first={"schemaVersion":1,"corePin":"d"*40,"build":{"applicationVersion":"0.5.1","sourceCommit":"a"*40},
+               "modelVersion":"0.5.1-experimental","rom":{"name":"<img src=x onerror=alert(1)>","sha256":"b"*64},
                "vramFault":{"kind":"none","addressMask":0,"bridge":None},"logic":{"fault":None,"active":False,"readCount":0,"writeCount":0},
                "currentFrame":10,"cpuFlags":0,"psgInputFault":{"available":False},"fmInputFault":{"available":False}}
         second=json.loads(json.dumps(first));second["rom"]["sha256"]="c"*64

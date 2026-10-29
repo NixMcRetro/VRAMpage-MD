@@ -1,3 +1,11 @@
+## Active Proposal — v0.5.1 Lightweight Deployment
+
+Prepare a review-only package and complete corresponding-source archive with
+measured footprint and reproducible source/binary verification. Keep the
+same-origin archive fallback until the custom licensing questions are resolved.
+Do not merge, publish or modify/deploy McRetro.net without explicit approval.
+[Proposal](docs/LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md).
+
 ## Built-In Cartridge Selection
 
 The approved manifest drives the compact selector, automatic default and every

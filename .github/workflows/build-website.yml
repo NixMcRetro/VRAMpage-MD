@@ -147,16 +147,16 @@ jobs:
           tar -czf release/VRAMpage-MD-static-site.tar.gz -C release vrampage
       - name: Package cross-platform browser app
         run: |
-          python3 scripts/package-review.py --output release/VRAMpage-MD-v0.5.0-browser.zip
+          python3 scripts/package-review.py --output release/VRAMpage-MD-v0.5.1-browser.zip
           cd release
-          sha256sum VRAMpage-MD-v0.5.0-browser.zip > SHA256SUMS.txt
+          sha256sum VRAMpage-MD-v0.5.1-browser.zip > SHA256SUMS.txt
       - name: Upload ready-to-run browser app
         uses: actions/upload-artifact@v7
         with:
           name: VRAMpage-MD-local-review
           retention-days: 30
           path: |
-            release/VRAMpage-MD-v0.5.0-browser.zip
+            release/VRAMpage-MD-v0.5.1-browser.zip
             release/SHA256SUMS.txt
           if-no-files-found: error
       - name: Upload static hosting bundle

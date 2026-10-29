@@ -1,3 +1,5 @@
+<!-- Proposed v0.5.1 changes are not the published v0.5.0 download. -->
+
 # 🎛️ VRAMpage MD
 
 A browser workbench for circuit-bending a Sega Mega Drive / Genesis. Experiment
@@ -6,6 +8,10 @@ with video memory, Work RAM and FM/PSG sound through a modified emulator.
 **[Open VRAMpage MD](https://mcretro.net/homepages/vrampage-md/)** ·
 **[Download v0.5.0](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip)** ·
 [Checksums](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/SHA256SUMS.txt)
+
+Proposed **v0.5.1** adds a [lightweight website package](docs/LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md)
+with a complete corresponding-source archive. It is under review; the public
+links above remain v0.5.0. No release or website deployment is approved.
 
 ## 🎮 Built-In Cartridges
 

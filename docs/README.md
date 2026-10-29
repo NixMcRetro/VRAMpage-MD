@@ -1,3 +1,7 @@
+Proposed **v0.5.1**: [lightweight deployment review](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md)
+and [licence audit](LICENCE-AUDIT-v0.5.1.md). This branch is not a public release
+and does not authorize a website update.
+
 # VRAMpage MD documentation
 
 VRAMpage MD is a browser-based Mega Drive/Genesis experiment, defaulting to NTSC-U. It runs a locally selected cartridge through a modified Genesis Plus GX core and explores hardware-*informed* circuit faults. The browser offers **frame projection** and **logical-byte transaction** VRAM models. Neither establishes electrical or cycle accuracy.

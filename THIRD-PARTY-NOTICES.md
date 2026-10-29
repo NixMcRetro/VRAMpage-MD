@@ -183,3 +183,19 @@ Keep the full corresponding-source tree with the binary. In particular:
   terms in the corresponding files under `site/source/src/main/c/core/`.
 
 These notices do not grant rights to Sega-owned games, branding or ROM images.
+
+## Additional Compiled Components and Toolchain
+
+The pinned build also compiles MAME-derived YM2612/YM2413 code, CRC32 support
+and public-domain EQ. Their original per-file copyright and redistribution
+notices remain unaltered in the complete corresponding-source archive; do not
+apply a modern MAME licence retroactively. See the component inventory and
+unresolved interpretations in [the v0.5.1 audit](docs/LICENCE-AUDIT-v0.5.1.md).
+
+Emscripten 4.0.23 is the compiler used for the shipped JS/WASM. Its complete
+MIT/University of Illinois-NCSA notice (including third-party notices in that
+file) is retained in [EMSCRIPTEN-LICENSE.txt](licences/EMSCRIPTEN-LICENSE.txt).
+The corresponding-source package supports modification and rebuilding of the
+whole application and its LGPL libraries. Nothing in this project's packaging
+policy prohibits reverse engineering for debugging modifications to those
+libraries; applicable upstream conditions continue to apply.

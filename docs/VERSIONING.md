@@ -1,6 +1,16 @@
+## Proposed v0.5.1 — Review Only
+
+This isolated proposal branch stores **0.5.1** in `VERSION`; the current public
+release remains **v0.5.0**. No v0.5.1 tag, release or website publication is
+approved. The package adds lightweight static staging and a verified complete
+corresponding-source ZIP, with a same-origin fallback and a future GitHub release
+mirror. See [the proposal](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md) and
+[licence assessment](LICENCE-AUDIT-v0.5.1.md). Approval is required before merge,
+release preparation/publication or any McRetro.net modification/deployment.
+
 # Versioning policy
 
-Current public milestone: **v0.5.0** (`VERSION` stores `0.5.0`), packaged as
+Current public milestone: **v0.5.0** (the proposal branch stores `0.5.1`), packaged as
 `VRAMpage-MD-v0.5.0-browser.zip` for Windows, macOS and Linux browsers. It adds
 ordered recovery, explicit session checkpoints and cross-platform distribution.
 Public v0.4.1 and older tags/assets remain immutable. Later source work uses build

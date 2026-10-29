@@ -1,3 +1,8 @@
+Proposed version: **v0.5.1** (unpublished, review branch only).
+Planned artifacts include `VRAMpage-MD-v0.5.1-browser.zip` and
+`VRAMpage-MD-v0.5.1-corresponding-source.zip`. Existing v0.5.0 downloads remain
+the current public release and are not replaced by this proposal.
+
 # VRAMpage MD releases and source history
 
 **Current public version:** v0.5.0 — the cross-platform browser app, including

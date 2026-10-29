@@ -3,6 +3,15 @@
 Work only in `NixMcRetro/VRAMpage-MD`. Do not modify, merge or deploy
 `NixMcRetro/mcretro.net` without separate explicit approval.
 
+## v0.5.1 Proposal Hold
+
+The current owner request authorizes a v0.5.1 proposal branch and PR only.
+Do not merge to main, create/publish a release, replace public v0.5.0 assets,
+modify McRetro.net or trigger deployment without fresh explicit approval.
+This hold overrides the general permission to merge verified work below.
+Keep the compressed-source fallback until licensing interpretation is resolved;
+never replace generated corresponding source with GitHub's automatic snapshot.
+
 ## Start and choose work
 
 Fetch the latest main, relevant branches, open PRs, releases and CI. Read

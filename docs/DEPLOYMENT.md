@@ -1,3 +1,22 @@
+## Proposed v0.5.1 Lightweight Website — Approval Required
+
+Use `python3 scripts/package-website.py --output /workspace/vrampage-review` to
+prepare a separate, empty local review directory after building the core and
+approved cartridges. It does not touch McRetro.net. The staging helper uses this
+same package builder, but must not be run against the website repository until
+explicit approval. Do not copy the entire development `site/` directory.
+
+The thin bundle includes runtime files, approved selectable cartridges, a small
+Source Code & Licences page and one complete version-matched source ZIP. The ZIP
+is also prepared for attachment to the matching GitHub release; GitHub's automatic
+source snapshot does not contain all generated modified emulator sources.
+GitHub-only source delivery is not enabled: custom licence interpretation remains
+unresolved. See [layout, size and verification](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md)
+and [the source-level licence assessment](LICENCE-AUDIT-v0.5.1.md).
+
+No v0.5.1 publication, merge or deployment is approved. The historical instructions
+below describe the public v0.5.0 workflow and must not replace existing assets.
+
 # Releases and deployment
 
 ## Live v0.5.0 App
