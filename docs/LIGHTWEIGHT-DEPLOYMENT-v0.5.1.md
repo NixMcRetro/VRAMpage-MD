@@ -1,16 +1,18 @@
 # Proposed v0.5.1 Lightweight Deployment
 
-This is an isolated proposal for review. Nothing authorizes merging, publishing
-v0.5.1, changing the public v0.5.0 release, or modifying/deploying McRetro.net.
+The owner approved proceeding with v0.5.1 and the McRetro.net update on
+29 October 2026, and confirmed non-commercial hosting with no monetization.
+Release and website integration still require independent review and passing
+checks. The existing public v0.5.0 release and its assets remain unchanged.
 
 The recommended technical fallback keeps one complete corresponding-source ZIP
 on the same origin as the runtime. A byte-identical copy is prepared for the
 matching GitHub release. GitHub-only delivery is not enabled: the custom core
 licences say modified redistributions must **include** complete source, without
 settling whether a separate host's link is sufficient. See the
-[actual licence audit](LICENCE-AUDIT-v0.5.1.md), including unresolved Musashi,
-legacy FM and non-commercial-hosting interpretations. Packaging tests cannot
-grant rights or replace qualified legal clarification.
+[actual licence audit](LICENCE-AUDIT-v0.5.1.md), including the verified project-wide
+FM permission basis, exact Musashi notice embedded as WASM metadata, confirmed
+hosting context and remaining limits on future source-delivery arrangements.
 
 ## Proposed Website Layout
 
@@ -62,13 +64,12 @@ source inventory, notices and archive content before replacing any destination.
 It accepts a new or empty output directory. The website staging helper retains
 branch safeguards and intentionally refuses a nonempty current deployment;
 clearing/replacing that subtree requires a separately approved migration and
-reviewed website diff. No website checkout is changed for this proposal.
+reviewed website diff. The approved update uses a separate website branch/PR.
 
 The source/licence page and same-origin ZIP link work in the local candidate.
-The future GitHub release mirror is labelled pending, with no active 404 link.
-Publication must attach and verify the exact archive and checksums before
-changing that label or choosing any external-only source-delivery policy.
-The planned immutable release-asset URL (not published yet) is:
+The matching GitHub release mirror must be attached and verified, along with
+its checksums, before the website PR is merged. The same-origin ZIP remains
+available independently. The version-matched release-asset URL is:
 
 ```text
 https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.1/VRAMpage-MD-v0.5.1-corresponding-source.zip
@@ -98,7 +99,7 @@ It contains no source directory and uses the older runtime/cartridge interface.
 Thus the new complete candidate **adds** four files and about 1.55 MiB relative
 to that older tree; it is not accurate to claim hundreds of currently deployed
 files are removed. The large reduction applies to the full-source staging
-policy for the same current runtime. This proposal does not modify that website.
+policy for the same current runtime. The approved website update uses its own PR.
 
 Jekyll would copy 17 static files instead of traversing 526 candidate files.
 These figures measure checkout/deployed bytes, not Git pack sizes or cumulative
@@ -107,8 +108,8 @@ object storage than unchanged loose source files; no history-size saving is
 claimed.
 
 The ZIP is copied as one opaque asset; compilation/rebuild verification stays
-in VRAMpage MD's CI, not McRetro.net's build. No website build benchmark is
-claimed because no actual website checkout/build/deployment was performed.
+in VRAMpage MD's CI, not McRetro.net's build. No website build-time improvement is
+claimed; its PR must run the actual Jekyll/Pagefind build and verify every file.
 
 The archive extracted from candidate `7a28b7a` rebuilt both files byte for byte
 with Emscripten 4.0.23: JS SHA-256
@@ -123,4 +124,4 @@ No existing regression suite is removed or relaxed. The complete local browser
 ZIP remains available separately, with its normal/fallback source fixtures.
 Thin-site browser checks add selector, private local ROM, PAL, metadata and
 source/licence-link checks. Required PR CI and CodeQL are review evidence;
-they do not override the explicit hold on merge, release and deployment.
+they remain required before the approved release and website deployment.

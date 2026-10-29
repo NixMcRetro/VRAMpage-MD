@@ -1,38 +1,36 @@
-## Active v0.5.1 Lightweight Deployment Proposal — 29 October 2026 UTC
+## v0.5.1 Release and Website Update — 29 October 2026
 
-Owner scope is **proposal branch and PR only**. Do not merge, publish a release,
-change public v0.5.0 assets, modify McRetro.net or trigger deployment without
-explicit approval. This supersedes general automatic-merge instructions.
-Base main is `996d35310e03d1fc67a8e4c1681e090c6edff227` (PR100 complete).
+The owner approved proceeding with release and deployment, superseding the
+proposal-only hold, and confirmed **non-commercial hobby hosting with no
+monetization**. Preserve public v0.5.0 and older release assets.
 
-The [proposal](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md) and
-[licence inventory](LICENCE-AUDIT-v0.5.1.md) separate confirmed custom-source,
-non-commercial, copyright and LGPL terms from unresolved interpretations.
-Keep the complete same-origin source ZIP; GitHub-only delivery is not cleared.
-Legacy FM provenance, literal Musashi binary-notice wording and the site's
-non-commercial status require qualified clarification before deployment approval.
+PR #102 prepares the 17-file website package with one complete corresponding-
+source ZIP, matching GitHub source mirror, approved Demo Cart/Colour Test,
+notices and checksums. The same-origin ZIP remains mandatory; GitHub-only
+source delivery is outside this decision. All native executable sections and
+emulator controls stay unchanged; a deterministic custom WASM section preserves
+Musashi's exact notice inside the binary. Source rebuilds reproduce that output.
 
-The thin artifact has 17 files and one complete, versioned source ZIP. Its
-manifest, exact raw runtime pair, generated modified native source, frontend,
-build/API scripts, cartridge source and notices are hash-bound. The builder
-rejects unknown staged-source files using the recorded build inventory, rejects
-unsafe ZIP entries, and retains approved cartridge/source-kit identities.
-Current public release catalog stays v0.5.0; only this proposal branch uses0.5.1.
-No emulator controls or native algorithms are changed.
+The [licence audit](LICENCE-AUDIT-v0.5.1.md) records the GX project-wide default
+grant for the legacy FM code, binary/source notice measures, LGPL rebuild route
+and owner-confirmed hosting context. A change to monetization or source delivery
+requires reassessment; there is no generic outside-legal-review prerequisite.
 
-Candidate7a28b7a independently rebuilds both core files byte for byte using
-Emscripten4.0.23. Thin-site actual-browser tests pass selector, PAL, local files,
-private loopback-only GETs, export identity, mobile width and source/licence links.
-The package/inventory/security tests pass. Full regression and final PR CI are
-integration evidence, not permission to merge or deploy. Preserve failed-run
-logs and investigate before retry; never relax existing assertions.
+Require independent review, all seven protected PR/main checks and four CodeQL
+analyses before publishing v0.5.1. Publish and verify the exact corresponding-
+source ZIP and checksums. Then update only `homepages/vrampage-md/` through a
+separate McRetro.net PR, retaining the source ZIP on the same origin. Website
+checks must validate the manifest-approved ROMs, reject unknown/altered files,
+and compare all 17 files byte for byte after Jekyll. Merge only after its build
+passes, then verify deployment and live runtime/source links.
 
-Measured same-runtime full-tree526files/17,349,861bytes vs thin17/3,142,990:
-96.8% fewerfiles and81.9% lessstorage. The read-only older GitHub website tree
-at949c1f8 has13files/1,518,565bytes and no source directory; do not claim the
-same-runtime savings are removals from that existing smaller deployment.
-The staging helper deliberately rejects a nonempty website subtree; actual
-migration is a separately approved operation and was not executed here.
+The original same-runtime full-source baseline was 526 files /17,349,861 bytes;
+notice-complete review candidate was 17 files /3,144,524 bytes (about3.00MiB).
+Metadata/source revisions change compressed bytes slightly. The older website
+actually had13files/1,518,565bytes; the reduction is against full-source staging,
+not a claim that hundreds of currently hosted files are removed. No Git-history
+or build-time savings are asserted. Final commit/check/artifact identities belong
+in the PR and release evidence, not self-referential generated source.
 
 ## Built-In Cartridge Selector — Integration Checkpoint, 29 October 2026 (UTC)
 

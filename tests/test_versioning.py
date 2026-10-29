@@ -57,8 +57,7 @@ class VersioningTests(unittest.TestCase):
 
     def test_current_release_history(self):
         history = (ROOT / "docs/RELEASE-HISTORY.md").read_text()
-        self.assertIn("**Current public version:** v0.5.0", history)
-        self.assertIn(f"Proposed version: **{TAG}**", history)
+        self.assertIn(f"**Release target:** {TAG}", history)
         self.assertIn("/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip", history)
         self.assertIn(ZIP, history)
         self.assertIn("/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip", history)

@@ -1,10 +1,11 @@
-## Active Proposal — v0.5.1 Lightweight Deployment
+## v0.5.1 — Approved Release and Lightweight Website
 
-Prepare a review-only package and complete corresponding-source archive with
-measured footprint and reproducible source/binary verification. Keep the
-same-origin archive fallback until the custom licensing questions are resolved.
-Do not merge, publish or modify/deploy McRetro.net without explicit approval.
-[Proposal](docs/LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md).
+The owner approved the release/website workflow and confirmed non-commercial
+hosting. Complete notice-bearing binary/source verification, independent review,
+protected PR/main checks and CodeQL; then publish the matching browser/source
+ZIPs and update McRetro.net through its own tested PR. Keep the same-origin
+source archive. Preserve earlier release assets and unrelated website content.
+[Deployment](docs/LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md).
 
 ## Built-In Cartridge Selection
 

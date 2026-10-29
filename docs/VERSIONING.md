@@ -1,17 +1,17 @@
-## Proposed v0.5.1 — Review Only
+## v0.5.1 — Approved Release Target
 
-This isolated proposal branch stores **0.5.1** in `VERSION`; the current public
-release remains **v0.5.0**. No v0.5.1 tag, release or website publication is
-approved. The package adds lightweight static staging and a verified complete
-corresponding-source ZIP, with a same-origin fallback and a future GitHub release
-mirror. See [the proposal](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md) and
-[licence assessment](LICENCE-AUDIT-v0.5.1.md). Approval is required before merge,
-release preparation/publication or any McRetro.net modification/deployment.
+`VERSION` is **0.5.1**. The owner approved its release and separate website update
+on 29 October 2026, after confirming non-commercial hosting. Require protected
+PR/main CI, CodeQL, complete source/notice verification and byte-exact rebuilds
+before publication. The new artifacts are `VRAMpage-MD-v0.5.1-browser.zip` and
+`VRAMpage-MD-v0.5.1-corresponding-source.zip`. Preserve v0.5.0 and older assets.
+See [deployment](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md) and the
+[licence assessment](LICENCE-AUDIT-v0.5.1.md).
 
 # Versioning policy
 
-Current public milestone: **v0.5.0** (the proposal branch stores `0.5.1`), packaged as
-`VRAMpage-MD-v0.5.0-browser.zip` for Windows, macOS and Linux browsers. It adds
+Current release target: **v0.5.1**, packaged as
+`VRAMpage-MD-v0.5.1-browser.zip` for Windows, macOS and Linux browsers. It adds
 ordered recovery, explicit session checkpoints and cross-platform distribution.
 Public v0.4.1 and older tags/assets remain immutable. Later source work uses build
 commit metadata; never silently rebuild a public asset. Publish new milestones

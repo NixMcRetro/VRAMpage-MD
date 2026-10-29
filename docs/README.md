@@ -1,6 +1,6 @@
-Proposed **v0.5.1**: [lightweight deployment review](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md)
-and [licence audit](LICENCE-AUDIT-v0.5.1.md). This branch is not a public release
-and does not authorize a website update.
+**v0.5.1**: [lightweight deployment](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md) and
+[licence audit](LICENCE-AUDIT-v0.5.1.md). The owner approved the separately gated
+release and website update; earlier public release assets remain unchanged.
 
 # VRAMpage MD documentation
 
@@ -15,7 +15,7 @@ The test program is silent; FM/PSG experiments need another cartridge.
 
 VRAMpage MD runs in modern browsers on **Windows, macOS and Linux**. Start with
 [the browser package and launch guide](RUNNING-LOCALLY.md), or read the
-[v0.5.0 release notes](RELEASE-NOTES-v0.5.0.md). [Download VRAMpage-MD-v0.5.0-browser.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip) · [SHA256SUMS.txt](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/SHA256SUMS.txt).
+[v0.5.1 release notes](RELEASE-NOTES-v0.5.1.md). [Download VRAMpage-MD-v0.5.1-browser.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.1/VRAMpage-MD-v0.5.1-browser.zip) · [SHA256SUMS.txt](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.1/SHA256SUMS.txt).
 
 The historical **[v0.4.1 complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip)**
 remains unchanged. Python 3 is needed only to run a local server; a hosted browser
@@ -33,7 +33,7 @@ and experimental; older standalone-model descriptions are historical records.
 | [Region and hardware profile plan](REGION-PROFILES-PLAN.md) | Development region selection, native lifecycle, acceptance evidence and board limits |
 | [Versioning](VERSIONING.md) | Current source version and historical identifier mapping |
 | [Run locally](RUNNING-LOCALLY.md) | Windows, macOS and Linux browser-package launch instructions |
-| [v0.5.0 release notes](RELEASE-NOTES-v0.5.0.md) | Release changes, distribution and verification limits |
+| [v0.5.1 release notes](RELEASE-NOTES-v0.5.1.md) | Release changes, distribution and verification limits |
 | [Project overview](../README.md) | Live app, test ROM, current download and source credits |
 | [Session checkpoints](SESSION-CHECKPOINT-API.md) | Explicit session-only checkpoint semantics, supported profiles and validation gates |
 | [Product roadmap](../ROADMAP.md) | Versions and video, logic and sound milestones |

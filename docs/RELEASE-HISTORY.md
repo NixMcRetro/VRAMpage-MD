@@ -1,19 +1,20 @@
-Proposed version: **v0.5.1** (unpublished, review branch only).
-Planned artifacts include `VRAMpage-MD-v0.5.1-browser.zip` and
-`VRAMpage-MD-v0.5.1-corresponding-source.zip`. Existing v0.5.0 downloads remain
-the current public release and are not replaced by this proposal.
+# VRAMpage MD Releases and Source History
 
-# VRAMpage MD releases and source history
+**Release target:** v0.5.1 — curated built-in cartridges, current browser controls,
+lightweight website packaging and complete corresponding-source distribution.
+The [GitHub release catalog](https://github.com/NixMcRetro/VRAMpage-MD/releases)
+records publication status. The owner approved this release after the required
+CI/source checks; website publication uses a separate reviewed PR.
 
-**Current public version:** v0.5.0 — the cross-platform browser app, including
-ordered HALT recovery, explicit session checkpoints and the updated chip controls.
+[Download VRAMpage-MD-v0.5.1-browser.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.1/VRAMpage-MD-v0.5.1-browser.zip) ·
+[Corresponding Source ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.1/VRAMpage-MD-v0.5.1-corresponding-source.zip) ·
+[SHA256SUMS.txt](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.1/SHA256SUMS.txt).
 
-[Download VRAMpage-MD-v0.5.0-browser.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip) · [SHA256SUMS.txt](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/SHA256SUMS.txt).
-
-Extract the complete package and follow [cross-platform launch instructions](RUNNING-LOCALLY.md).
-Python 3.8 or later is required for local serving; hosted use needs only a browser.
-GitHub's automatic source archive does not include the built emulator.
-The v0.4.1 public release and historical downloads below remain unchanged.
+The earlier **v0.5.0** release remains unchanged:
+[Complete Browser ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip).
+Extract the complete package and follow the [cross-platform launch instructions](RUNNING-LOCALLY.md).
+Python3.8 or later is needed for local serving; hosted use needs only a browser.
+GitHub's automatic source archive does not include the generated modified emulator.
 
 ## Historical Complete Mac Downloads
 
@@ -28,7 +29,7 @@ The v0.4.1 public release and historical downloads below remain unchanged.
 | [v0.2.5](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.5) | Independent VRAM leg switches | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.5/VRAMpage-MD-v0.2.5-macos.zip) |
 | [v0.2.4](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.2.4) | Consolidated workbench, RAM controls and core display fixes | [Complete Mac ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.2.4/VRAMpage-MD-v0.2.4-macos.zip) |
 
-Each runnable release has its own `SHA256SUMS.txt`, release-specific source commit, original compiled core and corresponding modified emulator source. Previous packages remain available for reproducibility; use v0.5.0 for new installations.
+Each runnable release has its own `SHA256SUMS.txt`, release-specific source commit, original compiled core and corresponding modified emulator source. Previous packages remain available for reproducibility; use the current browser release for new installations.
 
 ## Earlier milestones: source history only
 

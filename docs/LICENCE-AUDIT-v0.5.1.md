@@ -4,6 +4,42 @@
 
 The pinned upstream CMake file explicitly enumerates translation units in lines 8–63, sets `HAVE_YM3438_CORE` at line 81, and the project builder adds the runtime flags and API shims to the generated CMake file ([immutable CMake source](https://github.com/h1romas4/wasm-genplus/blob/6090aff9e9b2f578cd28882bd4571d2e35b1d674/CMakeLists.txt#L8-L83)). It compiles `z80.c`, Musashi `m68kcpu.c` and `s68kcpu.c`, Genesis Plus GX core, YM2413, YM2612, Nuked OPN2/YM3438, `blip_buf.c`, `eq.c`, both NTSC implementations, and the listed cartridge, CD and WebAssembly support files. It does **not** list Tremor or FAME translation units. Their presence in the complete source archive does not establish their inclusion in this binary. The CMake list includes `scrc32.c` (at `src/main/c/wasm/scrc32.c`), not a `core/wasm` path.
 
+## Approved Hosting and Follow-Up
+
+On 29 October 2026 the owner approved proceeding with the release/website
+workflow and confirmed **“Non-commercial hobby site; no monetization.”** Public
+free hosting is not prohibited by the quoted terms. The standalone app has no
+advertising, payment or sponsorship integration. Reassess the non-commercial
+condition if that context changes; this is a recorded owner fact, not a finding
+about an unknown monetized service.
+
+The upstream [project-wide licence at immutable commit
+9bb64c47](https://github.com/ekeeke/Genesis-Plus-GX/blob/9bb64c47f969dffe44c4bafe1f2651b88652ab36/LICENSE.txt#L2-L38)
+expressly says “Unless otherwise explicitly stated, all code in Genesis Plus GX
+is released under the following license”. Its non-commercial/source terms match
+the pinned core's terms. The pinned YM2612/YM2413 headers attribute their authors
+and origin without an alternative grant or exception. This supports applying the
+GX default licence, while preserving those headers; MAME ancestry alone is not
+evidence of a missing grant or modern MAME's different licence.
+
+Musashi's exact 836-byte licensing/copyright comment is embedded unaltered as a
+named `license.Musashi` WebAssembly custom section. Deterministic build tooling
+retains the source notice, checks its bytes and reproduces the packaged module.
+The [WebAssembly specification](https://webassembly.github.io/spec/versions/core/WebAssembly-2.0.pdf)
+defines custom sections as metadata ignored by execution semantics. Removing
+only this added section recovers the previous binary byte for byte; actual
+module validation, browser execution and independent source rebuild remain
+required. The historical raw hashes above identify the original executable
+sections; the release build record identifies the notice-bearing binary hash.
+
+The same-origin source ZIP remains the chosen accompaniment, with the exact
+served binaries included in that ZIP. This avoids relying on a GitHub-only
+interpretation. A matching release artifact is an additional mirror. These
+concrete source/notice measures and the confirmed non-commercial context support
+proceeding with this distribution; no licence itself requires an external legal
+opinion as a prerequisite. This is a reasoned packaging assessment, not a legal
+guarantee for every possible future hosting arrangement.
+
 ## Licence and attribution inventory
 
 | Compiled component | Evidence and material terms | Distribution implication |
@@ -30,7 +66,7 @@ The LGPL components add separate obligations. LGPL 2.1 section 6(a) expressly pe
 
 The core's non-commercial condition warrants an owner decision on the proposed host/activity. Whether ordinary site advertising, analytics, sponsorship or other monetization makes this distribution a “commercial product or activity” is not resolved by the source wording or this audit. This report makes no finding that McRetro.net violates that condition. The installed Emscripten 4.0.23 `LICENSE` describes the tool as dual MIT / University of Illinois-NCSA licensed and says third-party compiler subdirectory code is not used by default; this audit makes no blanket GPL-exception claim; the actual link trace and retained standard-runtime notices below supplement that compiler-level notice. Retain applicable Emscripten/runtime notices with the package after checking the actual generated JS. ROM and trademark rights are outside these component licences, and no third-party game ROM is part of this audit.
 
-**Limit.** This is a factual source/build inventory and conservative packaging recommendation, not legal advice. Obtain qualified legal review for the non-commercial hosting interpretation and the LGPL linked-WASM delivery question before treating those points as cleared.
+**Limit.** This is a factual source/build inventory and conservative packaging recommendation, not legal advice. The owner has confirmed the non-commercial context, and complete source plus byte-exact rebuilding supplies the technical basis for the LGPL source/relink route. Seek qualified clarification if the hosting context changes or a different source-delivery arrangement is proposed.
 
 ## Questions That Packaging Alone Does Not Settle
 
@@ -38,24 +74,21 @@ The core's non-commercial condition warrants an owner decision on the proposed h
   say that an external link satisfies “include”. Keep the complete same-origin
   archive as the default. Qualified advice or rights-holder clarification is
   needed before removing it; LGPL guidance cannot answer that separate clause.
-- **Musashi binary wording:** the exact quoted condition refers to notices in
-  “any binary files”. A notices page and source archive preserve the text, but
-  this audit does not establish that this satisfies a literal reading for the
-  standalone WASM file. Seek clarification or a reviewed notice-embedding change
-  before declaring this point cleared. No runtime bytes are changed here.
-- **Legacy FM provenance:** the pinned YM2612/YM2413 headers identify authors and
-  MAME provenance without a complete standalone redistribution grant in those
-  headers. Retain the full notices and seek clarification if the composite
-  upstream project permission does not establish the necessary rights. Do not
-  silently relabel this material as modern MAME's GPL/BSD code.
-- **Non-commercial activity:** source availability does not remove the
-  non-commercial restrictions. This audit does not determine whether this
-  particular site's advertising or other activity is within the grant.
+- **Musashi binary wording:** the notice-bearing build puts the exact source
+  notice inside the WASM itself, addressing the literal binary-notice condition
+  without changing executable sections. Keep the metadata and its verification
+  in future builds; a separate web page alone was not the chosen solution.
+- **Legacy FM provenance:** the project-wide default grant and absence of a
+  file-specific alternative provide the permission basis described above.
+  Preserve author/MAME attributions; do not relabel this code as modern MAME GPL.
+- **Non-commercial activity:** source availability does not remove these terms.
+  The owner confirmed this distribution is an unmonetized hobby activity. Revisit
+  the grant before introducing advertising, paid access or commercial use.
 
-The proposed PR is a technical packaging candidate, not permission to deploy.
-The same-origin ZIP removes an avoidable source-location ambiguity and must
-remain available with the corresponding runtime. It does not resolve the
-other interpretation questions above. The pinned Emscripten licence text is
+The owner has now approved the release/deployment workflow, subject to its
+technical review and CI gates. The same-origin ZIP must remain available with
+the corresponding runtime; GitHub-only delivery remains outside this decision.
+The pinned Emscripten licence text is
 preserved in `licences/EMSCRIPTEN-LICENSE.txt`; the compiler/system-component
 exception is not used to omit the emulator or application source.
 

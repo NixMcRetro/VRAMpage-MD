@@ -1,7 +1,7 @@
-Proposed **v0.5.1** review builds keep the complete local browser package.
-The lightweight website bundle is a separate artifact; it carries working local
-source/licence links and a compressed corresponding-source archive. Publication
-and deployment remain unapproved. [Deployment proposal](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md).
+**v0.5.1** retains the complete local browser package. The lightweight website
+bundle is a separate artifact with working source/licence links and one complete
+compressed source archive. The owner approved the release and separate website
+update, subject to verification. [Deployment](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md).
 
 # Run VRAMpage MD in Your Browser
 
@@ -12,13 +12,13 @@ a browser. Running a local copy requires Python 3 for its small HTTP server.
 
 ## Get the Complete Browser Package
 
-[Download VRAMpage-MD-v0.5.0-browser.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip) · [SHA256SUMS.txt](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/SHA256SUMS.txt).
+[Download VRAMpage-MD-v0.5.1-browser.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.1/VRAMpage-MD-v0.5.1-browser.zip) · [SHA256SUMS.txt](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.1/SHA256SUMS.txt).
 
 Extract the complete ZIP and open its **VRAMpage-MD** folder. BUILD-INFO.json
-identifies the exact released source commit. See [release notes](RELEASE-NOTES-v0.5.0.md).
+identifies the exact released source commit. See [release notes](RELEASE-NOTES-v0.5.1.md).
 
 The historical [VRAMpage-MD-v0.4.1-macos.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip)
-remains a public download with its original assets. It predates v0.5.0's
+remains a public download with its original assets. It predates v0.5.1's
 new controls. **Code → Download ZIP** on GitHub is a different, source-only
 archive and cannot run without building the emulator first.
 
@@ -44,7 +44,7 @@ there to stop the server. No online account is needed to run an extracted copy.
 
 Development builds and future releases start the approved Demo Cart. Use
 **Choose Cartridge** for the original Demo Cart, silent Colour Test, or
-**Load Your Own ROM…**. The published v0.5.0 package still has its original
+**Load Your Own ROM…**. The published v0.5.1 package still has its original
 **Load ROM** control. Click **Enable Sound** separately when ready. Cartridge
 files are read locally and are never uploaded. Built-in selections persist
 within the browser-tab session; local file contents are not stored or restored

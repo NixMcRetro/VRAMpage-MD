@@ -1,21 +1,28 @@
-## Proposed v0.5.1 Lightweight Website — Approval Required
+## v0.5.1 Lightweight Website — Approved Workflow
 
 Use `python3 scripts/package-website.py --output /workspace/vrampage-review` to
 prepare a separate, empty local review directory after building the core and
 approved cartridges. It does not touch McRetro.net. The staging helper uses this
-same package builder, but must not be run against the website repository until
-explicit approval. Do not copy the entire development `site/` directory.
+same package builder. The owner approved the v0.5.1 release/website workflow on
+29 October 2026 and confirmed non-commercial hosting. Prepare the replacement
+on a separate website branch and review the exact subtree diff; do not copy the
+entire development `site/` directory.
 
 The thin bundle includes runtime files, approved selectable cartridges, a small
 Source Code & Licences page and one complete version-matched source ZIP. The ZIP
 is also prepared for attachment to the matching GitHub release; GitHub's automatic
 source snapshot does not contain all generated modified emulator sources.
-GitHub-only source delivery is not enabled: custom licence interpretation remains
-unresolved. See [layout, size and verification](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md)
-and [the source-level licence assessment](LICENCE-AUDIT-v0.5.1.md).
+GitHub-only source delivery is not enabled. The exact Musashi notice also remains
+inside the compiled WASM as metadata. See [layout, size and
+verification](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md) and [the source-level licence
+assessment](LICENCE-AUDIT-v0.5.1.md), including the confirmed hosting context and
+project-wide FM permission basis.
 
-No v0.5.1 publication, merge or deployment is approved. The historical instructions
-below describe the public v0.5.0 workflow and must not replace existing assets.
+After protected PR/main checks and CodeQL pass, publish the new v0.5.1 browser
+and corresponding-source ZIPs with checksums; verify the downloads before merging
+the website PR. Its Jekyll build must preserve every runtime/ROM/source file
+unchanged. The historical instructions below describe v0.5.0 and must not replace
+that public release's existing assets.
 
 # Releases and deployment
 
