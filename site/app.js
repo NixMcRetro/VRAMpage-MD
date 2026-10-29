@@ -11,6 +11,7 @@
   let frameMs = 1000 / NTSC_FPS, targetFps=NTSC_FPS;
   let videoWidth=GAME_WIDTH, videoHeight=GAME_HEIGHT;
   let requestedRegion=1, activeRegionRequest=1;
+  const FM_OUTPUT_MODEL_NAMES=['Discrete','Integrated'];
   const AUDIO_RATE = 44100;
   const PRESETS = [[0,1], [0,2], [1,3], [2,4], [3,5], [4,6], [5,7], [6,7]];
   const QUICK_RAM_PAIRS = Array.from({length:5},(_,i)=>Array.from({length:4-i},(_,j)=>[i+10,i+11+j])).flat();
@@ -100,6 +101,7 @@
     const s=readRegionState();
     return {schemaVersion:1,available:!!(started&&s?.loaded),requestedRegion,
       activeRequestedRegion:started?activeRegionRequest:null,
+      fmOutputModel:fmOutputModelObservation(),
       reason:!regionApiReady()?'api-unavailable':!s||started&&!s.loaded?'state-unavailable':!started?'no-cartridge':'none',
       regionCode:started?s?.regionCode??null:null,pal:started?s?.pal??null:null,
       masterClock:started?s?.masterClock??null:null,frameRate:started?s?.frameRate??null:null,
@@ -146,6 +148,64 @@
     } catch(error) {
       $('regionSelect').value=String(requestedRegion);
       $('regionStatus').textContent=error.message;
+    }
+  }
+
+  function fmOutputModelApiReady() {
+    return typeof emulator?._set_fm_output_model_request==='function' &&
+      typeof emulator?._get_fm_output_model_state==='function';
+  }
+  function readFmOutputModelState() {
+    if (!fmOutputModelApiReady()) return null;
+    try {
+      const s=emulator._get_fm_output_model_state();
+      if (!s || s.schemaVersion!==1 || s.available!==true || typeof s.supported!=='boolean' ||
+          typeof s.loaded!=='boolean' || !['discrete','integrated'].includes(s.requestedModel)) return null;
+      if (s.loaded) {
+        if (!['mame-opn2','nuked-opn2'].includes(s.backend)) return null;
+        if (s.supported && (s.backend!=='mame-opn2' || !['discrete','integrated'].includes(s.effectiveModel))) return null;
+        if (!s.supported && s.effectiveModel!==null) return null;
+      } else if (s.effectiveModel!==null || s.backend!==null) return null;
+      return {schemaVersion:1,available:true,supported:s.supported,loaded:s.loaded,
+        requestedModel:s.requestedModel,effectiveModel:s.effectiveModel,backend:s.backend,reason:s.reason};
+    } catch (_) { return null; }
+  }
+  function fmOutputModelObservation() {
+    const s=readFmOutputModelState();
+    const loaded=!!(started&&s?.loaded);
+    return {schemaVersion:1,available:!!s,supported:s?.supported??false,loaded,
+      requestedModel:s?.requestedModel??null,effectiveModel:loaded&&s.supported?s.effectiveModel:null,
+      backend:loaded?s.backend:null,
+      reason:!fmOutputModelApiReady()?'api-unavailable':!s?'state-unavailable':!s.supported?s.reason:
+        loaded?'none':started?'state-unavailable':'not-started'};
+  }
+  function refreshFmOutputModelState(requireLoaded=false) {
+    const s=readFmOutputModelState();
+    if (requireLoaded && s?.available && s.supported &&
+        (!s.loaded || s.backend!=='mame-opn2' || !s.effectiveModel))
+      throw new Error('Core FM Output Model state is unavailable after cartridge activation.');
+    const select=$('fmOutputModelSelect');
+    select.disabled=!s?.available||!s.supported;
+    select.value=s?.available&&s.supported?(s.requestedModel==='discrete'?'0':'1'):'';
+    const status=!fmOutputModelApiReady()?'FM Output Model Unavailable · Core Does Not Report It':!s?
+      'FM Output Model State Unavailable':!s.supported?`FM Output Model Unsupported · ${s.backend??'Backend Unknown'}`:
+      !started?`${FM_OUTPUT_MODEL_NAMES[s.requestedModel==='discrete'?0:1]} · Applied on ROM Load`:
+      !s.loaded?'FM Output Model State Unavailable':s.requestedModel!==s.effectiveModel?
+      `${FM_OUTPUT_MODEL_NAMES[s.requestedModel==='discrete'?0:1]} Pending · Use Clean Restart`:
+      `${FM_OUTPUT_MODEL_NAMES[s.effectiveModel==='discrete'?0:1]} Active · MAME OPN2`;
+    if ($('fmOutputModelStatus').textContent!==status) $('fmOutputModelStatus').textContent=status;
+  }
+  function stageFmOutputModel() {
+    const select=$('fmOutputModelSelect'),value=select.value;
+    try {
+      if (!fmOutputModelApiReady() || !/^[01]$/.test(value))
+        throw new Error('FM Output Model selection is unavailable or invalid.');
+      const result=emulator._set_fm_output_model_request(Number(value));
+      if (result!==0) throw new Error(`FM Output Model request refused (status ${result}).`);
+      refreshFmOutputModelState();
+    } catch(error) {
+      refreshFmOutputModelState();
+      $('fmOutputModelStatus').textContent=error.message;
     }
   }
 
@@ -3144,6 +3204,7 @@
     // scanlines. It never changes the emulator's memory or signal simulation.
     const raw = $('rawVideoToggle').checked;
     refreshRegionState();
+    refreshFmOutputModelState();
     const result = frameAdapter.copyActiveFrame(frameView, imageData.data, {raw,width:videoWidth,height:videoHeight});
     if (!raw) rgbEncoderPlan.apply(imageData.data);
     ctx.putImageData(imageData, 0, 0);
@@ -3247,7 +3308,10 @@
       const target=new Uint8Array(emulator.HEAPU8.buffer,ptr,bytes.length);
       if (typeof emulator._discard_session_checkpoint==='function') emulator._discard_session_checkpoint();
       sessionCheckpoint=null;checkpointEvents=[];checkpointSegment=0;
-      if(regionApiReady()&&requestedRegion!==activeRegionRequest)blockHeldInputs();
+      const pendingFmModel=readFmOutputModelState();
+      if(regionApiReady()&&requestedRegion!==activeRegionRequest ||
+          pendingFmModel?.loaded&&pendingFmModel.supported&&pendingFmModel.requestedModel!==pendingFmModel.effectiveModel)
+        blockHeldInputs();
       else {checkpointBlockedKeys.clear();checkpointBlockGamepad=false;}
       checkpointMessage='No Session Checkpoint';
       target.set(bytes);
@@ -3261,6 +3325,7 @@
       coreMutated=true; // _start can mutate native state before it throws.
       emulator._start();
       refreshRegionState(true);
+      refreshFmOutputModelState(true);
       activeRegionRequest=requestedRegion;
       if (typeof emulator._set_vram_short !== 'function')
         throw new Error('Core missing _set_vram_short. You must build the patched core (not the upstream prebuilt WASM).');
@@ -3308,6 +3373,7 @@
       resetCpuRecoveryObservation();
       updateLogicControls();
       refreshRegionState();
+      refreshFmOutputModelState();
       stamp(`Cartridge inserted: ${name} (${regionApiReady()?EFFECTIVE_REGION_NAMES[readRegionState()?.regionCode]??'Region Unknown':'fixed NTSC-U'})`);
     } catch (error) {
       if (coreMutated) {
@@ -3505,6 +3571,7 @@
       updateLogicControls();
       message('INSERT YOUR CARTRIDGE','Choose a built-in cartridge or load your own compatible Mega Drive ROM. Your file stays in this browser.');
       refreshRegionState();
+      refreshFmOutputModelState();
       stamp('Core loaded; ready for cartridge.');
 
     } catch(e) {
@@ -3620,6 +3687,7 @@
     $('saveCheckpointBtn').addEventListener('click',saveCheckpoint);
     $('restoreCheckpointBtn').addEventListener('click',restoreCheckpoint);
     $('regionSelect').addEventListener('change',stageRegion);
+    $('fmOutputModelSelect').addEventListener('change',stageFmOutputModel);
     $('armCpuRecoveryBtn').addEventListener('click',()=>{
       cpuRecoveryEnabled=!cpuRecoveryEnabled;resetCpuRecoveryObservation();updateLogicControls();
     });

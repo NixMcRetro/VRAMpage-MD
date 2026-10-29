@@ -49,6 +49,9 @@ HELPER_FILES = (
     "region_profile_runtime.c",
     "region_profile_runtime.h",
     "region_profile_api.js",
+    "fm_output_model_runtime.c",
+    "fm_output_model_runtime.h",
+    "fm_output_model_api.js",
 )
 PATCHED_FILES = (
     "src/main/c/wasm/wasm.c",
@@ -173,6 +176,7 @@ def patch_cmake(cmake: Path) -> None:
         'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/z80_ram_bridge_api.js")',
         'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/work_ram_data_mask_api.js")',
         'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/region_profile_api.js")',
+        'add_compile_flags(LD "--pre-js=${CMAKE_SOURCE_DIR}/../scripts/fm_output_model_api.js")',
     )
     if any(flag in text for flag in flags):
         raise RuntimeError("Pinned source already contains runtime profile flags")
@@ -256,6 +260,7 @@ def copy_package(root: Path, upstream: Path, work: Path, output: Path) -> None:
         "Profile flags: VRAM_TX_RUNTIME, HEAPU8/HEAPF32 and build-owned pre-js API shims.\n"
         "Region selection is runtime-only; requested IDs are 0 Auto, 1 NTSC-U, 2 PAL Europe, 3 NTSC-J, 4 Japan PAL.\n"
         "Effective timing and viewport are read from the initialized native core.\n"
+        "FM Output Model is staged as Discrete or Integrated; the active MAME model is read after core initialization.\n"
         f"genplus.js SHA-256: {artifact_hashes['genplus.js']}\n"
         f"genplus.wasm SHA-256: {artifact_hashes['genplus.wasm']}\n"
         "No VRAM_TX_DIAGNOSTIC bridge is compiled into this profile.\n\n"

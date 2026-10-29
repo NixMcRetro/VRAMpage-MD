@@ -5,17 +5,17 @@ const path = require('node:path');
 const {fmToneCartridge, z80FmAndPsgCartridge, createCore, nextAudio, fmStatusProbe, fmStatusPorts} =
   require('./test_fm_data_runtime.cjs');
 
-const [proofArg, runtimeArg, normalArg] = process.argv.slice(2);
-assert.ok(proofArg && runtimeArg && normalArg,
-  'Pass proof, production runtime, and unmodified production core paths');
-const proofPath = path.resolve(proofArg);
+const [runtimeArg, normalArg] = process.argv.slice(2);
+assert.ok(runtimeArg && normalArg,
+  'Pass the production runtime and unmodified production core paths');
 const runtimePath = path.resolve(runtimeArg);
 const normalPath = path.resolve(normalArg);
 
 async function modelCore(model, rom) {
-  return createCore(proofPath, rom, core => {
-    assert.equal(core._fm_model_proof_request(model), 0);
-    assert.equal(core._fm_model_proof_pending_model(), model);
+  return createCore(runtimePath, rom, core => {
+    assert.equal(core._set_fm_output_model_request(model), 0);
+    assert.equal(core._get_fm_output_model_state().requestedModel,
+      model === 0 ? 'discrete' : 'integrated');
   });
 }
 
@@ -52,43 +52,38 @@ const digest = data => crypto.createHash('sha256').update(Buffer.from(data.buffe
 
 async function main() {
   const rom = fmToneCartridge();
-  const proofDefault = await createCore(proofPath, rom);
   const normal = await createCore(normalPath, rom);
   const runtime = await createCore(runtimePath, rom);
-  const proofDefaultPcm = pcm(proofDefault), proofDefaultState = visibleState(proofDefault);
   const normalPcm = pcm(normal), normalState = visibleState(normal);
   const runtimePcm = pcm(runtime), runtimeState = visibleState(runtime);
-  assert.equal(proofDefault._fm_model_proof_active_model(), 0);
-  assertPcmEqual(proofDefaultPcm, runtimePcm, 'default proof core matches production runtime');
-  assertPcmEqual(proofDefaultPcm, normalPcm, 'default proof core matches unmodified production core');
-  assert.deepEqual(proofDefaultState, runtimeState,
-    'default proof core preserves production runtime pixels and native memory progress');
-  assert.deepEqual(proofDefaultState, normalState,
-    'default proof core preserves unmodified production pixels and native memory progress');
+  const defaultModel = runtime._get_fm_output_model_state();
+  assert.deepEqual(defaultModel, {schemaVersion:1,available:true,supported:true,loaded:true,
+    requestedModel:'discrete',effectiveModel:'discrete',backend:'mame-opn2',reason:'none'});
   assertPcmEqual(runtimePcm, normalPcm, 'default proof core matches shipped production core');
-  assert.deepEqual(fmStatusPorts(proofDefault), fmStatusPorts(runtime),
-    'default proof core preserves production runtime status-port reads');
-  assert.deepEqual(fmStatusPorts(proofDefault), fmStatusPorts(normal),
-    'default proof core preserves unmodified production status-port reads');
+  assert.deepEqual(runtimeState, normalState,
+    'default runtime preserves unmodified production pixels and native memory progress');
   assert.deepEqual(fmStatusProbe(runtime), fmStatusProbe(normal),
     'default proof core preserves production FM status reads');
+  assert.deepEqual(fmStatusPorts(runtime), fmStatusPorts(normal),
+    'default runtime preserves production status-port reads');
 
-  const invalid = await createCore(proofPath, rom, core => {
-    assert.equal(core._fm_model_proof_active_model(), -1,
-      'module has no effective FM model before cartridge start');
-    assert.equal(core._fm_model_proof_pending_model(), 0,
-      'module defaults its pending FM model to Discrete');
-    const before = core._fm_model_proof_pending_model();
-    for (const value of [-1, 2, 3, 1.5]) assert.equal(core._fm_model_proof_request(value), 1);
-    assert.equal(core._fm_model_proof_pending_model(), before,
-      'unsupported requests leave pending selection unchanged');
+  const invalid = await createCore(runtimePath, rom, core => {
+    const before = core._get_fm_output_model_state();
+    assert.equal(before.loaded, false, 'native model is not effective before cartridge start');
+    assert.equal(before.requestedModel, 'discrete', 'pending selection defaults to Discrete');
+    assert.equal(before.effectiveModel, null);
+    for (const value of [-1, 2, 3, 1.5, NaN, Infinity])
+      assert.equal(core._set_fm_output_model_request(value), 1);
+    assert.deepEqual(core._get_fm_output_model_state(), before,
+      'invalid requests leave pending and effective state unchanged');
   });
-  assert.equal(invalid._fm_model_proof_active_model(), 0);
+  assert.equal(invalid._get_fm_output_model_state().effectiveModel, 'discrete');
 
   const modelRuns = [];
   for (const model of [0, 1]) {
     const first = await modelCore(model, rom);
-    assert.equal(first._fm_model_proof_active_model(), model);
+    assert.equal(first._get_fm_output_model_state().effectiveModel,
+      model === 0 ? 'discrete' : 'integrated');
     const samples = pcm(first), status = fmStatusProbe(first), ports = fmStatusPorts(first);
     assert.equal(status[0] & 0x80, 0x80, `model ${model}: immediate status reports busy`);
     assert.equal(status[1] & 0x80, 0, `model ${model}: delayed status clears busy`);
@@ -195,10 +190,8 @@ async function main() {
       z80CutWrites: z80CutState.inputWrites, z80CutChanged: z80CutState.changedWrites,
       z80PsgWrites: psgState.inputWrites, z80PsgChanged: psgState.changedWrites});
   }
-  console.log(JSON.stringify({proof:'MAME FM Output Model actual-WASM',
-    defaultParity:{proof:{leftPcm:digest(proofDefaultPcm.left),rightPcm:digest(proofDefaultPcm.right),
-        pixels:digest(proofDefaultState.pixels),ram:digest(proofDefaultState.ram)},
-      runtime:{leftPcm:digest(runtimePcm.left),rightPcm:digest(runtimePcm.right),
+  console.log(JSON.stringify({proof:'Production MAME FM Output Model actual-WASM',
+    defaultParity:{runtime:{leftPcm:digest(runtimePcm.left),rightPcm:digest(runtimePcm.right),
         pixels:digest(runtimeState.pixels),ram:digest(runtimeState.ram)},
       normal:{leftPcm:digest(normalPcm.left),rightPcm:digest(normalPcm.right),
         pixels:digest(normalState.pixels),ram:digest(normalState.ram)}},

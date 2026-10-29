@@ -72,18 +72,11 @@ jobs:
           node tests/test_region_profile_wasm.cjs site/core/genplus.js "$RUNNER_TEMP/normal-core/genplus.js"
           node tests/test_session_checkpoint_runtime.cjs site/core/genplus.js "$RUNNER_TEMP/normal-core/genplus.js"
           node tests/test_wasm_logic.cjs site/core/genplus.js
-      - name: Verify isolated MAME FM model output and checkpoint replay
+      - name: Verify MAME FM output model PCM, status and fault routing
         shell: bash
         run: |
-          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
-          VRAMPAGE_WASM_GENPLUS="$GITHUB_WORKSPACE/vendor/wasm-genplus" \
-            python3 scripts/build-fm-model-proof.py "$RUNNER_TEMP/fm-model-proof"
-          node tests/test_fm_model_proof.cjs \
-            "$RUNNER_TEMP/fm-model-proof/core/genplus.js" \
+          node tests/test_fm_output_model_runtime.cjs \
             site/core/genplus.js "$RUNNER_TEMP/normal-core/genplus.js"
-          node tests/test_session_checkpoint_runtime.cjs \
-            site/core/genplus.js "$RUNNER_TEMP/normal-core/genplus.js" \
-            "$RUNNER_TEMP/fm-model-proof/core/genplus.js"
       - name: Verify original Demo Cart v0.3.5 inside real Genesis Plus GX
         shell: bash
         run: |

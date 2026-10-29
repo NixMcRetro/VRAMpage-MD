@@ -435,7 +435,7 @@ footer { padding-top:9px; font-size:10px; }
 .machine-options { display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; padding:0 10px; border-bottom:1px solid var(--rule); font-size:11px; }
 .machine-options label { font-weight:700; }
 .machine-options select { max-width:100%; min-height:24px; padding-top:1px; padding-bottom:1px; }
-#regionStatus { color:var(--muted); flex:1 1 180px; }
+#regionStatus, #fmOutputModelStatus { color:var(--muted); flex:1 1 180px; }
 #machineSummary { text-align:right; }
 /* Keep the staged Region control within the existing window-height budget. */
 .screen-section > .section-heading { padding-top:4px; padding-bottom:3px; }

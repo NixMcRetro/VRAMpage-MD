@@ -18,6 +18,8 @@
       ||key==='logicFault'&&!!value&&typeof value==='object'&&!Array.isArray(value)&&typeof value.kind==='string'
       ||['fmInputFault','psgInputFault','z80RamFault','rgbEncoderFault'].includes(key)&&!!value&&typeof value==='object'&&!Array.isArray(value)&&typeof value.available==='boolean'
       ||key==='corePin'&&typeof value==='string'&&/^[a-f0-9]{40}$/.test(value)
+      ||key==='machine'&&!!value&&typeof value==='object'&&!Array.isArray(value)&&
+        !!value.fmOutputModel&&typeof value.fmOutputModel==='object'&&!Array.isArray(value.fmOutputModel)&&value.fmOutputModel.schemaVersion===1
       ||key==='modelVersion'&&typeof value==='string'&&value.length>0;
     if (!Object.keys(data).some(key=>recognizable(key,data[key])))
       throw new Error('JSON does not look like a VRAMpage MD experiment export.');
@@ -101,6 +103,25 @@
       ['linesPerFrame','Lines Per Frame',v=>v===262||v===313],
       ['width','Video Width',v=>isInteger(v,1,640)],['height','Video Height',v=>isInteger(v,1,480)],
       ['interlaced','Interlaced',isBoolean]]) field(label,['machine',key],['machine','available'],valid);
+    const fmModel=(label,key,requireLoaded,requireSupported,requireMame,valid)=>{
+      const left=path(a,['machine','fmOutputModel']),right=path(b,['machine','fmOutputModel']);
+      const usable=state=>isRecord(state)&&state.schemaVersion===1&&state.available===true&&
+        (!requireLoaded||state.loaded===true)&&(!requireSupported||state.supported===true)&&
+        (!requireMame||state.backend==='mame-opn2');
+      const validValue=value=>valid(value);
+      const av=left?.[key],bv=right?.[key];
+      const aUsable=usable(left),bUsable=usable(right);
+      if(!aUsable||!bUsable||!hasPath(a,['machine','fmOutputModel',key])||
+          !hasPath(b,['machine','fmOutputModel',key])||!validValue(av)||!validValue(bv)) {
+        rows.push({label,a:aUsable&&validValue(av)?show(av):'Unknown',
+          b:bUsable&&validValue(bv)?show(bv):'Unknown',status:'unknown'});return;
+      }
+      rows.push({label,a:show(av),b:show(bv),status:equal(av,bv)?'match':'mismatch'});
+    };
+    fmModel('FM Output Model Supported','supported',false,false,false,isBoolean);
+    fmModel('Requested FM Output Model','requestedModel',false,false,false,v=>v==='discrete'||v==='integrated');
+    fmModel('Effective FM Output Model','effectiveModel',true,true,true,v=>v==='discrete'||v==='integrated');
+    fmModel('FM Output Backend','backend',true,false,false,v=>v==='mame-opn2'||v==='nuked-opn2');
     const audio=(name,key)=>{
       for(const [label,fieldName] of [['Configured','configured'],['Effective','effective'],['Data Mask','dataMask'],['Bridge A','bridgeA'],['Bridge B','bridgeB']]) {
         const valid=fieldName==='configured'||fieldName==='effective'?isBoolean:

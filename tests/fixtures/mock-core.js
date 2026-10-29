@@ -344,6 +344,29 @@ window.Module = async () => {
         linesPerFrame:id===2||id===4?313:262,width:320,height:id===2||id===4?240:224,interlaced:false});
     };
   }
+  if (window.__fmOutputModelCore) {
+    const model={schemaVersion:1,available:true,supported:true,loaded:false,requestedModel:'discrete',
+      effectiveModel:null,backend:null,reason:'not-started'};
+    window.mockCore.fmOutputModel=model;
+    core._set_fm_output_model_request=id=>{
+      if(window.mockCore.rejectFmOutputModel || !Number.isInteger(id) || id<0 || id>1)return 1;
+      if(!model.supported)return 2;
+      model.requestedModel=id===0?'discrete':'integrated';return 0;
+    };
+    core._get_fm_output_model_state=()=>{
+      if(window.mockCore.throwFmOutputModelState)throw Error('FM output model telemetry failed');
+      return {...model};
+    };
+    const nativeStart=core._start;
+    core._start=()=>{
+      nativeStart();
+      model.backend=window.mockCore.fmOutputModelBackend||'mame-opn2';
+      model.supported=model.backend==='mame-opn2';
+      model.loaded=true;
+      model.effectiveModel=model.supported?model.requestedModel:null;
+      model.reason=model.supported?'none':'unsupported-backend';
+    };
+  }
   window.mockCore.core=core;
   return core;
 };

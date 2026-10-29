@@ -54,7 +54,7 @@ class BrowserLogicTests(unittest.TestCase):
             context.close()
         self.assertEqual(self.errors, [], "Uncaught application errors")
 
-    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False, manual_frames=False, session_checkpoint=False, automatic_recovery=False, legacy_z80_ram=False, region_core=False, demo_rom=False, stalled_demo=False, legacy_ram_data=False, legacy_write_inhibit=False):
+    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False, manual_frames=False, session_checkpoint=False, automatic_recovery=False, legacy_z80_ram=False, region_core=False, demo_rom=False, stalled_demo=False, legacy_ram_data=False, legacy_write_inhibit=False, fm_output_model_core=False, unsupported_fm_output_model=False):
         context = self.browser.new_context(
             viewport={"width": 1366, "height": 768},
             color_scheme="light",
@@ -68,6 +68,10 @@ class BrowserLogicTests(unittest.TestCase):
             page.add_init_script("window.__legacyRamDataCore = true;")
         if region_core:
             page.add_init_script("window.__regionCore = true;")
+        if fm_output_model_core:
+            page.add_init_script("window.__fmOutputModelCore = true;")
+        if unsupported_fm_output_model:
+            page.add_init_script("window.__unsupportedFmOutputModel = true;")
         if legacy_z80_ram:
             page.add_init_script("window.__legacyZ80RamCore = true;")
         if session_checkpoint:
@@ -493,6 +497,104 @@ class BrowserLogicTests(unittest.TestCase):
         page.evaluate('stepTestFrame();stepTestFrame();stepTestFrame()')
         self.assertEqual(page.evaluate('mockCore.inputs[6]'),0)
         page.keyboard.up('ArrowRight')
+
+    def test_fm_output_model_unavailable_legacy_core_still_starts(self):
+        expect(self.page.locator('#fmOutputModelSelect')).to_be_disabled()
+        expect(self.page.locator('#fmOutputModelStatus')).to_contain_text('Unavailable')
+        self.load_rom(self.page)
+        model=self.export_payload_for(self.page)['machine']['fmOutputModel']
+        self.assertEqual(model,{'schemaVersion':1,'available':False,'supported':False,'loaded':False,
+            'requestedModel':None,'effectiveModel':None,'backend':None,'reason':'api-unavailable'})
+
+    def test_fm_output_model_is_staged_through_cpu_reset_restore_and_restart(self):
+        page=self.new_page(fm_output_model_core=True,manual_frames=True,session_checkpoint=True)
+        expect(page.locator('#fmOutputModelSelect')).to_be_enabled()
+        expect(page.locator('#fmOutputModelStatus')).to_contain_text('Discrete')
+        expect(page.locator('#fmOutputModelStatus')).to_contain_text('Applied on ROM Load')
+        page.locator('#fmOutputModelSelect').select_option('1')
+        expect(page.locator('#fmOutputModelStatus')).to_contain_text('Integrated')
+        self.load_rom(page)
+        expect(page.locator('#fmOutputModelStatus')).to_contain_text('Integrated Active')
+        page.evaluate('stepTestFrame();stepTestFrame()')
+        page.locator('#saveCheckpointBtn').evaluate("el=>{for(let p=el.parentElement;p;p=p.parentElement)if(p.tagName==='DETAILS')p.open=true;}")
+        page.locator('#saveCheckpointBtn').click()
+        page.keyboard.down('ArrowRight')
+        starts=page.evaluate('mockCore.starts')
+        ticks=page.evaluate('mockCore.ticks')
+        page.locator('#fmOutputModelSelect').select_option('0')
+        expect(page.locator('#fmOutputModelStatus')).to_contain_text('Discrete Pending')
+        self.assertEqual(page.evaluate('mockCore.fmOutputModel.effectiveModel'),'integrated')
+        self.assertEqual(page.evaluate('mockCore.starts'),starts)
+        self.assertEqual(page.evaluate('mockCore.ticks'),ticks)
+        expect(page.locator('#restoreCheckpointBtn')).to_be_enabled()
+        page.locator('#logicCpuResetBtn').click()
+        self.assertEqual(page.evaluate('mockCore.fmOutputModel.effectiveModel'),'integrated')
+        expect(page.locator('#restoreCheckpointBtn')).to_be_enabled()
+        page.locator('#restoreCheckpointBtn').click()
+        self.assertEqual(page.evaluate('mockCore.fmOutputModel.effectiveModel'),'integrated')
+        machine=self.export_payload_for(page)['machine']
+        self.assertFalse(machine['available'], 'FM identity remains independently observed when Region API is absent')
+        self.assertEqual(machine['fmOutputModel'],{'schemaVersion':1,'available':True,'supported':True,'loaded':True,
+            'requestedModel':'discrete','effectiveModel':'integrated','backend':'mame-opn2','reason':'none'})
+        page.locator('#resetBtn').click()
+        expect(page.locator('#fmOutputModelStatus')).to_contain_text('Discrete Active')
+        expect(page.locator('#restoreCheckpointBtn')).to_be_disabled()
+        page.evaluate('stepTestFrame();stepTestFrame();stepTestFrame()')
+        self.assertEqual(page.evaluate('mockCore.inputs[6]'),0,
+            'Clean Restart releases a held input while applying the pending model')
+        page.keyboard.up('ArrowRight')
+        page.keyboard.down('ArrowRight')
+        page.evaluate('stepTestFrame();stepTestFrame();stepTestFrame()')
+        self.assertEqual(page.evaluate('mockCore.inputs[6]'),1)
+        page.keyboard.up('ArrowRight')
+
+    def test_fm_output_model_rejection_unknown_state_and_unsupported_backend(self):
+        page=self.new_page(fm_output_model_core=True)
+        page.evaluate('mockCore.rejectFmOutputModel=true')
+        page.locator('#fmOutputModelSelect').select_option('1')
+        expect(page.locator('#fmOutputModelSelect')).to_have_value('0')
+        expect(page.locator('#fmOutputModelStatus')).to_contain_text('refused')
+        self.assertEqual(page.evaluate('mockCore.fmOutputModel.requestedModel'),'discrete')
+        page.evaluate('mockCore.rejectFmOutputModel=false;mockCore.throwFmOutputModelState=true')
+        expect(page.locator('#fmOutputModelSelect')).to_be_disabled()
+        expect(page.locator('#fmOutputModelStatus')).to_contain_text('State Unavailable')
+
+        unsupported=self.new_page(fm_output_model_core=True,unsupported_fm_output_model=True)
+        expect(unsupported.locator('#fmOutputModelSelect')).to_be_disabled()
+        unsupported.locator('#romFile').set_input_files({'name':'nuked.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
+        expect(unsupported.locator('#powerLabel')).to_have_text('CONSOLE ON')
+        expect(unsupported.locator('#fmOutputModelStatus')).to_contain_text('Unsupported')
+        model=self.export_payload_for(unsupported)['machine']['fmOutputModel']
+        self.assertTrue(model['available'])
+        self.assertFalse(model['supported'])
+        self.assertTrue(model['loaded'])
+        self.assertIsNone(model['effectiveModel'])
+        self.assertEqual(model['backend'],'nuked-opn2')
+
+    def test_fm_output_model_stays_within_mobile_machine_controls(self):
+        page=self.new_page(fm_output_model_core=True)
+        for viewport in [{'width':1366,'height':768},{'width':390,'height':844}]:
+            page.set_viewport_size(viewport)
+            shape=page.locator('.machine-options').evaluate("el=>({scroll:document.documentElement.scrollWidth,client:innerWidth,height:el.getBoundingClientRect().height})")
+            self.assertLessEqual(shape['scroll'],shape['client'])
+
+    def test_region_and_integrated_model_apply_together_on_clean_restart(self):
+        page=self.new_page(region_core=True,fm_output_model_core=True,manual_frames=True)
+        page.locator('#romFile').set_input_files({'name':'region-fm.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
+        expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+        expect(page.locator('#machineSummary')).to_contain_text('NTSC-U')
+        page.locator('#regionSelect').select_option('2')
+        page.locator('#fmOutputModelSelect').select_option('1')
+        expect(page.locator('#regionStatus')).to_contain_text('Pending')
+        expect(page.locator('#fmOutputModelStatus')).to_contain_text('Integrated Pending')
+        self.assertEqual(page.evaluate('mockCore.region.regionCode'),0)
+        self.assertEqual(page.evaluate('mockCore.fmOutputModel.effectiveModel'),'discrete')
+        page.locator('#resetBtn').click()
+        expect(page.locator('#machineSummary')).to_contain_text('PAL (Europe)')
+        expect(page.locator('#regionStatus')).to_contain_text('Active')
+        expect(page.locator('#fmOutputModelStatus')).to_contain_text('Integrated Active')
+        self.assertEqual(page.evaluate('mockCore.region.regionCode'),2)
+        self.assertEqual(page.evaluate('mockCore.fmOutputModel.effectiveModel'),'integrated')
         page.keyboard.down('ArrowRight')
         page.evaluate('stepTestFrame();stepTestFrame();stepTestFrame()')
         self.assertEqual(page.evaluate('mockCore.inputs[6]'),1)
