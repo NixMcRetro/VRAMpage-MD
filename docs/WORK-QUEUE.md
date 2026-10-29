@@ -1,36 +1,42 @@
-## v0.5.1 Release and Website Update — 29 October 2026
+## FM Output Model Proof — Integration Checkpoint, 29 October 2026
 
-The owner approved proceeding with release and deployment, superseding the
-proposal-only hold, and confirmed **non-commercial hobby hosting with no
-monetization**. Preserve public v0.5.0 and older release assets.
+The isolated MAME Discrete/Integrated proof is implemented and independently
+reviewed. Actual-WASM tests establish default PCM/pixel/Work RAM/status parity,
+native DAC and status-port differences, literal CPU/banked-Z80 fault counters
+with PSG isolation, and fixed-model checkpoint/CPU Reset/restore/restart replay.
+See the [contract and observations](FM-MODEL-PROOF.md). Production app controls,
+core build inputs/defaults, VERSION and approved cartridges remain unchanged.
 
-PR #102 prepares the 17-file website package with one complete corresponding-
-source ZIP, matching GitHub source mirror, approved Demo Cart/Colour Test,
-notices and checksums. The same-origin ZIP remains mandatory; GitHub-only
-source delivery is outside this decision. All native executable sections and
-emulator controls stay unchanged; a deterministic custom WASM section preserves
-Musashi's exact notice inside the binary. Source rebuilds reproduce that output.
+The full local source/sanitizer suite passes; the two environment-dependent
+classes skipped locally remain covered by pinned CI. Both FM regressions and
+11 checkpoint groups pass. Independent source rebuilding reproduces proof
+JS/WASM byte for byte, with all 266 source inventory hashes and notices intact.
+Require all seven protected checks and CodeQL on the final PR head before merge,
+then verify main CI. No proof binaries are uploaded.
 
-The [licence audit](LICENCE-AUDIT-v0.5.1.md) records the GX project-wide default
-grant for the legacy FM code, binary/source notice measures, LGPL rebuild route
-and owner-confirmed hosting context. A change to monetization or source delivery
-requires reassessment; there is no generic outside-legal-review prerequisite.
+Next eligible feature is a small staged FM Output Model selector using this
+proven lifetime and export/comparison identity; it is separate from this proof.
+Experimental Demo Cart drafts still require owner acceptance; v0.3.5 remains the
+manifest-approved default. Optional NTSC VA6 issue #73 does not block this work.
+No new release or website deployment is authorized.
 
-Require independent review, all seven protected PR/main checks and four CodeQL
-analyses before publishing v0.5.1. Publish and verify the exact corresponding-
-source ZIP and checksums. Then update only `homepages/vrampage-md/` through a
-separate McRetro.net PR, retaining the source ZIP on the same origin. Website
-checks must validate the manifest-approved ROMs, reject unknown/altered files,
-and compare all 17 files byte for byte after Jekyll. Merge only after its build
-passes, then verify deployment and live runtime/source links.
+## Completed v0.5.1 Release and Website — 29 October 2026
 
-The original same-runtime full-source baseline was 526 files /17,349,861 bytes;
-notice-complete review candidate was 17 files /3,144,524 bytes (about3.00MiB).
-Metadata/source revisions change compressed bytes slightly. The older website
-actually had13files/1,518,565bytes; the reduction is against full-source staging,
-not a claim that hundreds of currently hosted files are removed. No Git-history
-or build-time savings are asserted. Final commit/check/artifact identities belong
-in the PR and release evidence, not self-referential generated source.
+[Source PR #102](https://github.com/NixMcRetro/VRAMpage-MD/pull/102) merged as
+`bc7369c943f1f7cda5167632077235b7630ad41b`. All seven PR/main checks and four
+CodeQL analyses passed. [v0.5.1](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.5.1)
+was published after release workflow 40841450977 attempt 2 and exact rebuilding
+of the downloaded source archive. Its source SHA-256 is
+`47d93c3b5c97892bd8ffe8c278dca431d82acdf4779cec60b0c9b9111208e8bf`.
+
+[Website PR #12](https://github.com/NixMcRetro/mcretro.net/pull/12) merged as
+`c3ead06c63ca2a2e967c85524b7c28f27b3349c5`. Main deployment 40846544059 verified
+all 17 live files and WASM MIME at https://mcretro.net/homepages/vrampage-md/.
+The package is 17 files / 3,152,701 bytes (~3.01MiB), including one complete source
+ZIP. Same-origin source remains mandatory; the matching GitHub release is a
+mirror. Non-commercial hosting was explicitly confirmed. All 18 older releases
+and their asset identities/digests remain unchanged. This release/deployment
+authorization is completed, not standing permission for another publication.
 
 ## Built-In Cartridge Selector — Integration Checkpoint, 29 October 2026 (UTC)
 

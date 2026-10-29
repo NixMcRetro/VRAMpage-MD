@@ -1,3 +1,11 @@
+## Development Proof — FM Output Models
+
+- Verify MAME Discrete/Integrated native PCM, DAC/status, chip-local CPU/Z80
+  fault routing and fixed-model save/reset/restore/restart in an isolated WASM proof.
+- Keep the proof isolated from public controls and production defaults; preserve
+  v0.5.1, its approved cartridges and the website. Retain matching proof source
+  and notices; independently verify exact rebuilding and checkpoint replay.
+
 ## v0.5.1 — Lightweight Website Packaging
 
 - Prepare a runtime-only website layout with approved original cartridges and

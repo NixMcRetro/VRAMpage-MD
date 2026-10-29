@@ -5,6 +5,7 @@ const path = require('node:path');
 assert.ok(process.argv[2], 'Pass the production runtime core path');
 const corePath = path.resolve(process.argv[2]);
 const factory = require(corePath);
+const fmModelProofPath = process.argv[4] && path.resolve(process.argv[4]);
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 
 // Original synthetic programs exercise VDP/audio, pad protocols and ordinary SRAM.
@@ -113,6 +114,16 @@ function restore(c, image) {
   assert.equal(pixels(c), image, 'saved raw image is available before any emulation frame');
   assert.equal(c._get_session_checkpoint_ready(), 1, 'slot remains reusable');
 }
+async function modelProofCore(model) {
+  const make = require(fmModelProofPath);
+  const c = await make({locateFile: n => path.join(path.dirname(fmModelProofPath), n)});
+  c._init();
+  assert.equal(c._fm_model_proof_request(model), 0);
+  install(c, fmCartridge());
+  assert.equal(c._fm_model_proof_active_model(), model);
+  return c;
+}
+function modelProofFrames(c) { return Array.from({length: 6}, () => frame(c)); }
 (async () => {
   let groups = 0;
   if (process.argv[3]) {
@@ -184,6 +195,59 @@ function restore(c, image) {
   assert.ok(fmFirst.some(x => x.nonzero), 'FM-only cartridge produces nonzero PCM');
   restore(fm, fmImage);
   assert.deepEqual(Array.from({length: 6}, () => frame(fm)), fmFirst, 'FM continuation replays exact PCM'); groups++;
+
+  if (fmModelProofPath) {
+    const modelOutputs = [];
+    for (const model of [0, 1]) {
+      const c = await modelProofCore(model);
+      for (let i = 0; i < 8; i++) frame(c);
+      const warm = frame(c);
+      assert.ok(warm.nonzero, `model ${model}: FM ROM produces native nonzero PCM`);
+      save(c);
+      const image = pixels(c);
+      const expected = modelProofFrames(c);
+      assert.ok(expected.some(x => x.nonzero));
+      assert.equal(c._fm_model_proof_active_model(), model);
+
+      assert.equal(c._fm_model_proof_request(1 - model), 0);
+      assert.equal(c._fm_model_proof_active_model(), model,
+        'pending model cannot alter active MAME model');
+      assert.equal(c._fm_model_proof_pending_model(), 1 - model);
+      assert.equal(c._get_session_checkpoint_ready(), 1,
+        'pending model change preserves live checkpoint slot');
+      assert.equal(c._fm_model_proof_request(2), 1, 'unsupported model request rejects');
+      assert.equal(c._fm_model_proof_pending_model(), 1 - model,
+        'rejected request is atomic');
+      assert.equal(c._get_session_checkpoint_ready(), 1,
+        'rejected request preserves live checkpoint slot');
+
+      assert.equal(c._recover_logic_cpu(2), 0, 'CPU Reset succeeds during model lifetime');
+      assert.equal(c._fm_model_proof_active_model(), model,
+        'CPU Reset retains active MAME model');
+      assert.equal(c._get_session_checkpoint_ready(), 1,
+        'CPU Reset retains checkpoint for same-model restore');
+      restore(c, image);
+      assert.deepEqual(modelProofFrames(c), expected,
+        'save, CPU Reset, restore replays exact model-specific native output');
+
+      const replacement = 1 - model;
+      assert.equal(c._get_session_checkpoint_ready(), 1);
+      install(c, fmCartridge());
+      assert.equal(c._get_session_checkpoint_ready(), 0,
+        'Clean Restart/new ROM discards prior-model checkpoint before activation');
+      assert.equal(c._fm_model_proof_active_model(), replacement,
+        'Clean Restart applies the pending model after defaults and before sound init');
+      const restarted = frame(c);
+      assert.ok(restarted.nonzero);
+      const freshModel = await modelProofCore(replacement);
+      assert.deepEqual(restarted, frame(freshModel),
+        'Clean Restart native output matches a fresh instance of the requested model');
+      modelOutputs.push({model, warm, restarted});
+      groups++;
+    }
+    assert.notDeepEqual(modelOutputs[0].warm.left, modelOutputs[1].warm.left,
+      'checkpoint fixture produces different native PCM across MAME models');
+  }
 
   for (const kind of ['pad3', 'pad6', 'sram', 'protected-sram']) {
     const p = await create(kind);
