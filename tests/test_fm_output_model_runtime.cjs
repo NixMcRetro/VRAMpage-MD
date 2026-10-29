@@ -59,21 +59,26 @@ async function main() {
   const defaultModel = runtime._get_fm_output_model_state();
   assert.deepEqual(defaultModel, {schemaVersion:1,available:true,supported:true,loaded:true,
     requestedModel:'discrete',effectiveModel:'discrete',backend:'mame-opn2',reason:'none'});
-  assertPcmEqual(runtimePcm, normalPcm, 'default proof core matches shipped production core');
+  assertPcmEqual(runtimePcm, normalPcm, 'default runtime matches the unmodified production core');
   assert.deepEqual(runtimeState, normalState,
     'default runtime preserves unmodified production pixels and native memory progress');
   assert.deepEqual(fmStatusProbe(runtime), fmStatusProbe(normal),
-    'default proof core preserves production FM status reads');
+    'default runtime preserves production FM status reads');
   assert.deepEqual(fmStatusPorts(runtime), fmStatusPorts(normal),
     'default runtime preserves production status-port reads');
 
   const invalid = await createCore(runtimePath, rom, core => {
     const before = core._get_fm_output_model_state();
+    assert.equal(typeof core._set_fm_output_model_request_c, 'undefined',
+      'raw native request setter is hidden behind strict facade validation');
     assert.equal(before.loaded, false, 'native model is not effective before cartridge start');
     assert.equal(before.requestedModel, 'discrete', 'pending selection defaults to Discrete');
     assert.equal(before.effectiveModel, null);
-    for (const value of [-1, 2, 3, 1.5, NaN, Infinity])
+    for (const value of [-1, 2, 3, 1.5, NaN, Infinity, -Infinity, true, false, '1', null,
+      undefined, [], {}, [1]])
       assert.equal(core._set_fm_output_model_request(value), 1);
+    assert.equal(core._set_fm_output_model_request(), 1, 'missing argument is rejected');
+    assert.equal(core._set_fm_output_model_request(1, 0), 1, 'extra arguments are rejected');
     assert.deepEqual(core._get_fm_output_model_state(), before,
       'invalid requests leave pending and effective state unchanged');
   });
