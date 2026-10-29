@@ -43,6 +43,7 @@ and experimental; older standalone-model descriptions are historical records.
 | [Logic bending](LOGIC-BENDING.md) | v0.2 work-RAM model, runtime scope and known limits |
 | [Work RAM Write-Enable Research](WORK-RAM-WRITE-ENABLE-RESEARCH.md) | Proposed byte-write inhibition, active-low polarity and literal acceptance criteria |
 | [FM Engine and Output-Model Research](FM-VARIANTS-RESEARCH.md) | Native model probe, engine/model distinction and checkpoint constraints |
+| [FM Output Model Selector](FM-OUTPUT-MODEL.md) | Staged Discrete/Integrated behavior, observations and acceptance gates |
 | [FM Output Model Proof](FM-MODEL-PROOF.md) | Isolated actual-WASM acceptance for Discrete/Integrated output and checkpoint lifetime |
 | [Work RAM Write Inhibit](WORK-RAM-WRITE-INHIBIT.md) | Optional lower/upper byte-store suppression, lifecycle and recorded state |
 | [Work RAM Data Lines](WORK-RAM-DATA.md) | Runtime byte-lane cuts, compact controls, lifecycle and evidence boundary |

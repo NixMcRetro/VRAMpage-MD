@@ -91,6 +91,23 @@ assert.equal(compare(regionA,regionB).find(x=>x.label==='Effective Region').stat
 assert.equal(compare(regionA,{rom:{name:'legacy'}}).find(x=>x.label==='Frame Rate').status,'unknown');
 assert.equal(compare(regionA,{...regionA,machine:{...regionA.machine,available:false}}).find(x=>x.label==='PAL Timing').status,'unknown');
 assert.equal(compare(regionA,{...regionA,machine:{...regionA.machine,height:true}}).find(x=>x.label==='Video Height').status,'unknown');
+const fmMachine=state=>({machine:{available:false,fmOutputModel:state}});
+const fmDiscrete={schemaVersion:1,available:true,supported:true,loaded:true,requestedModel:'integrated',
+  effectiveModel:'discrete',backend:'mame-opn2',reason:'none'};
+const fmIntegrated={...fmDiscrete,requestedModel:'discrete',effectiveModel:'integrated'};
+assert.equal(compare(fmMachine(fmDiscrete),fmMachine(fmDiscrete)).find(r=>r.label==='Effective FM Output Model').status,'match');
+assert.equal(compare(fmMachine(fmDiscrete),fmMachine(fmIntegrated)).find(r=>r.label==='Effective FM Output Model').status,'mismatch');
+assert.equal(compare(fmMachine(fmDiscrete),fmMachine(fmIntegrated)).find(r=>r.label==='Requested FM Output Model').status,'mismatch');
+assert.equal(compare(fmMachine(fmDiscrete),fmMachine({...fmDiscrete,backend:'nuked-opn2',supported:false,effectiveModel:null})).find(r=>r.label==='FM Output Backend').status,'mismatch');
+assert.equal(compare(fmMachine(fmDiscrete),fmMachine({...fmDiscrete,backend:'nuked-opn2'})).find(r=>r.label==='Effective FM Output Model').status,'unknown',
+  'effective MAME identity is unknown when the reported backend contradicts it');
+const missingBackend={...fmDiscrete};delete missingBackend.backend;
+assert.equal(compare(fmMachine(fmDiscrete),fmMachine(missingBackend)).find(r=>r.label==='Effective FM Output Model').status,'unknown',
+  'effective MAME identity is unknown when backend metadata is missing');
+assert.equal(compare(fmMachine(fmDiscrete),fmMachine({...fmDiscrete,backend:'unknown-opn'})).find(r=>r.label==='Effective FM Output Model').status,'unknown',
+  'effective MAME identity is unknown when backend metadata is invalid');
+assert.equal(compare(fmMachine(fmDiscrete),fmMachine({...fmDiscrete,schemaVersion:2})).find(r=>r.label==='Effective FM Output Model').status,'unknown');
+assert.equal(compare(fmMachine(fmDiscrete),{machine:{available:true}}).find(r=>r.label==='Effective FM Output Model').status,'unknown');
 console.log('Machine-region comparison observations passed.');
 
 const dataRecord=mask=>({logic:{available:true,referenceProfile:'model1-pal-va65-two-byte-v1',

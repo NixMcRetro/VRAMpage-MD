@@ -36,6 +36,7 @@ def stage_source(vendor: Path, target: Path):
              "z80_ram_bridge_runtime.c", "z80_ram_bridge_runtime.h", "z80_ram_bridge_core.h", "z80_ram_bridge_api.js",
              "psg_data_fault.h", "psg_data_fault_core.c", "psg_data_fault_runtime.c",
              "region_profile_runtime.c", "region_profile_runtime.h",
+             "fm_output_model_runtime.c", "fm_output_model_runtime.h", "fm_output_model_api.js",
              "fm_data_fault.h", "fm_data_fault_core.c", "fm_data_fault_runtime.c", "fm_data_fault_api.js")
     for name in names:
         shutil.copy2(ROOT / "scripts" / name, helpers / name)
@@ -47,6 +48,7 @@ def stage_source(vendor: Path, target: Path):
         "src/main/c/wasm/psg_data_fault_runtime.c", "src/main/c/core/sound/psg.c",
         "src/main/c/wasm/fm_data_fault_core.c", "src/main/c/wasm/fm_data_fault_runtime.c",
         "src/main/c/wasm/region_profile_runtime.c", "src/main/c/wasm/region_profile_runtime.h",
+        "src/main/c/wasm/fm_output_model_runtime.c", "src/main/c/wasm/fm_output_model_runtime.h",
         "src/main/c/core/sound/sound.c", "src/main/c/core/fm_data_fault.h",
         "src/main/c/core/vdp_render.h",
         "src/main/c/core/vdp_render.c", "src/main/c/core/vram_transaction_render.h",
@@ -111,6 +113,8 @@ def build(staged: Path, diagnostic: bool, alt_renderer: bool = False, runtime: b
         flags.insert(0, f'add_compile_flags(LD "--pre-js={z80_api_js}")')
         work_ram_api_js = ROOT / "scripts/work_ram_data_mask_api.js"
         flags.insert(0, f'add_compile_flags(LD "--pre-js={work_ram_api_js}")')
+        fm_model_api_js = ROOT / "scripts/fm_output_model_api.js"
+        flags.insert(0, f'add_compile_flags(LD "--pre-js={fm_model_api_js}")')
     if ym3438:
         config = staged / "src/main/c/wasm/config.c"
         config_text = config.read_text()
@@ -383,6 +387,8 @@ class VramTransactionWasm(unittest.TestCase):
         self.assertTrue((bundle / "scripts/build-core-runtime.py").is_file())
         self.assertTrue((bundle / "scripts/session_checkpoint_runtime.c").is_file())
         self.assertTrue((bundle / "scripts/session_checkpoint_patch.py").is_file())
+        self.assertTrue((bundle / "scripts/fm_output_model_runtime.c").is_file())
+        self.assertTrue((bundle / "scripts/fm_output_model_api.js").is_file())
         self.assertTrue((bundle / "THIRD-PARTY-NOTICES.md").is_file())
         self.assertTrue((runtime_output / "THIRD-PARTY-NOTICES.md").is_file())
         instructions = (runtime_output / "BUILDING.txt").read_text()
@@ -396,6 +402,7 @@ class VramTransactionWasm(unittest.TestCase):
         self.assertIn("--pre-js=${CMAKE_SOURCE_DIR}/../scripts/fm_data_fault_api.js", cmake)
         self.assertIn("--pre-js=${CMAKE_SOURCE_DIR}/../scripts/z80_ram_bridge_api.js", cmake)
         self.assertIn("--pre-js=${CMAKE_SOURCE_DIR}/../scripts/work_ram_data_mask_api.js", cmake)
+        self.assertIn("--pre-js=${CMAKE_SOURCE_DIR}/../scripts/fm_output_model_api.js", cmake)
         command(["node", str(fixture / "tests/test_runtime_build_profile.cjs"),
                  str(runtime_paths[0])], cwd=fixture)
         command(["node", str(fixture / "tests/test_session_checkpoint_runtime.cjs"),

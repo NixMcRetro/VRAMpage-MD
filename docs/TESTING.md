@@ -1,24 +1,26 @@
-# Isolated FM Output Model Proof
+# FM Output Model Runtime Checks
 
-The [FM proof](FM-MODEL-PROOF.md) builds a test-only MAME model adapter. It is
-separate from the shipped core and adds no application control. With the pinned
-Emscripten 4.0.23 environment active, build the ordinary normal/runtime cores
-first as documented below, retaining the normal files in `NORMAL_CORE`:
+The [staged Discrete/Integrated control](FM-OUTPUT-MODEL.md) uses the production
+runtime API. The [original proof](FM-MODEL-PROOF.md) is retained as an evidence
+checkpoint; its separate mutation hook/builder are retired. All native output,
+DAC/status, CPU/banked-Z80 fault-routing and checkpoint replay assertions now run
+against the production runtime, without a second model-setting path.
+
+With Emscripten 4.0.23 active, build normal/runtime cores as documented below,
+retaining normal files in `NORMAL_CORE`, then run:
 
 ```sh
-python3 scripts/build-fm-model-proof.py build/fm-model-proof
-node tests/test_fm_model_proof.cjs build/fm-model-proof/core/genplus.js \
-  site/core/genplus.js "$NORMAL_CORE/genplus.js"
+node tests/test_fm_output_model_runtime.cjs site/core/genplus.js \
+  "$NORMAL_CORE/genplus.js"
 node tests/test_session_checkpoint_runtime.cjs site/core/genplus.js \
-  "$NORMAL_CORE/genplus.js" build/fm-model-proof/core/genplus.js
+  "$NORMAL_CORE/genplus.js"
 ```
 
-Use an empty proof output directory. `VRAMPAGE_WASM_GENPLUS` may point to an
-existing checkout at the exact pinned upstream commit; its working-tree edits
-are ignored because the builder uses a Git archive. The website build workflow
-runs these commands after its normal/runtime hash gates. Keep proof artifacts
-local or publish only summary observations. Distribution of proof JS/WASM also
-requires the exact modified source, build inputs and notices.
+`bash scripts/test.sh` also runs strict native boundary checks. The website build
+workflow runs model output/replay checks after normal/runtime hash and Musashi
+notice gates. Complete browser/static bundles retain exact matching source,
+notices and build instructions. Normal-core hashes remain unchanged; runtime API
+changes must be verified from a fresh source build before its hash gate changes.
 
 # v0.5.1 Thin Website and Corresponding Source
 

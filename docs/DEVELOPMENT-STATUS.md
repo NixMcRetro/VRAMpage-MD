@@ -1,22 +1,45 @@
-## FM Output Model Proof — Integration Checkpoint, 29 October 2026
+## FM Output Model Selector — Integration Checkpoint, 29 October 2026
 
-The isolated MAME Discrete/Integrated proof is implemented and independently
-reviewed. Actual-WASM tests establish default PCM/pixel/Work RAM/status parity,
-native DAC and status-port differences, literal CPU/banked-Z80 fault counters
-with PSG isolation, and fixed-model checkpoint/CPU Reset/restore/restart replay.
-See the [contract and observations](FM-MODEL-PROOF.md). Production app controls,
-core build inputs/defaults, VERSION and approved cartridges remain unchanged.
+The compact Discrete/Integrated selector is implemented beside Region, using
+[the bounded feature contract](FM-OUTPUT-MODEL.md). Discrete remains default;
+changes stage until Clean Restart/new cartridge. Pending/rejected choices,
+CPU Reset and checkpoint restore retain active sound/model and the saved slot.
+Versioned `machine.fmOutputModel` observations/comparison distinguish pending,
+effective and backend identity independently from Region; legacy/inconsistent
+data stays Unknown. Grouped controls preserve active/pending labels on phones.
 
-The full local source/sanitizer suite passes; the two environment-dependent
-classes skipped locally remain covered by pinned CI. Both FM regressions and
-11 checkpoint groups pass. Independent source rebuilding reproduces proof
-JS/WASM byte for byte, with all 266 source inventory hashes and notices intact.
-Require all seven protected checks and CodeQL on the final PR head before merge,
-then verify main CI. No proof binaries are uploaded.
+Independent Luna High specialist review approved after rerunning production
+actual-WASM output/DAC/status/fault routing, all 13 checkpoint groups (two models
+by NTSC/PAL), strict native/API and comparison checks, four focused mock browser
+cases and a real-core FM/PAL/checkpoint browser case. Full source/ASan/UBSan checks
+pass locally; both environment-dependent classes skipped in that command pass
+separately with the pinned vendor/SDK (renderer patch and diagnostic-WASM). Retained-source rebuilding is
+byte-exact with all 267 inventory hashes and Musashi notice validated.
 
-Next eligible feature is a small staged FM Output Model selector using this
-proven lifetime and export/comparison identity; it is separate from this proof.
-Experimental Demo Cart drafts still require owner acceptance; v0.3.5 remains the
+Final runtime JS SHA-256 is
+`dd69d2de684ff898b5dc69f01ac76a121a91c0bf5fe7c659122394c15063fac2`;
+WASM is `04c3108a1359e364da25e1570e5789dd20d1f3a250e2ea97d62868967183f844`.
+Only the runtime gate changes; normal gates stay fixed. Require all seven
+protected checks and CodeQL before merge, then verify main. VERSION, approved
+cartridges, releases and McRetro.net remain unchanged. Audibility and physical
+hardware accuracy are not established. Experimental Demo Cart listening/gameplay
+acceptance remains owner work; optional NTSC VA6 issue #73 does not block source.
+
+## Completed FM Output Model Proof — 29 October 2026
+
+[PR #107](https://github.com/NixMcRetro/VRAMpage-MD/pull/107) merged as
+`4723457f4f80e94250e8f272bbedc04c4596fcb2`; its tree matches reviewed
+`1395350c0026ebdf028e29af519952e0ce4ad525`. All seven
+[main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40854623252)
+and four [CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40854621660)
+passed, following green PR checks and independent Luna High specialist review.
+The [proof](FM-MODEL-PROOF.md) establishes native PCM/DAC/status behavior,
+CPU/banked-Z80 cuts/bridges with exact counters and PSG isolation, and each
+model's checkpoint/reset/restore/restart replay. Retained source rebuilt exactly
+with all 266 inventory hashes/notices verified. No production control, default,
+release, approved cartridge or website changed in that proof slice.
+
+Experimental Demo Cart drafts still need owner acceptance; v0.3.5 remains the
 manifest-approved default. Optional NTSC VA6 issue #73 does not block this work.
 No new release or website deployment is authorized.
 

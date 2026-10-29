@@ -1,5 +1,11 @@
 # FM Output Model Proof
 
+Historical checkpoint: [PR #107](https://github.com/NixMcRetro/VRAMpage-MD/pull/107).
+The [production selector](FM-OUTPUT-MODEL.md) replaces its test-only mutation
+hook/builder while retaining the behavioral assertions in
+`tests/test_fm_output_model_runtime.cjs` and the checkpoint suite. The scope and
+local results below describe that initial isolated proof.
+
 Development proof, based on verified main/release
 `bc7369c943f1f7cda5167632077235b7630ad41b` (v0.5.1). The owner authorized the
 next independent FM investigation after release/deployment completion.

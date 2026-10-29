@@ -5,7 +5,6 @@ const path = require('node:path');
 assert.ok(process.argv[2], 'Pass the production runtime core path');
 const corePath = path.resolve(process.argv[2]);
 const factory = require(corePath);
-const fmModelProofPath = process.argv[4] && path.resolve(process.argv[4]);
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 
 // Original synthetic programs exercise VDP/audio, pad protocols and ordinary SRAM.
@@ -114,13 +113,18 @@ function restore(c, image) {
   assert.equal(pixels(c), image, 'saved raw image is available before any emulation frame');
   assert.equal(c._get_session_checkpoint_ready(), 1, 'slot remains reusable');
 }
-async function modelProofCore(model) {
-  const make = require(fmModelProofPath);
-  const c = await make({locateFile: n => path.join(path.dirname(fmModelProofPath), n)});
+async function fmOutputModelCore(model, region=1) {
+  const c = await factory({locateFile: n => path.join(path.dirname(corePath), n)});
   c._init();
-  assert.equal(c._fm_model_proof_request(model), 0);
+  assert.equal(c._set_region_request(region), 0);
+  assert.equal(c._set_fm_output_model_request(model), 0);
   install(c, fmCartridge());
-  assert.equal(c._fm_model_proof_active_model(), model);
+  const state=c._get_fm_output_model_state();
+  assert.equal(state.effectiveModel, model===0?'discrete':'integrated');
+  assert.equal(state.backend,'mame-opn2');
+  const regionState=c._get_region_state();
+  assert.equal(regionState.regionCode,region===2?0xc0:0x80,
+    'selected Region is active alongside the FM Output Model');
   return c;
 }
 function modelProofFrames(c) { return Array.from({length: 6}, () => frame(c)); }
@@ -133,6 +137,8 @@ function modelProofFrames(c) { return Array.from({length: 6}, () => frame(c)); }
       'get_session_checkpoint_support', 'get_session_checkpoint_ready', 'get_session_checkpoint_saved_frame']) {
       assert.equal(typeof legacy[`_${name}`], 'undefined', 'normal profile remains checkpoint-free');
     }
+    for (const name of ['set_fm_output_model_request','get_fm_output_model_state'])
+      assert.equal(typeof legacy[`_${name}`], 'undefined', 'normal profile has no FM Output Model API');
   }
   const c = await create('dynamic'); frame(c); save(c); const savedImage = pixels(c), savedFrame = c._get_session_checkpoint_saved_frame();
   const first = Array.from({length: 6}, () => frame(c));
@@ -196,10 +202,12 @@ function modelProofFrames(c) { return Array.from({length: 6}, () => frame(c)); }
   restore(fm, fmImage);
   assert.deepEqual(Array.from({length: 6}, () => frame(fm)), fmFirst, 'FM continuation replays exact PCM'); groups++;
 
-  if (fmModelProofPath) {
-    const modelOutputs = [];
-    for (const model of [0, 1]) {
-      const c = await modelProofCore(model);
+  assert.equal(typeof c._set_fm_output_model_request,'function',
+    'runtime profile exposes staged FM Output Model selection');
+  {
+    const modelOutputs = new Map();
+    for (const region of [1, 2]) for (const model of [0, 1]) {
+      const c = await fmOutputModelCore(model, region);
       for (let i = 0; i < 8; i++) frame(c);
       const warm = frame(c);
       assert.ok(warm.nonzero, `model ${model}: FM ROM produces native nonzero PCM`);
@@ -207,22 +215,22 @@ function modelProofFrames(c) { return Array.from({length: 6}, () => frame(c)); }
       const image = pixels(c);
       const expected = modelProofFrames(c);
       assert.ok(expected.some(x => x.nonzero));
-      assert.equal(c._fm_model_proof_active_model(), model);
+      assert.equal(c._get_fm_output_model_state().effectiveModel,model===0?'discrete':'integrated');
 
-      assert.equal(c._fm_model_proof_request(1 - model), 0);
-      assert.equal(c._fm_model_proof_active_model(), model,
+      assert.equal(c._set_fm_output_model_request(1 - model), 0);
+      assert.equal(c._get_fm_output_model_state().effectiveModel,model===0?'discrete':'integrated',
         'pending model cannot alter active MAME model');
-      assert.equal(c._fm_model_proof_pending_model(), 1 - model);
+      assert.equal(c._get_fm_output_model_state().requestedModel,model===0?'integrated':'discrete');
       assert.equal(c._get_session_checkpoint_ready(), 1,
         'pending model change preserves live checkpoint slot');
-      assert.equal(c._fm_model_proof_request(2), 1, 'unsupported model request rejects');
-      assert.equal(c._fm_model_proof_pending_model(), 1 - model,
+      assert.equal(c._set_fm_output_model_request(2), 1, 'unsupported model request rejects');
+      assert.equal(c._get_fm_output_model_state().requestedModel,model===0?'integrated':'discrete',
         'rejected request is atomic');
       assert.equal(c._get_session_checkpoint_ready(), 1,
         'rejected request preserves live checkpoint slot');
 
       assert.equal(c._recover_logic_cpu(2), 0, 'CPU Reset succeeds during model lifetime');
-      assert.equal(c._fm_model_proof_active_model(), model,
+      assert.equal(c._get_fm_output_model_state().effectiveModel,model===0?'discrete':'integrated',
         'CPU Reset retains active MAME model');
       assert.equal(c._get_session_checkpoint_ready(), 1,
         'CPU Reset retains checkpoint for same-model restore');
@@ -231,22 +239,30 @@ function modelProofFrames(c) { return Array.from({length: 6}, () => frame(c)); }
         'save, CPU Reset, restore replays exact model-specific native output');
 
       const replacement = 1 - model;
+      const replacementRegion=region;
       assert.equal(c._get_session_checkpoint_ready(), 1);
+      assert.equal(c._set_region_request(replacementRegion),0,
+        'pending Region remains independently staged beside FM model');
       install(c, fmCartridge());
       assert.equal(c._get_session_checkpoint_ready(), 0,
         'Clean Restart/new ROM discards prior-model checkpoint before activation');
-      assert.equal(c._fm_model_proof_active_model(), replacement,
+      assert.equal(c._get_fm_output_model_state().effectiveModel,replacement===0?'discrete':'integrated',
         'Clean Restart applies the pending model after defaults and before sound init');
       const restarted = frame(c);
       assert.ok(restarted.nonzero);
-      const freshModel = await modelProofCore(replacement);
+      const freshModel = await fmOutputModelCore(replacement, replacementRegion);
+      assert.equal(c._get_region_state().regionCode,
+        replacementRegion===2?0xc0:0x80,'Clean Restart retains the selected Region with FM model');
       assert.deepEqual(restarted, frame(freshModel),
         'Clean Restart native output matches a fresh instance of the requested model');
-      modelOutputs.push({model, warm, restarted});
+      if (!modelOutputs.has(region)) modelOutputs.set(region, []);
+      modelOutputs.get(region).push({model, warm, restarted});
       groups++;
     }
-    assert.notDeepEqual(modelOutputs[0].warm.left, modelOutputs[1].warm.left,
-      'checkpoint fixture produces different native PCM across MAME models');
+    for (const [region, outputs] of modelOutputs) {
+      assert.notDeepEqual(outputs[0].warm.left, outputs[1].warm.left,
+        `region ${region}: checkpoint fixture isolates different native PCM across MAME models`);
+    }
   }
 
   for (const kind of ['pad3', 'pad6', 'sram', 'protected-sram']) {
