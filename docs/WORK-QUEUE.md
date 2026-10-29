@@ -12,8 +12,8 @@ Independent Luna High specialist review approved after rerunning production
 actual-WASM output/DAC/status/fault routing, all 13 checkpoint groups (two models
 by NTSC/PAL), strict native/API and comparison checks, four focused mock browser
 cases and a real-core FM/PAL/checkpoint browser case. Full source/ASan/UBSan checks
-pass locally; two environment-dependent classes skipped there are covered by the
-separate SDK diagnostic-WASM run and pinned CI. Retained-source rebuilding is
+pass locally; both environment-dependent classes skipped in that command pass
+separately with the pinned vendor/SDK (renderer patch and diagnostic-WASM). Retained-source rebuilding is
 byte-exact with all 267 inventory hashes and Musashi notice validated.
 
 Final runtime JS SHA-256 is
