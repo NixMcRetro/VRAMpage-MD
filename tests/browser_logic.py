@@ -248,7 +248,7 @@ class BrowserLogicTests(unittest.TestCase):
                 else:
                     summary.focus()
                     page.keyboard.press(action)
-                    for _ in range(3): page.keyboard.press('Tab')
+                    for _ in range(page.locator('#cartridgeChooser button').count()): page.keyboard.press('Tab')
                     expect(local).to_be_focused()
                 with page.expect_file_chooser() as chooser:
                     if action=='click': local.click()
