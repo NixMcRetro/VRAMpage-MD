@@ -191,7 +191,7 @@
       'FM Output Model State Unavailable':!s.supported?`FM Output Model Unsupported · ${s.backend??'Backend Unknown'}`:
       !started?`${FM_OUTPUT_MODEL_NAMES[s.requestedModel==='discrete'?0:1]} · Applied on ROM Load`:
       !s.loaded?'FM Output Model State Unavailable':s.requestedModel!==s.effectiveModel?
-      `${FM_OUTPUT_MODEL_NAMES[s.effectiveModel==='discrete'?0:1]} Active · ${FM_OUTPUT_MODEL_NAMES[s.requestedModel==='discrete'?0:1]} Pending · Use Clean Restart`:
+      `${FM_OUTPUT_MODEL_NAMES[s.effectiveModel==='discrete'?0:1]} Active · ${FM_OUTPUT_MODEL_NAMES[s.requestedModel==='discrete'?0:1]} Pending${window.innerHeight>420?' · Use Clean Restart':''}`:
       `${FM_OUTPUT_MODEL_NAMES[s.effectiveModel==='discrete'?0:1]} Active`;
     if ($('fmOutputModelStatus').textContent!==status) $('fmOutputModelStatus').textContent=status;
   }

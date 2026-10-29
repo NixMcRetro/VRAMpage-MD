@@ -576,9 +576,19 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertEqual(model['backend'],'nuked-opn2')
 
     def test_fm_output_model_stays_within_mobile_machine_controls(self):
-        page=self.new_page(fm_output_model_core=True)
-        for viewport in [{'width':1366,'height':768},{'width':390,'height':844}]:
+        page=self.new_page(fm_output_model_core=True,manual_frames=True)
+        page.locator('#fmOutputModelSelect').select_option('1')
+        page.locator('#romFile').set_input_files({'name':'fm-layout.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
+        expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+        page.evaluate('stepTestFrame();stepTestFrame()')
+        page.locator('#fmOutputModelSelect').select_option('0')
+        for viewport in [{'width':1366,'height':768},{'width':390,'height':844},{'width':844,'height':390}]:
             page.set_viewport_size(viewport)
+            if viewport['height']<=420:
+                page.evaluate('stepTestFrame()')
+                expect(page.locator('#fmOutputModelStatus')).to_contain_text('Integrated Active')
+                expect(page.locator('#fmOutputModelStatus')).to_contain_text('Discrete Pending')
+                expect(page.locator('#fmOutputModelStatus')).not_to_contain_text('Use Clean Restart')
             shape=page.locator('.machine-options').evaluate("el=>({scroll:document.documentElement.scrollWidth,client:innerWidth,height:el.getBoundingClientRect().height})")
             self.assertLessEqual(shape['scroll'],shape['client'])
             for select_id,status_id in [('regionSelect','regionStatus'),('fmOutputModelSelect','fmOutputModelStatus')]:
@@ -589,6 +599,9 @@ class BrowserLogicTests(unittest.TestCase):
                     statusBelow:tr.top>=Math.max(lr.bottom,sr.bottom)};
                 }""",[select_id,status_id])
                 self.assertTrue(grouped['sameGroup'] and grouped['statusBelow'])
+            if viewport['height']<=420:
+                aligned=page.locator('.machine-option-group').evaluate_all("els=>Math.abs(els[0].getBoundingClientRect().top-els[1].getBoundingClientRect().top)<3")
+                self.assertTrue(aligned,'Short landscape keeps both model fields on one row')
 
     def test_region_and_integrated_model_apply_together_on_clean_restart(self):
         page=self.new_page(region_core=True,fm_output_model_core=True,manual_frames=True)
