@@ -34,8 +34,28 @@ class OriginalShowTests(unittest.TestCase):
         self.assertTrue(all(music["psgDrumAttenuation"][n]>old
                             for n,old in {"kick":2,"snare":4,"hat":10,
                                           "fill":1}.items()))
-        self.assertTrue(all(patch[3][-1]<=23
-                            for patch in self.values["SHOW_PATCHES"]))
+        # Per-instrument four-operator YM2612 algorithms and envelopes.
+        patches=self.values["SHOW_PATCHES"]
+        self.assertEqual([p[0] for p in patches],
+            ["brass_lead","brass_answer","walking_bass",
+             "offbeat_skank","organ_accents","horn_fills"])
+        self.assertEqual([p[1]&7 for p in patches],[4,5,7,4,7,5])
+        self.assertEqual(music["fmAlgorithms"],[4,5,7,4,7,5])
+        self.assertEqual(music["fmPatchEnvelopeModel"],
+                         "per-operator AR/D1R/D2R/SL-RR")
+        self.assertEqual(set(music["fmPatchOperators"]),
+                         {p[0] for p in patches})
+        self.assertTrue(all(len(p[2])==4 and all(len(op)==6 for op in p[2])
+                            for p in patches))
+        self.assertEqual(len(self.values["SHOW_MUSIC"]),14400)
+        # Bass has stronger fundamentals; skank plucks quickly while
+        # organ retains slower decay. Algorithm 4's two carriers are audible.
+        bass,skank,organ=patches[2][2],patches[3][2],patches[4][2]
+        self.assertLess(bass[0][1],bass[3][1])
+        self.assertTrue(all(op[3]>=0x1A for op in skank))
+        self.assertTrue(all(op[3]<=0x06 for op in organ))
+        self.assertTrue(all(p[2][1][1]<40 and p[2][3][1]<40
+                            for p in (patches[0],patches[3])))
         self.assertEqual(music["tonality"],"major")
         self.assertEqual(music["percussion"],["kick","snare","hat","fill"])
         self.assertEqual(music["eventsPerSecond"],5)

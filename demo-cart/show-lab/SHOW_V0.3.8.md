@@ -69,3 +69,26 @@ This fix is **entirely inside the Demo Cart ROM**. Neither Genesis Plus GX's
 audio mix nor the website, other cartridges, approved v0.3.5 ROM, or
 v0.5.1 website package is modified. Human listening remains necessary
 to decide whether this first balance adjustment is satisfactory.
+
+## Six-Voice Timbre Refinement
+
+The owner accepted the improved PSG balance and requested more distinctive
+instrument sounds. This experimental v0.3.8 pass preserves the 180-second
+song, all 900 score events, the per-VBlank PSG drum fade, visual effects,
+portrait, logo and controller behaviour. Only the six FM patch definitions
+and their native YM2612 register programming change.
+
+| FM voice | Original sound design | Algorithm |
+| --- | --- | --- |
+| Brass lead | Brighter two-stack attack and warm dual carriers | 4 |
+| Brass answer | Softer, nasal answering three-carrier horn | 5 |
+| Walking bass | Strong low fundamentals with subtle harmonics | 7 |
+| Offbeat ska chop | Quick, plucked, fast-decaying two-stack tone | 4 |
+| Organ accents | Sustained additive organ drawbar-style tone | 7 |
+| Horn fills | Bright three-carrier staccato counterphrase | 5 |
+
+All four operators on each FM voice have independent TL, attack, initial
+decay, secondary decay, and sustain/release settings. The ROM writes those
+registers to the real YM2612 address ports. This does not alter the shared
+emulator audio mixer, the website, or the approved v0.3.5 cartridge. Objective
+native playback tests and owner's listening assessment remain essential.

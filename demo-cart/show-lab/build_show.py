@@ -505,21 +505,50 @@ SHOW_RESPONSE_GATES=(
  (5,7,13,15),
 )
 SHOW_RESPONSE=(7,9,12,9, 7,4,2,4, 9,12,14,12, 9,7,4,2)
-# FM 0 brass lead; FM 1 brass answer; FM 2 walking bass;
-# FM 3 staccato offbeat organ/guitar; FM 4 chord accents; FM 5 horn fills.
-# YM2612 programming covers both register banks: FM channels 3-5 are bank 1.
-# A simple six-patch FM palette keeps all instrument data in this homebrew ROM.
-# (name, algorithm/feedback, operator multiples, total levels,
-#  decay 1, decay 2, sustain level/release)
+# Distinct YM2612 timbres. Each FM operator is (multiple, TL, AR, D1R,
+# D2R, SL/RR). The four operator register offsets are (0,4,8,12).
+# Algorithm 4 supplies two modulator/carrier pairs; algorithm 5 supplies
+# a shared modulator and three carriers; algorithm 7 adds four carriers.
+# All entries are original homebrew patches, not copied instrument presets.
 SHOW_PATCHES=(
- ('brass_lead',    0x37,(1,1,2,1),(38,47,44,13),0x0A,0x07,0x46),
- ('brass_answer',  0x37,(1,2,1,1),(42,45,43,16),0x0D,0x09,0x56),
- ('walking_bass',  0x34,(1,2,1,1),(26,47,42,11),0x06,0x04,0x37),
- ('offbeat_skank', 0x37,(1,2,2,1),(52,49,48,18),0x18,0x12,0xF6),
- ('organ_accents',0x37,(1,1,1,2),(55,48,43,23),0x0C,0x08,0x67),
- ('horn_fills',   0x37,(2,1,2,1),(44,48,40,17),0x0D,0x0A,0x56),
+ ('brass_lead',0x2C,(
+    (1,43,0x1E,0x12,0x0A,0x84),  # brass-edge transient
+    (1,18,0x1F,0x06,0x04,0x46),  # fundamental carrier
+    (2,49,0x1F,0x15,0x0C,0x95),  # bright upper transient
+    (1,16,0x1F,0x07,0x04,0x46))),# second carrier
+ ('brass_answer',0x25,(
+    (2,48,0x1F,0x13,0x09,0x86),
+    (1,27,0x1E,0x08,0x04,0x56),
+    (2,39,0x1E,0x0C,0x06,0x75),
+    (1,19,0x1F,0x08,0x05,0x56))),
+ ('walking_bass',0x37,(
+    (1,19,0x1F,0x0E,0x09,0x69),
+    (1,29,0x1F,0x11,0x0B,0x79),
+    (2,53,0x1D,0x17,0x0F,0xA8),
+    (3,67,0x1D,0x19,0x0F,0xB9))),
+ ('offbeat_skank',0x2C,(
+    (2,36,0x1F,0x1C,0x10,0xF8),
+    (1,28,0x1F,0x1B,0x14,0xF9),
+    (3,44,0x1F,0x1B,0x11,0xF8),
+    (1,25,0x1F,0x1A,0x13,0xF9))),
+ ('organ_accents',0x37,(
+    (1,30,0x1B,0x04,0x02,0x36),
+    (2,41,0x19,0x04,0x02,0x36),
+    (1,35,0x1B,0x03,0x02,0x35),
+    (3,64,0x19,0x06,0x03,0x47))),
+ ('horn_fills',0x2D,(
+    (1,45,0x1F,0x14,0x0C,0x96),
+    (2,31,0x1F,0x0C,0x07,0x67),
+    (1,37,0x1F,0x0B,0x06,0x65),
+    (1,20,0x1F,0x09,0x05,0x56))),
 )
 assert len(SHOW_PATCHES)==6
+assert len({name for name,_,_ in SHOW_PATCHES})==6
+assert all(len(ops)==4 and all(
+    0<=mul<=15 and 0<=tl<=127 and 0<=ar<=31 and
+    0<=d1r<=31 and 0<=d2r<=31 and 0<=slrr<=255
+    for mul,tl,ar,d1r,d2r,slrr in ops)
+    for _,_,ops in SHOW_PATCHES)
 def show_pitch(note,block=None):
     if block is None:
         block=3 if note<=46 else (5 if note>=84 else 4)
@@ -1099,18 +1128,18 @@ def ym_reg(reg,value,bank=0):
 asm.label('music_start')
 for reg,value in ((0x22,0),(0x27,0),(0x2B,0)):
     ym_reg(reg,value)
-for ch,(_,algorithm,mults,levels,decay1,decay2,release) in enumerate(SHOW_PATCHES):
+for ch,(_,algorithm,operators) in enumerate(SHOW_PATCHES):
     bank,slot_ch=(ch//3),(ch%3)
     ym_reg(0xB0+slot_ch,algorithm,bank)
     ym_reg(0xB4+slot_ch,0xC0,bank)
-    for op,(mul,level) in enumerate(zip(mults,levels)):
+    for op,(mul,level,attack,decay1,decay2,sustain_release) in enumerate(operators):
         slot=(0,4,8,12)[op]
         ym_reg(0x30+slot+slot_ch,mul,bank)
         ym_reg(0x40+slot+slot_ch,level,bank)
-        ym_reg(0x50+slot+slot_ch,0x1F,bank)
+        ym_reg(0x50+slot+slot_ch,attack,bank)
         ym_reg(0x60+slot+slot_ch,decay1,bank)
         ym_reg(0x70+slot+slot_ch,decay2,bank)
-        ym_reg(0x80+slot+slot_ch,release,bank)
+        ym_reg(0x80+slot+slot_ch,sustain_release,bank)
 for address,value in ((0xFF0000,0),(0xFF0002,0),(0xFF0006,1),
                       (0xFF000A,0),(0xFF000C,15)):
     asm.movea(4,address);asm.movew_imm_ai(4,value)
@@ -1249,7 +1278,10 @@ report={
           'character':'original upbeat brass-led ska-punk demoscene',
           'fmChannels':[0,1,2,3,4,5],'psgNoise':True,'patches':[x[0] for x in SHOW_PATCHES],
           'psgDrumAttenuation':{n:a for n,_,a in PSG_DRUMS},
-          'psgVblankDecay':True},
+          'psgVblankDecay':True,
+          'fmPatchEnvelopeModel':'per-operator AR/D1R/D2R/SL-RR',
+          'fmAlgorithms':[patch[1]&7 for patch in SHOW_PATCHES],
+          'fmPatchOperators':{name:[list(op) for op in ops] for name,_,ops in SHOW_PATCHES}},
  'sha256':hashlib.sha256(rom).hexdigest(), 'baseKitSHA256':APPROVED_KIT_SHA256,
  'patternTiles':SPRITE_TILE_BASE+SPRITE_TILE_COUNT,'patternBytes':len(ALL_PATTERNS),
  'spriteCount':SPRITE_COUNT,'spriteTileBase':SPRITE_TILE_BASE,'spritePhases':SPRITE_PHASES,
