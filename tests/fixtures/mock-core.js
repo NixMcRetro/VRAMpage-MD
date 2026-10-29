@@ -360,7 +360,7 @@ window.Module = async () => {
     const nativeStart=core._start;
     core._start=()=>{
       nativeStart();
-      model.backend=window.mockCore.fmOutputModelBackend||'mame-opn2';
+      model.backend=window.__unsupportedFmOutputModel?'nuked-opn2':window.mockCore.fmOutputModelBackend||'mame-opn2';
       model.supported=model.backend==='mame-opn2';
       model.loaded=true;
       model.effectiveModel=model.supported?model.requestedModel:null;

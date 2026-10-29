@@ -507,13 +507,15 @@ class BrowserLogicTests(unittest.TestCase):
             'requestedModel':None,'effectiveModel':None,'backend':None,'reason':'api-unavailable'})
 
     def test_fm_output_model_is_staged_through_cpu_reset_restore_and_restart(self):
-        page=self.new_page(fm_output_model_core=True,manual_frames=True,session_checkpoint=True)
+        page=self.new_page(fm_output_model_core=True,manual_frames=True,session_checkpoint=True,circuit_config=True)
         expect(page.locator('#fmOutputModelSelect')).to_be_enabled()
         expect(page.locator('#fmOutputModelStatus')).to_contain_text('Discrete')
         expect(page.locator('#fmOutputModelStatus')).to_contain_text('Applied on ROM Load')
         page.locator('#fmOutputModelSelect').select_option('1')
         expect(page.locator('#fmOutputModelStatus')).to_contain_text('Integrated')
-        self.load_rom(page)
+        page.locator('#romFile').set_input_files({'name':'fm-model.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
+        expect(page.locator('#powerLabel')).to_have_text('CONSOLE ON')
+        page.evaluate('stepTestFrame();stepTestFrame()')
         expect(page.locator('#fmOutputModelStatus')).to_contain_text('Integrated Active')
         page.evaluate('stepTestFrame();stepTestFrame()')
         page.locator('#saveCheckpointBtn').evaluate("el=>{for(let p=el.parentElement;p;p=p.parentElement)if(p.tagName==='DETAILS')p.open=true;}")
@@ -523,6 +525,7 @@ class BrowserLogicTests(unittest.TestCase):
         ticks=page.evaluate('mockCore.ticks')
         page.locator('#fmOutputModelSelect').select_option('0')
         expect(page.locator('#fmOutputModelStatus')).to_contain_text('Discrete Pending')
+        expect(page.locator('#fmOutputModelStatus')).to_contain_text('Integrated Active')
         self.assertEqual(page.evaluate('mockCore.fmOutputModel.effectiveModel'),'integrated')
         self.assertEqual(page.evaluate('mockCore.starts'),starts)
         self.assertEqual(page.evaluate('mockCore.ticks'),ticks)
@@ -556,13 +559,14 @@ class BrowserLogicTests(unittest.TestCase):
         expect(page.locator('#fmOutputModelStatus')).to_contain_text('refused')
         self.assertEqual(page.evaluate('mockCore.fmOutputModel.requestedModel'),'discrete')
         page.evaluate('mockCore.rejectFmOutputModel=false;mockCore.throwFmOutputModelState=true')
+        page.locator('#fmOutputModelSelect').select_option('1')
         expect(page.locator('#fmOutputModelSelect')).to_be_disabled()
         expect(page.locator('#fmOutputModelStatus')).to_contain_text('State Unavailable')
 
         unsupported=self.new_page(fm_output_model_core=True,unsupported_fm_output_model=True)
-        expect(unsupported.locator('#fmOutputModelSelect')).to_be_disabled()
         unsupported.locator('#romFile').set_input_files({'name':'nuked.bin','mimeType':'application/octet-stream','buffer':self.synthetic_rom()})
         expect(unsupported.locator('#powerLabel')).to_have_text('CONSOLE ON')
+        expect(unsupported.locator('#fmOutputModelSelect')).to_be_disabled()
         expect(unsupported.locator('#fmOutputModelStatus')).to_contain_text('Unsupported')
         model=self.export_payload_for(unsupported)['machine']['fmOutputModel']
         self.assertTrue(model['available'])
@@ -577,6 +581,14 @@ class BrowserLogicTests(unittest.TestCase):
             page.set_viewport_size(viewport)
             shape=page.locator('.machine-options').evaluate("el=>({scroll:document.documentElement.scrollWidth,client:innerWidth,height:el.getBoundingClientRect().height})")
             self.assertLessEqual(shape['scroll'],shape['client'])
+            for select_id,status_id in [('regionSelect','regionStatus'),('fmOutputModelSelect','fmOutputModelStatus')]:
+                grouped=page.evaluate("""([selectId,statusId])=>{
+                  const select=document.getElementById(selectId),status=document.getElementById(statusId),label=document.querySelector(`label[for="${selectId}"]`);
+                  const group=select.parentElement,lr=label.getBoundingClientRect(),sr=select.getBoundingClientRect(),tr=status.getBoundingClientRect();
+                return {sameGroup:status.parentElement===group&&label.parentElement===group&&select.parentElement===group,
+                    statusBelow:tr.top>=Math.max(lr.bottom,sr.bottom)};
+                }""",[select_id,status_id])
+                self.assertTrue(grouped['sameGroup'] and grouped['statusBelow'])
 
     def test_region_and_integrated_model_apply_together_on_clean_restart(self):
         page=self.new_page(region_core=True,fm_output_model_core=True,manual_frames=True)
@@ -587,13 +599,14 @@ class BrowserLogicTests(unittest.TestCase):
         page.locator('#fmOutputModelSelect').select_option('1')
         expect(page.locator('#regionStatus')).to_contain_text('Pending')
         expect(page.locator('#fmOutputModelStatus')).to_contain_text('Integrated Pending')
-        self.assertEqual(page.evaluate('mockCore.region.regionCode'),0)
+        expect(page.locator('#fmOutputModelStatus')).to_contain_text('Discrete Active')
+        self.assertEqual(page.evaluate('mockCore.region.regionCode'),128)
         self.assertEqual(page.evaluate('mockCore.fmOutputModel.effectiveModel'),'discrete')
         page.locator('#resetBtn').click()
         expect(page.locator('#machineSummary')).to_contain_text('PAL (Europe)')
         expect(page.locator('#regionStatus')).to_contain_text('Active')
         expect(page.locator('#fmOutputModelStatus')).to_contain_text('Integrated Active')
-        self.assertEqual(page.evaluate('mockCore.region.regionCode'),2)
+        self.assertEqual(page.evaluate('mockCore.region.regionCode'),192)
         self.assertEqual(page.evaluate('mockCore.fmOutputModel.effectiveModel'),'integrated')
         page.keyboard.down('ArrowRight')
         page.evaluate('stepTestFrame();stepTestFrame();stepTestFrame()')
