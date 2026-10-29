@@ -1,11 +1,18 @@
-## Active FM Output Model Proof
+## Active FM Output Model Selector
 
-The owner authorized the next independent slice after v0.5.1 delivery. Prove
-MAME Discrete/Integrated output and fixed-model checkpoint/reset/replay using
-actual WASM before a public selector. Preserve production defaults/hashes,
-VERSION, approved cartridges, releases and the live site. Reuse the
-[existing research](docs/FM-VARIANTS-RESEARCH.md) and
-[acceptance contract](docs/FM-MODEL-PROOF.md); do not repeat completed RAM work.
+Add a compact staged Discrete/Integrated choice using the existing MAME backend,
+Region lifecycle and [feature contract](docs/FM-OUTPUT-MODEL.md). Preserve default
+Discrete output and expose requested/effective identity for exports/comparison.
+No Enhanced/Nuked/VA choice, version bump, cartridge promotion or deployment.
+Require specialist review, native/browser evidence, protected CI/CodeQL and main.
+
+## Completed FM Output Model Proof
+
+[PR #107](https://github.com/NixMcRetro/VRAMpage-MD/pull/107) establishes native
+PCM, DAC/status, chip-local fault routing and fixed-model checkpoint replay.
+All seven PR/main checks and four CodeQL analyses passed. Its
+[contract and evidence](docs/FM-MODEL-PROOF.md) support the bounded public control;
+synthetic emulator output does not establish audible or physical board accuracy.
 
 ## Completed v0.5.1 Release and Lightweight Website
 

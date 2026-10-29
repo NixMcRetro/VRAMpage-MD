@@ -1,22 +1,29 @@
-## FM Output Model Proof — Integration Checkpoint, 29 October 2026
+## Active FM Output Model Selector — 29 October 2026
 
-The isolated MAME Discrete/Integrated proof is implemented and independently
-reviewed. Actual-WASM tests establish default PCM/pixel/Work RAM/status parity,
-native DAC and status-port differences, literal CPU/banked-Z80 fault counters
-with PSG isolation, and fixed-model checkpoint/CPU Reset/restore/restart replay.
-See the [contract and observations](FM-MODEL-PROOF.md). Production app controls,
-core build inputs/defaults, VERSION and approved cartridges remain unchanged.
+Implement the compact staged Discrete/Integrated control beside Region using
+[the bounded feature contract](FM-OUTPUT-MODEL.md) and the verified native proof.
+Discrete stays default; requests apply on Clean Restart/new cartridge, while
+CPU Reset and checkpoint restore retain the active model and saved slot. Expose
+requested/effective identity in observations and comparison, with legacy data
+Unknown. Preserve normal hashes, VERSION, approved cartridges and live releases.
+Use an isolated branch, focused actual-WASM/browser tests, specialist review,
+all protected checks/CodeQL and verified main before source integration.
 
-The full local source/sanitizer suite passes; the two environment-dependent
-classes skipped locally remain covered by pinned CI. Both FM regressions and
-11 checkpoint groups pass. Independent source rebuilding reproduces proof
-JS/WASM byte for byte, with all 266 source inventory hashes and notices intact.
-Require all seven protected checks and CodeQL on the final PR head before merge,
-then verify main CI. No proof binaries are uploaded.
+## Completed FM Output Model Proof — 29 October 2026
 
-Next eligible feature is a small staged FM Output Model selector using this
-proven lifetime and export/comparison identity; it is separate from this proof.
-Experimental Demo Cart drafts still require owner acceptance; v0.3.5 remains the
+[PR #107](https://github.com/NixMcRetro/VRAMpage-MD/pull/107) merged as
+`4723457f4f80e94250e8f272bbedc04c4596fcb2`; its tree matches reviewed
+`1395350c0026ebdf028e29af519952e0ce4ad525`. All seven
+[main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40854623252)
+and four [CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40854621660)
+passed, following green PR checks and independent Luna High specialist review.
+The [proof](FM-MODEL-PROOF.md) establishes native PCM/DAC/status behavior,
+CPU/banked-Z80 cuts/bridges with exact counters and PSG isolation, and each
+model's checkpoint/reset/restore/restart replay. Retained source rebuilt exactly
+with all 266 inventory hashes/notices verified. No production control, default,
+release, approved cartridge or website changed in that proof slice.
+
+Experimental Demo Cart drafts still need owner acceptance; v0.3.5 remains the
 manifest-approved default. Optional NTSC VA6 issue #73 does not block this work.
 No new release or website deployment is authorized.
 
