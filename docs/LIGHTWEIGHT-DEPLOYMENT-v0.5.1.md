@@ -68,6 +68,11 @@ The source/licence page and same-origin ZIP link work in the local candidate.
 The future GitHub release mirror is labelled pending, with no active 404 link.
 Publication must attach and verify the exact archive and checksums before
 changing that label or choosing any external-only source-delivery policy.
+The planned immutable release-asset URL (not published yet) is:
+
+```text
+https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.1/VRAMpage-MD-v0.5.1-corresponding-source.zip
+```
 
 ## Footprint and Checks
 
@@ -94,6 +99,11 @@ files are removed. The large reduction applies to the full-source staging
 policy for the same current runtime. This proposal does not modify that website.
 
 Jekyll would copy 17 static files instead of traversing 526 candidate files.
+These figures measure checkout/deployed bytes, not Git pack sizes or cumulative
+repository history. A different compressed ZIP per release may reuse less Git
+object storage than unchanged loose source files; no history-size saving is
+claimed.
+
 The ZIP is copied as one opaque asset; compilation/rebuild verification stays
 in VRAMpage MD's CI, not McRetro.net's build. No website build benchmark is
 claimed because no actual website checkout/build/deployment was performed.

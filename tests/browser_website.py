@@ -68,6 +68,7 @@ window.Module=opts=>coreFactory(opts).then(core=>{window.testCore=core;return co
                         expect(page.get_by_role('heading', name='Source Code & Licences', exact=True)).to_be_visible()
                         expect(page.locator('body')).to_contain_text('Karl Stenerud')
                         expect(page.locator('body')).to_contain_text('GNU LESSER GENERAL PUBLIC LICENSE')
+                        self.assertLessEqual(page.evaluate('document.documentElement.scrollWidth'), 390)
                         source_link = page.locator('a[href$="-corresponding-source.zip"]')
                         response = page.request.get(source_link.evaluate('node=>node.href'))
                         self.assertEqual(response.status, 200)

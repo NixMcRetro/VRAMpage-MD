@@ -268,7 +268,10 @@ def _render_source_page(version: str, archive_name: str, archive_hash: str,
     return (f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Source Code &amp; Licences · VRAMpage MD v{version}</title>
-<link rel="stylesheet" href="style.css"></head>
+<link rel="stylesheet" href="style.css">
+<style>.source-page {{ max-width:1000px; margin:auto; padding:24px; }}
+.source-page pre {{ white-space:pre-wrap; overflow-wrap:anywhere; }}
+.source-page code {{ overflow-wrap:anywhere; }}</style></head>
 <body><main class="source-page"><h1>Source Code &amp; Licences</h1>
 <p>Corresponding source for VRAMpage MD v{version}, including the modified WebAssembly core and component notices.</p>
 <p><a href="source/{archive_name}">Download corresponding source ZIP</a> (SHA-256: <code>{archive_hash}</code>).</p>
