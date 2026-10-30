@@ -337,8 +337,8 @@ The unchanged five-pair runtime performance gate passes; both failed and passing
 records remain available in the experiment summaries. Fresh public v0.3.0 ZIP
 checksum, tag, manifests and source agree. Its runtime hashes match the measured
 candidate; three extracted Chromium transaction tests and API checks pass, as do
-launcher asset serving and clean Ctrl+C shutdown. See the current
-[development status](DEVELOPMENT-STATUS.md) for immutable links and checksum.
+launcher asset serving and clean Ctrl+C shutdown. See the
+[v0.3.0 verification record](https://github.com/NixMcRetro/VRAMpage-MD/blob/a15fce5ac0352b4486486d6b9db43d7cc075f0f6/docs/DEVELOPMENT-STATUS.md#L2309-L2339) for immutable links and checksum.
 These are Linux synthetic/core checks, not native Mac, audible or physical tests.
 The older stage records below describe acceptance at their original checkpoints.
 
@@ -386,7 +386,7 @@ its real build manifest. Package source is `1d87fd9a921194a557fc5320e54be48295c6
 The release-catalog follow-up passed 73 Python tests, including new-version,
 missing-history, asset-policy and remote tag/asset preflight regression cases,
 plus the unchanged native/sanitizer, framebuffer and protocol suites.
-See [development status](DEVELOPMENT-STATUS.md) for checksum and historical failed
+See the [v0.2.7 verification record](https://github.com/NixMcRetro/VRAMpage-MD/blob/a15fce5ac0352b4486486d6b9db43d7cc075f0f6/docs/DEVELOPMENT-STATUS.md#L2514-L2542) for checksum and historical failed
 setup/test runs. Native Mac feedback below predates this release and does not
 establish native acceptance of the new build.
 
@@ -408,7 +408,7 @@ PR [#23 checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/397845171
 passed, including source checks, Chromium, Firefox, WebKit and a fresh
 core/package build. The merged source is
 `6c7469fefe8d004c0e61b360e08579dc9b100a9d`. Final main and public-download
-verification are recorded in [development status](DEVELOPMENT-STATUS.md).
+verification are recorded in the [v0.2.7 verification record](https://github.com/NixMcRetro/VRAMpage-MD/blob/a15fce5ac0352b4486486d6b9db43d7cc075f0f6/docs/DEVELOPMENT-STATUS.md#L2514-L2542).
 See [trace protocol](RAM-WRITE-TRACE.md). These checks do not establish physical
 fault accuracy or native Mac behaviour for the new build.
 

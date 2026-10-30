@@ -146,9 +146,12 @@ The design checkpoint requires source audit, independent review and Markdown/lin
 checks. It does not justify rerunning unchanged emulator builds or claiming new
 recovery/checkpoint execution. That was the initial design checkpoint. PR #63 subsequently completed the bounded
 checkpoint state/capacity proof and implementation for supported profiles; PR #66
-completed the ordered recovery policy. Their verified delivery records are in
-[the work queue](WORK-QUEUE.md). Unsupported profiles remain rejected. Remaining
-release preparation is version-aligned packaging/publishing and honest recording
+completed the ordered recovery policy. Their
+[checkpoint verification](https://github.com/NixMcRetro/VRAMpage-MD/blob/a15fce5ac0352b4486486d6b9db43d7cc075f0f6/docs/WORK-QUEUE.md#L1224-L1253) and
+[recovery verification](https://github.com/NixMcRetro/VRAMpage-MD/blob/a15fce5ac0352b4486486d6b9db43d7cc075f0f6/docs/WORK-QUEUE.md#L1087-L1112)
+records preserve the exact source and CI. Unsupported profiles remain rejected.
+At that checkpoint, remaining release preparation was version-aligned
+packaging/publishing and honest recording
 of manual compatibility limits, not repeating those completed proofs.
 
 Independent Luna High source/design review found no blocking issue. The audit was

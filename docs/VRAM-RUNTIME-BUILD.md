@@ -35,8 +35,8 @@ passed all five source, browser and real-core/package jobs.
 The application now selects frame or transaction mode through the production
 runtime, with validated RAM/VRAM handoff and separate export metadata/counters.
 The current runtime passes the fixed five-pair performance gate after independent
-review. Final browser CI, packaging and publication remain milestone gates;
-see [development status](DEVELOPMENT-STATUS.md). Native Mac, audible output and
+review. The [v0.3.0 verification record](https://github.com/NixMcRetro/VRAMpage-MD/blob/a15fce5ac0352b4486486d6b9db43d7cc075f0f6/docs/DEVELOPMENT-STATUS.md#L2309-L2339)
+records completed browser CI, packaging and publication. Native Mac, audible output and
 physical hardware fidelity require separate evidence.
 
 ## Build and reproduce
