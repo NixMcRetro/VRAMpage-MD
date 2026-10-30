@@ -876,6 +876,28 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertEqual(page.evaluate("mockCore.inputs[11]"),1)
         page.keyboard.up("x")
 
+    def test_gamepad_dpad_directions_deadzone_priority_and_opposites(self):
+        page=self.checkpoint_page()
+        result=page.evaluate("""() => {
+          window.testPad={axes:[0,0],buttons:Array.from({length:16},()=>({pressed:false}))};
+          navigator.getGamepads=()=>[testPad];
+          const frame=()=>{stepTestFrame();return [mockCore.inputs[6],mockCore.inputs[7]];};
+          testPad.buttons[14].pressed=true;const left=frame();
+          testPad.buttons[14].pressed=false;const neutral=frame();
+          testPad.buttons[12].pressed=true;testPad.buttons[13].pressed=true;const oppositeY=frame();
+          testPad.buttons[13].pressed=false;const up=frame();
+          testPad.buttons[12].pressed=false;testPad.buttons[13].pressed=true;const down=frame();
+          testPad.axes[0]=0.8;testPad.buttons[13].pressed=false;testPad.buttons[14].pressed=true;const analog=frame();
+          testPad.axes[0]=0.3;const deadzone=frame();
+          testPad.buttons[15].pressed=true;const oppositeX=frame();
+          return [left,neutral,oppositeY,up,down,analog,deadzone,oppositeX];
+        }""")
+        self.assertEqual(result,[[-1,0],[0,0],[0,0],[0,-1],[0,1],[1,0],[-1,0],[0,0]])
+        page.evaluate("testPad.buttons[14].pressed=false;testPad.buttons[15].pressed=false;testPad.axes[0]=0")
+        page.keyboard.down("ArrowLeft");page.evaluate("stepTestFrame()")
+        self.assertEqual(page.evaluate("mockCore.inputs[6]"),-1)
+        page.keyboard.up("ArrowLeft")
+
     def test_permissions_policy_blocked_gamepad_keeps_keyboard_frames_running(self):
         page=self.new_page(manual_frames=True,gamepad_policy=True)
         policy_result=page.evaluate("() => {try {navigator.getGamepads();return 'allowed';} catch(error) {return error.name;}}")
@@ -902,6 +924,18 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertEqual(page.evaluate("mockCore.inputs[10]"),0)
         page.evaluate("testPad.buttons[2].pressed=false;stepTestFrame();testPad.buttons[2].pressed=true;stepTestFrame()")
         self.assertEqual(page.evaluate("mockCore.inputs[10]"),1)
+
+    def test_checkpoint_held_gamepad_dpad_stays_blocked_until_release(self):
+        page=self.checkpoint_page()
+        page.evaluate("() => {window.testPad={axes:[0,0],buttons:Array.from({length:16},()=>({pressed:false}))};navigator.getGamepads=()=>[testPad];}")
+        page.locator("#saveCheckpointBtn").click()
+        page.evaluate("testPad.buttons[15].pressed=true")
+        page.locator("#restoreCheckpointBtn").click()
+        page.locator("#pauseBtn").click()
+        page.evaluate("stepTestFrame()")
+        self.assertEqual(page.evaluate("mockCore.inputs[6]"),0)
+        page.evaluate("testPad.buttons[15].pressed=false;stepTestFrame();testPad.buttons[15].pressed=true;stepTestFrame()")
+        self.assertEqual(page.evaluate("mockCore.inputs[6]"),1)
 
     def test_checkpoint_uncertain_save_disables_slot_without_claiming_success(self):
         page=self.checkpoint_page()

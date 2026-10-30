@@ -3147,15 +3147,20 @@
         gamepads=navigator.getGamepads();
         gamepadsReadable=true;
       }
-    } catch {}
-    const gamepad = gamepads && Array.from(gamepads).find(Boolean);
+    } catch { /* A blocked gamepad API must not stop keyboard input or the frame loop. */ }
+    const gamepad = gamepads?.find(Boolean);
     if (gamepadsReadable && checkpointBlockGamepad && (!gamepad ||
         !(Math.abs(gamepad.axes?.[0]||0)>0.4 || Math.abs(gamepad.axes?.[1]||0)>0.4 ||
-          [0,1,2,9].some(index=>gamepad.buttons?.[index]?.pressed)))) checkpointBlockGamepad=false;
+          [0,1,2,9,12,13,14,15].some(index=>gamepad.buttons?.[index]?.pressed)))) checkpointBlockGamepad=false;
     if (gamepad && !checkpointBlockGamepad) {
       const x = gamepad.axes?.[0] || 0, y = gamepad.axes?.[1] || 0;
+      const buttons=gamepad.buttons;
       if (Math.abs(x) > 0.4) inputView[6] = Math.sign(x);
+      else if (buttons?.[14]?.pressed || buttons?.[15]?.pressed)
+        inputView[6] = Number(buttons[15].pressed) - Number(buttons[14].pressed);
       if (Math.abs(y) > 0.4) inputView[7] = Math.sign(y);
+      else if (buttons?.[12]?.pressed || buttons?.[13]?.pressed)
+        inputView[7] = Number(buttons[13].pressed) - Number(buttons[12].pressed);
       if (gamepad.buttons?.[0]?.pressed) inputView[9] = 1;
       if (gamepad.buttons?.[1]?.pressed) inputView[11] = 1;
       if (gamepad.buttons?.[2]?.pressed) inputView[10] = 1;
