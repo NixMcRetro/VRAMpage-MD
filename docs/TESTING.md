@@ -1,3 +1,16 @@
+# Hidden-Tab Input Cleanup
+
+Run the `hidden_without_blur` and `hidden_held_release` cases in
+`tests/browser_logic.py` with Chromium, Firefox and WebKit. The first keeps a
+controller key physically down across hidden/visible events and checks its
+mock core's controller input is zero before keyup; a pointer-owned RAM hold must
+disconnect while latched FM/PSG masks stay intact. A visible event alone must
+preserve a new hold. The second keeps HALT asserted after hidden contact release
+and advances completed frames, requiring no automatic recovery and both recovery
+preferences still enabled. Preserve the existing blur, release-failure and
+actual-core audio queue checks. Synthetic visibility events test handler behavior;
+they do not establish a native Safari event sequence or physical gamepad behavior.
+
 # Codex Instruction Loading
 
 Ponytail Full Mode is integrated once in root `AGENTS.md`, with pinned upstream

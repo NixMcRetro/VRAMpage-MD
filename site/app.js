@@ -3542,18 +3542,21 @@
       if (/^Digit[1-9]$/.test(event.code)) endKeyboardHold(event.code);
       else if (['Space','Enter'].includes(event.code) && keyboardHeld?.target==='WRAM') endKeyboardHold(event.code);
     });
-    window.addEventListener('blur',()=>{
+    function releaseFocusInputs() {
       cancelAutomaticRecovery();
       pressed.clear();checkpointBlockedKeys.clear();
       endKeyboardHold();
       if (ownedAddressHold?.type==='pointer') endAddressFrameHold('pointer',ownedAddressHold.pointerId);
       cancelAutomaticRecovery();
+    }
+    window.addEventListener('blur',()=>{
+      releaseFocusInputs();
       focusReleased=true;
     });
     window.addEventListener('focus',()=>{if(focusReleased){lastFrame=0;focusReleased=false;}});
     document.addEventListener('visibilitychange',()=>{
       lastFrame=0;clearAudioQueue();
-      if (document.hidden) cancelAutomaticRecovery();
+      if (document.hidden) releaseFocusInputs();
     });
   }
 

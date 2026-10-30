@@ -1,3 +1,25 @@
+## Hidden-Tab Held Inputs — Stabilisation Checkpoint, 30 October 2026 (Sydney)
+
+A bounded Chromium probe at verified main `08889e90c40f40ae063ca9e6c1c6b2bc72b6c536`
+found that a hidden event without blur leaves a pointer-owned RAM contact active
+and retains keyboard input. Blur and hidden events now share the existing release
+path, including recovery cancellation before and after contact release. Latched
+faults and recovery preferences stay intact; visible events do not end new holds.
+
+Two focused regressions pass Chromium and WPE WebKit: input release is checked
+before keyup, and persistent HALT after hidden contact release must not trigger
+recovery. Existing blur, held-contact and failed-restoration cases also pass.
+Require independent review, all protected source/browser/package checks, CodeQL
+and verified main before integration. This is a handler-level correction; native
+Safari event order, physical gamepads and audible output are not newly verified.
+Keep the feature freeze and existing publication boundaries.
+
+[PR #111](https://github.com/NixMcRetro/VRAMpage-MD/pull/111) is complete at the
+main commit above, with all seven [main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40909272214)
+and four [CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40909272985)
+passed. Reuse its actual-core checkpoint/ROM-read evidence rather than repeating
+finished work. No version, approved cartridge, published asset or website change.
+
 ## Async ROM Read Recovery — Verification Checkpoint, 30 October 2026 (Sydney)
 
 The unattended stabilisation slice adds one actual-core browser regression for
