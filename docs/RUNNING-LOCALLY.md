@@ -77,7 +77,9 @@ changes to McRetro.net.
   fixed port, try `--port 0`; do not stop unrelated applications.
 - **Browser does not open:** copy the printed local address into your browser.
 - **No sound:** click **Enable Sound** after loading a cartridge; check browser
-  audio permissions, the tab's mute setting and your computer's volume.
+  audio permissions, the tab's mute setting and your computer's volume. If sound
+  was enabled before an interruption, use **Mute Sound**, then **Enable Sound**
+  to retry.
 - **Game stops after a fault:** disconnect faults first. **Force Resume** and
   **CPU Reset** preserve corrupted memory and may not restore play. **Clean
   Restart** reboots the cartridge. Automatic recovery handles reported HALT only,

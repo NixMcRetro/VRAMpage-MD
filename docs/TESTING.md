@@ -1,3 +1,17 @@
+# Interrupted Audio Resume
+
+The `enable_sound_resumes` case in `tests/browser_logic.py` uses the existing
+silent mock core and a minimal audio-context lifecycle double. Native trusted
+clicks must resume interrupted/suspended contexts during the user gesture,
+leave running contexts alone, keep rejected or ineffective resumes muted, and
+allow retry with one context. Preserve the genuine AudioContext/production-core
+`audio_queue_is_bounded` test, including pause, mute, suspend/resume and visibility.
+
+[MDN's pinned iOS Safari guidance](https://github.com/mdn/content/blob/9740186550ed818e727ecc9906b499cdbe951cfc/files/en-us/web/api/baseaudiocontext/state/index.md#resuming-interrupted-play-states-in-ios-safari)
+documents `interrupted` as a resumable state after leaving a page. The synthetic
+state check and Linux Chromium/WebKit queue runs do not establish physical iOS
+interruption or human listening acceptance.
+
 # Gamepad Input Boundaries
 
 Run `tests/browser_logic.py -k gamepad` with Chromium, Firefox and WebKit.

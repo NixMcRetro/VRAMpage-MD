@@ -1,3 +1,26 @@
+## Interrupted Audio Resume — Stabilisation Checkpoint, 30 October 2026 (Sydney)
+
+The explicit Enable Sound action now resumes `interrupted` as well as `suspended`
+contexts, matching the pinned MDN Safari guidance. Running-state verification
+remains mandatory; rejected or ineffective resumes stay muted and allow retry
+with the existing context. Permission errors no longer name only Firefox.
+
+The regression fails before the fix and passes Chromium/WebKit, covering trusted
+gestures, suspended/running states, failure, retry and context reuse. Genuine
+AudioContext/production-core queue checks pass both engines. Full source checks
+pass with the two unchanged vendor/SDK class skips. Require independent review,
+all protected source/browser/package checks, CodeQL and verified main. Physical
+Safari/iOS interruption and listening remain manual. Native core, version,
+approved cartridges, releases and the website stay unchanged.
+
+[Controller PR #114](https://github.com/NixMcRetro/VRAMpage-MD/pull/114) merged as
+`291de22d9219d73a783206f3c2648f42f8c2c1f1` after all seven protected
+[PR checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41029338374)
+and four [CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41029335830)
+passed; its [main verification](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41030368789)
+is tracked separately. The release/candidate guides now distinguish completed
+v0.5.1 publication from future approval and require approved cartridges in bundles.
+
 ## Gamepad Input Boundaries — Stabilisation Checkpoint, 30 October 2026 (Sydney)
 
 A real Chromium `Permissions-Policy: gamepad=()` response makes the optional
