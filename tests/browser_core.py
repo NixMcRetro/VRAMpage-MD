@@ -1129,7 +1129,10 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     # Inject standard gamepad state only, keeping the real input adapter/core.
                     page.evaluate("navigator.getGamepads=()=>[{axes:[1,0],buttons:[{pressed:true}]}]")
                     page.wait_for_function('new Float32Array(testCore.HEAPF32.buffer,testCore._get_input_buffer_ref(),32)[9]===1')
+                    page.evaluate("navigator.getGamepads=()=>[{axes:[0,0],buttons:[{pressed:false},{pressed:false},{pressed:true}]}]")
+                    page.wait_for_function('new Float32Array(testCore.HEAPF32.buffer,testCore._get_input_buffer_ref(),32)[10]===1')
                     page.evaluate('navigator.getGamepads=()=>[]')
+                    page.wait_for_function('new Float32Array(testCore.HEAPF32.buffer,testCore._get_input_buffer_ref(),32)[10]===0')
                     page.locator('#vramMode').select_option('bridge')
                     page.locator('#pinGrid .pin').nth(0).click()
                     page.locator('#pinGrid .pin').nth(1).click()

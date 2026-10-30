@@ -3141,16 +3141,24 @@
     if (pressed.has('KeyX')) inputView[11] = 1; // B
     if (pressed.has('KeyC')) inputView[10] = 1; // A
     if (pressed.has('Enter')) inputView[15] = 1; // Start
-    const gamepad = navigator.getGamepads?.()[0];
-    if (checkpointBlockGamepad && (!gamepad ||
+    let gamepads, gamepadsReadable=false;
+    try {
+      if (navigator.getGamepads) {
+        gamepads=navigator.getGamepads();
+        gamepadsReadable=true;
+      }
+    } catch {}
+    const gamepad = gamepads && Array.from(gamepads).find(Boolean);
+    if (gamepadsReadable && checkpointBlockGamepad && (!gamepad ||
         !(Math.abs(gamepad.axes?.[0]||0)>0.4 || Math.abs(gamepad.axes?.[1]||0)>0.4 ||
-          [0,1,9].some(index=>gamepad.buttons?.[index]?.pressed)))) checkpointBlockGamepad=false;
+          [0,1,2,9].some(index=>gamepad.buttons?.[index]?.pressed)))) checkpointBlockGamepad=false;
     if (gamepad && !checkpointBlockGamepad) {
       const x = gamepad.axes?.[0] || 0, y = gamepad.axes?.[1] || 0;
       if (Math.abs(x) > 0.4) inputView[6] = Math.sign(x);
       if (Math.abs(y) > 0.4) inputView[7] = Math.sign(y);
       if (gamepad.buttons?.[0]?.pressed) inputView[9] = 1;
       if (gamepad.buttons?.[1]?.pressed) inputView[11] = 1;
+      if (gamepad.buttons?.[2]?.pressed) inputView[10] = 1;
       if (gamepad.buttons?.[9]?.pressed) inputView[15] = 1;
     }
     emulator._wasm_input_update();
