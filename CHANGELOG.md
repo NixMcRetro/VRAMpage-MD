@@ -1,3 +1,10 @@
+## Development Fix — Keyboard File Actions
+
+- Remove invisible duplicate tab stops from the configuration/export file inputs,
+  retaining the visible Load Configuration and Load Export A/B controls.
+- Verify forward/reverse focus, click/Enter/Space picker activation and inert
+  configuration staging. Preserve the existing native file-loading handlers.
+
 ## Development Fix — Hidden-Tab Held Inputs
 
 - Release held RAM contacts and keyboard inputs when the document becomes

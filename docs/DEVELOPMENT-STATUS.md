@@ -1,3 +1,25 @@
+## Keyboard File Actions — Stabilisation Checkpoint, 30 October 2026 (Sydney)
+
+Chromium and WPE WebKit expose three invisible tab stops: the configuration and
+two export file inputs are 1×1 pixels with zero opacity but remain focusable.
+Give them the existing ROM input's `tabindex="-1"`; the visible, labelled file
+actions retain their native click and Enter/Space handlers. No chip-focus rebuild
+bug reproduced, so the chip rendering stays unchanged.
+
+The focused browser regression fails on the original page and passes after the
+three-attribute correction in Chromium and WPE. It checks forward/reverse order
+with preview actions disabled/enabled, all nine picker activations and inert
+valid configuration staging. Require independent review, protected three-browser
+and complete-package CI, CodeQL and verified main before integration. Preserve
+the feature freeze, version, approved cartridges and publication boundaries.
+
+[PR #112](https://github.com/NixMcRetro/VRAMpage-MD/pull/112) is complete at
+`fbaf5374a6068f5bd0e69ca9b4e4261bfa909b56`, matching its reviewed tree. All seven
+[main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40985452028)
+and four [CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/40985452260)
+passed. Reuse the completed hidden-input, recovery and actual-core audio evidence.
+Music drafts still need owner listening approval; physical mapping remains optional.
+
 ## Hidden-Tab Held Inputs — Stabilisation Checkpoint, 30 October 2026 (Sydney)
 
 A bounded Chromium probe at verified main `08889e90c40f40ae063ca9e6c1c6b2bc72b6c536`

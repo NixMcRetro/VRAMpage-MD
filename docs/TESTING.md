@@ -1,3 +1,13 @@
+# Keyboard File Actions
+
+The `file_actions` case in `tests/browser_logic.py` exercises Tab and Shift-Tab
+through the visible configuration/export actions with preview actions disabled
+and enabled. Hidden file inputs must not introduce invisible stops. It opens
+each associated picker through click, Enter and Space, then checks that a valid
+configuration selected through the picker stages a preview without native core
+mutation. Keep the existing permanent chooser listener for rapid cancel/reopen
+coverage; preserve the existing import, validation and comparison tests.
+
 # Hidden-Tab Input Cleanup
 
 Run the `hidden_without_blur` and `hidden_held_release` cases in
