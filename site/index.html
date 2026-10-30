@@ -289,7 +289,7 @@
         <div class="logic-actions">
           <button id="circuitConfigDownload" type="button">Download Configuration</button>
           <label id="circuitConfigFileLabel" class="load-btn" for="circuitConfigFile" role="button" tabindex="0">Load Configuration</label>
-          <input id="circuitConfigFile" type="file" accept=".json,application/json" aria-label="Load circuit configuration JSON">
+          <input id="circuitConfigFile" type="file" accept=".json,application/json" aria-label="Load circuit configuration JSON" tabindex="-1">
           <button id="circuitConfigApply" type="button" disabled>Apply Staged Configuration</button>
           <button id="circuitConfigCancel" type="button" disabled>Discard Preview</button>
         </div>
@@ -300,8 +300,8 @@
         <div class="section-heading"><h2>09 <span>/</span> Compare Exports</h2><span>Local · Read-Only</span></div>
         <p>Load two experiment JSON exports to compare recorded identity, fault settings, counters and outcomes. Files are read in this browser only. Unknown values may be absent, invalid, or unavailable; long values are shortened. Comparison does not establish causal or gameplay equivalence.</p>
         <div class="logic-actions">
-          <label id="compareFileALabel" class="load-btn" for="compareFileA" role="button" tabindex="0">Load Export A</label><input id="compareFileA" type="file" accept=".json,application/json" aria-label="Load experiment export A">
-          <label id="compareFileBLabel" class="load-btn" for="compareFileB" role="button" tabindex="0">Load Export B</label><input id="compareFileB" type="file" accept=".json,application/json" aria-label="Load experiment export B">
+          <label id="compareFileALabel" class="load-btn" for="compareFileA" role="button" tabindex="0">Load Export A</label><input id="compareFileA" type="file" accept=".json,application/json" aria-label="Load experiment export A" tabindex="-1">
+          <label id="compareFileBLabel" class="load-btn" for="compareFileB" role="button" tabindex="0">Load Export B</label><input id="compareFileB" type="file" accept=".json,application/json" aria-label="Load experiment export B" tabindex="-1">
           <button id="compareCancel" type="button">Cancel / Clear</button>
         </div>
         <p id="compareStatus" class="logic-status" role="status" aria-live="polite">Choose two exported experiment JSON files.</p>

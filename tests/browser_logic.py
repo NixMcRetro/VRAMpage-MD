@@ -2295,6 +2295,57 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertEqual(self.page.evaluate("mockCore.psg.inputWrites"), "42")
         self.assertEqual(self.page.evaluate("mockCore.fm.inputWrites"), "27")
 
+    def test_file_actions_keep_visible_tab_focus_and_picker_activation(self):
+        self.page.close()
+        self.page = self.new_page(circuit_config=True)
+        self.load_rom()
+        page = self.page
+
+        def assert_tab_order(order):
+            page.locator('#' + order[0]).focus()
+            for control in order[1:]:
+                page.keyboard.press('Tab')
+                expect(page.locator('#' + control)).to_be_focused()
+            for control in reversed(order[:-1]):
+                page.keyboard.press('Shift+Tab')
+                expect(page.locator('#' + control)).to_be_focused()
+
+        before_preview = ['circuitConfigDownload', 'circuitConfigFileLabel',
+                          'compareFileALabel', 'compareFileBLabel', 'compareCancel']
+        expect(page.locator('#circuitConfigApply')).to_be_disabled()
+        expect(page.locator('#circuitConfigCancel')).to_be_disabled()
+        assert_tab_order(before_preview)
+        calls = '[mockCore.starts,mockCore.vramModel.calls.length,mockCore.logic.setterCalls.length,mockCore.psg.calls.length,mockCore.fm.calls.length]'
+        before = page.evaluate(calls)
+        payload = self.circuit_configuration(vram_pair=[2, 5])
+        # Keep interception enabled between rapid keyboard activations.
+        choosers = []
+        page.on('filechooser', lambda chooser: choosers.append(chooser))
+        for label, input_id in [('circuitConfigFileLabel', 'circuitConfigFile'),
+                                ('compareFileALabel', 'compareFileA'),
+                                ('compareFileBLabel', 'compareFileB')]:
+            for action in ['Enter', 'Space', 'click']:
+                with self.subTest(label=label, action=action):
+                    page.locator('#' + label).focus()
+                    with page.expect_file_chooser() as chooser:
+                        if action == 'click':
+                            page.locator('#' + label).click()
+                        else:
+                            page.keyboard.press(action)
+                    self.assertEqual(chooser.value.element.get_attribute('id'), input_id)
+                    if input_id == 'circuitConfigFile' and action == 'Space':
+                        chooser.value.set_files({'name': 'circuit-config.json',
+                                                 'mimeType': 'application/json',
+                                                 'buffer': json.dumps(payload).encode()})
+                    else:
+                        chooser.value.set_files([])
+        self.assertEqual(len(choosers), 9)
+        expect(page.locator('#circuitConfigPreview')).to_contain_text('VRAM AD2↔AD5')
+        expect(page.locator('#circuitConfigApply')).to_be_enabled()
+        expect(page.locator('#circuitConfigCancel')).to_be_enabled()
+        self.assertEqual(page.evaluate(calls), before, 'file activation and preview must not mutate the core')
+        assert_tab_order(before_preview[:2] + ['circuitConfigApply', 'circuitConfigCancel'] + before_preview[2:])
+
     def test_chip_workbench_shows_four_compact_chips_at_mac_viewport(self):
         self.page.close()
         self.page=self.new_page(circuit_config=True)
