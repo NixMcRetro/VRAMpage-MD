@@ -890,9 +890,15 @@ class BrowserLogicTests(unittest.TestCase):
           testPad.axes[0]=0.8;testPad.buttons[13].pressed=false;testPad.buttons[14].pressed=true;const analog=frame();
           testPad.axes[0]=0.3;const deadzone=frame();
           testPad.buttons[15].pressed=true;const oppositeX=frame();
-          return [left,neutral,oppositeY,up,down,analog,deadzone,oppositeX];
+          testPad.axes=[0,0];
+          testPad.buttons=Array.from({length:13},()=>({pressed:false}));
+          testPad.buttons[12].pressed=true;const shortUp=frame();
+          testPad.buttons=Array.from({length:15},()=>({pressed:false}));
+          testPad.buttons[14].pressed=true;const shortLeft=frame();
+          testPad.buttons=Array.from({length:16},()=>({pressed:false}));
+          return [left,neutral,oppositeY,up,down,analog,deadzone,oppositeX,shortUp,shortLeft];
         }""")
-        self.assertEqual(result,[[-1,0],[0,0],[0,0],[0,-1],[0,1],[1,0],[-1,0],[0,0]])
+        self.assertEqual(result,[[-1,0],[0,0],[0,0],[0,-1],[0,1],[1,0],[-1,0],[0,0],[0,-1],[-1,0]])
         page.evaluate("testPad.buttons[14].pressed=false;testPad.buttons[15].pressed=false;testPad.axes[0]=0")
         page.keyboard.down("ArrowLeft");page.evaluate("stepTestFrame()")
         self.assertEqual(page.evaluate("mockCore.inputs[6]"),-1)

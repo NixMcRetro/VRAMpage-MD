@@ -3157,10 +3157,10 @@
       const buttons=gamepad.buttons;
       if (Math.abs(x) > 0.4) inputView[6] = Math.sign(x);
       else if (buttons?.[14]?.pressed || buttons?.[15]?.pressed)
-        inputView[6] = Number(buttons[15].pressed) - Number(buttons[14].pressed);
+        inputView[6] = Number(!!buttons[15]?.pressed) - Number(!!buttons[14]?.pressed);
       if (Math.abs(y) > 0.4) inputView[7] = Math.sign(y);
       else if (buttons?.[12]?.pressed || buttons?.[13]?.pressed)
-        inputView[7] = Number(buttons[13].pressed) - Number(buttons[12].pressed);
+        inputView[7] = Number(!!buttons[13]?.pressed) - Number(!!buttons[12]?.pressed);
       if (gamepad.buttons?.[0]?.pressed) inputView[9] = 1;
       if (gamepad.buttons?.[1]?.pressed) inputView[11] = 1;
       if (gamepad.buttons?.[2]?.pressed) inputView[10] = 1;
