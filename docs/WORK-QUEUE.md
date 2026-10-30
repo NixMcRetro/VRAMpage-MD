@@ -1,6 +1,6 @@
 # Development work queue
 
-Updated 30 October 2026 (Sydney). This is the current queue. **Update these sections
+Updated 31 October 2026 (Sydney). This is the current queue. **Update these sections
 in place; do not prepend historical checkpoint logs.** Exact commits, CI,
 downloads and verification limits belong in [development status](DEVELOPMENT-STATUS.md).
 The root [development instructions](../AGENTS.md) remain authoritative.

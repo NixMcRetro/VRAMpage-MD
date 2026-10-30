@@ -13,6 +13,7 @@ from browser_core import original_cartridge, prefer_manual_startup
 
 
 ROOT = Path(__file__).resolve().parents[1]
+APPLICATION_VERSION = (ROOT / "VERSION").read_text().strip()
 OPTIONS = None
 
 
@@ -177,7 +178,7 @@ window.Module=opts=>originalFactory(opts).then(core=>{
             page.locator("#logicExperimentBtn").click()
         data = json.loads(Path(download.value.path()).read_text())
         self.assertEqual(data["schemaVersion"], 1)
-        self.assertEqual(data["modelVersion"], "0.5.1-experimental")
+        self.assertEqual(data["modelVersion"], f"{APPLICATION_VERSION}-experimental")
         self.assertIn("readCount", data)
         self.assertIn("vramFault", data)
         self.assertIn("vramAddressLineChanges", data)

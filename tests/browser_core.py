@@ -17,6 +17,7 @@ from browser_result import AnnotatedBrowserResult
 from browser_cartridge import choose_cartridge
 
 ROOT = Path(__file__).resolve().parents[1]
+APPLICATION_VERSION = (ROOT / "VERSION").read_text().strip()
 OPTIONS = None
 
 
@@ -693,7 +694,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     core_js += '\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\n'
                     page.route('**/core/genplus.js', lambda route: route.fulfill(
                         content_type='text/javascript', body=core_js))
-                    build_info={'application':'VRAMpage MD','application_version':'0.5.1',
+                    build_info={'application':'VRAMpage MD','application_version':APPLICATION_VERSION,
                                 'source_commit':'b'*40,'package_format':1}
                     page.route('**/build-info.json',lambda route:route.fulfill(
                         content_type='application/json',body=json.dumps(build_info)))
@@ -1018,7 +1019,7 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     core_js += '\nconst originalFactory=window.Module; window.Module=opts=>originalFactory(opts).then(c=>{window.testCore=c; return c;});\n'
                     page.route('**/core/genplus.js', lambda route: route.fulfill(content_type='text/javascript', body=core_js))
                     # A fixture manifest exercises provenance without mocking the real core.
-                    build_info={'application':'VRAMpage MD','application_version':'0.5.1',
+                    build_info={'application':'VRAMpage MD','application_version':APPLICATION_VERSION,
                                 'source_commit':'b'*40,'package_format':1}
                     page.route('**/build-info.json',lambda route:route.fulfill(
                         content_type='application/json',body=json.dumps(build_info)))
@@ -1164,9 +1165,9 @@ class ActualCoreBrowserTests(unittest.TestCase):
                     with page.expect_download() as download:
                         page.locator('#logicExperimentBtn').click()
                     payload=json.loads(Path(download.value.path()).read_text())
-                    self.assertEqual(payload['modelVersion'],'0.5.1-experimental')
+                    self.assertEqual(payload['modelVersion'],f'{APPLICATION_VERSION}-experimental')
                     self.assertEqual(payload['schemaVersion'],1)
-                    self.assertEqual(payload['build'],{'status':'available','applicationVersion':'0.5.1','sourceCommit':'b'*40})
+                    self.assertEqual(payload['build'],{'status':'available','applicationVersion':APPLICATION_VERSION,'sourceCommit':'b'*40})
                     self.assertEqual(payload['vramFault']['addressMask'],0)
                     self.assertEqual([e['mask'] for e in payload['vramAddressLineChanges']],[1,129,0])
                     self.assertEqual(payload['rom']['name'],'original-video-tone.bin')

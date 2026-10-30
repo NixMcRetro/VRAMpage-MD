@@ -1,6 +1,6 @@
 # Development status
 
-Updated 30 October 2026 (Sydney). **Update these current sections in place; do not
+Updated 31 October 2026 (Sydney). **Update these current sections in place; do not
 prepend historical checkpoint logs.** Priorities, dependencies and approval
 boundaries are in the [work queue](WORK-QUEUE.md); root [AGENTS.md](../AGENTS.md)
 retains the feature freeze and default Ponytail Full Mode instructions.
@@ -25,10 +25,22 @@ and byte-exact VDP clean recovery. Both approved cartridges also pass generic
 native execution in both regions. Original source-kit and portrait/logo bytes
 are retained; no generated ROM is committed.
 
-Independent integration review, full source/browser/package CI, CodeQL, exact
-corresponding-source rebuild and release publication checks remain pending.
-Do not treat the version bump or cartridge approval as evidence those gates passed.
-McRetro.net deployment is not authorized by this task.
+Independent specialist review approved the initial candidate
+`46183ca2001829b22cf460a76723c505b6f5f5cf`, and its CodeQL passed. The complete
+local source suite, 18 Chromium cartridge cases, actual-core startup and packaged
+17-file static site passed. Its source ZIP independently rebuilt to byte-identical
+JS/WASM with Emscripten 4.0.23; core hashes remain those recorded in the FM proof.
+
+Initial [PR #117 CI](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41066926096)
+exposed stale v0.5.1 expectations in browser export/provenance tests. Those tests
+now read the authoritative VERSION file while retaining exact metadata and
+rejection assertions. Isolated historical fixtures remain unchanged. The failed
+run is retained as evidence; its duplicate builds were cancelled after diagnosis.
+Final integration review and protected PR/main CI, CodeQL and release checks
+must pass on the final head. Follow [PR #117](https://github.com/NixMcRetro/VRAMpage-MD/pull/117)
+for check results and the v0.5.2 release for exact commit/artifact identities.
+Do not infer those results from owner approval. McRetro.net deployment remains
+outside this task.
 
 ## Reviewed behaviour and retained evidence
 

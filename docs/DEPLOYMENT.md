@@ -3,8 +3,9 @@
 The owner approved the full Demo Cart v0.3.8 and publishing **VRAMpage MD v0.5.2**
 on 30 October 2026. This covers the normal 180-second show from PR #106 and the
 merged browser/FM stabilisation work. It does not authorize McRetro.net changes.
-Final source CI, package and exact source-rebuild checks remain
-pending until recorded in [development status](DEVELOPMENT-STATUS.md).
+Final source CI, package and exact source-rebuild checks are required on the
+reviewed release commit; see [development status](DEVELOPMENT-STATUS.md) and
+[PR #117](https://github.com/NixMcRetro/VRAMpage-MD/pull/117) for evidence.
 
 Release assets are
 [VRAMpage-MD-v0.5.2-browser.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.2/VRAMpage-MD-v0.5.2-browser.zip),

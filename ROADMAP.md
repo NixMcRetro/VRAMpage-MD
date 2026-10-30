@@ -11,8 +11,9 @@ normal 180-second show from PR #106; the 20-second hook audition remains separat
 The release also includes the merged FM model, Safari file-picker, hidden-tab,
 keyboard, gamepad and interrupted-audio corrections. Preserve source/CodeQL,
 three-browser, native playback, exact source-rebuild and complete-package gates.
-Final release checks are pending; [development status](docs/DEVELOPMENT-STATUS.md)
-records their evidence. McRetro.net deployment is outside this approval.
+Follow [development status](docs/DEVELOPMENT-STATUS.md) and
+[PR #117](https://github.com/NixMcRetro/VRAMpage-MD/pull/117) for verification of
+the exact release commit. McRetro.net deployment is outside this approval.
 
 ## Completed FM Output Model Proof
 

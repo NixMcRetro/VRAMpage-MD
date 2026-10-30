@@ -1,9 +1,10 @@
 # Development Candidate
 
 The owner approved the full Demo Cart v0.3.8 and publication of **v0.5.2** on
-30 October 2026. Final source CI, complete-package and exact corresponding-source
-rebuild verification are pending for the release
-commit. Use [development status](DEVELOPMENT-STATUS.md) for exact source, checks
+30 October 2026. Require final source CI, complete-package and exact
+corresponding-source rebuild verification for the release commit. Use
+[development status](DEVELOPMENT-STATUS.md) and
+[PR #117](https://github.com/NixMcRetro/VRAMpage-MD/pull/117) for exact source, checks
 and Actions downloads; BUILD-INFO.json identifies the packaged commit. Earlier
 published assets remain unchanged. Website deployment requires separate approval.
 
