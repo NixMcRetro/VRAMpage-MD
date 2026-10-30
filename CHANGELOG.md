@@ -1,3 +1,12 @@
+## Development Fix — Gamepad Input Boundaries
+
+- Keep keyboard input and completed frames working when browser policy blocks
+  gamepad access. Select the first available controller after disconnected slots.
+- Complete standard A-button and D-pad mapping, preserving analog-stick priority,
+  short-controller safety and checkpoint suppression until a readable neutral poll.
+- Cover policy denial, input release, checkpoint boundaries and actual-core A/D-pad
+  input. Correct the local guide's stale claim that approved packages contain no ROMs.
+
 ## Development Fix — Keyboard File Actions
 
 - Remove invisible duplicate tab stops from the configuration/export file inputs,

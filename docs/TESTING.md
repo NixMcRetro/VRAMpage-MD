@@ -1,3 +1,16 @@
+# Gamepad Input Boundaries
+
+Run `tests/browser_logic.py -k gamepad` with Chromium, Firefox and WebKit.
+The actual `Permissions-Policy: gamepad=()` response-header case must keep
+keyboard input and completed frames working where the engine enforces it; that
+case skips on engines without enforcement. The injected SecurityError case
+still runs there. Sparse slots, A, four D-pad directions, opposing buttons,
+analog priority, short button arrays and input release have literal assertions.
+Checkpoint restore must suppress held A/D-pad input through unreadable polls
+until a successful neutral read. The actual-core control test also verifies A
+and D-pad direction/release against the production runtime. These are browser
+adapter checks, not physical-controller or native Safari acceptance.
+
 # Keyboard File Actions
 
 The `file_actions` case in `tests/browser_logic.py` exercises Tab and Shift-Tab
