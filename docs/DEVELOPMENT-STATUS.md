@@ -14,12 +14,11 @@ reviewed `74ca75b7d0920353cec713407a1c99512fa78b5e`. All seven protected
 four [CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41031583947)
 and the aggregate check passed before merge.
 
-**PR #115 main source/browser/package verification is running at this checkpoint:**
-[remaining source/browser/package checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41032790675).
-All four [main CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41032790630)
-passed. Record the remaining actual results before claiming main fully verified.
+All seven [main source/browser/package checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41032790675)
+and four [main CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41032790630)
+passed on that exact main commit. Its merged tree matches the reviewed source.
 
-The previous fully verified main is [controller PR #114](https://github.com/NixMcRetro/VRAMpage-MD/pull/114),
+The preceding verified checkpoint is [controller PR #114](https://github.com/NixMcRetro/VRAMpage-MD/pull/114),
 `291de22d9219d73a783206f3c2648f42f8c2c1f1`: all seven
 [main source/browser/package checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41030368789)
 and four [CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41030368313)
