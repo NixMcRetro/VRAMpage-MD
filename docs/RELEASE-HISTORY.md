@@ -1,12 +1,19 @@
 # VRAMpage MD Releases and Source History
 
-**Release target:** v0.5.1 — curated built-in cartridges, current browser controls,
-lightweight website packaging and complete corresponding-source distribution.
+**Release target:** v0.5.2 — the approved full Demo Cart v0.3.8, FM output-model
+selection and browser input/audio recovery fixes, with complete corresponding source.
 The [GitHub release catalog](https://github.com/NixMcRetro/VRAMpage-MD/releases)
-records publication status. The owner approved this release after the required
-CI/source checks; website publication uses a separate reviewed PR.
+records publication status. The owner approved publication after the required
+CI, native playback, package and source-rebuild gates. Approval is separate from
+completed verification; [development status](DEVELOPMENT-STATUS.md) records the
+results. Website deployment is outside this release approval.
 
-[Download VRAMpage-MD-v0.5.1-browser.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.1/VRAMpage-MD-v0.5.1-browser.zip) ·
+[Download VRAMpage-MD-v0.5.2-browser.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.2/VRAMpage-MD-v0.5.2-browser.zip) ·
+[Corresponding Source ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.2/VRAMpage-MD-v0.5.2-corresponding-source.zip) ·
+[SHA256SUMS.txt](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.2/SHA256SUMS.txt).
+
+The earlier **v0.5.1** release remains unchanged:
+[Complete Browser ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.1/VRAMpage-MD-v0.5.1-browser.zip) ·
 [Corresponding Source ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.1/VRAMpage-MD-v0.5.1-corresponding-source.zip) ·
 [SHA256SUMS.txt](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.1/SHA256SUMS.txt).
 

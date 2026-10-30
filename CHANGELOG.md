@@ -1,3 +1,19 @@
+## v0.5.2 — Full Demo Cart and Browser Stabilisation
+
+- Promote the owner-approved full Demo Cart v0.3.8 from PR #106 to the manifest
+  default: the 180-second show with original native FM/PSG music. Keep the
+  20-second hook audition separate and preserve Colour Test, the original v0.1
+  kit, captain portrait and logo.
+- Include Discrete/Integrated FM output-model selection, applied on Clean
+  Restart or a new cartridge while CPU Reset/Restore retain the active model.
+- Include the owner-accepted direct Safari ROM-picker action, visible keyboard
+  file actions, hidden-tab held-input cleanup, policy-safe gamepad handling and
+  interrupted/suspended audio resume with muted retry after failure.
+- Align the complete browser package, corresponding-source archive, checksum
+  and release draft workflow at v0.5.2. Preserve earlier public assets and source/
+  licence obligations. Final release checks are recorded in development status;
+  this release approval does not authorize McRetro.net deployment.
+
 ## Development Documentation — Current Handoffs
 
 - Keep concise current priorities and verification status in place, with complete

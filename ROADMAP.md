@@ -6,11 +6,13 @@ The owner accepted the [Safari local-ROM fix](https://github.com/NixMcRetro/VRAM
 Continue bounded crash/regression, browser/audio and usability stabilisation
 under the feature freeze; preserve intentional glitch/HALT outcomes.
 
-The current regression covers rejected asynchronous ROM reads while FM/region
-choices are pending and a checkpoint exists, using actual-core byte-exact video
-and PCM replay. Reuse existing evidence and helpers; preserve source/CodeQL,
-three-browser and complete-package gates. No release, version bump, cartridge
-promotion or website deployment accompanies this verification work.
+The owner approved the full Demo Cart v0.3.8 and a **v0.5.2** release. Bundle the
+normal 180-second show from PR #106; the 20-second hook audition remains separate.
+The release also includes the merged FM model, Safari file-picker, hidden-tab,
+keyboard, gamepad and interrupted-audio corrections. Preserve source/CodeQL,
+three-browser, native playback, exact source-rebuild and complete-package gates.
+Final release checks are pending; [development status](docs/DEVELOPMENT-STATUS.md)
+records their evidence. McRetro.net deployment is outside this approval.
 
 ## Completed FM Output Model Proof
 
@@ -27,15 +29,17 @@ synthetic emulator output does not establish audible or physical board accuracy.
 v0.5.1 is published and live, with one complete same-origin source ZIP, matching
 GitHub source mirror, literal Musashi notice in WASM and verified non-commercial
 hosting. PR/main/release/site/CodeQL and all 17 live file checks passed; earlier
-releases and unrelated website content remain unchanged. Future publication or
-hosting changes require separate approval.
+releases and unrelated website content remain unchanged. The v0.5.2 release is
+separately approved; future hosting changes require separate approval.
 
 ## Built-In Cartridge Selection
 
 The approved manifest drives the compact selector, automatic default and every
 future complete browser/static package. See [maintenance and acceptance gates](docs/BUILT-IN-CARTRIDGES.md).
-New Demo Cart revisions require explicit approval; broader demo-show work remains
-separate. Application versions, public artifacts and deployment are independent.
+The owner approved the full Demo Cart v0.3.8 on 30 October 2026. The manifest
+default now selects that source/build and keeps the original Colour Test.
+Application versions, cartridge versions, public artifacts and deployment remain
+independent. Later Demo Cart revisions still require explicit approval.
 
 # VRAMpage MD roadmap
 
@@ -70,9 +74,10 @@ normal/fallback binaries, all public releases and McRetro.net.
 
 ## Completed Hardware Follow-Up and Demo Cart
 
-PR #90 delivers the original Demo Cart and staged auto-load as development work;
-full art/audio/scene/fault review is deferred until around v0.6.0. No release or
-website deployment is implied. The [updated hardware evidence](docs/SEGA-MANUAL-EVIDENCE.md)
+PR #90 delivered the original Demo Cart and staged auto-load as development work.
+The owner subsequently approved the full v0.3.8 show from PR #106 for v0.5.2;
+the earlier around-v0.6.0 review deferral is superseded by that approval.
+Website deployment remains separate. The [updated hardware evidence](docs/SEGA-MANUAL-EVIDENCE.md)
 now reviews all three replacement PDFs and the supplied ConsoleMods pages.
 Their Model II identities and unresolved source conflicts do not establish the
 NTSC Model 1 VA6 map; #73 remains open. Physical profiles still need matching
@@ -428,9 +433,9 @@ No guaranteed target effect for arbitrary modeled shorts.
 ## Release policy
 
 - Develop in `NixMcRetro/VRAMpage-MD`.
-- Build and test with an owned/local game ROM; **never commit ROMs**.
-- Prepare a self-contained `site/` release including `core/*.js`, `core/*.wasm` and corresponding modified source.
-- Stage into `NixMcRetro/mcretro.net:homepages/vrampage/` **on a review branch only**.
+- Build and test with original/legally usable cartridges; **never commit newly generated or commercial ROMs**.
+- Prepare complete browser/source packages with every manifest-approved cartridge, matching source, notices and checksums.
+- Stage an approved thin bundle into `NixMcRetro/mcretro.net:homepages/vrampage-md/` **on a review branch only**.
 - Deploy to mcretro.net only on explicit approval. A push to McRetro's main triggers the site's full Jekyll/Pagefind rebuild.
 
 ## Documentation and tests
