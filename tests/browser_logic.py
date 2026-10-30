@@ -491,6 +491,70 @@ class BrowserLogicTests(unittest.TestCase):
         page.locator("#saveCheckpointBtn").evaluate("el=>{for(let p=el.parentElement;p;p=p.parentElement)if(p.tagName==='DETAILS')p.open=true;}")
         return page
 
+    def test_enable_sound_resumes_interrupted_context_and_preserves_failure_retry(self):
+        page=self.page
+        self.load_rom(page)
+        # The mock core produces no PCM, so only the context lifecycle needs a double.
+        page.evaluate("""() => {
+          window.audioProbe={contexts:0,resumes:[],clicks:[],resumeState:'running',reject:false};
+          document.querySelector('#soundBtn').addEventListener('click',event=>audioProbe.clicks.push(event.isTrusted));
+          window.AudioContext=class {
+            constructor() {this.state='interrupted';audioProbe.context=this;audioProbe.contexts++;}
+            async resume() {
+              audioProbe.resumes.push({state:this.state,active:navigator.userActivation.isActive});
+              await Promise.resolve();
+              if(audioProbe.reject) throw new Error('synthetic resume rejection');
+              this.state=audioProbe.resumeState;
+            }
+          };
+        }""")
+        sound=page.locator('#soundBtn')
+        latest_log=page.locator('#experimentLog li').first
+        for state in ('interrupted','suspended','running'):
+            with self.subTest(state=state):
+                if state!='interrupted':
+                    page.evaluate('state=>audioProbe.context.state=state',state)
+                before=page.evaluate('audioProbe.resumes.length')
+                sound.click()
+                expect(sound).to_have_text('Mute Sound')
+                expect(sound).to_have_attribute('aria-pressed','true')
+                expect(latest_log).to_contain_text('Audio enabled (FM + PSG output)')
+                self.assertEqual(page.evaluate('audioProbe.context.state'),'running')
+                self.assertEqual(page.evaluate('audioProbe.resumes.length'),before+(state!='running'))
+                sound.click()
+                expect(sound).to_have_text('Enable Sound')
+                expect(sound).to_have_attribute('aria-pressed','false')
+                self.assertEqual(page.evaluate('audioProbe.resumes.length'),before+(state!='running'))
+
+        for rejected in (True,False):
+            with self.subTest(rejected=rejected):
+                page.evaluate("""rejected=>{
+                  audioProbe.context.state='interrupted';audioProbe.reject=rejected;
+                  audioProbe.resumeState='suspended';
+                }""",rejected)
+                before=page.evaluate('audioProbe.resumes.length')
+                sound.click()
+                expect(latest_log).to_contain_text('Audio error: '+('synthetic resume rejection' if rejected
+                    else 'Browser audio is not running. Check browser audio permissions.'))
+                expect(sound).to_have_text('Enable Sound')
+                expect(sound).to_have_attribute('aria-pressed','false')
+                self.assertEqual(page.evaluate('audioProbe.resumes.length'),before+1)
+                self.assertEqual(page.evaluate('audioProbe.context.state'),'interrupted' if rejected else 'suspended')
+                page.evaluate("audioProbe.reject=false;audioProbe.resumeState='running'")
+                sound.click()
+                expect(sound).to_have_text('Mute Sound')
+                expect(sound).to_have_attribute('aria-pressed','true')
+                self.assertEqual(page.evaluate('audioProbe.resumes.length'),before+2)
+                sound.click()
+                expect(sound).to_have_text('Enable Sound')
+                expect(sound).to_have_attribute('aria-pressed','false')
+
+        self.assertEqual(page.evaluate('audioProbe.contexts'),1,'Retries reuse the existing context')
+        self.assertTrue(page.evaluate('audioProbe.clicks.length>0 && audioProbe.clicks.every(Boolean)'),
+                        'Sound is toggled by native trusted clicks')
+        self.assertTrue(page.evaluate('audioProbe.resumes.every(call=>call.active)'),
+                        'Resume is called during the Enable Sound user gesture')
+
     def test_region_selection_is_staged_and_applies_on_restart(self):
         page=self.new_page(region_core=True,manual_frames=True,session_checkpoint=True,circuit_config=True)
         expect(page.locator('#regionSelect')).to_be_enabled()

@@ -1,4 +1,11 @@
-## v0.5.1 Lightweight Website — Approved Workflow
+## v0.5.1 Lightweight Website — Completed Release
+
+[v0.5.1](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.5.1) is published.
+Source [PR #102](https://github.com/NixMcRetro/VRAMpage-MD/pull/102) and website
+[PR #12](https://github.com/NixMcRetro/mcretro.net/pull/12) completed the approved
+release and deployment. That authorization is complete; later source fixes do
+not authorize another release, asset replacement or website update. Keep existing
+public artifacts unchanged and obtain separate approval for future publication.
 
 Use `python3 scripts/package-website.py --output /workspace/vrampage-review` to
 prepare a separate, empty local review directory after building the core and
@@ -18,18 +25,19 @@ verification](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md) and [the source-level licence
 assessment](LICENCE-AUDIT-v0.5.1.md), including the confirmed hosting context and
 project-wide FM permission basis.
 
-After protected PR/main checks and CodeQL pass, publish the new v0.5.1 browser
-and corresponding-source ZIPs with checksums; verify the downloads before merging
-the website PR. Its Jekyll build must preserve every runtime/ROM/source file
-unchanged. The historical instructions below describe v0.5.0 and must not replace
-that public release's existing assets.
+Future separately approved releases must pass protected PR/main checks and
+CodeQL, verify browser/source ZIP checksums and reproduce the exact core from
+corresponding source. Website review must preserve every runtime/approved-ROM/
+source file through Jekyll. The historical instructions below describe v0.5.0;
+they must not replace that release's assets or override the current
+[approved-cartridge policy](BUILT-IN-CARTRIDGES.md).
 
 # Releases and deployment
 
-## Live v0.5.0 App
+## Historical v0.5.0 Website Snapshot
 
-The live app is **https://mcretro.net/homepages/vrampage-md/**. The separately
-approved website deployment uses the released v0.5.0 site, matching source,
+The v0.5.0 website snapshot used **https://mcretro.net/homepages/vrampage-md/**. The separately
+approved deployment used the released v0.5.0 site, matching source,
 fallback core and notices. [Deployment verification](https://github.com/NixMcRetro/mcretro.net/actions/runs/40320560810)
 checks that all 487 deployed files survive Jekyll unchanged. The user subsequently
 confirmed that the hosted app works; direct custom-domain access remains outside
@@ -44,7 +52,7 @@ Future website updates still require separate approval. The staging helper now
 copies to `/homepages/vrampage-md/` and lists that same path for review. The
 historical procedure below predates this URL; staging never publishes the site.
 
-## Cross-platform browser release
+## Historical v0.5.0 Browser Release
 
 [Download VRAMpage-MD-v0.5.0-browser.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/VRAMpage-MD-v0.5.0-browser.zip) · [SHA256SUMS.txt](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.0/SHA256SUMS.txt).
 It contains HTML/CSS/JavaScript, compiled WASM, matching modified core source,

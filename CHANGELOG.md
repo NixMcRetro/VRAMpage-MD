@@ -1,3 +1,11 @@
+## Development Fix — Interrupted Audio Resume
+
+- Resume Safari's interrupted audio context from Enable Sound, alongside the
+  existing suspended-state path. Verify that audio is running before enabling it;
+  rejected or ineffective resumes stay muted and can be retried.
+- Use browser-neutral error text and retain native queue/gesture checks. Clarify
+  the completed v0.5.1 release and approved-cartridge requirements in handoff docs.
+
 ## Development Fix — Gamepad Input Boundaries
 
 - Keep keyboard input and completed frames working when browser policy blocks

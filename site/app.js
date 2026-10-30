@@ -3291,8 +3291,8 @@
     const enabling = !audioOn;
     if (enabling) {
       if (!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:AUDIO_RATE});
-      if (audioCtx.state==='suspended') await audioCtx.resume();
-      if (audioCtx.state !== 'running') throw new Error('Browser audio is not running. Check Firefox audio permissions.');
+      if (audioCtx.state==='suspended' || audioCtx.state==='interrupted') await audioCtx.resume();
+      if (audioCtx.state !== 'running') throw new Error('Browser audio is not running. Check browser audio permissions.');
     }
     clearAudioQueue();
     audioOn=enabling;
