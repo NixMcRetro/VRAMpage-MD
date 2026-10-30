@@ -1,3 +1,12 @@
+## Development Fix — Hidden-Tab Held Inputs
+
+- Release held RAM contacts and keyboard inputs when the document becomes
+  hidden, reusing the existing blur cleanup. Keep latched faults and recovery
+  preferences; cancel recovery after contact release so it cannot rearm itself.
+- Cover hidden-without-blur input release and persistent-HALT recovery, retaining
+  the key press until after resumed input is checked. No native core, version,
+  approved cartridge, release or website change is included.
+
 ## Development Verification — Rejected ROM Read Recovery
 
 - Add an actual-core browser regression for delayed local-file read rejection
