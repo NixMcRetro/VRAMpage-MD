@@ -7,23 +7,28 @@ retains the feature freeze and default Ponytail Full Mode instructions.
 
 ## Latest source and integration checks
 
-[Interrupted audio PR #115](https://github.com/NixMcRetro/VRAMpage-MD/pull/115)
-merged as `a15fce5ac0352b4486486d6b9db43d7cc075f0f6`, with a tree identical to
-reviewed `74ca75b7d0920353cec713407a1c99512fa78b5e`. All seven protected
-[PR source/browser/package checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41031588513),
-four [CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41031583947)
-and the aggregate check passed before merge.
+The active isolated branch is `release/v0.5.2-demo-v0.3.8`, based on verified main
+`3e5a204f0617e2c753bdfe813421991e06404249` (concise handoff PR #116). Its seven
+[main source/browser/package checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41036531603)
+and four [CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41036531138)
+passed. Earlier integration evidence remains below and in the immutable history.
 
-All seven [main source/browser/package checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41032790675)
-and four [main CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41032790630)
-passed on that exact main commit. Its merged tree matches the reviewed source.
+The owner approved the full Demo Cart v0.3.8 and a new VRAMpage MD v0.5.2 release
+on 30 October 2026. The source is PR #106 head
+`1a68c0d2c2f999af294e15364c8f06ed92db6b3a`; the separate short audition is excluded.
+The exact full ROM reproduces at 167,720 bytes, SHA-256
+`1baf324f8f997029513cea9855856148589df91882e7ae5d0c2a3b8906da5ffc`.
+Its specialist source audit, five structural/preservation tests, 16 manifest/
+static/release-asset tests and actual Genesis Plus GX NTSC/PAL checks pass locally.
+The native checks include every scene's PCM, full show/menu/restart, A/B/C/START
+and byte-exact VDP clean recovery. Both approved cartridges also pass generic
+native execution in both regions. Original source-kit and portrait/logo bytes
+are retained; no generated ROM is committed.
 
-The preceding verified checkpoint is [controller PR #114](https://github.com/NixMcRetro/VRAMpage-MD/pull/114),
-`291de22d9219d73a783206f3c2648f42f8c2c1f1`: all seven
-[main source/browser/package checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41030368789)
-and four [CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41030368313)
-passed. Actions run pages provide review downloads; `BUILD-INFO.json` identifies
-the exact packaged source. Follow [local running instructions](RUNNING-LOCALLY.md).
+Independent integration review, full source/browser/package CI, CodeQL, exact
+corresponding-source rebuild and release publication checks remain pending.
+Do not treat the version bump or cartridge approval as evidence those gates passed.
+McRetro.net deployment is not authorized by this task.
 
 ## Reviewed behaviour and retained evidence
 
@@ -57,8 +62,9 @@ Safari/iOS interruption behaviour, broad native macOS/Windows compatibility,
 physical gamepad mapping, human listening quality or physical electrical fidelity.
 Specific earlier owner feedback retains its recorded scope.
 
-Music drafts still await the owner review listed in the [queue](WORK-QUEUE.md).
-Synthetic PCM/core checks do not approve a soundtrack. Optional NTSC VA6 issue
+The owner approved the full v0.3.8 cartridge; the separate short Music Lab
+audition remains experimental. Synthetic PCM/core checks do not independently
+establish musical quality. Optional NTSC VA6 issue
 #73 needs matching board evidence and does not block source integration.
 
 Repository Dependabot/code-scanning alert-list API reads returned HTTP 403.
@@ -71,8 +77,8 @@ alert lists are empty or that all dependencies are clear.
 [VRAMpage MD v0.5.1](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.5.1)
 and [website PR #12](https://github.com/NixMcRetro/mcretro.net/pull/12) were
 published/deployed under their completed approval, including the complete
-same-origin source ZIP and matching GitHub mirror. These later source PRs did not
-publish a release or deploy the website. Current version/cartridge identities and future
+same-origin source ZIP and matching GitHub mirror. The active v0.5.2 task authorizes a new release, without deploying the website.
+Current version/cartridge identities and future
 approval boundaries are recorded in the [queue](WORK-QUEUE.md).
 
 ## Complete historical status

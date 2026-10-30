@@ -21,20 +21,15 @@ RAM research and soak evidence when the relevant source is unchanged.
 | Work | Dependency | Acceptance |
 | --- | --- | --- |
 | Concrete stabilisation regression | Reproducible failure or owner report; inspect the existing implementation and tests first | Bounded correction, regression evidence, review proportional to risk, applicable checks and verified integration |
-| Experimental Demo Cart music | Owner listening/gameplay review of the experimental drafts; latest audition is PR #106 | Explicit owner approval before any cartridge promotion; digital output checks alone do not supply that approval |
+| Approved Demo Cart v0.3.8 and VRAMpage MD v0.5.2 release | Owner approval received 30 October 2026; full PR #106 source, separate audition excluded | Actual-core NTSC/PAL, preservation, complete packages/source rebuild, independent review, all protected checks and CodeQL, verified main, exact new release checksums |
 | Optional NTSC Model 1 VA6 mapping, issue #73 | Matching board markings and routing evidence | Record physical evidence honestly; this is not a source integration blocker |
 
-No implementation item is currently recorded as unfinished. Select the next
-bounded correction from a concrete failure or owner feedback, then record its
-scope and measurable acceptance here before editing. Do not invent a feature,
-repeat completed experiments or create pipeline-only work to fill the queue.
-
-The five experimental music PRs [#101](https://github.com/NixMcRetro/VRAMpage-MD/pull/101),
-[#103](https://github.com/NixMcRetro/VRAMpage-MD/pull/103),
-[#104](https://github.com/NixMcRetro/VRAMpage-MD/pull/104),
-[#105](https://github.com/NixMcRetro/VRAMpage-MD/pull/105) and
-[#106](https://github.com/NixMcRetro/VRAMpage-MD/pull/106) await owner listening
-approval. Use the latest audition rather than restarting the music work.
+The active task promotes the existing full v0.3.8 cartridge without restarting
+composition work. Use source head `1a68c0d2c2f999af294e15364c8f06ed92db6b3a`
+from [PR #106](https://github.com/NixMcRetro/VRAMpage-MD/pull/106); its opt-in
+20-second audition remains separate. Earlier stacked music drafts are historical
+iterations, not extra dependencies to merge. See the current status for completed
+checks and remaining release gates. Do not deploy McRetro.net under this approval.
 [Issue #73](https://github.com/NixMcRetro/VRAMpage-MD/issues/73) remains optional;
 the accepted PAL reference and implemented controls do not establish that NTSC map.
 
@@ -52,13 +47,14 @@ the accepted PAL reference and implemented controls do not establish that NTSC m
 
 ## Approval and preservation boundaries
 
-VERSION remains **0.5.1**. Its release and website approval are complete; future
-publishing, asset replacement, version bumps or McRetro.net deployment require
-separate explicit approval. Preserve all existing public artifacts and unrelated
-website content.
+The owner approved VERSION **0.5.2**, official full Demo Cart **v0.3.8** and its
+new release on 30 October 2026, subject to the gates above. The completed v0.5.1
+release/website approval remains historical. Preserve all public artifacts;
+McRetro.net changes/deployment still need separate explicit approval.
 
 [site/cartridges.json](../site/cartridges.json) owns approved identities: default
-Demo Cart **v0.3.5** and original Colour Test **v1**. Experimental music is separate.
+Demo Cart **v0.3.8** and original Colour Test **v1**. The short Music Lab audition
+is experimental and excluded.
 Every future complete browser/static bundle includes all manifest-approved
 cartridges, matching source and notices under the
 [cartridge maintenance policy](BUILT-IN-CARTRIDGES.md). Preserve original Demo Cart

@@ -1,3 +1,19 @@
+# Approved Demo Cart v0.3.8
+
+Build the manifest-approved cartridges with `python3 scripts/build-demo-cart.py`,
+then run `python3 -m unittest discover -s demo-cart/show-lab/tests -v` and
+`node tests/test_demo_cart_v038_wasm.cjs site/core/genplus.js`. The version-specific
+suite verifies the exact manifest hash/size, six-scene 180-second score and
+unchanged original portrait/logo patterns. Actual Genesis Plus GX executes both
+NTSC-U and PAL, records six native PCM excerpts per region, completes a full
+show/menu/restart cycle and tests A/B/C/START with byte-exact clean VDP recovery.
+The 20-second opt-in Music Lab audition is tested separately and is never the
+approved default or a packaged ROM. Retain the historical v0.3.5 source/native
+regressions, generic manifest execution, browser selection/rejection races,
+extracted ZIP/static checks and exact corresponding-source rebuild gates.
+These technical checks do not establish physical console performance or replace
+human listening. Owner approval is recorded separately in AGENTS and the notices.
+
 # Interrupted Audio Resume
 
 The `enable_sound_resumes` case in `tests/browser_logic.py` uses the existing

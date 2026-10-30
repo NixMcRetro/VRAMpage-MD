@@ -4,17 +4,17 @@
   "cartridges": [
     {
       "id": "demo",
-      "version": "0.3.5",
+      "version": "0.3.8",
       "displayName": "VRAMpage MD Demo Cart",
       "approved": true,
-      "path": "demo/VRAMpage-MD-Demo-Cart-v0.3.5.bin",
-      "source": "demo-cart/fx-lab/build_fx.py",
+      "path": "demo/VRAMpage-MD-Demo-Cart-v0.3.8.bin",
+      "source": "demo-cart/show-lab/build_show.py",
       "build": {
         "method": "python3",
-        "output": "demo-cart/fx-lab/build/VRAMpage-MD-FX-Lab-v0.3.5-Demoscene.bin"
+        "output": "demo-cart/show-lab/build/VRAMpage-MD-Demo-Cart-v0.3.8-Show.bin"
       },
-      "size": 150564,
-      "sha256": "89faaace638c1ccae7062e96cef02d5350059488a35acb372f1e4b5d4dec277f",
+      "size": 167720,
+      "sha256": "1baf324f8f997029513cea9855856148589df91882e7ae5d0c2a3b8906da5ffc",
       "license": {
         "type": "project-original",
         "attribution": "VRAMpage MD project; original program and user-approved portrait and logo assets",
