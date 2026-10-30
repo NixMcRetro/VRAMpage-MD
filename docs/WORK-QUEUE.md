@@ -1,3 +1,29 @@
+## Gamepad Input Boundaries — Stabilisation Checkpoint, 30 October 2026 (Sydney)
+
+A real Chromium `Permissions-Policy: gamepad=()` response makes the optional
+browser API throw during input polling. Guard that read so keyboard input and
+frame progress continue; retain checkpoint input blocking through unreadable
+polls. Use the first available controller, complete A/D-pad mapping and preserve
+analog priority, opposing-direction neutral and short button-array safety.
+
+Focused browser and retained actual-core checks pass on the author checkpoint.
+The coordinator corrected a missing-counterpart D-pad access before integration;
+new short-array cases must pass with finite directions and no frame errors.
+Require independent review, all protected browser/package/source gates, CodeQL
+and verified main. No core, version, approved cartridge, release or website change.
+
+[PR #113](https://github.com/NixMcRetro/VRAMpage-MD/pull/113) is complete at
+`19f405f6edd1bf7b4ea154e19e28e6c46be9e37a`, with all seven
+[main checks](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41007136950)
+and four [CodeQL analyses](https://github.com/NixMcRetro/VRAMpage-MD/actions/runs/41007137525)
+passed. Reuse completed keyboard/file-picker, core and package evidence.
+
+Repository Dependabot/code-scanning alert-list reads returned integration HTTP
+403. Public PyPI responses reported no advisories for the tested Playwright
+1.64.1, pyee 13.0.1 and greenlet 3.5.5; this does not establish that repository
+alert lists are empty. Physical gamepads, native Safari and music approval remain
+manual. Complete independent review before source integration.
+
 ## Keyboard File Actions — Stabilisation Checkpoint, 30 October 2026 (Sydney)
 
 Chromium and WPE WebKit expose three invisible tab stops: the configuration and

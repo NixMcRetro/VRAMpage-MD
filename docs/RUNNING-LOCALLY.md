@@ -99,6 +99,21 @@ reconnect using the named buttons. RAM Write defaults to **Hold While Pressed**;
 release the control to disconnect, or choose an eight-frame pulse. See
 [workbench shortcuts](CHIP-WORKBENCH.md#development-source-keyboard-chip-target).
 
+Controllers using the browser's standard Gamepad layout use this mapping:
+
+| Standard Gamepad Input | Genesis Control |
+| --- | --- |
+| Left Stick / D-Pad | Directions |
+| Button 2 | A |
+| Button 1 | B |
+| Button 0 | C |
+| Button 9 | Start |
+
+An active stick axis takes priority over that D-pad axis. The first available
+controller is used; keyboard controls keep working if browser policy blocks
+controller access. After restoring a checkpoint, release the controller before
+pressing again. Physical-controller acceptance remains a manual check.
+
 Cartridge files are staged before replacing the current game. Rejected files
 leave the accepted cartridge and restart data intact, and stale asynchronous
 reads cannot replace a newer selection. If native activation becomes uncertain,
@@ -129,7 +144,8 @@ It is development source, not a change to existing downloads or the live site.
 
 The complete ZIP contains HTML/CSS/JavaScript, compiled JS/WASM, matching modified
 emulator source, third-party notices, the Python local server and optional Mac
-launcher. It contains no game ROMs. Follow the upstream non-commercial and
+launcher. It contains the manifest-approved original Demo Cart and Colour Test;
+commercial games are not included. Follow the upstream non-commercial and
 corresponding-source terms in the included notices.
 
 Automated Chromium, Firefox and WebKit checks run on Linux. Reported Mac Safari

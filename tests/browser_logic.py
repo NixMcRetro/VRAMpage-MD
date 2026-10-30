@@ -55,7 +55,7 @@ class BrowserLogicTests(unittest.TestCase):
             context.close()
         self.assertEqual(self.errors, [], "Uncaught application errors")
 
-    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False, manual_frames=False, session_checkpoint=False, automatic_recovery=False, legacy_z80_ram=False, region_core=False, demo_rom=False, stalled_demo=False, legacy_ram_data=False, legacy_write_inhibit=False, fm_output_model_core=False, unsupported_fm_output_model=False):
+    def new_page(self, legacy_core=False, legacy_recovery=False, legacy_write_pulse=False, legacy_chip=False, legacy_vram_chip=False, build_info=None, stalled_build_info=False, circuit_config=False, legacy_psg_data=False, legacy_fm_data=False, legacy_psg_mask=False, legacy_fm_mask=False, manual_frames=False, session_checkpoint=False, automatic_recovery=False, legacy_z80_ram=False, region_core=False, demo_rom=False, stalled_demo=False, legacy_ram_data=False, legacy_write_inhibit=False, fm_output_model_core=False, unsupported_fm_output_model=False, gamepad_policy=False):
         context = self.browser.new_context(
             viewport={"width": 1366, "height": 768},
             color_scheme="light",
@@ -156,6 +156,9 @@ class BrowserLogicTests(unittest.TestCase):
                 content_type='application/json',
                 body='Not found' if build_info is None else
                     json.dumps(build_info) if isinstance(build_info, (dict,list)) else build_info))
+        if gamepad_policy:
+            page.route(f"http://127.0.0.1:{self.server.server_port}/", lambda route: route.fulfill(
+                path=str(ROOT / "site/index.html"), headers={"Permissions-Policy":"gamepad=()"}))
         page.goto(f"http://127.0.0.1:{self.server.server_port}/")
         expect(page.locator("#powerLabel")).to_have_text(
             "CONSOLE ON" if demo_rom and not stalled_demo else "WAITING FOR ROM")
@@ -859,6 +862,86 @@ class BrowserLogicTests(unittest.TestCase):
         self.assertEqual(page.evaluate("mockCore.inputs[9]"),0)
         page.evaluate("testPad.buttons[0].pressed=false;stepTestFrame();testPad.buttons[0].pressed=true;stepTestFrame()")
         self.assertEqual(page.evaluate("mockCore.inputs[9]"),1)
+
+    def test_gamepad_poll_failure_and_sparse_slots_preserve_input_boundaries(self):
+        page=self.checkpoint_page()
+        page.evaluate("() => {window.testPad={axes:[0,0],buttons:Array.from({length:10},()=>({pressed:false}))};navigator.getGamepads=()=>[null,testPad];testPad.buttons[2].pressed=true;stepTestFrame();}")
+        self.assertEqual(page.evaluate("mockCore.inputs[10]"),1)
+        ticks=page.evaluate("mockCore.ticks")
+        page.evaluate("navigator.getGamepads=()=>{throw new DOMException('blocked','SecurityError')};stepTestFrame()")
+        self.assertGreater(page.evaluate("mockCore.ticks"),ticks)
+        self.assertEqual(page.evaluate("mockCore.inputs[10]"),0)
+        page.keyboard.down("x")
+        page.evaluate("stepTestFrame()")
+        self.assertEqual(page.evaluate("mockCore.inputs[11]"),1)
+        page.keyboard.up("x")
+
+    def test_gamepad_dpad_directions_deadzone_priority_and_opposites(self):
+        page=self.checkpoint_page()
+        result=page.evaluate("""() => {
+          window.testPad={axes:[0,0],buttons:Array.from({length:16},()=>({pressed:false}))};
+          navigator.getGamepads=()=>[testPad];
+          const frame=()=>{stepTestFrame();return [mockCore.inputs[6],mockCore.inputs[7]];};
+          testPad.buttons[14].pressed=true;const left=frame();
+          testPad.buttons[14].pressed=false;const neutral=frame();
+          testPad.buttons[12].pressed=true;testPad.buttons[13].pressed=true;const oppositeY=frame();
+          testPad.buttons[13].pressed=false;const up=frame();
+          testPad.buttons[12].pressed=false;testPad.buttons[13].pressed=true;const down=frame();
+          testPad.axes[0]=0.8;testPad.buttons[13].pressed=false;testPad.buttons[14].pressed=true;const analog=frame();
+          testPad.axes[0]=0.3;const deadzone=frame();
+          testPad.buttons[15].pressed=true;const oppositeX=frame();
+          testPad.axes=[0,0];
+          testPad.buttons=Array.from({length:13},()=>({pressed:false}));
+          testPad.buttons[12].pressed=true;const shortUp=frame();
+          testPad.buttons=Array.from({length:15},()=>({pressed:false}));
+          testPad.buttons[14].pressed=true;const shortLeft=frame();
+          testPad.buttons=Array.from({length:16},()=>({pressed:false}));
+          return [left,neutral,oppositeY,up,down,analog,deadzone,oppositeX,shortUp,shortLeft];
+        }""")
+        self.assertEqual(result,[[-1,0],[0,0],[0,0],[0,-1],[0,1],[1,0],[-1,0],[0,0],[0,-1],[-1,0]])
+        page.evaluate("testPad.buttons[14].pressed=false;testPad.buttons[15].pressed=false;testPad.axes[0]=0")
+        page.keyboard.down("ArrowLeft");page.evaluate("stepTestFrame()")
+        self.assertEqual(page.evaluate("mockCore.inputs[6]"),-1)
+        page.keyboard.up("ArrowLeft")
+
+    def test_permissions_policy_blocked_gamepad_keeps_keyboard_frames_running(self):
+        page=self.new_page(manual_frames=True,gamepad_policy=True)
+        policy_result=page.evaluate("() => {try {navigator.getGamepads();return 'allowed';} catch(error) {return error.name;}}")
+        if policy_result!="SecurityError":
+            self.skipTest(f"{OPTIONS.browser} does not enforce the Gamepad Permissions Policy")
+        page.locator("#romFile").set_input_files({"name":"synthetic.bin", "mimeType":"application/octet-stream", "buffer":self.synthetic_rom()})
+        expect(page.locator("#powerLabel")).to_have_text("CONSOLE ON")
+        page.evaluate("stepTestFrame();stepTestFrame()")
+        ticks=page.evaluate("mockCore.ticks")
+        page.keyboard.down("x");page.evaluate("stepTestFrame()")
+        self.assertGreater(page.evaluate("mockCore.ticks"),ticks)
+        self.assertEqual(page.evaluate("mockCore.inputs[11]"),1)
+        page.keyboard.up("x")
+
+    def test_checkpoint_gamepad_a_stays_blocked_while_unreadable(self):
+        page=self.checkpoint_page()
+        page.evaluate("() => {window.testPad={axes:[0,0],buttons:Array.from({length:10},()=>({pressed:false}))};navigator.getGamepads=()=>[testPad];}")
+        page.locator("#saveCheckpointBtn").click()
+        page.evaluate("testPad.buttons[2].pressed=true")
+        page.locator("#restoreCheckpointBtn").click()
+        page.locator("#pauseBtn").click()
+        page.evaluate("navigator.getGamepads=()=>{throw new DOMException('blocked','SecurityError')};stepTestFrame()")
+        page.evaluate("navigator.getGamepads=()=>[testPad];stepTestFrame()")
+        self.assertEqual(page.evaluate("mockCore.inputs[10]"),0)
+        page.evaluate("testPad.buttons[2].pressed=false;stepTestFrame();testPad.buttons[2].pressed=true;stepTestFrame()")
+        self.assertEqual(page.evaluate("mockCore.inputs[10]"),1)
+
+    def test_checkpoint_held_gamepad_dpad_stays_blocked_until_release(self):
+        page=self.checkpoint_page()
+        page.evaluate("() => {window.testPad={axes:[0,0],buttons:Array.from({length:16},()=>({pressed:false}))};navigator.getGamepads=()=>[testPad];}")
+        page.locator("#saveCheckpointBtn").click()
+        page.evaluate("testPad.buttons[15].pressed=true")
+        page.locator("#restoreCheckpointBtn").click()
+        page.locator("#pauseBtn").click()
+        page.evaluate("stepTestFrame()")
+        self.assertEqual(page.evaluate("mockCore.inputs[6]"),0)
+        page.evaluate("testPad.buttons[15].pressed=false;stepTestFrame();testPad.buttons[15].pressed=true;stepTestFrame()")
+        self.assertEqual(page.evaluate("mockCore.inputs[6]"),1)
 
     def test_checkpoint_uncertain_save_disables_slot_without_claiming_success(self):
         page=self.checkpoint_page()
