@@ -3543,23 +3543,20 @@
       else if (['Space','Enter'].includes(event.code) && keyboardHeld?.target==='WRAM') endKeyboardHold(event.code);
     });
     function releaseFocusInputs() {
+      cancelAutomaticRecovery();
       pressed.clear();checkpointBlockedKeys.clear();
       endKeyboardHold();
       if (ownedAddressHold?.type==='pointer') endAddressFrameHold('pointer',ownedAddressHold.pointerId);
+      cancelAutomaticRecovery();
     }
     window.addEventListener('blur',()=>{
-      cancelAutomaticRecovery();
       releaseFocusInputs();
-      cancelAutomaticRecovery();
       focusReleased=true;
     });
     window.addEventListener('focus',()=>{if(focusReleased){lastFrame=0;focusReleased=false;}});
     document.addEventListener('visibilitychange',()=>{
       lastFrame=0;clearAudioQueue();
-      if (document.hidden) {
-        cancelAutomaticRecovery();
-        releaseFocusInputs();
-      }
+      if (document.hidden) releaseFocusInputs();
     });
   }
 
