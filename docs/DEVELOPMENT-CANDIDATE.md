@@ -1,13 +1,34 @@
 # Development Candidate
 
-This feature list records the candidate prepared after v0.5.0; those features
-shipped in [v0.5.1](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.5.1).
-Later merged source fixes do not select another release version or authorize a
-website update. Use the latest verified [development checkpoint](WORK-QUEUE.md)
-for current source, CI and Actions downloads; BUILD-INFO.json identifies the
-exact commit. Published releases remain unchanged.
+The owner approved the full Demo Cart v0.3.8 and publication of **v0.5.2** on
+30 October 2026. Require final source CI, complete-package and exact
+corresponding-source rebuild verification for the release commit. Use
+[development status](DEVELOPMENT-STATUS.md) and
+[PR #117](https://github.com/NixMcRetro/VRAMpage-MD/pull/117) for exact source, checks
+and Actions downloads; BUILD-INFO.json identifies the packaged commit. Earlier
+published assets remain unchanged. Website deployment requires separate approval.
 
-## Changes Since Public v0.5.0
+## Changes Since Public v0.5.1
+
+- **Full Demo Cart:** the approved normal 180-second v0.3.8 show from PR #106
+  becomes the manifest default. The 20-second hook audition stays separate.
+  Keep the original Colour Test, v0.1 source kit, portrait and logo unchanged.
+- **FM Output Model:** stage Discrete (default) or Integrated, then apply it with
+  Clean Restart or a new cartridge. CPU Reset and Restore retain the active model;
+  pending/rejected choices preserve current sound and the checkpoint.
+- **File Actions:** use the direct Load Your Own ROM… action accepted by the
+  owner in Safari. Configuration/export pickers retain visible click/Enter/Space
+  controls without invisible duplicate tab stops.
+- **Input and Audio Recovery:** release held keyboard/RAM contacts when hidden,
+  retain latched faults and recovery preferences, handle blocked gamepad access,
+  complete standard A/D-pad mapping, and resume interrupted/suspended audio from
+  Enable Sound with muted retry on failure.
+
+See [v0.5.2 release notes](RELEASE-NOTES-v0.5.2.md) for exact cartridge/package
+identities. The retained features below shipped in
+[v0.5.1](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.5.1).
+
+## Retained v0.5.1 Features
 
 - **Work RAM Data Lines:** runtime D0–D15 cuts cover both byte lanes in the
   existing Address/Data chip view. Masks replace address faults or byte-local
@@ -38,10 +59,11 @@ clears all six domains, restores the saved machine/image and stays paused.
 Automated acceptance uses original generated cartridges and separate source,
 native sanitizer, compiled-WASM and three-browser/package checks. The current
 [checkpoint](WORK-QUEUE.md) records completed evidence and remaining blockers.
-The [128-cycle mixed-fault workload](TESTING.md#mixed-fault-endurance-checks)
-and three-browser package CI are candidate acceptance gates. Retained local
-results identify their exact test source; the checkpoint records final merged
-acceptance separately.
+The [128-cycle mixed-fault workload](TESTING.md#mixed-fault-endurance-checks),
+NTSC/PAL approved-cartridge playback, exact source-to-JS/WASM rebuild and
+three-browser package CI are release acceptance gates. Retained local results
+identify their exact test source; final release verification is recorded
+separately and must not be inferred from owner approval.
 Browser-software checks do not establish physical electrical accuracy, listening
 quality, every cartridge's recovery or native desktop acceptance on every OS.
 
@@ -62,8 +84,8 @@ For native-browser review of the new features, use a legally usable cartridge:
 
 ## Publication Handoff
 
-For a future separately approved release, choose a meaningful version and align
-VERSION, labels, notes, tag and filenames after that decision. Package the exact
+For the approved v0.5.2 release, align VERSION, labels, notes, tag and filenames.
+After all required checks pass, prepare the draft using the exact
 reviewed main commit with all [manifest-approved original/homebrew cartridges](BUILT-IN-CARTRIDGES.md),
 checksums, complete corresponding emulator source and notices. Commercial ROMs
 are not included. Verify downloaded assets against their source/tag/metadata;

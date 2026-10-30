@@ -11,9 +11,14 @@ format; these are not official Sega products.
 
 The **Demo Cart** is the VRAMpage MD project's original 68000 program and
 user-approved portrait/logo artwork. Its reproducible source is
-`fx-lab/build_fx.py`, with the unchanged, checksum-pinned original source kit
+`show-lab/build_show.py`, with the unchanged, checksum-pinned original source kit
 `VRAMpage-MD-Demo-Cart-v0.1-Source-Kit.zip`. The kit retains its original README
 and approved source assets. Its internal input checksum is intentionally fixed.
+On 30 October 2026 the owner approved the full three-minute v0.3.8 cartridge
+for the v0.5.2 release and future bundles. Its original six-voice FM/PSG score
+contains no commercial recordings or transcribed commercial music. The separate
+20-second Music Lab audition is experimental and is not a bundled cartridge.
+The earlier `fx-lab/build_fx.py` remains available for historical regressions.
 
 The **Colour Test** is the VRAMpage MD project's original program and graphics
 created for the VRAMpage MD blog illustration. Its source was copied byte for

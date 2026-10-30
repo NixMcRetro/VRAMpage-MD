@@ -15,6 +15,19 @@ Keep the complete same-origin source ZIP and matching GitHub release archive;
 never substitute GitHub's automatic source snapshot. Keep other website content
 unchanged. Future hosting or release decisions still need their own approval.
 
+## Approved v0.5.2 and Demo Cart v0.3.8
+
+On 30 October 2026 the owner explicitly approved making Demo Cart v0.3.8
+official and including it in a new VRAMpage MD v0.5.2 release. Promote the full
+180-second show from PR #106 head `1a68c0d2c2f999af294e15364c8f06ed92db6b3a`,
+with its tuning/operator corrections, after actual-core NTSC/PAL verification.
+The separate 20-second Music Lab audition is not the approved cartridge.
+Keep the manifest authoritative and original source kit/portrait/logo unchanged.
+This approval covers VERSION, reviewed main integration and publication of new
+v0.5.2 assets only after protected PR/main checks, CodeQL, complete packaging,
+source-rebuild and checksum gates pass. Preserve every existing release.
+It does not authorize a McRetro.net change, merge or deployment.
+
 ## Start and choose work
 
 Fetch the latest main, relevant branches, open PRs, releases and CI. Read

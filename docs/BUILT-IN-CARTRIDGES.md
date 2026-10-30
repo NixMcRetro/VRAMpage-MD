@@ -16,6 +16,13 @@ still take effect when a cartridge starts or on Clean Restart.
 
 ## One Approval Record
 
+The owner approved the full three-minute Demo Cart v0.3.8 on 30 October 2026
+for VRAMpage MD v0.5.2 and future bundles. It uses PR #106's corrected full-show
+source; the separate 20-second Music Lab audition remains experimental and is
+not a built-in. The original v0.1 source kit, portrait and logo remain unchanged.
+The manifest below records the exact reproducible approved identity. Earlier
+public packages retain their original cartridge bytes.
+
 [`site/cartridges.json`](../site/cartridges.json) is the only current version,
 display name, path, source/build method, byte length, SHA-256 and licensing
 authority. `defaultCartridge` identifies the approved Demo Cart. Entries must

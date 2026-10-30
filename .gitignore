@@ -53,3 +53,4 @@ SONIC.MD
 
 # Reproducible original cartridge reports and generated artwork previews
 /demo-cart/fx-lab/build/
+/demo-cart/show-lab/build/

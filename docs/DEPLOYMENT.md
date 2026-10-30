@@ -1,11 +1,59 @@
-## v0.5.1 Lightweight Website — Completed Release
+## v0.5.2 — Approved Release, Separate Website
+
+The owner approved the full Demo Cart v0.3.8 and publishing **VRAMpage MD v0.5.2**
+on 30 October 2026. This covers the normal 180-second show from PR #106 and the
+merged browser/FM stabilisation work. It does not authorize McRetro.net changes.
+Final source CI, package and exact source-rebuild checks are required on the
+reviewed release commit; see [development status](DEVELOPMENT-STATUS.md) and
+[PR #117](https://github.com/NixMcRetro/VRAMpage-MD/pull/117) for evidence.
+
+Release assets are
+[VRAMpage-MD-v0.5.2-browser.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.2/VRAMpage-MD-v0.5.2-browser.zip),
+[VRAMpage-MD-v0.5.2-corresponding-source.zip](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.2/VRAMpage-MD-v0.5.2-corresponding-source.zip)
+and [SHA256SUMS.txt](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.2/SHA256SUMS.txt).
+Keep every manifest-approved cartridge, matching cartridge/emulator source,
+notices, compiled JS/WASM, local server, START.command and instructions in the
+complete browser package. The source ZIP must match the package's commit/version
+and reproduce its exact core with Emscripten 4.0.23. Preserve all older public
+tags and assets; GitHub's automatic source snapshot is insufficient.
+
+With the pinned toolchain active, build from the exact reviewed commit:
+
+```sh
+bash scripts/test.sh
+bash scripts/build-core.sh normal
+bash scripts/build-core.sh site-runtime
+python3 scripts/build-demo-cart.py
+python3 scripts/cartridges.py verify-site
+python3 scripts/package-review.py --output /workspace/scratch/VRAMpage-MD-v0.5.2-browser.zip
+python3 scripts/package-website.py --output /workspace/vrampage-v0.5.2-review
+```
+
+Use a new/empty output directory for the thin static bundle. Packaging it locally
+does not deploy it. Its same-origin `source/VRAMpage-MD-v0.5.2-corresponding-source.zip`
+must accompany the runtime; attach the identical source ZIP to the GitHub release.
+Follow [cartridge release gates](BUILT-IN-CARTRIDGES.md) and the pinned workflow
+commands for native/actual-WASM, three-browser/package, CodeQL, checksums and
+fresh archive rebuild verification before publication. Existing source/licence
+obligations and the historical [licence assessment](LICENCE-AUDIT-v0.5.1.md) remain.
+
+After protected PR/main checks and CodeQL pass on the final source, run
+**Prepare v0.5.2 browser release draft**. It verifies packaged source/version,
+core hashes, both ZIP checksums and the exact tag commit, creates only an absent
+tag and refuses to replace a public release. Review the downloaded draft assets
+and publish the approved v0.5.2 release only after every gate passes. See
+[release notes](RELEASE-NOTES-v0.5.2.md). A website deployment needs its own
+approval and reviewed website PR.
+
+## Historical v0.5.1 Lightweight Website — Completed Release
 
 [v0.5.1](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.5.1) is published.
 Source [PR #102](https://github.com/NixMcRetro/VRAMpage-MD/pull/102) and website
 [PR #12](https://github.com/NixMcRetro/mcretro.net/pull/12) completed the approved
 release and deployment. That authorization is complete; later source fixes do
-not authorize another release, asset replacement or website update. Keep existing
-public artifacts unchanged and obtain separate approval for future publication.
+not authorize another release, asset replacement or website update. The later
+v0.5.2 release approval is recorded above; it excludes website deployment.
+Keep existing public artifacts unchanged.
 
 Use `python3 scripts/package-website.py --output /workspace/vrampage-review` to
 prepare a separate, empty local review directory after building the core and

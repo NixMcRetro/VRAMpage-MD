@@ -1,19 +1,22 @@
-## v0.5.1 — Approved Release Target
+## v0.5.2 — Approved Release Target
 
-`VERSION` is **0.5.1**. The owner approved its release and separate website update
-on 29 October 2026, after confirming non-commercial hosting. Require protected
-PR/main CI, CodeQL, complete source/notice verification and byte-exact rebuilds
-before publication. The new artifacts are `VRAMpage-MD-v0.5.1-browser.zip` and
-`VRAMpage-MD-v0.5.1-corresponding-source.zip`. Preserve v0.5.0 and older assets.
-See [deployment](LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md) and the
-[licence assessment](LICENCE-AUDIT-v0.5.1.md).
+`VERSION` is **0.5.2**. On 30 October 2026 the owner approved the full Demo Cart
+v0.3.8, bundling it and publishing this application release. Require protected
+PR/main CI, CodeQL, complete source/notice verification, native NTSC/PAL cartridge
+checks and byte-exact source rebuilds before publication. Final release checks
+are recorded in [development status](DEVELOPMENT-STATUS.md); approval does not
+establish that they have run. The artifacts are `VRAMpage-MD-v0.5.2-browser.zip`,
+`VRAMpage-MD-v0.5.2-corresponding-source.zip` and `SHA256SUMS.txt`.
+Preserve v0.5.1 and older assets. Website deployment requires separate approval.
+See [release notes](RELEASE-NOTES-v0.5.2.md) and [release procedure](DEPLOYMENT.md).
 
 # Versioning policy
 
-Current release target: **v0.5.1**, packaged as
-`VRAMpage-MD-v0.5.1-browser.zip` for Windows, macOS and Linux browsers. It adds
-ordered recovery, explicit session checkpoints and cross-platform distribution.
-Public v0.4.1 and older tags/assets remain immutable. Later source work uses build
+Current release target: **v0.5.2**, packaged as
+`VRAMpage-MD-v0.5.2-browser.zip` for Windows, macOS and Linux browsers. It adds
+the approved full Demo Cart, FM output-model selection and browser stability
+fixes while retaining recovery, checkpoints and complete source distribution.
+Public v0.5.1 and older tags/assets remain immutable. Later source work uses build
 commit metadata; never silently rebuild a public asset. Publish new milestones
 only after required CI and complete package checks pass.
 The original v0.4.0 audio and v0.3.0 VRAM release artifacts remain unchanged.
@@ -78,8 +81,9 @@ updates do not rebuild or retag an unchanged public application release.
 
 1. Update `VERSION`, the app/version export, documentation and release workflows
    together, and test the published package's source-commit metadata.
-2. Run `bash scripts/test.sh`, then full native WASM and synthetic browser
-   checks using the appropriate workflow.
+2. Run `bash scripts/test.sh`, full native/actual-WASM cartridge checks under
+   NTSC/PAL, browser/package CI and CodeQL. Verify exact JS/WASM rebuilding from
+   the final corresponding-source archive using the pinned toolchain.
 3. Publish only the exact built/tested `main` commit; include only manifest-approved cartridges,
    corresponding modified emulator source, a SHA-256 file and a matching tag.
 4. Keep VRAMpage-MD `main` independent from `mcretro.net/main`.

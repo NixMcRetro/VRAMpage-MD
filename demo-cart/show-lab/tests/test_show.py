@@ -1,0 +1,155 @@
+"""Structural, preservation and approval checks for the full v0.3.8 cartridge."""
+from pathlib import Path
+import hashlib
+import json
+import runpy
+import struct
+import unittest
+import zipfile
+
+ROOT = Path(__file__).resolve().parents[3]
+SOURCE = ROOT / "demo-cart/show-lab/build_show.py"
+OUTPUT = ROOT / "demo-cart/show-lab/build"
+ROM = OUTPUT / "VRAMpage-MD-Demo-Cart-v0.3.8-Show.bin"
+
+class OriginalShowTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.values = runpy.run_path(str(SOURCE))
+        cls.report = json.loads((OUTPUT/"rom_report.json").read_text())
+        cls.rom = ROM.read_bytes()
+
+    def test_six_scene_180_second_score(self):
+        music = self.report["music"]
+        self.assertTrue(music["original"])
+        self.assertEqual(music["tempoBPM"],150)
+        self.assertEqual(music["steps"],900)
+        self.assertEqual(music["eventBytes"],14400)
+        self.assertEqual(music["lengthSeconds"],180)
+        self.assertEqual(music["fmChannels"],[0,1,2,3,4,5])
+        self.assertEqual(music["eventStrideBytes"],16)
+        self.assertEqual(len(music["patches"]),6)
+        self.assertTrue(music["psgVblankDecay"])
+        self.assertEqual(music["psgDrumAttenuation"],
+                         {"kick":8,"snare":9,"hat":12,"fill":8})
+        self.assertTrue(all(music["psgDrumAttenuation"][n]>old
+                            for n,old in {"kick":2,"snare":4,"hat":10,
+                                          "fill":1}.items()))
+        # Per-instrument four-operator YM2612 algorithms and envelopes.
+        patches=self.values["SHOW_PATCHES"]
+        self.assertEqual([p[0] for p in patches],
+            ["brass_lead","brass_answer","walking_bass",
+             "offbeat_skank","organ_accents","horn_fills"])
+        self.assertEqual([p[1]&7 for p in patches],[4,5,7,4,7,5])
+        self.assertEqual(music["fmAlgorithms"],[4,5,7,4,7,5])
+        self.assertEqual(music["fmPatchEnvelopeModel"],
+                         "per-operator AR/D1R/D2R/SL-RR")
+        self.assertEqual(set(music["fmPatchOperators"]),
+                         {p[0] for p in patches})
+        self.assertTrue(all(len(p[2])==4 and all(len(op)==6 for op in p[2])
+                            for p in patches))
+        self.assertEqual(len(self.values["SHOW_MUSIC"]),14400)
+        self.assertEqual(music["musicLabPreview"],False)
+        self.assertEqual(music["ymLogicalSlotOffsets"],[0,8,4,12])
+        high,low=self.values["show_pitch"](69)
+        self.assertEqual(high>>3,4)
+        fnum=((high&7)<<8)|low
+        self.assertTrue(1075<=fnum<=1090, fnum)
+        self.assertEqual(((self.values["show_pitch"](60)[0])>>3),4)
+        # The corrected OPN2 tuning must support legitimate low bass
+        # notes using lower block values, without treating them as corruption.
+        self.assertEqual(self.values["show_pitch"](33)[0]>>3,1)
+        self.assertEqual(music["heldNoteMarker"],255)
+        self.assertEqual(music["keyCentre"],"A major / F-sharp minor")
+        self.assertEqual(len(music["writtenSongForm"]),10)
+        self.assertEqual(sum(steps for _,steps in music["writtenSongForm"]),900)
+        self.assertIn("brass-led ska-punk", music["character"])
+        # Bass has stronger fundamentals; skank plucks quickly while
+        # organ retains slower decay. Algorithm 4's two carriers are audible.
+        bass,skank,organ=patches[2][2],patches[3][2],patches[4][2]
+        self.assertLess(bass[0][1],bass[3][1])
+        self.assertTrue(all(op[3]>=0x1A for op in skank))
+        self.assertTrue(all(op[3]<=0x06 for op in organ))
+        self.assertTrue(all(p[2][1][1]<40 and p[2][3][1]<40
+                            for p in (patches[0],patches[3])))
+        self.assertEqual(music["tonality"],"major")
+        self.assertEqual(music["percussion"],["kick","snare","hat","fill"])
+        self.assertEqual(music["eventsPerSecond"],5)
+        self.assertEqual([n for n,_ in music["scenes"]],
+            ["Captain Intro","Chromatic Vortex","Neon Aurora",
+             "Sprite Storm","Chroma Reactor","Finale"])
+        self.assertEqual(sum(sec for _,sec in music["scenes"]),180)
+
+    def test_score_has_notes_rests_and_percussion(self):
+        rows=[self.values["SHOW_MUSIC"][i:i+16] for i in range(0,14400,16)]
+        self.assertEqual(len(rows),900)
+        self.assertGreater(len(set(rows)),50)
+        for row in rows:
+            self.assertEqual(len(row),16)
+            for offset in (0,2,4,6,8,10):
+                self.assertTrue(row[offset] in (0,0xFF) or (row[offset]&0x38) in
+                                (0x08,0x10,0x18,0x20,0x28,0x30,0x38))
+            self.assertIn(row[12],(0,1,2,3,4))
+            self.assertIn(row[13],(0,1))
+            self.assertEqual(row[14:],b'\x00\x00')
+        self.assertEqual({row[12] for row in rows},{0,1,2,3,4})
+        self.assertGreater(sum(row[0] not in (0,255) for row in rows),150)
+        self.assertGreater(sum(row[0]==255 for row in rows),70)
+        self.assertGreater(sum(row[0]==0 for row in rows),100)
+        self.assertGreater(sum(row[2]==255 for row in rows),40)
+        self.assertGreater(sum(row[4]==255 for row in rows),150)
+        self.assertGreater(sum(row[6]!=0 for row in rows),300)
+        self.assertEqual(sum(row[6]!=0 and i%2==0 for i,row in enumerate(rows)
+                             if 100<=i<250),0)
+        self.assertGreater(sum(row[10]!=0 for row in rows),40)
+        self.assertGreater(len(set(rows)),150)
+        self.assertGreater(len(set(tuple(rows[i:i+8]) for i in range(0,len(rows)-8,8))),35)
+        self.assertEqual(sum(row[6]!=0 and i%2==0 for i,row in enumerate(rows)),0)
+
+    def test_rom_is_valid_and_original_artwork_is_unchanged(self):
+        self.assertEqual(self.rom[0x100:0x104],b"SEGA")
+        self.assertIn(b"V0.3.8",self.rom[0x120:0x180])
+        self.assertEqual(len(self.rom),self.report["romSize"])
+        self.assertEqual(len(self.rom)%2,0)
+        self.assertEqual(hashlib.sha256(self.rom).hexdigest(),self.report["sha256"])
+        self.assertEqual(sum(struct.unpack_from(">H",self.rom,i)[0]
+                             for i in range(0x200,len(self.rom),2))&65535,
+                         struct.unpack_from(">H",self.rom,0x18E)[0])
+        self.assertEqual(self.report["baseKitSHA256"],
+                         "fb073ee201ce73072c83a569742a644c2f8c7816e102ffd55ce723154bd67403")
+        self.assertEqual(self.report["assetSHA256"]["title_patterns.bin"],
+            hashlib.sha256(self.values["PATTERNS"]).hexdigest())
+        self.assertTrue({"music_start","music_tick","music_event","show_intro",
+                         "show_finale","show_music","ym_write","ym_write_high",
+                         "psg_drum_tick","psg_drum_tick_done","music_keep_0",
+                         "music_keep_5"}.issubset(
+            self.values["asm"].labels))
+        self.assertIn(bytes.fromhex("00a04000"),self.rom)
+        self.assertIn(bytes.fromhex("00a04001"),self.rom)
+        self.assertIn(bytes.fromhex("00a04002"),self.rom)
+        self.assertIn(bytes.fromhex("00a04003"),self.rom)
+
+    def test_approved_default_is_the_exact_full_show_not_the_audition(self):
+        manifest=json.loads((ROOT/"site/cartridges.json").read_text())
+        self.assertEqual(manifest["defaultCartridge"],"demo")
+        demo=next(entry for entry in manifest["cartridges"] if entry["id"]=="demo")
+        self.assertTrue(demo["approved"])
+        self.assertEqual(demo["version"],"0.3.8")
+        self.assertEqual(demo["source"],SOURCE.relative_to(ROOT).as_posix())
+        self.assertEqual(demo["build"]["output"],ROM.relative_to(ROOT).as_posix())
+        self.assertEqual(demo["size"],len(self.rom))
+        self.assertEqual(demo["sha256"],hashlib.sha256(self.rom).hexdigest())
+        self.assertFalse(self.report["music"]["musicLabPreview"])
+        self.assertNotIn("music-lab",json.dumps(manifest))
+
+    def test_rom_keeps_the_original_portrait_and_logo_patterns_byte_exact(self):
+        with zipfile.ZipFile(self.values["BASE_KIT"]) as kit:
+            patterns=kit.read("demo-cart/assets/title_patterns.bin")
+            for name in ("title_patterns.bin","title_tilemap_viewport.bin","title_cram.bin"):
+                self.assertEqual(self.report["assetSHA256"][name],hashlib.sha256(
+                    kit.read("demo-cart/assets/"+name)).hexdigest())
+        start=self.values["asm"].labels["patterns"]
+        self.assertEqual(self.rom[start:start+len(patterns)],patterns)
+
+if __name__=="__main__":
+    unittest.main()

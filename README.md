@@ -4,27 +4,31 @@ A browser workbench for circuit-bending a Sega Mega Drive / Genesis. Experiment
 with video memory, Work RAM and FM/PSG sound through a modified emulator.
 
 **[Open VRAMpage MD](https://mcretro.net/homepages/vrampage-md/)** ·
-**[Download v0.5.1](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.1/VRAMpage-MD-v0.5.1-browser.zip)** ·
-[Checksums](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.1/SHA256SUMS.txt)
+**[Download v0.5.2](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.2/VRAMpage-MD-v0.5.2-browser.zip)** ·
+[Corresponding Source](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.2/VRAMpage-MD-v0.5.2-corresponding-source.zip) ·
+[Checksums](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.2/SHA256SUMS.txt)
 
-**v0.5.1** adds a [lightweight website package](docs/LIGHTWEIGHT-DEPLOYMENT-v0.5.1.md)
-with one complete corresponding-source ZIP and retained licence notices. The
-matching source ZIP accompanies the GitHub release and hosted runtime. Earlier
-public releases remain available unchanged. Release and website publication
-have separate verified workflows.
+**v0.5.2** includes the owner-approved Demo Cart v0.3.8 full 180-second show,
+Discrete/Integrated FM output selection and browser input/audio recovery fixes.
+See the [release notes](docs/RELEASE-NOTES-v0.5.2.md). Complete corresponding
+source and licence notices accompany the package. Earlier public assets remain
+unchanged. The hosted app remains at v0.5.1; a website update requires separate
+approval.
 
 ## 🎮 Built-In Cartridges
 
 The **Choose Cartridge** menu offers:
 
-- **VRAMpage MD Demo Cart** — the latest approved demo, started automatically.
+- **VRAMpage MD Demo Cart** — the approved v0.3.8 full show, started automatically.
 - **VRAMpage MD Colour Test** — our original silent colour-pattern cartridge.
 - **Load Your Own ROM…** — select a compatible Mega Drive ROM; it stays local.
 
 Your explicit choice takes priority, including while another cartridge is
 loading. Built-in choices persist for this browser-tab session; choosing a local
 file prevents automatic demo loading after refresh without storing your file.
-The demo retains the approved captain portrait/logo and Chroma Reactor controls:
+The demo starts its 180-second show after the menu idles. Use directions to
+select a scene and **A/B/C/START** to run it. It retains the approved captain
+portrait/logo and Chroma Reactor controls:
 **A** cycles bend strengths, **B** recovers graphics, **C** maximises distortion,
 and **START** opens the menu.
 
@@ -75,11 +79,13 @@ The app also offers optional [RGB Encoder Input Contacts](docs/RGB-ENCODER-INPUT
 an output-only approximation separate from memory and sound faults.
 The app also offers [Region Selection](docs/REGION-PROFILES-PLAN.md):
 NTSC-U remains the default; stage another region and apply it with Clean Restart.
-These additions are included in the v0.5.1 release target.
+These controls remain available in v0.5.2. **FM Output Model** stages a choice
+between Discrete (default) and Integrated; Clean Restart or a new cartridge
+applies it. CPU Reset and Restore Checkpoint retain the active model.
 
 ## 💻 Run Locally
 
-Download and extract the complete **v0.5.1 browser ZIP** above. From its
+Download and extract the complete **v0.5.2 browser ZIP** above. From its
 **VRAMpage-MD** folder, run:
 
 | System | Command |

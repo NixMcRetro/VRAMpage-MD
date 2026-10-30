@@ -11,7 +11,7 @@ ZIP = f"VRAMpage-MD-{TAG}-browser.zip"
 
 class VersioningTests(unittest.TestCase):
     def test_single_canonical_version(self):
-        self.assertEqual(VERSION, "0.5.1")
+        self.assertEqual(VERSION, "0.5.2")
         self.assertTrue((ROOT / "docs/VERSIONING.md").exists())
         self.assertIn(TAG, (ROOT / "docs/VERSIONING.md").read_text())
 
