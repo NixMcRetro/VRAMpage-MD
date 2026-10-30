@@ -1,3 +1,10 @@
+## Development Documentation — Current Handoffs
+
+- Keep concise current priorities and verification status in place, with complete
+  earlier checkpoints preserved through immutable original-path Git snapshots.
+- Point historical testing, runtime and recovery references directly to their
+  verified source/checksum records, avoiding completed work appearing unfinished.
+
 ## Development Fix — Interrupted Audio Resume
 
 - Resume Safari's interrupted audio context from Enable Sound, alongside the
