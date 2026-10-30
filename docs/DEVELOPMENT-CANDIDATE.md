@@ -1,10 +1,11 @@
 # Development Candidate
 
-These draft notes describe merged development work after public v0.5.0. They do
-not select a release version or tag. The live McRetro.net page and published
-release downloads retain their existing builds. Use the latest verified
-[development checkpoint](WORK-QUEUE.md) for the current source, CI and Actions
-download; its BUILD-INFO.json identifies the exact commit.
+This feature list records the candidate prepared after v0.5.0; those features
+shipped in [v0.5.1](https://github.com/NixMcRetro/VRAMpage-MD/releases/tag/v0.5.1).
+Later merged source fixes do not select another release version or authorize a
+website update. Use the latest verified [development checkpoint](WORK-QUEUE.md)
+for current source, CI and Actions downloads; BUILD-INFO.json identifies the
+exact commit. Published releases remain unchanged.
 
 ## Changes Since Public v0.5.0
 
@@ -61,11 +62,12 @@ For native-browser review of the new features, use a legally usable cartridge:
 
 ## Publication Handoff
 
-Choose a meaningful version and align VERSION, labels, release notes, tag and
-filenames only after a release decision. Publish the exact reviewed main commit
-with its ROM-free browser ZIP, checksum, complete corresponding emulator source
-and notices. Verify the downloaded asset against its source/tag/metadata. Preserve
-existing public releases. Website deployment is a separate repository/action.
+For a future separately approved release, choose a meaningful version and align
+VERSION, labels, notes, tag and filenames after that decision. Package the exact
+reviewed main commit with all [manifest-approved original/homebrew cartridges](BUILT-IN-CARTRIDGES.md),
+checksums, complete corresponding emulator source and notices. Commercial ROMs
+are not included. Verify downloaded assets against their source/tag/metadata;
+preserve existing public releases. Website deployment requires separate approval.
 
 Composite/sync/mono encoder faults and physical VRAM timing are deferred models.
 [NTSC VA6 device mapping](VA6-RAM-VALIDATION.md) still needs matching board evidence;
