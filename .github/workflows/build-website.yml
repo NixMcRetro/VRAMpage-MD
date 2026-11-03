@@ -146,7 +146,7 @@ jobs:
         run: python3 -m pip install -r tests/requirements-browser.txt
       - name: Restore pinned browser binaries
         id: browser-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-v1-ubuntu-24.04-${{ runner.os }}-${{ runner.arch }}-chromium-${{ hashFiles('tests/requirements-browser.txt') }}
@@ -159,7 +159,7 @@ jobs:
         run: python3 -m playwright install chromium
       - name: Save pinned browser binaries
         if: steps.browser-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: ~/.cache/ms-playwright
           key: ${{ steps.browser-cache.outputs.cache-primary-key }}
@@ -232,7 +232,7 @@ jobs:
         run: python3 -m pip install -r tests/requirements-browser.txt
       - name: Restore pinned browser binaries
         id: browser-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-v1-ubuntu-24.04-${{ runner.os }}-${{ runner.arch }}-${{ matrix.browser }}-${{ hashFiles('tests/requirements-browser.txt') }}
@@ -245,7 +245,7 @@ jobs:
         run: python3 -m playwright install ${{ matrix.browser }}
       - name: Save pinned browser binaries
         if: steps.browser-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: ~/.cache/ms-playwright
           key: ${{ steps.browser-cache.outputs.cache-primary-key }}
