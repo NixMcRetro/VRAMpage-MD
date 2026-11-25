@@ -65,16 +65,85 @@ class ReleaseCurationTests(unittest.TestCase):
                 self.assertIn("Original release URL:", original)
                 self.assertIn("Archive only.", original)
 
+    def assert_download_routes(self, readme, history, version):
+        """Preserve navigation and release destinations, not homepage layout."""
+        def links(text):
+            return re.findall(r"\[([^]\n]+)\]\(([^)\s]+)\)", text)
+
+        base = f"https://github.com/{DATA['repository']}/releases"
+        homepage_links = links(readme)
+        history_links = links(history)
+        homepage_targets = {url for _, url in homepage_links}
+        history_targets = {url for _, url in history_links}
+
+        self.assertIn("docs/RELEASE-HISTORY.md", homepage_targets,
+                      "Homepage must link to the release history")
+        current = f"{base}/download/v{version}/VRAMpage-MD-v{version}-browser.zip"
+        self.assertIn(current, homepage_targets, "Missing current browser download")
+        self.assertIn(current, history_targets, "Missing current browser download in history")
+
+        # Derive the preservation requirements from the existing curation
+        # catalogue. Its scope is the historical releases through v0.5.0,
+        # not the newer separately managed releases.
+        for entry in DATA["releases"]:
+            tag = entry["tag"]
+            packages = [name for name in entry["assets"] if name.endswith(".zip")]
+            if packages:
+                for name in packages:
+                    self.assertIn(f"{base}/download/{tag}/{name}", history_targets,
+                                  f"Historical package missing or misdirected: {name}")
+            else:
+                self.assertIn(f"{base}/tag/{tag}", history_targets,
+                              f"Source-only milestone missing: {tag}")
+                self.assertFalse(any(url.startswith(f"{base}/download/{tag}/")
+                                     for url in history_targets | homepage_targets),
+                                 f"Source-only milestone advertised as a download: {tag}")
+
+        # Check the real Markdown link targets, including versions newer
+        # than the historical catalogue. Generic labels are allowed.
+        for label, url in homepage_links + history_links:
+            if not url.startswith(f"{base}/download/"):
+                continue
+            match = re.fullmatch(
+                re.escape(base) + r"/download/(v\d+\.\d+\.\d+)/([^/]+)", url)
+            self.assertIsNotNone(match, f"Malformed release download URL: {url}")
+            tag, name = match.groups()
+            if name.startswith("VRAMpage-MD-") and name.endswith(".zip"):
+                expected = ("browser" if tuple(map(int, tag[1:].split("."))) >= (0, 5, 0)
+                            else "macos")
+                self.assertIn(name, {f"VRAMpage-MD-{tag}-{expected}.zip",
+                                     f"VRAMpage-MD-{tag}-corresponding-source.zip"},
+                              f"Wrong package version or format: {url}")
+            for displayed in re.findall(r"v\d+\.\d+\.\d+", label):
+                self.assertEqual(displayed, tag, f"Wrong displayed version: {label}")
+
     def test_homepage_has_clear_candidate_and_historical_download_routes(self):
-        readme = (ROOT / "README.md").read_text()
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        history = (ROOT / "docs/RELEASE-HISTORY.md").read_text(encoding="utf-8")
         version = (ROOT / "VERSION").read_text().strip()
-        self.assertIn(f"VRAMpage-MD-v{version}-browser.zip", readme)
-        self.assertIn("VRAMpage-MD-v0.4.1-macos.zip", readme)
-        self.assertIn("docs/RELEASE-HISTORY.md", readme)
-        self.assertIn(f"VRAMpage-MD-{DATA['current']}-browser.zip",
-                      (ROOT / "docs/RELEASE-HISTORY.md").read_text())
+        self.assert_download_routes(readme, history, version)
         self.assertIn("source-only", readme.lower())
         self.assertIn("START.command", readme)
+
+    def test_download_routes_reject_missing_or_misdirected_links(self):
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        history = (ROOT / "docs/RELEASE-HISTORY.md").read_text(encoding="utf-8")
+        version = (ROOT / "VERSION").read_text().strip()
+        base = f"https://github.com/{DATA['repository']}/releases"
+        entry = next(item for item in DATA["releases"] if any(
+            name.endswith("-macos.zip") for name in item["assets"]))
+        package = next(name for name in entry["assets"] if name.endswith("-macos.zip"))
+        target = f"{base}/download/{entry['tag']}/{package}"
+        self.assertIn(target, history)
+        mutations = [
+            (readme.replace("](docs/RELEASE-HISTORY.md)", "](/missing.md)"), history),
+            (readme, history.replace(target, target + ".missing")),
+            (readme, history.replace(target, f"{base}/download/v0.0.0/{package}")),
+            (readme, history + f"\n[Incorrect version v0.0.0]({target})\n"),
+        ]
+        for index, (bad_readme, bad_history) in enumerate(mutations):
+            with self.subTest(mutation=index), self.assertRaises(AssertionError):
+                self.assert_download_routes(bad_readme, bad_history, version)
 
     def validate_fixture(self, mutate):
         with tempfile.TemporaryDirectory() as temp:

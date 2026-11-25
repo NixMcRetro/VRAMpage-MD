@@ -50,7 +50,7 @@ Keep the terminal open; Ctrl+C stops the server. macOS users can also use START.
 - [Build from source](docs/DEPLOYMENT.md) - deployment
 - [Testing](docs/TESTING.md) - verification
 - [Changelog](CHANGELOG.md) - development history
-- [Release history](docs/RELEASE-HISTORY.md) - older packages, including the preserved [v0.4.1 macOS ZIP](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip)
+- [Release history](docs/RELEASE-HISTORY.md) - older packages and source history
 - [Roadmap](ROADMAP.md) - what's next
 
 ## ❤️ Source and credits
