@@ -1,126 +1,64 @@
 # 🎛️ VRAMpage MD
 
-A browser workbench for circuit-bending a Sega Mega Drive / Genesis. Experiment
-with video memory, Work RAM and FM/PSG sound through a modified emulator.
+**Bend the bits. Break the rules. See what happens.**
 
-**[Open VRAMpage MD](https://mcretro.net/homepages/vrampage-md/)** ·
-**[Download v0.5.2](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.2/VRAMpage-MD-v0.5.2-browser.zip)** ·
-[Corresponding Source](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.2/VRAMpage-MD-v0.5.2-corresponding-source.zip) ·
-[Checksums](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.2/SHA256SUMS.txt)
+A browser workbench for experimental circuit-bending of the Sega Mega Drive / Genesis. Poke at video memory, play with Work RAM, and make the FM and PSG chips do wonderfully strange things.
 
-**v0.5.2** includes the owner-approved Demo Cart v0.3.8 full 180-second show,
-Discrete/Integrated FM output selection and browser input/audio recovery fixes.
-See the [release notes](docs/RELEASE-NOTES-v0.5.2.md). Complete corresponding
-source and licence notices accompany the package. Earlier public assets remain
-unchanged. The hosted app remains at v0.5.1; a website update requires separate
-approval.
+[**🎮 Play on McRetro.net**](https://mcretro.net/homepages/vrampage-md/) | [**📦 Download v0.5.2**](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.2/VRAMpage-MD-v0.5.2-browser.zip) | [**📚 Full guide**](USER-GUIDE.md)
 
-## 🎮 Built-In Cartridges
+**Download:** v0.5.2. **Hosted version:** v0.5.1. Website updates are approved separately.
 
-The **Choose Cartridge** menu offers:
+## ⚡ What can you bend?
 
-- **VRAMpage MD Demo Cart** — the approved v0.3.8 full show, started automatically.
-- **VRAMpage MD Colour Test** — our original silent colour-pattern cartridge.
-- **Load Your Own ROM…** — select a compatible Mega Drive ROM; it stays local.
-
-Your explicit choice takes priority, including while another cartridge is
-loading. Built-in choices persist for this browser-tab session; choosing a local
-file prevents automatic demo loading after refresh without storing your file.
-The demo starts its 180-second show after the menu idles. Use directions to
-select a scene and **A/B/C/START** to run it. It retains the approved captain
-portrait/logo and Chroma Reactor controls:
-**A** cycles bend strengths, **B** recovers graphics, **C** maximises distortion,
-and **START** opens the menu.
-
-The [approved manifest](site/cartridges.json) owns cartridge versions, sources,
-build instructions, checksums and licensing. Every future complete browser ZIP
-and static bundle includes its verified cartridges; generated ROM binaries are
-not committed. See [cartridge maintenance](docs/BUILT-IN-CARTRIDGES.md).
-Cartridge and application versions are independent. Source commits alone do
-not update published downloads or the live website.
-
-## 🎮 Try It
-
-Open the live app and try the built-in demo, then choose **Enable Sound**. Cartridge files
-stay in your browser and are not uploaded. Use your own legally usable ROM, or
-start with the free original test program:
-
-> [!TIP]
-> **[Download the Colour-Test ROM](https://mcretro.net/assets/downloads/2026/10/vrampage-md/VRAMpage-MD-Colour-Test.bin)** ·
-> [ROM and Python Source ZIP](https://mcretro.net/assets/downloads/2026/10/vrampage-md/VRAMpage-MD-Colour-Test.zip) ·
-> [About the Project](https://mcretro.net/vrampage-md-bending-bits/)
->
-> The 64 KiB test ROM uses original code and graphics. It is silent, so use another
-> cartridge for FM/PSG experiments. Commercial games are not included in this
-> repository or the browser package.
-
-## ⚡ What Can You Bend?
-
-| Chip | Experiments |
+| | |
 | --- | --- |
-| **VRAM** | Cut modelled video-memory address lines or bridge a pair. |
-| **SRAM (Work RAM)** | Alter address/data lines; hold A11–A15 write contacts or apply eight-frame pulses. |
-| **FM / PSG** | Alter each chip's input writes independently, or use its **Randomiser** button. |
+| 🖼️ **VRAM** | Cut or bridge modelled video-memory address lines |
+| 🧠 **Work RAM** | Alter address and data lines, inhibit writes, and experiment with pulses |
+| 🎶 **FM / PSG** | Bend sound-chip input writes and try the randomisers |
+| 🌈 **RGB** | Experiment with optional encoder input contacts |
+| 🔁 **Recovery** | Save checkpoints, compare experiments, and restart when things get weird |
 
-Save configurations, compare exported experiments, use a session checkpoint,
-or try **Force Resume**, **CPU Reset** and **Clean Restart**.
+These are experimental digital models, not electrically accurate motherboard simulations. Faults can freeze games or leave corrupted state.
 
-These are experimental digital models, not electrically accurate motherboard
-simulations. A fault can stop a game or leave corrupted memory/sound state after
-it is removed. **CPU Reset** preserves RAM and sound-chip state, although
-restarted game code can overwrite RAM. **Clean Restart** fully reboots.
-See the [controls and recovery guide](docs/RUNNING-LOCALLY.md).
+## 🎮 Built-in cartridges
 
-The app includes [Work RAM Write Inhibit](docs/WORK-RAM-WRITE-INHIBIT.md),
-which retains old upper/lower bytes by suppressing selected writes. It also includes an optional
-[Z80 RAM Write Bridge](docs/Z80-RAM-WRITE-BRIDGE.md) for sound-driver memory.
-It is off by default and is not included in earlier v0.5.0 downloads.
-The app also offers optional [RGB Encoder Input Contacts](docs/RGB-ENCODER-INPUTS.md),
-an output-only approximation separate from memory and sound faults.
-The app also offers [Region Selection](docs/REGION-PROFILES-PLAN.md):
-NTSC-U remains the default; stage another region and apply it with Clean Restart.
-These controls remain available in v0.5.2. **FM Output Model** stages a choice
-between Discrete (default) and Integrated; Clean Restart or a new cartridge
-applies it. CPU Reset and Restore Checkpoint retain the active model.
+- 🎆 **Demo Cart:** An original three-minute show (v0.3.8 in the v0.5.2 download).
+- 🌈 **Colour Test:** An original silent colour-pattern cartridge.
+- 💾 **Load your own ROM:** Use a legally usable Mega Drive ROM. Your file stays in your browser.
 
-## 💻 Run Locally
+Try the demo, enable sound, and see how far you can bend the bits. No commercial games are bundled.
 
-Download and extract the complete **v0.5.2 browser ZIP** above. From its
-**VRAMpage-MD** folder, run:
+## 🚀 Try it
+
+[Open the hosted app](https://mcretro.net/homepages/vrampage-md/) in your browser, or download the complete browser ZIP and extract it.
+
+For local use, open a terminal in the extracted VRAMpage-MD folder and run:
 
 | System | Command |
 | --- | --- |
 | Windows | `py -3 scripts/serve.py` |
 | macOS / Linux | `python3 scripts/serve.py` |
 
-Keep the terminal open while using the app; press **Ctrl+C** to stop the server.
-On macOS, **START.command** is an optional shortcut. Hosted use needs only a
-browser; local use also needs Python 3. No emulator compilation is needed for
-the complete package. GitHub's **Code → Download ZIP** is source-only.
-[Launch help and troubleshooting](docs/RUNNING-LOCALLY.md).
+Keep the terminal open; Ctrl+C stops the server. macOS users can also use START.command. Python 3 is required for local use, but no emulator compilation is necessary. GitHub's Code / Download ZIP is source-only.
 
-## 🧩 Source and Credits
+## 📚 Dig a little deeper
 
-- **VRAMpage MD:** Nix McRetro, with Codex assistance for the workbench, fault
-  models, recovery and testing.
-- **Genesis Plus GX:** [Eke-Eke](https://github.com/ekeeke/Genesis-Plus-GX),
-  building on the original Genesis Plus by Charles Mac Donald.
-- **WebAssembly port:** [h1romas4/wasm-genplus](https://github.com/h1romas4/wasm-genplus),
-  pinned at `6090aff9e9b2f578cd28882bd4571d2e35b1d674`.
-- **Core components:** Nuked OPN2 by Alexey Khokholov (Nuke.YKT), Musashi by
-  Karl Stenerud, and the Z80 emulator by Juergen Buchmueller. Further component
-  credits and full terms are in [Third-Party Notices](THIRD-PARTY-NOTICES.md).
+- [Full user and technical guide](USER-GUIDE.md) - controls, cartridges, recovery, and credits
+- [v0.5.2 release notes](docs/RELEASE-NOTES-v0.5.2.md) - what's new
+- [Launch help](docs/RUNNING-LOCALLY.md) - getting started and troubleshooting
+- [Documentation](docs/README.md) - technical experiments
+- [Build from source](docs/DEPLOYMENT.md) - deployment
+- [Testing](docs/TESTING.md) - verification
+- [Changelog](CHANGELOG.md) - development history
+- [Release history](docs/RELEASE-HISTORY.md) - older packages and source history
+- [Roadmap](ROADMAP.md) - what's next
 
-The emulator's upstream terms include **non-commercial distribution** and
-**complete corresponding-source requirements**. Runnable packages include the
-modified emulator source and notices. Those terms do not grant rights to games.
+## ❤️ Source and credits
 
-## 📚 Further Reading
+VRAMpage MD by Nix McRetro, with Codex assistance. Built on Genesis Plus GX by Eke-Eke (building on Charles Mac Donald's Genesis Plus), with the WebAssembly port by h1romas4 and contributions from the original emulator component authors. See the [full credits](USER-GUIDE.md#-source-and-credits).
 
-[Build from Source](docs/DEPLOYMENT.md) · [Documentation](docs/README.md) ·
-[Testing](docs/TESTING.md) · [Roadmap](ROADMAP.md) · [Changelog](CHANGELOG.md)
+The emulator's upstream terms include non-commercial distribution and complete corresponding-source requirements. Runnable packages include modified emulator source and notices. These terms do not grant rights to games.
 
-For historical downloads, including the preserved
-[v0.4.1 package](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.4.1/VRAMpage-MD-v0.4.1-macos.zip),
-see [Release History](docs/RELEASE-HISTORY.md). Development here does not
-automatically deploy to McRetro.net; website releases are managed separately.
+[📦 Corresponding source v0.5.2](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.2/VRAMpage-MD-v0.5.2-corresponding-source.zip) | [🔐 Checksums](https://github.com/NixMcRetro/VRAMpage-MD/releases/download/v0.5.2/SHA256SUMS.txt) | [📜 Third-party notices](THIRD-PARTY-NOTICES.md)
+
+**Happy bending! ⚡**
